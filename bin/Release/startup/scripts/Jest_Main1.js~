@@ -1,0 +1,27 @@
+var fonty = new Font("../../system/system.rfn");
+
+var start = GetTime();
+
+var Black =  new Color(0, 0, 0, 0);
+
+function game(){
+fonty.drawText(10,10,"Press a key, and we'll see what TurboSphere thinks it's called.");
+FlipScreen();
+while(!IsKeyPressed(KEY_PAGEDOWN){
+  fonty.drawText(10,10,GetKeyString(GetKey()));
+  FlipScreen();
+}
+	
+start-=GetTime();
+start=-start;
+while(GetKey()!=KEY_ENTER){
+  //Rectangle(0,0,GetScreenWidth(), GetScreenHeight(), new Color(0,0,0,255));
+  fonty.drawText(32,20,start);
+  fonty.drawText(32,30,"Press Any Key!");
+  //test();
+  FlipScreen();
+  Delay(10);
+  
+}
+
+}

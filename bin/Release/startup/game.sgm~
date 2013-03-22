@@ -1,0 +1,7 @@
+author=Unknown
+description=
+name=TS Test
+screen_height=320
+screen_width=400
+script=Jest_Main1.js
+version=2

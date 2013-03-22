@@ -1,0 +1,19 @@
+Devlog.
+All entries are dated using United States date notation.
+Entries indicate the date the feature or change was added or removed.
+Newline characters should be NOT added manually rather than using automatic wordwrap. 
+To prepare for the unlikely event that another dev starts working on this project, always initial or (sign) your entry. Anything is fine, as long as you pick one name and stick with it.
+
+12/30/12 - Fixed all found memory leaks in FilledPolygon. Relocated FilledCircle and OutlinedCircle functions from engine.cpp to graphics.cpp. Overloaded TS_Point objects to take on the x and y of an SDL_Rect when assigned the value of one. I would like to do the inverse as well, and have TS_Points cast as SDL_Rects to expose their x and y, and report their w and h to be 1.
+Added sound_object.isPlaying on JS side. -MM
+
+12/29/12 - Added FilledPolygon function. Uses a naive parity check to draw a filled polygon. Leaks memory like a seive right now. 
+Changed the Makefile and CB project to build T5 from scratch, and locate it in the appropriate directories for linking and running with TS without requiring extra shell commands after compilation. The Code::Blocks project will not build from scratch unless the makefile is used at least once before. So long as the makfile works first time, every time, the CB project does not need to be perfect. -MM
+
+12/27/12 - Changed makefile. T5 is now built automatically before TurboSphere, so we are now dynamically linking to T5 (libt5.so). Code::Blocks project not yet updated.
+Added T5_file.writeValue and writeValueToSection methods (not finished), to begin replacing the TS_File object with T5_file objects in scriptfs.cpp. -MM
+
+12/26/12 - Added GetSystemWindowStyle. Added T5 static object building steps to the makefile. -MM
+
+12/21/12 (the end of the world) Modified TS_LoadSurface and TS_CreateSurface, now called TS_CreateImage and TS_CreateSurface, respectively. Both functions have been set up to take either a string corresponding to a filename, or two numbers and a color object.
+Changed Font.size accessor (void SetFontSize) to check if value passed is a number. If not, nothing happens at all. - MM

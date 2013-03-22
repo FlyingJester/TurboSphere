@@ -1,0 +1,23 @@
+Options to include in a config for TS:
+
+Preferred Resolution
+Enable/Disable Audio
+Manually set OpenGL library
+Video Settings:
+	VSync
+	Allow HW Surfaces
+	Enable Asynchronous Blits
+	Enable DoubleBuffering
+
+Things to check for auto-configuration:
+	Number of CPU cores:
+		>1:
+			Enable AsyncBlit
+		>2:
+			Enable Audio Threading
+	Graphics Cards:
+		Share System Memory:
+			Disable HW Surfaces
+			Disable Async Blits
+		Intel or other integrated graphics:
+			Disable Double Buffering

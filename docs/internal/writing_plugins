@@ -1,0 +1,299 @@
+Writing Plugins For TurboSphere
+Martin McDonough (Flying Jester)
+2013.03.13
+
+Last Update
+2013.03.13 - TS v0.2.1rc1
+
+Before we begin, I have to preface this. If you know nothing of C or C++, and don't plan on learning it, you probably will not be able to make a plugin. And if you are making a plugin before TurboSphere 1.0 is released, you may end up with a plugin that won't work with the first official release of TurboSphere. The API probably won't change too much between then and now, though.
+
+Also, at the moment, I only cover making a plugin that works for GCC-style toolchains (GCC, Clang, MingW, etc.). This is useful, and even when I add the Microsoft Visual C++ information, I recommend adding preprocessor macros to make it work on all platforms. TurboSphere has traditionally been for Linux *and* Windows, 32 and 64 bit, after all.
+
+Personally, I write plugins in C++. I know that is easy. It shouldn't be too hard to write it in C, either. But, I do know a C++ shim is necessary for any language other than C++, since to interface with V8 you need access to the C++ template library. If you know of another language that can interface directly with C++ STL libraries, go ahead and try to use that. I'd like to hear about it! :)
+
+I'm going to assume you are using the "plugin.h" file that is included with the TurboSphere source (plugins/common/plugins.h). I used this to make all the plugins included with TurboSphere. It might not be the best way to do this, but it's the set of tools I worked out from my years of making TurboSphere.
+
+If you look at windowstyleSDL, you can see a nice example of using plugins.h. But for one learn better with examples and explanations, so let's have a look at some example code explained.
+
+[code]
+#include "../common/plugin.h"
+
+//decare plugin functions to have C-linkage. This would be different in Windows, especially with MSVC.
+extern "C" void             Close(void);
+extern "C" initFunction     Init(void);
+extern "C" int              GetNumFunctions(void);
+extern "C" functionArray    GetFunctions(void);
+extern "C" nameArray        GetFunctionNames(void);
+extern "C" int              GetNumVariables(void);
+extern "C" v8FunctionArray  GetVariables(void);
+extern "C" nameArray        GetVariableNames(void);
+
+//This will be explained later.
+#define NUMFUNCS 2
+
+//forward declare C++ functions to be bound to JS
+v8Function LoadWindowStyle(V8ARGS);
+v8Function GetSystemWindowStyle(V8ARGS);
+
+//declare pointers to functions that will be passed to the engine to be bound
+void* LoadWindowStylePointer      = V8FUNCPOINTER(LoadWindowStyle));
+void* GetSystemWindowStylePointer = V8FUNCPOINTER(GetSystemWindowStyle));
+[/code]
+
+This is the start of windowstyle.cpp. Here, we include plugin.h, we forward declare the functions to be exposed to script, and then void pointers that point to the functions. That last part will be useful later.
+
+It also forward declares the mandatory functions of a plugin. In this case they only have linkage for GCC-style compilation, though. I'll add in how it's done with the Microsoft Visual C++ compiler at a later date.
+
+[code]
+initFunction Init(){
+    //Initialize the JS-side object templates
+    INIT_OBJECT_TEMPLATES(WindowStyle);
+    ADD_TO_PROTO(WindowStyle, "drawWindow", TS_WSdrawWindow);
+
+    //return plugin's name to the engine.
+    return (char *)"windowstyleSDL";
+}
+[/code]
+
+Here we define the Init function. Every plugin must have an exposed Init function. This is called by TurboSphere for two reasons. The simple use is that it tells TurboSphere the plugin's name. It is guaranteed to be called before anything else. With this in mind, what are those other macros being called? the INIT_OBJECT_TEMPLATES and ADD_TO_PROTO? Well, let's look at one more function before we talk about that:
+
+[code]
+void Close(){
+    //Dispose of JS-side templates.
+    CLOSE_OBJECT_TEMPLATES(WindowStyle);
+}
+[/code]
+
+OK, this is the Close function. It's to be called when we are done with the plugin, and it will definitely be called after each call to Init before Init is called again. We can't be sure that Close will be called--what if TurboSphere hard-crashes? But we always do our best to call it before TurboSphere quits.
+
+So there's another macro. CLOSE_OBJECT_TEMPLATES. Well, unsurprisingly, that is the counterpart to INIT_OBJECT_TEMPLATES. They automate the process of making templates for binding C++ objects to JS. You can check out the details in the plugins.h file, but if you don't want to know the details just let it be. So far only one function in all of TurboSphere and the default plugins needs more knowhow than this, and in that case it wasn't necessary to not do it that way anyway.
+
+Both macros are passed a name, WindowStyle. This isn't defined before, as the macros define several objects using that name. Just pass them all the same name for the same object type, and it will work. The INIT_OBJECT_TEMPLATES macro creates the templates to create, wrap, and modify the prototypes of C++ to JS-side objects. The second macro, ADD_TO_PROTO, is an example of the latter. It binds the C++ function TS_WSdrawWindow to the JS_side object type that WindowStyle defines, and gives it the JS-side name drawWindow (windowstyle_object.drawWindow()). The CLOSE_OBJECT_TEMPLATES macro undefines the object template defined by WindowStyle, which cleans things out in JS (and gives back a bit of memory, ideally, although it doesn't actually work out this way for sure; V8 plays it fast and loose with memory when it thinks it can trade memory for speed).
+
+Let's have a look at the remaining mandatory functions of a plugin.
+
+[code]
+int GetNumFunctions(){
+    return NUMFUNCS;
+}
+
+int GetNumVariables(){
+    return 0;
+}
+[/code]
+
+These functions return the number of variables and functions to be exposed to script. windowstyleSDL does not define any variables for script, but I will go over how that is done later anyway. For the moment, suffice it to say that it is simpler than exposing functions.
+
+[code]
+//to simplify numbering functions and names.
+int numerate(bool reset){
+    static int i = 0;
+    if(reset) {
+        i = 0;
+        return 0;
+    }
+    i++;
+    return i-1;
+}
+
+functionArray GetFunctions(){
+    //reset numeration function to 0.
+    numerate(true);
+
+    functionArray funcs = (functionArray)calloc(NUMFUNCS, sizeof(void*));
+
+    funcs[numerate(false)] = LoadWindowStylePointer;
+    funcs[numerate(false)] = GetSystemWindowStylePointer;
+    //return array of function pointers to to the engine.
+    return funcs;
+}
+[/code]
+
+The first function is just to simplify numbering the elements of arrays. You don't need to use it, but I found it quite useful when writing the inputSDL function which has well over a hundred variables defined (one for each key on a keyboard and several for mouse buttons).
+
+The second function is necessary, though. First we reset the numeration function to zero. Then we define the array of functions to be exposed. This is where those void pointers to the functions that will be exposed to V8 come in handy.
+
+On a side note: GCC gets a little angry at all this, throwing a warning since you aren't supposed to play with void pointers this way, but as far as I know you can do this on any compiler and it will work out. If you were really worried about warnings (instead of actual definite problems--don't think I don't take warnings eriously, give me minute!), you could probably pass them simply as pointers to the V8 functions, as they will be cast as void pointers in TurboSphere. But in that case you are just masking any problems! The compiler won't complain because the cast is made in between two binaries, and it can't see what is happening. If this is really a problem, then the compiler will give you an error--but only if it can see what you are doing. And yes, I could cast them as v8Function's on the TurboSphere side, but because of the...fluidity of JavaScript, there are some things that can be functions that you would then not be able to pass through to TurboSphere as such (JS can be wily beast, and is very much not like C++ when it comes to letting you pass of something as something else). I don't want to limit anything here just because the functionality is in a plugin, so I do it this way. [/sidenote]
+
+So, what about a GetVariables function?
+
+[code]
+v8FunctionArray GetVariables(){
+    return NULL;
+}
+[/code]
+
+If you have no variables, you can just return NULL. The function won't even be called by TurboSphere, anyway. And even if it was, NULL is an acceptable value; you can't read from an empty array, so it doesn't matter what the address of it is, and it has no data! It's what calloc would have returned had you told it to give you an array of zero size, too.
+
+I actually do have something to say about this when there are variables, so let's assume we had four variables to define. Let's say their names are SOME_NAME, VERSION, CONSTANT1 and CONSTANT2, in that order, just for sake of explanation. The function would then look like this
+
+[code]
+//theoretical GetVariables
+v8FunctionArray GetVariables(){
+    //reset numeration function to 0.
+    numerate(true);
+
+    nameArray varnames = (nameArray)calloc(NUMVARS, sizeof(v8Function));
+    funcnames[numerate(false)] = v8::String::New("This Is A Name!"); //SOME_NAME
+    funcnames[numerate(false)] = v8::Number::New(1.5);               //VERSION
+    funcnames[numerate(false)] = v8::Integer::New(0);                //CONSTANT1
+    funcnames[numerate(false)] = v8::Integer::New(1);                //CONSTANT2
+    return varnames;
+}
+[/code]
+
+Here's an example of V8 and JS being very fluid with things; anything that can be a function can also be variable, and we use v8Function as the type for variables. The only time the opposite would not be true is when you deal with constructors that are strongly tied to the templates for JS-side objects. I'm not doing things that way, and in several cases multiple functions can be used as constructors for a single type, and V8 won't let me tell it there are two constructors for a single JS-side type (they bind slightly different kinds of objects on the C++ side). In any case, these are a few of the types you could pass back as variables.
+
+So, let's get on with what is actually a part of windowstyleSDL!
+
+[code]
+nameArray GetFunctionNames(){
+    //reset numeration function to 0.
+    numerate(true);
+
+    nameArray funcnames = (nameArray)calloc(NUMFUNCS, sizeof(functionName));
+
+    funcnames[numerate(false)] = (functionName)"WindowStyle";
+    funcnames[numerate(false)] = (functionName)"GetSystemWindowStyle";
+    //return array of c-string function names to the engine.
+    return funcnames;
+
+}
+[/code]
+
+This is much like the GetFunctions function, but in this case, since the names are hardcoded right there, we just tell the compiler to think of them as the type functionName (aka const char*, GCC throws a warning if you don't cast them this way, but unlike before it makes no difference to me if they are cast that way or not, so I do to limit the number of warnings when compiling), and be on our merry way. The names of variables are defined the same way, except the function would be called GetVariableNames, and we would use the type variableName instead of functionName (both are const char*, but why use a type like functionName with a misleading name? GetVariables notwithstanding!).
+
+And unsurprisingly
+
+[code]
+nameArray GetVariableNames(){
+    return NULL;
+}
+[/code]
+
+Same deal here as with GetVariables. 
+
+So that's it! Technically, this is everything you *need* for a plugin. If you defined GetNumFunctions to return 0, and GetFunctions and getFunctionNames to return NULL this would be perfectly functional (although totally useless) plugin. But you probably want your plugin to do something, right? 
+
+Well, let's look at a single function that can be used by V8. There are a whole lot ways to do this, I might add, but this is how I've been doing it. If you want to do it a different way, be my guest.
+
+[code]
+v8Function TestFunction(V8ARGS){
+    return v8::Integer::New(42)
+}
+[/code]
+
+Well, it doesn't do much. But if you passed a pointer to this function as one of the elements returned by GetFunctions, and then in JS called whatever name you gave it as a function, it would return 42 in JS. But, that's simple. In fact, you might well have been able to figure out most of that from what I went over in the theoretical GetVariables function. Let's look deeper.
+
+What if you want to deal with arguments? That's pretty simple, and it lets me show off some nice macros in plugin.h.
+
+[code]
+v8Function ArgsTestFunction(V8ARGS){
+    if(args.Length()<1){
+        THROWERROR("ArgsTestFunction Error: Called with no arguments.");
+    }
+    CHECK_ARG_INT(0, "ArgsTestFunction Error: Argument 0 is not an integer.");
+    
+    int i = args[0]->IntegerValue();
+
+    if(i==0){
+        return v8::Integer::New(42);
+    }
+    else {
+        return v8::String::New("That number was not 0!");
+    }
+}
+[/code]
+
+In this case, we have to deal with arguments. I have one thing that I cannot stress enough about arguments.
+
+Programmers are stupid and lazy. Even you, my friend, even me. So we can count on them passing garbage to our functions. I know I pass garbage to functions all the time, and even if they are really good programmers and rarely make that kind of mistake, these checks are useful for telling you where things went wrong. If you ever plan on using your own plugin, you will thank yourself for adding as many checks as possible.
+
+The first one is the check for the numebr of args. You could just as easily default to something, but this a good example of the THROWERROR macro, a paper thin wrapper around returning a v8::ThrowException function. It throws a JS-side exception with the text you give. It can be caught by script as well, which is a *good* *thing*. I recommend you put the function name into the error message. And I highly recommend you give some explanation for why the exception happened at all. Don't be shy about being specific, either.
+
+Simpler to do (with the help of plugin.h) is the check of parameter types. There exist several macros to check them for you:
+
+CHECK_ARG_INT
+CHECK_ARG_STR
+CHECK_ARG_OBJ
+CHECK_ARG_BOOL
+CHECK_ARG_ARRAY
+
+Bear in mind that JS is a wily language when it comes to data validation. If you are using the OBJ or ARRAY checks, you might either rule out valid values or include values you don't want to. But the explanation of such things is beyond the scope here.
+
+These macros check the argument specified in the first parameter (here 0, the first arg), and throw the error specified in the second parameter if it is not the right type. Bear in mind, this doens't mean that it couldn't be cast to the right type, just that it isn't right now. Generally I would err on the side of throwing out edge-case-correct values than accepting bad values that seem like they might be OK. Better to throw a JS exception than to either make V8 die (which is ugly and won't tell you as much about what went wrong), or pass garbage into a C++ or C function, which can quite easily cause crashes. It can cause hard crashes, and we really don't want hard crashes. We really, really don't want them. Anytime you can stop one from happening, I'd really like you too. Every time a user has to use a task manager to close TurboSphere, they think that anyone who had a hand in making it, the game they are playing with it, or any plugins they use, are bad programmers. And this right here, this is where most crashes come from.
+
+So next we need to make the argument, which is a V8 type, into a C/C++ type. First, ask yourself, are you sure that only the correct type of value could have gotten to this cast (no really, this is important)? Good. There are a few easy ways to do this:
+
+[code]
+int x = args[i]->IntegerValue();
+int x = args[i]->Int32Value();
+[/code]
+
+Bear in mind that you will get some weirdness with this when you try to compile on both 32-bit and 64-bit architectures. My recommendation is just to only go with 64-bits, but I know I'm not in charge of what word-length users' computers are, so just listen to your compiler of choice's warnings for what to do. If it doesn't complain, then don't worry about it--but bear in mind that TurboSphere will, one day soon, be 64-bit only, and only able to load 64-bit plugins. At least think about making your code 64-bit safe if you want your plugin to stick around.
+
+[code]
+bool x = args[i]->BooleanValue();
+[/code]
+
+That one's pretty simple.
+
+[code]
+v8::String::Utf8Value str(args[i]);
+//Which is completed with
+const char *cstr = *str;
+[/code]
+
+Well, that's pretty much it for that. This is really more a V8 section than a TurboSphere plugin section, but the fact is TurboSphere is strongly linked to V8, so this is important. And plus, I want to help you avoid the pitfalls I fell into when I started out.
+
+So what else can we do? The part that gave me the most trouble, and is hard to figure out, and lacks good examples on the web, is using some JS-side types that you define yourself. That's what those object template macros were there for. Let's use them.
+
+[code]
+v8Function LoadWindowStyle(V8ARGS) {
+    if(args.Length()<1){
+        return v8::ThrowException(v8::String::New("LoadWindowStyle Error: Called with no arguments."));
+    }
+    CHECK_ARG_STR(0, "LoadWindowStyle Error: Arg 0 is not a string.");
+
+    BEGIN_OBJECT_WRAP_CODE
+
+    TS_WindowStyle *ws = NULL;
+
+        v8::String::Utf8Value str(args[0]);
+        const char *wsname = *str;
+
+        SDL_RWops *wstest = SDL_RWFromFile(string(TS_dirs.windowstyle).append(wsname).c_str(), "rb");
+        if(!wstest){
+            SDL_RWclose(wstest);
+            THROWERRORstring(strinf("LoadWindowStyle Error: Could not load windowstyle ").append(wsname).c_str());
+        }
+        SDL_RWclose(wstest);
+
+        ws = new TS_WindowStyle(string(TS_dirs.windowstyle).append(wsname).c_str());
+        
+        if(!ws){
+            SDL_RWclose(wstest);
+            THROWERRORstring(strinf("LoadWindowStyle Error: Could not load windowstyle ").append(wsname).c_str());
+        }
+    
+    END_OBJECT_WRAP_CODE(WindowStyle, ws);
+
+}
+[/code]
+
+Don't worry about the TS_WindowStyle stuff. Just suffice it to say that it is a C++ type, which constructs an C++ object from a given file. I left a lot of that stuff in the example, because it is validation code, and that is important to have. You can pass any string to this function, and even though it will not throw an exception at the CHECK_ARG_STR line, it will still throw an error that it could not open the file. So we know the file exists. And even then, if we can't read the file for whatever reason (likely it's not a valid file for this object to read), we still throw an error instead of passing back an empty or broken object.
+
+So let's get to the meat of the function. BEGIN_OBJECT_WRAP_CODE is a macro that sets up for END_OBJECT_WRAP_CODE. You have to use the former if you use the latter. Note that END_OBJECT_WRAP_CODE uses the same name, WindowStyle, as INIT_OBJECT_TEMPLATES and ADD_TO_PROTO did. That's important. Because of that, the object has ready made templates for V8, and the prototype has the member drawWindow already attached. The END_OBJECT_CODE does one more thing, too. It sets up a finalizer for the object. Without this, the memory from the C++ side object is leaked.
+
+[code]
+void TS_WindowStyleFinalizer(v8::Persistent<v8::Value> object, void* parameter) {
+    TS_WindowStyle* ws = (TS_WindowStyle*)parameter;
+    delete ws;
+    object.Clear();
+    object.Dispose();
+}
+[/code]
+
+The naming of this function is rough edge I still haven't worked out for plugin.h. It must be TS_[name_passed_to_other_macros]Finalizer. I haven't worked out a better way to deal with this yet. Simply put, a finalizer object is called when the object it was attached to (in this case using the END_OBJECT_WRAP_CODE function). The JS object is passed as object, and a pointer to the C++-side object is passed as parameter. In this case, I just call delete on ws, since it was allocated with new. Do what you please to dispose of your C++ object. 
+
+I also like to clear my JS objects before disposing of them. The simple answer to why is that this unambiguously means that all objects it references are no longer referenced by it from the garbage collector's perspective (even though Dispose does this too), since the object can't reference anything if it has been cleared. I guess I don't like 
