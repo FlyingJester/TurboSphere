@@ -75,7 +75,7 @@ before_release:
 	test -d $(OBJDIR_RELEASE) || mkdir -p $(OBJDIR_RELEASE)
 
 after_release: 
-	cp $(OUT_RELEASE) ../plugins/common/graphiccommon.so
+	cp ../bin/Release/graphiccommon.so ../graphiccommon.so
 
 release: before_release out_release after_release
 

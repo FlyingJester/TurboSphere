@@ -72,6 +72,7 @@ before_release:
 	test -d $(OBJDIR_RELEASE) || mkdir -p $(OBJDIR_RELEASE)
 
 after_release: 
+	cp ../bin/Release/graphicalg.so ../graphicalg.so
 
 release: before_release out_release after_release
 

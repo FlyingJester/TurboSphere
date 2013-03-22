@@ -73,13 +73,14 @@ clean_debug:
 before_release: 
 	test -d ../../bin/Release || mkdir -p ../../bin/Release
 	test -d $(OBJDIR_RELEASE) || mkdir -p $(OBJDIR_RELEASE)
-	cp ../bin/Release/libt5.so ./libt5.so
+	cp ../libt5.so ./libt5.so
 	cp ../bin/Release/graphiccommon.so ./graphiccommon.so
 
 after_release: 
 	rm -rf ./libt5.so
 	rm -rf ./graphiccommon.so
-
+	cp ../bin/Release/configmanager.so ../configmanager.so
+	
 release: before_release out_release after_release
 
 out_release: before_release $(OBJ_RELEASE) $(DEP_RELEASE)

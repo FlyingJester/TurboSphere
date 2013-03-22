@@ -80,49 +80,42 @@ clean: clean_release
 
 plugins: getkeystring graphic input bmpfont ttffont windowstyle scriptfs
 
-libsclean: graphiccommonclean graphicalgclean
-
-pluginsclean: getkeystringclean graphicclean inputclean bmpfontclean ttffontclean windowstyleclean
-
-release: before_release t5dyn libs copy_libs out_release after_release
+release: before_release t5dyn libs out_release after_release
 
 libs: graphiccommon graphicalg configmanager
 
 getkeystring:
-	(pwd;cd plugins/getkeystring;make;pwd)
+	(cd plugins/getkeystring;make)
 
 graphic:
-	(pwd;cd plugins/graphicSDL;make;pwd)
+	(cd plugins/graphicSDL;make)
 
 input:
-	(pwd;cd plugins/inputSDL;make;pwd)
+	(cd plugins/inputSDL;make)
 	
 bmpfont:
-	(pwd;cd plugins/bmpfontSDL;make;pwd)
+	(cd plugins/bmpfontSDL;make)
 	
 ttffont:
-	(pwd;cd plugins/ttffontSDL;make;pwd)
+	(cd plugins/ttffontSDL;make)
 
 windowstyle:
-	(pwd;cd plugins/windowstyleSDL;make;pwd)
+	(cd plugins/windowstyleSDL;make)
 	
 scriptfs:
-	(pwd;cd plugins/scriptfs;make;pwd)
+	(cd plugins/scriptfs;make)
 
 graphiccommon:
-	(pwd;cd ../../graphiccommon;make;pwd)
+	(cd graphiccommon;make)
+	cp -u bin/Release/graphiccommon.so ./graphiccommon.so
 
 graphicalg:
-	(pwd;cd ../../graphicalg;make;pwd)
+	(cd graphicalg;make)
+	cp -u bin/Release/graphicalg.so ./graphicalg.so
 
 configmanager:
-	(pwd;cd ../../configmanager;make;pwd)
-	
-copy_libs:
-	cp ./bin/Release/graphiccommon.so ./graphiccommon.so
-	cp ./bin/Release/graphicalg.so ./graphicalg.so
-	cp ./bin/Release/configmanager.so ./configmanager.so
-	
+	(cd configmanager;make)
+	cp -u bin/Release/configmanager.so ./configmanager.so
 	
 engine: before_release t5dyn out_release after_release
 
@@ -132,6 +125,9 @@ before_release:
 
 after_release: 
 	mv $(WORKDIR)/libt5.so $(WORKDIR)/bin/Release/libt5.so
+	rm ./configmanager.so
+	rm ./graphicalg.so
+	rm ./graphiccommon.so
 	
 before_release_t5: 
 	test -d bin/Release || mkdir -p bin/Release
@@ -169,5 +165,20 @@ clean_release:
 	rm -rf bin/Release/turbosphere
 	rm -rf bin/Release/libt5.so
 	rm -rf $(OBJDIR_RELEASE)
-
-.PHONY: before_release after_release copylibs clean_release before_release_t5 after_release_t5 getkeystring
+	rm -rf configmanager/obj
+	rm -rf graphiccommon/obj
+	rm -rf plugins/graphicSDL/obj
+	rm -rf plugins/bmpfontSDL/obj
+	rm -rf plugins/ttffontSDL/obj
+	rm -rf plugins/scriptfs/obj
+	rm -rf plugins/getkeystring/obj
+	rm -rf plugins/inputSDL/obj
+	rm -rf bin/Release/configmanager.so
+	rm -rf bin/Release/graphicalg.so
+	rm -rf bin/Release/graphiccommon.so
+	rm -rf bin/Release/plugin
+	rm -f ./configmanager.so
+	rm -f ./graphicalg.so
+	rm -f ./graphiccommon.so
+	
+.PHONY: before_release after_release copylibs clean_release before_release_t5 after_release_t5 libs graphicalg graphiccommon configmanager

@@ -5,7 +5,6 @@ var arrow = GetSystemArrow();
 var ws = new WindowStyle("property.rws");
 //var ws2 = GetSystemWindowStyle();
 
-var imagey = new Image("test.png");
 var imagey1= new Image("test1.png");
 
 var Black  =  new Color(0,   0,   0,   255);
