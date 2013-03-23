@@ -1,0 +1,10 @@
+TurboSphere can be built and installed on both Linux and experimentally on Windows using the Scons build system.
+
+The basic command for building TurboSphere using scons is just 'scons'. This fully builds TurboSphere, and TurboSphere is now fully usable on Windows.
+
+On Linux, the core libraries and V8 must be installed as well. The command to do this is
+  'scons --install_libs=y --build_plugins=all buildplugins libinstall confwrite'
+
+You omit build_plugins and buildplugins to not build the plugins for TurboSphere.
+
+If you have built any version of TurboSphere before using Scons, you can omit the confwrite option. Finally, run 'ldconfig' as root and you will be able to use TurboSphere.
