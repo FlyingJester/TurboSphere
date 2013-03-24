@@ -75,13 +75,12 @@ GRAPHICSDL_EXPORT nameArray     CCALL GetVariableNames(void);
 #endif
 
 void TS_GradientRectangle(int x, int y, int w, int h, TS_Color *c1, TS_Color *c2, TS_Color *c3, TS_Color *c4);
-void TS_Rectangle(int x, int y, int w, int h, unsigned int color);
+void TS_Rectangle(SDL_Surface *dest, int x, int y, int w, int h, unsigned int color);
 void TS_drawAlphaRect(int x, int y, int w, int h, int c, int a, SDL_Rect rect);
 void TS_Rectangle(int x, int y, int w, int h, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 void TS_FilledCircle(int x, int y, int rad, uint32_t c, SDL_Surface* destination);
 void TS_OutlinedCircle(int x, int y, int rad, uint32_t c, SDL_Surface* destination);
-void TS_Line(int x1, int y1, int x2, int y2, TS_Color *);
-
+void TS_Line(SDL_Surface *dest, int x1, int y1, int x2, int y2, TS_Color *);
 
 v8::Handle<v8::Value> FlipScreen(const v8::Arguments& args);
 v8::Handle<v8::Value> SetClippingRectangle(const v8::Arguments& args);

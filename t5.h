@@ -23,7 +23,8 @@
 
 #endif
 
-T5_CLASS_EXPORT INIvalue{
+
+class INIvalue{
 public:
     INIvalue(const char*,const char*,const char*);
     const char *key;
@@ -41,9 +42,11 @@ public:
     void writeValue(const char *, const char *);
     void writeValueToSection(const char *, const char*, const char*);
     void flush(void);
+#ifdef T5_INTERNAL
 private:
 	std::fstream stream;
 	std::vector<INIvalue*> values;
+#endif
 };
 
 T5_EXPORT void T5CALL T5_AddDir(const char *dir);

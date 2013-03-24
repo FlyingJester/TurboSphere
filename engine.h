@@ -4,9 +4,8 @@
 
 #include <string>
 #include <math.h>
-#include "stdafx.h"
-#include "TS.h"
 #if defined _WIN32
+#include "stdafx.h"
 #include "v8.h"
 #include "SDL/SDL.h"
 #include "SDL/SDL_ttf.h"

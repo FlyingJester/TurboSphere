@@ -17,6 +17,47 @@
 
 using namespace std;
 
+TS_Config::TS_Config(void){
+	gamename = "";
+    mainscript = "";
+    screenwidth = 240;
+    screenheight = 320;
+    soundchannels = 16;
+    fullscreen = false;
+    systemfont = "";
+    systemttffont = "";
+    systemwindowstyle = "";
+    systemarrow = "";
+    systemuparrow = "";
+    systemdownarrow = "";
+    fixedplugins = 0;
+    plugins = (const char **)calloc(0, 1);
+}
+
+TS_Config::~TS_Config(void){
+    free(plugins);
+}
+
+TS_Directories::TS_Directories(void){
+	root = "";
+    image = "";
+    font = "";
+    script = "";
+    sound = "";
+    map = "";
+    other = "";
+    save = "";
+    spriteset = "";
+    animation = "";
+    windowstyle = "";
+    system = "";
+    systemscript = "";
+}
+
+
+TS_Directories::~TS_Directories(void){
+}
+
 TS_Config TS_confmain;
 
 TS_Config *GetConfig(void){

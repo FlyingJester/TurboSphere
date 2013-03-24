@@ -10,6 +10,12 @@
 #include "../plugins/common/plugin.h"
 using namespace std;
 
+#ifdef _WIN32
+#define STRDUP _strdup
+#else
+#include <cstring>
+#define STRDUP strdup
+#endif
 
 std::string openfile(const char *Rfile)
 {
@@ -33,7 +39,7 @@ std::string openfile(const char *Rfile)
              getline(file, txt);
 
     filetext<<txt;
-	filetext<<"\n";
+	filetext<<std::endl;
 		}
     file.close();
 
@@ -100,7 +106,7 @@ v8::Handle<v8::Value> TS_LoadScript(const v8::Arguments& args){
 
     v8::String::AsciiValue str(args[0]);
     const char *scriptname = *str;
-    const char *scriptpath = string(TS_dirs->script).append(scriptname).c_str();
+    const char *scriptpath = STRDUP(string(TS_dirs->script).append(scriptname).c_str());
     string ScriptStr = openfile(scriptpath).c_str();
     if(ScriptStr.empty()){
         return v8::ThrowException(v8::String::New("TS_LoadScript Error: Could not load script."));

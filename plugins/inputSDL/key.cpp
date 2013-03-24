@@ -6,28 +6,31 @@
 
 v8Function GetKey(V8ARGS)
 {
-
-	SDL_PollEvent(&keyevent);
-	while(keyevent.type!=SDL_KEYDOWN)
-	{
-        SDL_PollEvent(&keyevent);
+	SDL_Event keyevent1;
+	SDL_PollEvent(&keyevent1);
+	while(keyevent1.type!=SDL_KEYDOWN)
+	{	
+		SDL_WaitEvent(&keyevent1);
+		SDL_PollEvent(&keyevent1);
 	}
-	int key = keyevent.key.keysym.sym;
+	int key = keyevent1.key.keysym.sym;
 	if(!key) {
-        printf("GetKey Error: You are probably using an unsupported keyboard layout\nSDLKey Error: %s\n", SDL_GetError());
+        printf("GetKey Recoverable Error: You are probably using an unsupported keyboard layout\nSDLKey Error: %s\n", SDL_GetError());
     }
 	return v8::Number::New(key);
 }
 
 v8Function AreKeysLeft(V8ARGS){
 
-    	//TendEvents();
-    SDL_PollEvent(&keyevent);
+    SDL_Event keyevent1;
+    int remevents = SDL_PollEvent(&keyevent1);
     //SDL_PumpEvents();
-    bool ret = (keyevent.type==SDL_KEYDOWN);
-    SDL_PeepEvents(&keyevent, 1, SDL_ADDEVENT, SDL_ALLEVENTS);
+    bool ret = (keyevent1.type==SDL_KEYDOWN);
+    SDL_PeepEvents(&keyevent1, 1, SDL_ADDEVENT, SDL_ALLEVENTS);
     SDL_PumpEvents();
-
+    if(remevents==0){
+        return v8::Boolean::New(false);
+    }
     return v8::Boolean::New(ret);
 }
 

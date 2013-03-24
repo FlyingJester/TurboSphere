@@ -1,4 +1,6 @@
 
+RequireScript("Jest_Calc.js");
+
 var fonty = GetSystemFont();
 var start = GetTime();
 var arrow = GetSystemArrow();
@@ -20,16 +22,19 @@ function blitRect(params, color){
 //400x320
 
 function game(){
+  imagey1.Rectangle(2, 2, 4, 4, Black);
   var fontu = GetSystemFont();
   var w = GetScreenWidth();
   var h = GetScreenHeight();
   var c = new Color(255, 255, 255, 255);
   var rad = 20;
   while(!IsKeyPressed(KEY_Q)){
-    
+	  
     if(IsKeyPressed(KEY_D)){
       Rectangle(0, 0, w, h, Green);
     }
+    
+    
     
     SetClippingRectangle(128, 128, 64, 64);
     var param1 = GetClippingRectangle();
@@ -47,6 +52,8 @@ function game(){
     blitRect(param2, Green);
     
     blitRect(param1, Yellow);
+    imagey1.blit(16, 16);
+    Line(w/2, h/2, GetMouseX(), GetMouseY(), Black);
     FlipScreen();
     Delay(15);
   }

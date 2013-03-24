@@ -23,6 +23,8 @@ typedef struct CONFIGMGR_EXPORT TS_Directories {
 struct TS_Directories {
 #endif
 public:
+	TS_Directories(void);
+	~TS_Directories(void);
 	const char * root;
     const char * image;
     const char * font;
@@ -48,6 +50,8 @@ struct CONFIGMGR_EXPORT TS_Config {
 struct TS_Config {
 #endif
 public:
+	TS_Config();
+	~TS_Config();
     const char * gamename;
     const char * mainscript;
     int screenwidth;

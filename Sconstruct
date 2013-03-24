@@ -102,7 +102,7 @@ build_plugins = GetOption('build_plugins')
 if build_plugins != "n":
 	if build_plugins == "y" or build_plugins == "all":
 
-		graphicSDL = currentenv.SharedLibrary('bin/Release/plugin/graphicSDL', ['plugins/graphicSDL/graphic.cpp'], LIBS = [plugin_libs, 'SDL_image'], LIBPATH = lib_path)
+		graphicSDL = currentenv.SharedLibrary('bin/Release/plugin/graphicSDL', ['plugins/graphicSDL/main.cpp', 'plugins/graphicSDL/graphic.cpp', 'plugins/graphicSDL/primitives.cpp', 'plugins/graphicSDL/surface.cpp'], LIBS = [plugin_libs, 'SDL_image'], LIBPATH = lib_path)
 		bmpfontSDL = currentenv.SharedLibrary('bin/Release/plugin/bmpfontSDL', ['plugins/bmpfontSDL/bmpfont.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
 		ttffontSDL = currentenv.SharedLibrary('bin/Release/plugin/ttffontSDL', ['plugins/ttffontSDL/ttffont.cpp'], LIBS = [plugin_libs, 'SDL_ttf'], LIBPATH = lib_path)
 		inputSDL = currentenv.SharedLibrary('bin/Release/plugin/inputSDL', ['plugins/inputSDL/main.cpp', 'plugins/inputSDL/mouse.cpp', 'plugins/inputSDL/key.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)

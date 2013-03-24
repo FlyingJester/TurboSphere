@@ -3,10 +3,20 @@
 #include "configmanager/openscript.h"
 #include "configmanager/opengame.h"
 #include <cstring>
-#include "TS.h"
 #include "functionload.h"
 #include "variableregister.h"
 #include "loadplugins.h"
+
+#ifdef _WIN32
+#define STRDUP _strdup
+#else
+#define STRDUP strdup
+#endif
+
+//////////////////////////////////////////////////////////////
+//Always update!
+//////////////////////////////////////////////////////////////
+#define VERSION "0.2.1"
 
 void exitContext(v8::Persistent<v8::Context> context){
     context->v8::Context::Exit();
@@ -79,6 +89,7 @@ TS_Directories *TS_dirs = GetDirs();
         opengame(string(TS_dirs->root).append("game.sgm").c_str());
 		printf("Opening main script.\n");
 		printf("The main script is %s\n", TS_conf->mainscript);
+
 	std::string ScriptFileText = openfile(TS_conf->mainscript);
 
 	const char *script_name = TS_conf->gamename;
@@ -134,12 +145,10 @@ TS_Directories *TS_dirs = GetDirs();
 
     TS_CallFunc("game", context);
 
-  printf("V8 execution finished\n");
 
   //Not necessary, but is it really the OS's resposibility to clean up after programs?
-  context.IsNearDeath();
   v8::V8::LowMemoryNotification();
-  context.ClearWeak();
-  context.Dispose();
+  //context.ClearWeak();
+  exit(0);
   return 0;
 }
