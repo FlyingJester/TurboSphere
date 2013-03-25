@@ -7,19 +7,19 @@
 	#else
 	#define INPUTSDL_EXPORT __declspec(dllimport)
 	#endif
-	
+
     #define CCALL __cdecl
 
 #endif
 #ifndef _WIN32
-#define CCALL 
+#define CCALL
 #define INPUTSDL_EXPORT extern "C"
 #endif
 
 #include "../common/plugin.h"
 
 #define NUMVARS 115
-#define NUMFUNCS 7
+#define NUMFUNCS 13
 
 #ifdef _WIN32
 	extern "C" {

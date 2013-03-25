@@ -2,6 +2,7 @@
 #include "main.h"
 #include "mouse.h"
 #include "key.h"
+#include "joystick.h"
 #include <stdio.h>
 
 SDL_Event keyevent;
@@ -22,13 +23,19 @@ int numerate(bool reset){
     return i-1;
 }
 
-void * IsKeyPressedPointer          = V8FUNCPOINTER(IsKeyPressed);
-void * IsAnyKeyPressedPointer       = V8FUNCPOINTER(IsAnyKeyPressed);
-void * GetKeyPointer                = V8FUNCPOINTER(GetKey);
-void * AreKeysLeftPointer           = V8FUNCPOINTER(AreKeysLeft);
-void * GetMouseXPointer             = V8FUNCPOINTER(GetMouseX);
-void * GetMouseYPointer             = V8FUNCPOINTER(GetMouseY);
-void * IsMouseButtonPressedPointer  = V8FUNCPOINTER(IsMouseButtonPressed);
+void * IsKeyPressedPointer            = V8FUNCPOINTER(IsKeyPressed);
+void * IsAnyKeyPressedPointer         = V8FUNCPOINTER(IsAnyKeyPressed);
+void * GetKeyPointer                  = V8FUNCPOINTER(GetKey);
+void * AreKeysLeftPointer             = V8FUNCPOINTER(AreKeysLeft);
+void * GetMouseXPointer               = V8FUNCPOINTER(GetMouseX);
+void * GetMouseYPointer               = V8FUNCPOINTER(GetMouseY);
+void * IsMouseButtonPressedPointer    = V8FUNCPOINTER(IsMouseButtonPressed);
+void * GetNumJoysticksPointer         = V8FUNCPOINTER(GetNumJoysticks);
+void * GetJoystickNamePointer         = V8FUNCPOINTER(GetJoystickName);
+void * GetNumJoystickButtonsPointer   = V8FUNCPOINTER(GetNumJoystickButtons);
+void * GetNumJoystickAxesPointer      = V8FUNCPOINTER(GetNumJoystickAxes);
+void * IsJoystickButtonPressedPointer = V8FUNCPOINTER(IsJoystickButtonPressed);
+void * GetJoystickAxisPointer         = V8FUNCPOINTER(GetJoystickAxis);
 
 initFunction Init(void){
 	if(SDL_WasInit(SDL_INIT_EVERYTHING)==0){
@@ -45,6 +52,8 @@ initFunction Init(void){
     SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
     SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
     SDL_EventState(SDL_VIDEOEXPOSE, SDL_IGNORE);
+    InitJoystick();
+
     return (initFunction)"keySDL";
 }
 
@@ -62,6 +71,12 @@ functionArray GetFunctions(){
     funcs[numerate(false)]=GetMouseXPointer;
     funcs[numerate(false)]=GetMouseYPointer;
     funcs[numerate(false)]=IsMouseButtonPressedPointer;
+    funcs[numerate(false)]=GetNumJoysticksPointer;
+    funcs[numerate(false)]=GetJoystickNamePointer;
+    funcs[numerate(false)]=GetNumJoystickButtonsPointer;
+    funcs[numerate(false)]=GetNumJoystickAxesPointer;
+    funcs[numerate(false)]=IsJoystickButtonPressedPointer;
+    funcs[numerate(false)]=GetJoystickAxisPointer;
     return funcs;
 }
 
@@ -75,6 +90,12 @@ nameArray GetFunctionNames(){
     names[numerate(false)]=(functionName)"GetMouseX";
     names[numerate(false)]=(functionName)"GetMouseY";
     names[numerate(false)]=(functionName)"IsMouseButtonPressed";
+    names[numerate(false)]=(functionName)"GetNumJoysticks";
+    names[numerate(false)]=(functionName)"GetJoystickName";
+    names[numerate(false)]=(functionName)"GetNumJoystickButtons";
+    names[numerate(false)]=(functionName)"GetNumJoystickAxes";
+    names[numerate(false)]=(functionName)"IsJoystickButtonPressed";
+    names[numerate(false)]=(functionName)"GetJoystickAxis";
     return names;
 }
 
@@ -83,7 +104,7 @@ int GetNumVariables(void){
 }
 
 void Close(){
-
+    CloseJoystick();
 }
 
 v8FunctionArray GetVariables(void){
