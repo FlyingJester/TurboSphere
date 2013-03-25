@@ -9,8 +9,9 @@ v8Function GetKey(V8ARGS)
 	SDL_Event keyevent1;
 	SDL_PollEvent(&keyevent1);
 	while(keyevent1.type!=SDL_KEYDOWN)
-	{	
+	{
 		SDL_WaitEvent(&keyevent1);
+        SDL_PeepEvents(&keyevent1, 1, SDL_GETEVENT, SDL_ALLEVENTS);
 		SDL_PollEvent(&keyevent1);
 	}
 	int key = keyevent1.key.keysym.sym;
