@@ -33,20 +33,22 @@ std::string openfile(const char *Rfile)
         //filetext<<" ";
     }
 
-    if (file.is_open())
-	printf("File is good.\n");
+    if (file.is_open()){
 		while (file.good()){
              getline(file, txt);
 
     filetext<<txt;
 	filetext<<std::endl;
 		}
+	}
+	else{
+		printf("File not readable.\n");
+	}
     file.close();
 
 
 
 	std::string STR_filetext = filetext.str();
-	//const char* CSTR_filetext= STR_filetext.c_str();
 
     return STR_filetext;
 }
@@ -84,13 +86,9 @@ bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::Value> name,bool
       if (print_result && !result->IsUndefined())
 	  {
         v8::String::AsciiValue str(result);
-	printf("JS Result will be passed.\n");
-    printf("%s\n", *str);
+		printf("JS Result will be passed.\n");
+		printf("%s\n", *str);
       }
-	  else {
-	printf("No JS result will be passed\n");
-
-	  }
     }
   }
   return true;
@@ -111,6 +109,8 @@ v8::Handle<v8::Value> TS_LoadScript(const v8::Arguments& args){
     if(ScriptStr.empty()){
         return v8::ThrowException(v8::String::New("TS_LoadScript Error: Could not load script."));
     }
-    ExecuteString(v8::String::New(ScriptStr.c_str()), v8::String::New(scriptname), true);
+    if(!ExecuteString(v8::String::New(ScriptStr.c_str()), v8::String::New(scriptname), true)){
+		return v8::ThrowException(v8::String::New(((string)"Error in script "+string(scriptname)).c_str()));
+	}
     return v8::Undefined();
 }

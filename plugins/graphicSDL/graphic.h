@@ -74,14 +74,6 @@ GRAPHICSDL_EXPORT nameArray     CCALL GetVariableNames(void);
 	}
 #endif
 
-void TS_GradientRectangle(int x, int y, int w, int h, TS_Color *c1, TS_Color *c2, TS_Color *c3, TS_Color *c4);
-void TS_Rectangle(SDL_Surface *dest, int x, int y, int w, int h, unsigned int color);
-void TS_drawAlphaRect(int x, int y, int w, int h, int c, int a, SDL_Rect rect);
-void TS_Rectangle(int x, int y, int w, int h, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
-void TS_FilledCircle(int x, int y, int rad, uint32_t c, SDL_Surface* destination);
-void TS_OutlinedCircle(int x, int y, int rad, uint32_t c, SDL_Surface* destination);
-void TS_Line(SDL_Surface *dest, int x1, int y1, int x2, int y2, TS_Color *);
-
 v8::Handle<v8::Value> FlipScreen(const v8::Arguments& args);
 v8::Handle<v8::Value> SetClippingRectangle(const v8::Arguments& args);
 v8::Handle<v8::Value> GetClippingRectangle(const v8::Arguments& args);
@@ -116,9 +108,20 @@ void ColorInit();
 
 #endif
 
-GRAPHICSDL_EXPORT void TS_ShowSurface(SDL_Surface *image, int x, int y);
-GRAPHICSDL_EXPORT void TS_ShowSurfaceClipped(SDL_Surface *image, SDL_Rect dest, SDL_Rect src);
-GRAPHICSDL_EXPORT void TS_StretchShowSurface(SDL_Surface *, int x, int y, float fh, float fv);
+GRAPHICSDL_EXPORT void TS_GradientRectangle(int x, int y, int w, int h, TS_Color *c1, TS_Color *c2, TS_Color *c3, TS_Color *c4);
+GRAPHICSDL_EXPORT void TS_Rectangle(SDL_Surface *dest, int x, int y, int w, int h, unsigned int color);
+GRAPHICSDL_EXPORT void TS_drawAlphaRect(int x, int y, int w, int h, int c, int a, SDL_Rect rect);
+//GRAPHICSDL_EXPORT void TS_Rectangle(int x, int y, int w, int h, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
+GRAPHICSDL_EXPORT void TS_FilledCircle(int x, int y, int rad, uint32_t c, SDL_Surface* destination);
+GRAPHICSDL_EXPORT void TS_OutlinedCircle(int x, int y, int rad, uint32_t c, SDL_Surface* destination);
+GRAPHICSDL_EXPORT void TS_Line(SDL_Surface *dest, int x1, int y1, int x2, int y2, TS_Color *);
+
+GRAPHICSDL_EXPORT void TS_ShowSurface(SDL_Surface *image, int x, int y); //Blits the surface to the screen at x, y.
+GRAPHICSDL_EXPORT void TS_SurfaceShowSurface(SDL_Surface *image, SDL_Surface *dest, int x, int y); //Blits the surface to dest at x, y.
+GRAPHICSDL_EXPORT void TS_SetClippingRectangle(int x, int y, int w, int h); //Sets the clipping rectangle of the screen, and stores the value before hand.
+GRAPHICSDL_EXPORT void TS_ResetClippingRectangle(void); //Resets the clipping rectangle to what it was before the last call to TS_SetClippingRectangle.
+GRAPHICSDL_EXPORT void TS_ShowSurfaceClipped(SDL_Surface *image, SDL_Rect dest, SDL_Rect src); //Blits the rectangle to the screen using SDL_Rects for placement and clipping.
+GRAPHICSDL_EXPORT void TS_StretchShowSurface(SDL_Surface *, int x, int y, float fh, float fv); //Blits and stretches the surface to the screen.
 
 
 //surfaces

@@ -20,7 +20,8 @@ void SurfaceInit(){
 	Surfaceproto->Set("stretchBlit", v8::FunctionTemplate::New(TS_surfaceStretchBlit));
 	Surfaceproto->Set("setPixel", v8::FunctionTemplate::New(TS_surfaceSetPixel));
 	Surfaceproto->Set("getPixel", v8::FunctionTemplate::New(TS_surfaceGetPixel));
-	Surfaceproto->Set("Rectangle", v8::FunctionTemplate::New(TS_surfaceRectangle));
+	Surfaceproto->Set("line", v8::FunctionTemplate::New(TS_surfaceRectangle));
+	Surfaceproto->Set("rectangle", v8::FunctionTemplate::New(TS_surfaceRectangle));
 	Surfaceproto->Set("blitSurface", v8::FunctionTemplate::New(TS_surfaceBlitSurface));
 	Surfaceproto->Set("createImage", v8::FunctionTemplate::New());
 	Surfaceproto->Set("createSurface", v8::FunctionTemplate::New());
@@ -33,6 +34,10 @@ void SurfaceClose(){
     Surfacetempl.Dispose();
     SurfaceInsttempl.Dispose();
     Surfaceproto.Dispose();
+}
+
+void TS_addToSurfaceProto(const char * name, v8::Handle<v8::Value> templ){
+	Surfaceproto->Set(name, templ);
 }
 
 void ImageInit(){
@@ -123,14 +128,14 @@ v8::Handle<v8::Value> TS_CreateSurface(const v8::Arguments& args)
 
             surface = IMG_Load(string(TS_dirs->image).append(file).c_str());
             if(!surface) {
-                printf("TS_CreateSurface: %s\n", IMG_GetError());
-                return v8::ThrowException(v8::String::New(string("Could not open surface %s").append(file).c_str()));
+                printf("[graphicSDL] TS_CreateSurface Error: %s\n", IMG_GetError());
+                return v8::ThrowException(v8::String::New(string("[graphicSDL] TS_CreateSurface Error: Could not open surface ").append(file).c_str()));
             }
         }
         else if(args[0]->IsNumber()&&args[1]->IsNumber()){
 
-            int w = args[0]->IntegerValue();
-            int h = args[1]->IntegerValue();
+            int w = args[0]->Int32Value();
+            int h = args[1]->Int32Value();
 
             v8::Handle<v8::Object> color = v8::Handle<v8::Object>::Cast(args[2]);
             TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
@@ -138,7 +143,7 @@ v8::Handle<v8::Value> TS_CreateSurface(const v8::Arguments& args)
 
         }
         else{
-            return v8::ThrowException(v8::String::New("TS_CreateSurface error: Bad args. Must be string (filename) or number, number, Color_object"));
+            return v8::ThrowException(v8::String::New("[graphicSDL] TS_CreateSurface error: Bad args. Must be string (filename) or number, number, Color_object"));
         }
         external = v8::External::New(surface);
 
@@ -173,7 +178,7 @@ v8::Handle<v8::Value> TS_CreateImage(const v8::Arguments& args)
   //v8::Handle<v8::Object> wrapper;
 
     if(args.Length()<1){
-        return v8::ThrowException(v8::String::New("TS_CreateImage Error: Called with no arguments."));
+        return v8::ThrowException(v8::String::New("[graphicSDL] TS_CreateImage Error: Called with no arguments."));
     }
 
     if (args[0]->IsExternal()) {
@@ -185,15 +190,15 @@ v8::Handle<v8::Value> TS_CreateImage(const v8::Arguments& args)
 
             surface = IMG_Load(string(TS_dirs->image).append(file).c_str());
             if(!surface) {
-                printf("TS_CreateImage: %s\n", IMG_GetError());
-                return v8::ThrowException(v8::String::New(string("Could not open surface %s").append(file).c_str()));
+                printf("[graphicSDL] TS_CreateImage Error: %s\n", IMG_GetError());
+                return v8::ThrowException(v8::String::New(string("[graphicSDL] TS_CreateImage Error: Could not open surface ").append(file).c_str()));
             }
             //
         }
         else if(args[0]->IsNumber()&&args[1]->IsNumber()){
 
-            int w = args[0]->NumberValue();
-            int h = args[1]->NumberValue();
+            int w = args[0]->Int32Value();
+            int h = args[1]->Int32Value();
 
             v8::Handle<v8::Object> color = v8::Handle<v8::Object>::Cast(args[2]);
             TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
@@ -201,7 +206,7 @@ v8::Handle<v8::Value> TS_CreateImage(const v8::Arguments& args)
 
         }
         else{
-            return v8::ThrowException(v8::String::New("TS_CreateImage error: Bad args. Must be string (filename) or number, number, Color_object"));
+            return v8::ThrowException(v8::String::New("[graphicSDL] TS_CreateImage error: Bad args. Must be string (filename) or number, number, Color_object"));
         }
         external = v8::External::New(surface);
 
@@ -224,22 +229,22 @@ v8::Handle<v8::Value> TS_CreateImage(const v8::Arguments& args)
 v8::Handle<v8::Value> TS_surfaceZoomBlit(const v8::Arguments& args)
 {
     if(args.Length()<3){
-        return v8::ThrowException(v8::String::New("TS_surfaceZoomBlit Error: Called with fewer than 3 arguments.\n"));
+        return v8::ThrowException(v8::String::New("[graphicSDL] TS_surfaceZoomBlit Error: Called with fewer than 3 arguments.\n"));
     }
-    CHECK_ARG_INT(0, "TS_surfaceZoomBlit Error: Argument 0 is not a number.");
-    CHECK_ARG_INT(1, "TS_surfaceZoomBlit Error: Argument 1 is not a number.");
-    CHECK_ARG_INT(2, "TS_surfaceZoomBlit Error: Argument 2 is not a number.");
+    CHECK_ARG_INT(0, "[graphicSDL] TS_surfaceZoomBlit Error: Argument 0 is not a number.");
+    CHECK_ARG_INT(1, "[graphicSDL] TS_surfaceZoomBlit Error: Argument 1 is not a number.");
+    CHECK_ARG_INT(2, "[graphicSDL] TS_surfaceZoomBlit Error: Argument 2 is not a number.");
 
 	v8::Local<v8::Object> self = args.Holder();
 	v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
 	void* ptr = wrap->Value();
 	float factor = (float)args[2]->v8::Value::NumberValue();
 	if(factor<=0){
-        THROWERROR_RANGE("TS_surfaceZoomBlit Error: Argument 2 is negative.\n");
+        THROWERROR_RANGE("[graphicSDL] TS_surfaceZoomBlit Error: Argument 2 is negative.\n");
 	}
 	SDL_Surface* surface = static_cast<SDL_Surface*>(ptr);
 	//SDL_Rect dest = {(short int)(args[0]->v8::Value::NumberValue()), (short int)(args[1]->v8::Value::NumberValue()), (short unsigned int)((float)surface->w*factor), (short unsigned int)((float)surface->h*factor)};
-	TS_StretchShowSurface(surface, args[0]->v8::Value::IntegerValue(), args[1]->v8::Value::IntegerValue(), factor, factor);
+	TS_StretchShowSurface(surface, args[0]->v8::Value::Int32Value(), args[1]->v8::Value::Int32Value(), factor, factor);
 	//SDL_SoftStretch(surface, NULL, screen, &dest);
 	return v8::Number::New(((float)surface->w)*factor);
 }
@@ -249,31 +254,31 @@ v8::Handle<v8::Value> TS_surfaceZoomBlit(const v8::Arguments& args)
 v8::Handle<v8::Value> TS_surfaceStretchBlit(const v8::Arguments& args)
 {
     if(args.Length()<4){
-        return v8::ThrowException(v8::String::New("TS_surfaceZoomBlit Error: Called with fewer than 3 arguments!\n"));
+        return v8::ThrowException(v8::String::New("[graphicSDL] TS_surfaceZoomBlit Error: Called with fewer than 3 arguments!\n"));
     return v8::False();
     }
-    CHECK_ARG_INT(0, "TS_surfaceStretchBlit Error: Argument 0 is not a number.");
-    CHECK_ARG_INT(1, "TS_surfaceStretchBlit Error: Argument 1 is not a number.");
-    CHECK_ARG_INT(2, "TS_surfaceStretchBlit Error: Argument 2 is not a number.");
-    CHECK_ARG_INT(3, "TS_surfaceStretchBlit Error: Argument 3 is not a number.");
+    CHECK_ARG_INT(0, "[graphicSDL] TS_surfaceStretchBlit Error: Argument 0 is not a number.");
+    CHECK_ARG_INT(1, "[graphicSDL] TS_surfaceStretchBlit Error: Argument 1 is not a number.");
+    CHECK_ARG_INT(2, "[graphicSDL] TS_surfaceStretchBlit Error: Argument 2 is not a number.");
+    CHECK_ARG_INT(3, "[graphicSDL] TS_surfaceStretchBlit Error: Argument 3 is not a number.");
 
 	v8::Local<v8::Object> self = args.Holder();
 	v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
 	void* ptr = wrap->Value();
-	double xfactor = args[2]->v8::Value::NumberValue();
-	double yfactor = args[3]->v8::Value::NumberValue();
+	float xfactor = (float)args[2]->v8::Value::NumberValue();
+	float yfactor = (float)args[3]->v8::Value::NumberValue();
 
 	if(xfactor<=0){
-        THROWERROR_RANGE("TS_surfaceZoomBlit Error: Argument 2 is negative.\n");
+        THROWERROR_RANGE("[graphicSDL] TS_surfaceZoomBlit Error: Argument 2 is negative.\n");
 	}
 	if(yfactor<=0){
-        THROWERROR_RANGE("TS_surfaceZoomBlit Error: Argument 3 is negative.\n");
+        THROWERROR_RANGE("[graphicSDL] TS_surfaceZoomBlit Error: Argument 3 is negative.\n");
 	}
 
 	SDL_Surface* surface = static_cast<SDL_Surface*>(ptr);
 	//SDL_Rect dest = {args[0]->v8::Value::NumberValue(), args[1]->v8::Value::NumberValue(), xfactor, yfactor};
 	//SDL_SoftStretch(surface, NULL, screen, &dest);
-    TS_StretchShowSurface(surface, args[0]->v8::Value::IntegerValue(), args[1]->v8::Value::IntegerValue(), (float)xfactor, (float)yfactor);
+    TS_StretchShowSurface(surface, args[0]->v8::Value::Int32Value(), args[1]->v8::Value::Int32Value(), (float)xfactor, (float)yfactor);
 	return v8::Undefined();
 }
 
@@ -282,14 +287,14 @@ v8::Handle<v8::Value> TS_surfaceStretchBlit(const v8::Arguments& args)
 v8::Handle<v8::Value> TS_surfaceBlit(const v8::Arguments& args)
 {
     if(args.Length()<2){
-	return v8::ThrowException(v8::String::New("TS_surface Error: Called with fewer than 2 arguments!\n"));
+	return v8::ThrowException(v8::String::New("[graphicSDL] TS_surface Error: Called with fewer than 2 arguments!\n"));
     }
-    CHECK_ARG_INT(0, "TS_surfaceBlit Error: Argument 0 is not a number.");
-    CHECK_ARG_INT(1, "TS_surfaceBlit Error: Argument 1 is not a number.");
+    CHECK_ARG_INT(0, "[graphicSDL] TS_surfaceBlit Error: Argument 0 is not a number.");
+    CHECK_ARG_INT(1, "[graphicSDL] TS_surfaceBlit Error: Argument 1 is not a number.");
 	v8::Local<v8::Object> self = args.Holder();
 	v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
 	void* ptr = wrap->Value();
-	TS_ShowSurface(static_cast<SDL_Surface*>(ptr), args[0]->v8::Value::IntegerValue(), args[1]->v8::Value::IntegerValue());
+	TS_ShowSurface(static_cast<SDL_Surface*>(ptr), args[0]->v8::Value::Int32Value(), args[1]->v8::Value::Int32Value());
 	return v8::Undefined();
 }
 
@@ -298,21 +303,21 @@ v8::Handle<v8::Value> TS_surfaceBlit(const v8::Arguments& args)
 v8::Handle<v8::Value> TS_surfaceZoomBlitSurface(const v8::Arguments& args)
 {
     if(args.Length()<3){
-        return v8::ThrowException(v8::String::New("TS_surfaceZoomBlitSurface Error: Called with fewer than 3 arguments!\n"));
+        return v8::ThrowException(v8::String::New("[graphicSDL] TS_surfaceZoomBlitSurface Error: Called with fewer than 3 arguments!\n"));
     return v8::Undefined();
     }
-    CHECK_ARG_INT(0, "TS_surfaceZoomBlitSurface Error: Argument 0 is not a number.");
-    CHECK_ARG_INT(1, "TS_surfaceZoomBlitSurface Error: Argument 1 is not a number.");
-    CHECK_ARG_OBJ(2, "TS_surfaceZoomBlitSurface Error: Argument 2 is not an object.");
+    CHECK_ARG_INT(0, "[graphicSDL] TS_surfaceZoomBlitSurface Error: Argument 0 is not a number.");
+    CHECK_ARG_INT(1, "[graphicSDL] TS_surfaceZoomBlitSurface Error: Argument 1 is not a number.");
+    CHECK_ARG_OBJ(2, "[graphicSDL] TS_surfaceZoomBlitSurface Error: Argument 2 is not an object.");
 
 	v8::Local<v8::Object> self = args.Holder();
 	v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
 	void* ptr = wrap->Value();
-	double factor = args[2]->v8::Value::NumberValue();
+	float factor = (float)args[2]->v8::Value::NumberValue();
 	SDL_Surface* surface = static_cast<SDL_Surface*>(ptr);
 	//SDL_Rect dest = {args[0]->v8::Value::NumberValue(), args[1]->v8::Value::NumberValue(), surface->w*factor, surface->h*factor};
 	//SDL_SoftStretch(surface, NULL, screen, &dest);
-	TS_StretchShowSurface(surface, args[0]->v8::Value::IntegerValue(), args[1]->v8::Value::IntegerValue(), surface->w*factor, surface->h*factor);
+	TS_StretchShowSurface(surface, args[0]->v8::Value::Int32Value(), args[1]->v8::Value::Int32Value(), surface->w*factor, surface->h*factor);
 	return v8::Undefined();
 }
 
@@ -321,23 +326,23 @@ v8::Handle<v8::Value> TS_surfaceZoomBlitSurface(const v8::Arguments& args)
 v8::Handle<v8::Value> TS_surfaceBlitSurface(const v8::Arguments& args)
 {
 	if(args.Length()<3){
-	return v8::ThrowException(v8::String::New("TS_surfaceBlitSurface Error: Called with fewer than 3 arguments!\n"));
+	return v8::ThrowException(v8::String::New("[graphicSDL] TS_surfaceBlitSurface Error: Called with fewer than 3 arguments!\n"));
 	}
 
-    CHECK_ARG_INT(0, "TS_surfaceBlit Error: Argument 0 is not a number.");
-    CHECK_ARG_INT(1, "TS_surfaceBlit Error: Argument 1 is not a number.");
+    CHECK_ARG_INT(0, "[graphicSDL] TS_surfaceBlit Error: Argument 0 is not a number.");
+    CHECK_ARG_INT(1, "[graphicSDL] TS_surfaceBlit Error: Argument 1 is not a number.");
 
     v8::Local<v8::Object> self = args.Holder();
 	v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
 	void* ptr = wrap->Value();
-	int x = args[1]->v8::Value::IntegerValue();
-	int y = args[2]->v8::Value::IntegerValue();
+	int x = args[1]->v8::Value::Int32Value();
+	int y = args[2]->v8::Value::Int32Value();
 
 	v8::Handle<v8::Object> surface = v8::Handle<v8::Object>::Cast(args[0]);
 	v8::Local<v8::External> wraparg0 = v8::Local<v8::External>::Cast(surface->GetInternalField(0));
 	void *ptrarg = wraparg0->Value();
-	int w = surface->Get(v8::String::New("width"))->v8::Value::IntegerValue();
-	int h = surface->Get(v8::String::New("height"))->v8::Value::IntegerValue();
+	int w = surface->Get(v8::String::New("width"))->v8::Value::Int32Value();
+	int h = surface->Get(v8::String::New("height"))->v8::Value::Int32Value();
 	SDL_Rect srcrect = {0, 0, (short unsigned int)w, (short unsigned int)h};
 	SDL_Rect dstrect = {(short int)x, (short int)y, (short unsigned int)w, (short unsigned int)h};
 	SDL_BlitSurface( static_cast<SDL_Surface*>(ptrarg),&srcrect,static_cast<SDL_Surface*>(ptr),  &dstrect);
@@ -349,15 +354,15 @@ v8::Handle<v8::Value> TS_surfaceBlitSurface(const v8::Arguments& args)
 v8::Handle<v8::Value> TS_surfaceSetPixel(const v8::Arguments& args)
 {
 	if(args.Length()<3){
-	return v8::ThrowException(v8::String::New("TS_surfaceSetPixel Error: Called with fewer than 3 arguments!\n"));
+	return v8::ThrowException(v8::String::New("[graphicSDL] TS_surfaceSetPixel Error: Called with fewer than 3 arguments!\n"));
 	}
 
-    CHECK_ARG_INT(0, "TS_surfaceSetPixel Error: Argument 0 is not a number.");
-    CHECK_ARG_INT(1, "TS_surfaceSetPixel Error: Argument 1 is not a number.");
-    CHECK_ARG_OBJ(2, "TS_surfaceSetPixel Error: Argument 2 is not an object.");
+    CHECK_ARG_INT(0, "[graphicSDL] TS_surfaceSetPixel Error: Argument 0 is not a number.");
+    CHECK_ARG_INT(1, "[graphicSDL] TS_surfaceSetPixel Error: Argument 1 is not a number.");
+    CHECK_ARG_OBJ(2, "[graphicSDL] TS_surfaceSetPixel Error: Argument 2 is not an object.");
 
-	int x = args[0]->v8::Value::IntegerValue();
-	int y = args[1]->v8::Value::IntegerValue();
+	int x = args[0]->v8::Value::Int32Value();
+	int y = args[1]->v8::Value::Int32Value();
 
 	v8::Handle<v8::Object> color = v8::Handle<v8::Object>::Cast(args[2]);
 
@@ -376,14 +381,14 @@ v8::Handle<v8::Value> TS_surfaceSetPixel(const v8::Arguments& args)
 
 v8::Handle<v8::Value> TS_surfaceGetPixel(const v8::Arguments& args){
 	if(args.Length()<2){
-		printf("TS_surfaceGetPixel Error: Called with fewer than 2 arguments!");
+		printf("[graphicSDL] TS_surfaceGetPixel Error: Called with fewer than 2 arguments!");
 		return v8::False();
 		}
 
 	v8::HandleScope loadcolorscope;
 	v8::Handle<v8::Value> external;
-	int x = args[0]->v8::Value::IntegerValue();
-	int y = args[1]->v8::Value::IntegerValue();
+	int x = args[0]->v8::Value::Int32Value();
+	int y = args[1]->v8::Value::Int32Value();
 
 	v8::Local<v8::Object> self = args.Holder();
 	v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
@@ -410,22 +415,55 @@ v8::Handle<v8::Value> TS_surfaceGetPixel(const v8::Arguments& args){
 
 }
 
-v8::Handle<v8::Value> TS_surfaceRectangle(const v8::Arguments& args){
+//JS Bound member of Surface. Draws a line on the surface.
+
+v8::Handle<v8::Value> TS_surfaceLine(const v8::Arguments& args){
 	if(args.Length()<2){
-		printf("TS_surfaceRectangle Error: Called with fewer than 5 arguments.");
+		printf("[graphicSDL] TS_surfaceRectangle Error: Called with fewer than 5 arguments.");
 		return v8::False();
 		}
 
-    CHECK_ARG_INT(0, "TS_surfaceRectangle Error: Argument 0 is not a number.");
-    CHECK_ARG_INT(1, "TS_surfaceRectangle Error: Argument 1 is not a number.");
-    CHECK_ARG_INT(2, "TS_surfaceRectangle Error: Argument 2 is not a number.");
-    CHECK_ARG_INT(3, "TS_surfaceRectangle Error: Argument 3 is not a number.");
-    CHECK_ARG_OBJ(4, "TS_surfaceRectangle Error: Argument 4 is not an object.");
+    CHECK_ARG_INT(0, "[graphicSDL] TS_surfaceRectangle Error: Argument 0 is not a number.");
+    CHECK_ARG_INT(1, "[graphicSDL] TS_surfaceRectangle Error: Argument 1 is not a number.");
+    CHECK_ARG_INT(2, "[graphicSDL] TS_surfaceRectangle Error: Argument 2 is not a number.");
+    CHECK_ARG_INT(3, "[graphicSDL] TS_surfaceRectangle Error: Argument 3 is not a number.");
+    CHECK_ARG_OBJ(4, "[graphicSDL] TS_surfaceRectangle Error: Argument 4 is not an object.");
 
-	int x = args[0]->v8::Value::IntegerValue();
-	int y = args[1]->v8::Value::IntegerValue();
-	int w = args[2]->v8::Value::IntegerValue();
-	int h = args[3]->v8::Value::IntegerValue();
+	int x1 = args[0]->v8::Value::Int32Value();
+	int y1 = args[1]->v8::Value::Int32Value();
+	int x2 = args[2]->v8::Value::Int32Value();
+	int y2 = args[3]->v8::Value::Int32Value();
+
+	v8::Handle<v8::Object> color = v8::Handle<v8::Object>::Cast(args[4]);
+
+    TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
+
+	v8::Local<v8::Object> self = args.Holder();
+	v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
+	void *ptr = wrap->Value();
+
+    TS_Line(static_cast<SDL_Surface*>(ptr), x1, y1, x2, y2, c);
+    return v8::Undefined();
+}
+
+//JS Bound member of Surface. Draws a line on the surface.
+
+v8::Handle<v8::Value> TS_surfaceRectangle(const v8::Arguments& args){
+	if(args.Length()<2){
+		printf("[graphicSDL] TS_surfaceRectangle Error: Called with fewer than 5 arguments.");
+		return v8::False();
+		}
+
+    CHECK_ARG_INT(0, "[graphicSDL] TS_surfaceRectangle Error: Argument 0 is not a number.");
+    CHECK_ARG_INT(1, "[graphicSDL] TS_surfaceRectangle Error: Argument 1 is not a number.");
+    CHECK_ARG_INT(2, "[graphicSDL] TS_surfaceRectangle Error: Argument 2 is not a number.");
+    CHECK_ARG_INT(3, "[graphicSDL] TS_surfaceRectangle Error: Argument 3 is not a number.");
+    CHECK_ARG_OBJ(4, "[graphicSDL] TS_surfaceRectangle Error: Argument 4 is not an object.");
+
+	int x = args[0]->v8::Value::Int32Value();
+	int y = args[1]->v8::Value::Int32Value();
+	int w = args[2]->v8::Value::Int32Value();
+	int h = args[3]->v8::Value::Int32Value();
 
 	v8::Handle<v8::Object> color = v8::Handle<v8::Object>::Cast(args[4]);
 
@@ -440,34 +478,3 @@ v8::Handle<v8::Value> TS_surfaceRectangle(const v8::Arguments& args){
     SDL_FillRect(static_cast<SDL_Surface*>(ptr), &dest, concatColor);
     return v8::Undefined();
 }
-
-v8::Handle<v8::Value> TS_surfaceLine(const v8::Arguments& args){
-	if(args.Length()<2){
-		printf("TS_surfaceRectangle Error: Called with fewer than 5 arguments.");
-		return v8::False();
-		}
-
-    CHECK_ARG_INT(0, "TS_surfaceRectangle Error: Argument 0 is not a number.");
-    CHECK_ARG_INT(1, "TS_surfaceRectangle Error: Argument 1 is not a number.");
-    CHECK_ARG_INT(2, "TS_surfaceRectangle Error: Argument 2 is not a number.");
-    CHECK_ARG_INT(3, "TS_surfaceRectangle Error: Argument 3 is not a number.");
-    CHECK_ARG_OBJ(4, "TS_surfaceRectangle Error: Argument 4 is not an object.");
-
-	int x1 = args[0]->v8::Value::IntegerValue();
-	int y1 = args[1]->v8::Value::IntegerValue();
-	int x2 = args[2]->v8::Value::IntegerValue();
-	int y2 = args[3]->v8::Value::IntegerValue();
-
-	v8::Handle<v8::Object> color = v8::Handle<v8::Object>::Cast(args[4]);
-
-    TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
-
-	v8::Local<v8::Object> self = args.Holder();
-	v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
-	void *ptr = wrap->Value();
-
-    TS_Line(static_cast<SDL_Surface*>(ptr), x1, y1, x2, y2, c);
-    return v8::Undefined();
-}
-
-

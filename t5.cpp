@@ -121,6 +121,10 @@ void T5_close(T5_file *file){
     delete file;
 }
 
+void T5_file::flush(void){
+    stream.flush();
+}
+
 const char* T5_file::getValue(const char* key){
     for(size_t i = 0; i<values.size(); i++){
             #ifdef VERBOSE

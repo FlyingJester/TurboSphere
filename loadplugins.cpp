@@ -140,7 +140,7 @@ int loadAllPlugins(){
             skip = false;
             }
             else{
-                printf("Skipping plugin number %i, %s\n", i, plugins[i]);
+                //printf("Skipping plugin number %i, %s\n", i, plugins[i]);
             }
         }
         if(skip){
@@ -215,10 +215,9 @@ int loadAllPlugins(){
         #endif
 
     }
-    //delete [] plugins;
 
     for(int i = 0; i<numplugins; i++){
-        delete plugins[i];
+        free((void*)plugins[i]);
     }
     //
     //

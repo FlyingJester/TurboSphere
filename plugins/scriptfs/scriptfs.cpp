@@ -3,6 +3,10 @@
 #include "scriptfs.h"
 #include "../../t5.h"
 #include <stdio.h>
+#include <fstream>
+#include <cerrno>
+
+#define DEBUG 0
 
 int numerate(bool reset){
     static int i = 0;
@@ -17,6 +21,10 @@ int numerate(bool reset){
 #define NUMFUNCS 3
 #define NUMVARS 0
 
+v8Function TS_fileRead(V8ARGS);
+v8Function TS_fileWrite(V8ARGS);
+v8Function TS_fileFlush(V8ARGS);
+v8Function TS_fileClose(V8ARGS);
 v8Function TS_OpenFile(V8ARGS);
 v8Function TS_RemoveFile(V8ARGS);
 v8Function TS_GetFileList(V8ARGS);
@@ -33,10 +41,10 @@ void Close(){
 initFunction Init(){
 	T5_init(1, GetDirs()->save);
     INIT_OBJECT_TEMPLATES(ScriptFile);
-//    ADD_TO_PROTO(ScriptFile, "read", TS_WSdrawWindow);
-//    ADD_TO_PROTO(ScriptFile, "write", TS_WSdrawWindow);
-//    ADD_TO_PROTO(ScriptFile, "flush", TS_WSdrawWindow);
-//    ADD_TO_PROTO(ScriptFile, "close", TS_WSdrawWindow);
+    ADD_TO_PROTO(ScriptFile, "read", TS_fileRead);
+    ADD_TO_PROTO(ScriptFile, "write", TS_fileWrite);
+    ADD_TO_PROTO(ScriptFile, "flush", TS_fileFlush);
+    ADD_TO_PROTO(ScriptFile, "close", TS_fileClose);
 //    ADD_TO_PROTO(ScriptFile, "getNumKeys", TS_WSdrawWindow);
 //    ADD_TO_PROTO(ScriptFile, "getKey", TS_WSdrawWindow);
 	return (initFunction)"scriptfsT5";
@@ -76,9 +84,9 @@ void TS_ScriptFileFinalizer(v8::Persistent<v8::Value> object, void* parameter) {
 
 v8Function TS_OpenFile(V8ARGS){
 	if(args.Length()<1){
-        THROWERROR("TS_OpenFile Error: Called with no arguments.");
+        THROWERROR("[scriptfs] TS_OpenFile Error: Called with no arguments.");
     }
-    CHECK_ARG_STR(0, "TS_OpenFile Error: Arg 0 is not a string.");
+    CHECK_ARG_STR(0, "[scriptfs] TS_OpenFile Error: Arg 0 is not a string.");
 
     BEGIN_OBJECT_WRAP_CODE
 
@@ -87,16 +95,23 @@ v8Function TS_OpenFile(V8ARGS){
 
 	T5_file *file = T5_OpenFile(filename);
 	if(file==NULL){
-		//create a file. Not done!
+        T5_close(file);
+        FILE *newfile;
+        newfile = fopen(filename, "w");
+        if(newfile==NULL){
+            THROWERROR((((string)"[scriptfs] TS_OpenFile Error: Could not create file ")+string(filename)+((string)".")).c_str());
+        }
+        fclose(newfile);
+        T5_file *file = T5_OpenFile(filename);
 	}
 
     END_OBJECT_WRAP_CODE(ScriptFile, file);
 }
 v8Function TS_RemoveFile(V8ARGS){
 	if(args.Length()<1){
-        THROWERROR("TS_RemoveFile Error: Called with no arguments.");
+        THROWERROR("[scriptfs] TS_RemoveFile Error: Called with no arguments.");
     }
-    CHECK_ARG_STR(0, "TS_RemoveFile Error: Arg 0 is not a string.");
+    CHECK_ARG_STR(0, "[scriptfs] TS_RemoveFile Error: Arg 0 is not a string.");
 	v8::String::Utf8Value str(args[0]);
     string filename = (*str);
 	if(remove((string(GetDirs()->save)+filename).c_str()) != 0 ){
@@ -110,26 +125,68 @@ v8Function TS_GetFileList(V8ARGS){
 	filehandle dir;
     filedata data;
 
+	const char *directory;
+
+	if(args.Length()>0){
+			CHECK_ARG_STR(0, "[scriptfs] TS_GetFileList Error: Argument 0 is not a string.");
+		    v8::String::Utf8Value str(args[0]);
+			if(strnlen(*str, 1023)<1){
+				directory = "";
+			}
+			else{
+				if(DEBUG) printf("[scriptfs] GetFileList Info: The relative directory was %s\n", *str);
+				char * tdir = (char *)malloc(strnlen(*str, 1023)+1);
+				tdir[0] = '/';
+				tdir[1] = '\0';
+				if(DEBUG) printf("[scriptfs] GetFileList Info: tdir = %s\n", tdir);
+				tdir = strncat(tdir, *str, 1023);
+				char * ls = strrchr(tdir, '/');
+				if(ls[1]!='\0'){
+					strncat(tdir, "/", 1023);
+				}
+				if(DEBUG) printf("[scriptfs] GetFileList Info: The directory as concated was %s\n", tdir);
+				directory = STRDUP(tdir);
+				free(tdir);
+			}
+		}
+	else{
+		directory = "";
+	}
+
     const char ** filenames = NULL;
 	int i = 0;
+	const char *fulldir = STRDUP((string(GetDirs()->save).append(directory)).c_str());
+	if(DEBUG) printf("[scriptfs] GetFileList Info: The directory specified is %s\n", fulldir);
+	#ifdef _WIN32
 
-#ifdef _WIN32
-	dir = FindFirstFile((string(GetDirs()->save)+"*.*").c_str(), &data);
-	if (dir!=INVALID_HANDLE_VALUE){
-        do{
+	const char *fulldirlist = STRDUP((string(GetDirs()->save).append(directory)+"*.*").c_str());
+	DWORD attribs = ::GetFileAttributesA(fulldir);
+	if ((attribs != INVALID_FILE_ATTRIBUTES) && (attribs & FILE_ATTRIBUTE_DIRECTORY)) {
+		if(DEBUG) printf("[scriptfs] GetFileList Info: the directory was valid.");
+		dir = FindFirstFile(fulldirlist, &data);
+
+		if (dir!=INVALID_HANDLE_VALUE){
+			do{
 #else
-	if ((dir=opendir(GetDirs()->save))!=NULL){
-	    while((data=readdir(dir))!=NULL){
+	    if ((dir=opendir(GetDirs()->save))!=NULL){
+	        while((data=readdir(dir))!=NULL){
 #endif
-			if(FILENAME(data)[0]!='.'){
-				filenames = (const char **)realloc(filenames, (i+1)*sizeof(const char *));
-				filenames[i] = STRDUP(FILENAME(data));
-				i++;
-			}
+				if((!ISDIRECTORY(data))&&(FILENAME(data)[0]!='.')){
+					filenames = (const char **)realloc(filenames, (i+1)*sizeof(const char *));
+					filenames[i] = STRDUP(FILENAME(data));
+					i++;
+				}
 #ifdef _WIN32
-        } while(FindNextFile(dir, &data));
-        FindClose(dir);
+		    } while(FindNextFile(dir, &data));
+		    FindClose(dir);
+		}//dir!=INVALID_HANDLE_VALUE
+		free((void*)fulldirlist);
+	}//attribs!=INVALID_FILE_ATTRIBUTES
+#if DEBUG
+	else{
+		printf("[scriptfs] GetFileList Info: Directory does not exist.\n");
 	}
+#endif
 #else
         }
         closedir(dir);
@@ -138,8 +195,72 @@ v8Function TS_GetFileList(V8ARGS){
 	v8::Local<v8::Array> files = v8::Array::New(i);
 	for(int e = 0; e<i; e++){
 		files->Set(e, v8::String::New(filenames[e]));
+        free((void*)filenames[e]);
 	}
-	free((void *)filenames);
+	free(filenames);
+	free((void*)fulldir);
+	if(directory!=""){
+		free((void*)directory);
+	}
 	return TS_GetFileListscope.Close(files);
 
+}
+
+v8Function TS_fileRead(V8ARGS)
+{
+    if(args.Length()<2){
+        THROWERROR("[scriptfs] TS_fileRead Error: Called with fewer than 2 arguments!\n");
+    }
+    CHECK_ARG_STR(0, "[scriptfs] TS_fileRead Error: Argument 0 is not a string.");
+	CHECK_ARG_STR(1, "[scriptfs] TS_fileRead Error: Argument 1 is not a string.");
+    v8::String::AsciiValue key(args[0]);
+    v8::String::AsciiValue def(args[1]);
+	v8::Local<v8::Object> self = args.Holder();
+	v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
+	void* ptr = wrap->Value();
+	const char * keyval = static_cast<T5_file*>(ptr)->getValue(*key);
+	if(keyval==NULL){
+        static_cast<T5_file*>(ptr)->writeValue(*key, *def);
+        return v8::String::New(*def);
+	}
+	if(args[1]->IsNumber()){
+		return v8::Number::New(atof(keyval));
+	}
+	else{
+		return v8::String::New(keyval);
+	}
+}
+
+v8Function TS_fileWrite(V8ARGS)
+{
+    if(args.Length()<2){
+        THROWERROR("[scriptfs] TS_fileWrite Error: Called with fewer than 2 arguments!\n");
+    }
+    CHECK_ARG_STR(0, "[scriptfs] TS_fileWrite Error: Argument 0 is not a string.");
+    CHECK_ARG_STR(1, "[scriptfs] TS_fileWrite Error: Argument 1 is not a string.");
+    v8::String::AsciiValue key(args[0]);
+    v8::String::AsciiValue val(args[1]);
+	v8::Local<v8::Object> self = args.Holder();
+	v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
+	void* ptr = wrap->Value();
+    static_cast<T5_file*>(ptr)->writeValue(*key, *val);
+	return v8::Undefined();
+}
+
+v8Function TS_fileFlush(V8ARGS)
+{
+	v8::Local<v8::Object> self = args.Holder();
+	v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
+	void* ptr = wrap->Value();
+    static_cast<T5_file*>(ptr)->flush();
+	return v8::Undefined();
+}
+
+v8Function TS_fileClose(V8ARGS)
+{
+	v8::Local<v8::Object> self = args.Holder();
+	v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
+	void* ptr = wrap->Value();
+    T5_close(static_cast<T5_file*>(ptr));
+	return v8::Undefined();
 }

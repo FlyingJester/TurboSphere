@@ -12,9 +12,8 @@
 #include "../../SDL/SDL_audio.h"
 #include "../../SDL/SDL_mixer.h"
 #include "../../SDL/SDL_thread.h"
-#endif
 
-#ifndef _WIN32
+#else
 
 #include "/usr/include/SDL/SDL.h"
 #include "/usr/include/SDL/SDL_ttf.h"
@@ -24,6 +23,7 @@
 #include "/usr/include/SDL/SDL_thread.h"
 #endif
 
+typedef const char* cstring;
 typedef v8::Handle<v8::Value> v8Function;
 typedef void** functionArray;
 typedef v8Function* v8FunctionArray;
@@ -47,6 +47,8 @@ typedef v8::Persistent<v8::ObjectTemplate> v8PrototypeTemplate;
 #define V8ARGS const v8::Arguments& args
 #define V8FUNCPOINTER(name)\
 	(void *)((v8Function (*)(V8ARGS))(name))
+
+#ifndef PLUGINNAME
 
 #define THROWERROR(name)\
     return v8::ThrowException(v8::String::New(name));
@@ -90,6 +92,56 @@ typedef v8::Persistent<v8::ObjectTemplate> v8PrototypeTemplate;
     if (!args[index]->IsArray()) { \
         return v8::ThrowException(v8::Exception::TypeError(v8::String::New(name)));\
     } \
+
+#else
+
+#include <string>
+
+#define THROWERROR(name)\
+    return v8::ThrowException(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string(name)).c_str()));
+
+#define THROWERROR_RANGE(name)\
+	return v8::ThrowException(v8::Exception::RangeError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string(name)).c_str())));
+
+#define THROWERROR_REFERENCE(name)\
+	return v8::ThrowException(v8::Exception::ReferenceError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string(name)).c_str())));
+
+#define THROWERROR_SYNTAX(name)\
+	return v8::ThrowException(v8::Exception::SyntaxError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string(name)).c_str())));
+
+#define THROWERROR_TYPE(name)\
+	return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string(name)).c_str())));
+
+#define THROWERROR_MSG(name)\
+	return v8::ThrowException(v8::Exception::Error(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string(name)).c_str())));
+
+#define CHECK_ARG_INT(index) \
+    if (!args[index]->IsNumber()) { \
+        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string("Error: Argument " #index " is not an integer.")).c_str())));\
+    }
+
+#define CHECK_ARG_STR(index) \
+    if (!args[index]->IsString()) { \
+        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string("Error: Argument " #index " is not a string.")).c_str())));\
+    }
+
+#define CHECK_ARG_OBJ(index) \
+    if (!args[index]->IsObject()) { \
+        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string("Error: Argument " #index " is not an object.")).c_str())));\
+    } \
+
+#define CHECK_ARG_BOOL(index) \
+    if (!args[index]->IsBoolean()) { \
+        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string("Error: Argument " #index " is not a boolean.")).c_str())));\
+    } \
+
+#define CHECK_ARG_ARRAY(index) \
+    if (!args[index]->IsArray()) { \
+        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string("Error: Argument " #index " is not an array.")).c_str())));\
+    } \
+
+
+#endif
 
     #define QuitGracefully \
     printf("Exiting TurboSphere...\n");\
@@ -144,5 +196,27 @@ v8::Persistent<v8::ObjectTemplate> JSOBJ##proto
 	P##JSOBJ##obj->SetInternalField(0, external);\
     return temporary_scope.Close(P##JSOBJ##obj);\
 }
+
+/*
+#define INTERNAL_CHECK_int(ARGNAME, WORDS)\
+if(!ARGNAME->isInteger()){THROWERROR(WORDS)}
+
+#define INTERNAL_CHECK_double(ARGNAME, WORDS)\
+if(!ARGNAME->isNumber()){THROWERROR(WORDS)}
+
+#define INTERNAL_CHECK_float(ARGNAME, WORDS)\
+if(!ARGNAME->isNumber()){THROWERROR(WORDS)}
+
+#define INTERNAL_CHECK_cstring(ARGNAME, WORDS)\
+if(!ARGNAME->isString()){THROWERROR(WORDS)}
+
+
+#define V8ARGCHECK(TYPE, ARGNAME, WORDS)\
+INTERNAL_CHECK_##TYPE
+
+#define FUNCTION_FORWARD(NUMARGS, MODULE, FUNCTIONNAME, argtypes...)\
+if(args.Length()<NUMARGS){THROWERROR("[##MODULE##] ##FUNCTIONNAME## Error: Called with less than ##NUMARGD## arguments.");}
+*/
+
 
 #endif

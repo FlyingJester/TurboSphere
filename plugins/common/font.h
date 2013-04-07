@@ -11,7 +11,13 @@ public:
 		std::vector<SDL_Surface*> glyphs;
 	void drawText(int, int, const char*);
 	void drawZoomedText(int, int, float, const char*);
-	int getStringWidth(const char*);
+	int getStringWidth(const char*) const;
+	int getStringHeight(const char*);
+	int getHeight(void);
+	const char **wordWrapString(const char *, int, int *);
+private:
+    int inheight;
+    inline void addline(const char **tl, int *nl, char *lb) const;
 };
 
     void BMPFontInit();

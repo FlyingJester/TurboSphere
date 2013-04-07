@@ -17,7 +17,9 @@
 #define CCALL 
 #define WS_EXPORT extern "C"
 #endif
- 
+
+enum WSbackgroundType{WS_TILED, WS_STRETCHED, WS_GRADIENT, WS_TILED_GRADIENT, WS_STRETCHED_GRADIENT};
+
 #ifdef _WIN32
 	extern "C" {
 #endif
@@ -59,6 +61,18 @@ class TS_WScorner{
     TS_Color mask;
 };
 
+class TS_WSbackground{
+    public:
+    TS_WSbackground(SDL_Surface *, WSbackgroundType);
+    TS_WSbackground();
+    ~TS_WSbackground();
+	int width;
+	int height;
+    SDL_Surface *image;
+    TS_Color mask;
+	WSbackgroundType type;
+};
+
 class TS_WindowStyle{
     public:
     TS_WindowStyle(const char*);
@@ -71,11 +85,14 @@ class TS_WindowStyle{
     TS_WScorner upperright;
     TS_WScorner lowerright;
     TS_WScorner lowerleft;
+	TS_WSbackground background;
     TS_Color cornerColors[4];
     char edge_offsets[4];
     TS_Color mask;
     SDL_Surface *getImage(int);
     void drawWindow(int, int, int, int);
+private:
+	const char *name;
 };
 
     v8::Handle<v8::Value> LoadWindowStyle(const v8::Arguments& args);

@@ -4,25 +4,34 @@
 #ifdef _WIN32
 #include <windows.h>
 #include <WinBase.h>
+#define STRDUP _strdup
 #else
 #include <dirent.h>
+#include <cstring>
+#define STRDUP strdup
 #endif
 
 #ifdef _WIN32
 	#define SCRIPTFS_EXPORT __declspec(dllexport)
     #define CCALL __cdecl
-	typedef HANDLE filehandle;
+
+typedef HANDLE filehandle;
 	typedef WIN32_FIND_DATA filedata;
 	#define FILENAME(NAME) NAME.cFileName
-	#define STRDUP _strdup
+	#define ISDIRECTORY(NAME) (NAME.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY)
+
+#define STRDUP _strdup
 #endif
 #ifndef _WIN32
-    #include <cstring>
 	#define CCALL
 	#define SCRIPTFS_EXPORT extern "C"
+
 	typedef DIR * filehandle;
 	typedef struct dirent * filedata;
 	#define FILENAME(NAME) NAME->d_name
+	#define ISDIRECTORY(NAME) (NAME->d_type==DT_DIR)
+
+    #include <cstring>
 	#define STRDUP strdup
 #endif
 

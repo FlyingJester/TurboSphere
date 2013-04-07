@@ -4,6 +4,9 @@ Entries indicate the date the feature or change was added or removed.
 Newline characters should be NOT added manually rather than using automatic wordwrap. 
 To prepare for the unlikely event that another dev starts working on this project, always initial or (sign) your entry. Anything is fine, as long as you pick one name and stick with it.
 
+3/23/13  - Fixed reported issues on the SDL window becoming unreponsive on Windows, GetVersionString returning inancurate values, and new Color() returning an error on garbage alhpa values (should just ignore them).
+Fixed AreKeysLeft returning false positives (added check for if there were no pending events, originally there was just a check if the next event was a KEY_DOWN).
+
 1/2/13   - Rebuilt TS_MapLayer and TS_Map classes, made TS_TileInfo. Began creating a new map engine. Initial tileset (.rts file) reading implemented.
 
 1/1/13   - Added SDL_VideoQuit to the graceful quit system and to the normal shutdown procedure, closing the SDL window immediately. Much more satisfying, though not any faster.

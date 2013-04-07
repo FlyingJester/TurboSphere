@@ -1,6 +1,10 @@
 #ifndef BMPFONT_HEAD
 #define BMPFONT_HEAD
 
+#define TS_TEST(Words){\
+    printf("This is a test of some stuff. Module: %s, function: %s, and %s of course\n", MODULE, __FUNCTION__, (const char *)Words);\
+}
+
 #include"../common/plugin.h"
 
 #ifdef _WIN32
@@ -9,11 +13,11 @@
 	#else
 	#define BMPFONT_EXPORT __declspec(dllimport)
 	#endif
-	
+
     #define CCALL __cdecl
 
 #else
-#define CCALL 
+#define CCALL
 #define BMPFONT_EXPORT extern "C"
 #endif
 

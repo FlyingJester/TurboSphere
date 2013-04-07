@@ -59,6 +59,9 @@ v8::Handle<v8::Value> GetKeyString(const v8::Arguments& args){
 	}
 
     unsigned int keynum = args[0]->v8::Value::Int32Value();
+    if (keynum>255){
+        return v8::String::New("");
+    }
 
     if(shift){
         keynum = toupper(keynum);

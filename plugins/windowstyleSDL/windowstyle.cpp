@@ -21,8 +21,8 @@ cleanly and concisely read from Sphere files.
    #include <stdint.h>
 #endif
 
-const int WSelementsSize = 8;
-enum WSelements {WS_UPPERLEFT, WS_TOP, WS_UPPERRIGHT, WS_RIGHT, WS_LOWERRIGHT, WS_BOTTOM, WS_LOWERLEFT, WS_LEFT};
+const int WSelementsSize = 9;
+enum WSelements {WS_UPPERLEFT, WS_TOP, WS_UPPERRIGHT, WS_RIGHT, WS_LOWERRIGHT, WS_BOTTOM, WS_LOWERLEFT, WS_LEFT, WS_BACKGROUND};
 
 //forward declare C++ functions to be bound to JS
 v8Function LoadWindowStyle(V8ARGS);
@@ -144,8 +144,27 @@ TS_WScorner::TS_WScorner(){
     mask = TS_Color(0,0,0,0);
 }
 
+TS_WSbackground::TS_WSbackground(SDL_Surface *im, WSbackgroundType _type){
+    image = SDL_ConvertSurface(im, im->format, im->flags);
+    width = image->h;
+    height= image->w;
+	type = _type;
+    mask = TS_Color(0,0,0,0);
+}
+
+TS_WSbackground::TS_WSbackground(){
+    image = new SDL_Surface;
+    width = 0;
+    height= 0;
+	type = WS_TILED;
+    mask = TS_Color(0,0,0,0);
+}
+
+TS_WSbackground::~TS_WSbackground(){
+    SDL_FreeSurface(image);
+}
+
 SDL_Surface *TS_WindowStyle::getImage(int num){
-    //A prime example of when a tuple would be nice?
     switch(num){
         case 0:
         return upperleft.image;
@@ -163,10 +182,12 @@ SDL_Surface *TS_WindowStyle::getImage(int num){
         return lowerleft.image;
         case 7:
         return left.image;
-        default: //at least don't explode.
-        return upperleft.image;
-    }
-return new SDL_Surface;
+        case 8:
+        return background.image;
+		default:  //at least don't explode.
+		printf("[windowstyleSDL] Error: Error reading WindowStyle Element in %s. Element was %i.\n", name, num);
+		return new SDL_Surface;
+	}
 }
 
 TS_WindowStyle::TS_WindowStyle(const char *file){
@@ -176,6 +197,7 @@ TS_WindowStyle::TS_WindowStyle(const char *file){
     if(!wsfile){
 		printf("Could not open file %s\n", file);   //the file should be checked BEFORE passing it to the constructor!
 	}
+	name = file;
     uint8_t   sig[5]    = "    ";
 	uint16_t  version[1];
 	uint8_t   edge_width[1];
@@ -203,6 +225,11 @@ TS_WindowStyle::TS_WindowStyle(const char *file){
 
 	SDL_RWseek(wsfile, 64, SEEK_SET);
 
+	for(int c = 0; c<4; c++){
+	int e = c*4;
+		cornerColors[c]=TS_Color(corner_color_comp[e], corner_color_comp[e+1], corner_color_comp[e+2], corner_color_comp[e+3]);
+	}
+	background.type = (WSbackgroundType)background_mode[0];
     if(version[0]==1){
 
     }
@@ -235,13 +262,17 @@ TS_WindowStyle::TS_WindowStyle(const char *file){
             case WS_LEFT:
                 CREATE_WS_COMPONENT(left.image, dimensions[0], dimensions[1]);
                 break;
+			case WS_BACKGROUND:
+				CREATE_WS_COMPONENT(background.image, dimensions[0], dimensions[1]);
+				break;
             default:
+				printf("[windowstyleSDL] Error: Error reading WindowStyle Element in %s. Element was %i.\n", file, i);
                 CREATE_WS_COMPONENT(upperleft.image, dimensions[0], dimensions[1]);
                 break;
             }
         }
     }
-
+	SDL_RWclose(wsfile);
 }
 
 TS_WindowStyle::~TS_WindowStyle(){
@@ -249,10 +280,9 @@ TS_WindowStyle::~TS_WindowStyle(){
 }
 
 void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
-
     for(int i = 0; i<8; i++){
         SDL_Surface *imageptr = this->getImage(i);
-        if(i%2==0){
+		if(i%2==0){
             SDL_Rect rect = {(short int)((i%3>0)?w+x:x-imageptr->w), (short int)((i>3)?h+y:y-imageptr->h), (short unsigned int)(imageptr->w), (short unsigned int)(imageptr->h)};
 
             TS_ShowSurface(imageptr, rect.x, rect.y);
@@ -306,7 +336,39 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
         }
 
     }
-
+	//draw background.
+	//WS_TILED, WS_STRETCHED, WS_GRADIENT, WS_TILED_GRADIENT, WS_STRETCHED_GRADIENT;
+	float fh;
+	float fv;
+	switch(background.type){
+		case WS_TILED:
+		case WS_TILED_GRADIENT:
+			TS_SetClippingRectangle(x, y, w, h);
+			if((background.image->w==0)||(background.image->h==0)){
+				//break;
+			}
+			for(int tx = 0; tx<w; tx+=background.image->w){
+				for(int ty = 0; ty<h; ty+=background.image->h){
+					TS_ShowSurface(background.image, tx+x, ty+y);
+				}
+			}
+			TS_ResetClippingRectangle();
+			break;
+		case WS_STRETCHED:
+		case WS_STRETCHED_GRADIENT:
+			if((background.image->w==0)||(background.image->h==0)){
+				break;
+			}
+			fh = float(w)/float(background.image->w);
+			fv = float(h)/float(background.image->h);
+			TS_StretchShowSurface(background.image, x, y, fh, fv);
+			break;
+		default:
+			break;
+	}
+	if(background.type>=2){ //If the background is a gradient.
+		TS_GradientRectangle(x, y, w, h, &cornerColors[0], &cornerColors[1], &cornerColors[2], &cornerColors[3]);
+	}
 }
 
 
@@ -349,7 +411,7 @@ v8Function GetSystemWindowStyle(V8ARGS) {
 
     v8::HandleScope loadWindowStylescope;
 	v8External external;
-	
+
 	TS_Directories *TS_dirs = GetDirs();
 	TS_Config *TS_conf = GetConfig();
 

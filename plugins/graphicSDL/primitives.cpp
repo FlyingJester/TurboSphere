@@ -19,8 +19,8 @@ v8::Handle<v8::Value> Point(const v8::Arguments& args)
     CHECK_ARG_INT(0, "TS_Point Error: Argument 0 is not a number.");
     CHECK_ARG_INT(1, "TS_Point Error: Argument 1 is not a number.");
     CHECK_ARG_OBJ(2, "TS_Point Error: Argument 2 is not an object.");
-	int x = args[0]->v8::Value::NumberValue();
-	int y = args[1]->v8::Value::NumberValue();
+	int x = args[0]->v8::Value::Int32Value();
+	int y = args[1]->v8::Value::Int32Value();
 
 	v8::Handle<v8::Object> color = v8::Handle<v8::Object>::Cast(args[2]);
     TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
@@ -42,9 +42,9 @@ v8::Handle<v8::Value> FilledCircle(const v8::Arguments& args)
     CHECK_ARG_INT(2, "TS_FilledCircle Error: argument 2 is not a valid number.");
     CHECK_ARG_OBJ(3, "TS_FilledCircle Error: argument 3 is not an object.");
 
-	int x = args[0]->v8::Value::IntegerValue();
-	int y = args[1]->v8::Value::IntegerValue();
-	int rad = args[2]->v8::Value::IntegerValue();
+	int x = args[0]->v8::Value::Int32Value();
+	int y = args[1]->v8::Value::Int32Value();
+	int rad = args[2]->v8::Value::Int32Value();
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[3]);
 
     TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
@@ -59,9 +59,9 @@ v8::Handle<v8::Value> FilledCircle(const v8::Arguments& args)
 v8::Handle<v8::Value> OutlinedCircle(const v8::Arguments& args)
 {
 
-	int x = args[0]->v8::Value::IntegerValue();
-	int y = args[1]->v8::Value::IntegerValue();
-	int rad = args[2]->v8::Value::IntegerValue();
+	int x = args[0]->v8::Value::Int32Value();
+	int y = args[1]->v8::Value::Int32Value();
+	int rad = args[2]->v8::Value::Int32Value();
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[3]);
 
     TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
@@ -83,10 +83,10 @@ v8::Handle<v8::Value> Rectangle(const v8::Arguments& args)
     CHECK_ARG_INT(2, "TS_Rectangle Error: Arg 2 is not a number.");
     CHECK_ARG_INT(3, "TS_Rectangle Error: Arg 3 is not a number.");
     CHECK_ARG_OBJ(4, "TS_Rectangle Error: Arg 4 is not an object.");
-	int x = args[0]->v8::Value::IntegerValue();
-	int y = args[1]->v8::Value::IntegerValue();
-	int w = args[2]->v8::Value::IntegerValue();
-	int h = args[3]->v8::Value::IntegerValue();
+	int x = args[0]->v8::Value::Int32Value();
+	int y = args[1]->v8::Value::Int32Value();
+	int w = args[2]->v8::Value::Int32Value();
+	int h = args[3]->v8::Value::Int32Value();
 
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[4]);
 
@@ -117,10 +117,10 @@ v8::Handle<v8::Value> Line(const v8::Arguments& args)
     CHECK_ARG_INT(2, "TS_Rectangle Error: Arg 2 is not a number.");
     CHECK_ARG_INT(3, "TS_Rectangle Error: Arg 3 is not a number.");
     CHECK_ARG_OBJ(4, "TS_Rectangle Error: Arg 4 is not an object.");
-	int x1 = args[0]->v8::Value::IntegerValue();
-	int y1 = args[1]->v8::Value::IntegerValue();
-	int x2 = args[2]->v8::Value::IntegerValue();
-	int y2 = args[3]->v8::Value::IntegerValue();
+	int x1 = args[0]->v8::Value::Int32Value();
+	int y1 = args[1]->v8::Value::Int32Value();
+	int x2 = args[2]->v8::Value::Int32Value();
+	int y2 = args[3]->v8::Value::Int32Value();
 
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[4]);
 
@@ -140,22 +140,20 @@ void TS_Line(SDL_Surface *dest, int ax1, int ay1, int ax2, int ay2, TS_Color *c)
 
     SDL_Rect rect = {(short int)min(ax1, ax2), (short int)min(ay1, ay2), (short unsigned int)w, (short unsigned int)h};
 
-    if(ax1-ax2<=1&&ax1-ax2>=-1){
+    if(ax1-ax2==0){
         SDL_Surface *surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, 1, h, DEPTH, CHANNEL_MASKS);
         SDL_Rect allsurf = {0, 0, 1, (short unsigned int)h};
         SDL_FillRect(surface, &allsurf, color);
-
-        SDL_BlitSurface(surface, NULL, screen, &rect);
+        SDL_BlitSurface(surface, NULL, dest, &rect);
         SDL_FreeSurface(surface);
 
         return;
     }
-    else if(ay1-ay2<=1&&ay1-ay2>=-1){
+    else if(ay1-ay2==0){
         SDL_Surface *surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, w, 1, DEPTH, CHANNEL_MASKS);
         SDL_Rect allsurf = {0, 0, (short unsigned int)w, 1};
         SDL_FillRect(surface, &allsurf, color);
-
-        SDL_BlitSurface(surface, NULL, screen, &rect);
+        SDL_BlitSurface(surface, NULL, dest, &rect);
         SDL_FreeSurface(surface);
 
         return;
@@ -231,10 +229,10 @@ v8::Handle<v8::Value> GradientRectangle(const v8::Arguments& args)
     CHECK_ARG_OBJ(7, "TS_GradientRectangle Error: Arg 7 is not an object.");
 
 
-    int x = args[0]->v8::Value::IntegerValue();
-	int y = args[1]->v8::Value::IntegerValue();
-	int w = args[2]->v8::Value::IntegerValue();
-	int h = args[3]->v8::Value::IntegerValue();
+    int x = args[0]->v8::Value::Int32Value();
+	int y = args[1]->v8::Value::Int32Value();
+	int w = args[2]->v8::Value::Int32Value();
+	int h = args[3]->v8::Value::Int32Value();
 
 	v8::Local<v8::Object> color1 = v8::Local<v8::Object>::Cast(args[4]);
 	v8::Local<v8::Object> color2 = v8::Local<v8::Object>::Cast(args[5]);
@@ -280,7 +278,7 @@ void TS_GradientRectangle(int x, int y, int w, int h, TS_Color *c1, TS_Color *c2
     TS_Color topColor = *c1;
     TS_Color lowColor = *c4;
 
-    for(int tx = 0; tx<w; tx++){
+    for(int tx = 0; tx<=w; tx++){
         rLineDelta = lowColor.red   -topColor.red;
         gLineDelta = lowColor.green -topColor.green;
         bLineDelta = lowColor.blue  -topColor.blue;
@@ -333,7 +331,7 @@ void TS_FilledCircle(int x, int y, int rad, uint32_t color, SDL_Surface *destina
     int yd2 = 0;
     double r  = rad;
 
-    int inf = (rad>4)?((rad>>3)+rad-floor((double)(((double)rad)/sqrt(2.0)))):(rad);
+    int inf = (int)((rad>4)?((rad>>3)+rad-floor((double)(((double)rad)/sqrt(2.0)))):(rad));
 
     SDL_Rect dest = {1, 1, 1, 1};
 
@@ -393,7 +391,7 @@ void TS_OutlinedCircle(int x, int y, int rad, uint32_t color, SDL_Surface* desti
     int xd2 = 0;
     int yd2 = 0;
     double r  = rad;
-    int inf = (rad>4)?((rad>>2)+rad-floor((double)(((double)rad)/sqrt(2.0)))):(rad);
+    int inf = (int)((rad>4)?((rad>>2)+rad-floor((double)(((double)rad)/sqrt(2.0)))):(rad));
 
     for(int xt = 0; xt<=rad; xt++){
         xd2 = rad-xt;

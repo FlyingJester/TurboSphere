@@ -11,10 +11,14 @@ v8Function TS_surfaceGetPixel(V8ARGS);
 
 	v8Constructor Colortempl;
 	v8InstanceTemplate ColorInsttempl;
+	v8PrototypeTemplate Colorproto;
 
 void ColorInit(){
     Colortempl = *v8::FunctionTemplate::New();
 	ColorInsttempl = *Colortempl->InstanceTemplate();
+    Colorproto     = *Colortempl->PrototypeTemplate();
+    Colortempl->SetClassName(v8::String::New("Color"));
+	//Colorproto->Set("toString", v8::FunctionTemplate::New(TS_surfaceBlit));
 
 }
 
@@ -24,6 +28,10 @@ void ColorClose(){
     Colortempl.Dispose();
 	ColorInsttempl.Dispose();
 
+}
+
+v8Function TS_colorToString(V8ARGS){
+        return v8::String::New("[object Color name=[Color]]");
 }
 
 //window handling
@@ -73,8 +81,8 @@ v8::Handle<v8::Value> SetResolution(const v8::Arguments& args)
     CHECK_ARG_INT(0, "SetResolution Error: Argument 0 is not a number.");
     CHECK_ARG_INT(1, "SetResolution Error: Argument 1 is not a number.");
 
-    int w = args[0]->IntegerValue();
-    int h = args[1]->IntegerValue();
+    unsigned int w = args[0]->Uint32Value();
+    unsigned int h = args[1]->Uint32Value();
 
     if(w<0||h<0){
         THROWERROR_RANGE("SetResolution Error: Resolution given negative.");
@@ -108,13 +116,34 @@ void TS_FlipScreen()
     SDL_Flip(SDL_GetVideoSurface());
 }
 
+SDL_Rect *TS_StoreInternalClippingRectangle(){//Maintain a clipping rectangle.
+	static SDL_Rect rect = {0, 0, (unsigned short)GetScreenWidth(), (unsigned short)GetScreenHeight()};
+	return &rect;
+}
 
+void TS_SetClippingRectangle(int x, int y, int w, int h){
+	//New clipping rectangle.
+	SDL_Rect rect = {(short)x, (short)y, (unsigned short)w, (unsigned short)h};
+	//store the original value.
+	SDL_Rect *trect = TS_StoreInternalClippingRectangle();
+	trect = &rect;
+	//Set the clipping rectangle.
+	SDL_SetClipRect(screen, &rect);
+}
 
+void TS_ResetClippingRectangle(){
+	SDL_SetClipRect(screen, TS_StoreInternalClippingRectangle());
+}
 
 void TS_ShowSurface(SDL_Surface *image, int x, int y)
 {
 	SDL_Rect dest = {(short int)x, (short int)y, (short unsigned int)(image->w), (short unsigned int)(image->h)};
 	SDL_BlitSurface(image, NULL, screen, &dest);
+}
+
+void TS_SurfaceShowSurface(SDL_Surface *image, SDL_Surface *dest, int x, int y){
+	SDL_Rect destrect = {(short int)x, (short int)y, (short unsigned int)(image->w), (short unsigned int)(image->h)};
+	SDL_BlitSurface(image, NULL, dest, &destrect);
 }
 
 void TS_ShowSurfaceClipped(SDL_Surface *image, SDL_Rect dest, SDL_Rect src)
@@ -293,6 +322,8 @@ v8::Handle<v8::Value> CreateColor(const v8::Arguments& args) {
     Pcolorobj.MakeWeak(color, TS_ColorFinalizer);
     Pcolorobj->SetInternalField(0, external);
 
+    Pcolorobj->GetConstructorName()=v8::String::New("Color");
+
     external.Clear();
 	return loadcolorscope.Close(Pcolorobj);
 }
@@ -306,10 +337,10 @@ v8Function SetClippingRectangle(V8ARGS){
     CHECK_ARG_INT(2, "SetClippingRectangle Error: Argument 2 is not a number.\n");
     CHECK_ARG_INT(3, "SetClippingRectangle Error: Argument 3 is not a number.\n");
 
-    int x = args[0]->IntegerValue();
-    int y = args[1]->IntegerValue();
-    int w = args[2]->IntegerValue();
-    int h = args[3]->IntegerValue();
+    int x = args[0]->Int32Value();
+    int y = args[1]->Int32Value();
+    int w = args[2]->Int32Value();
+    int h = args[3]->Int32Value();
 
 
     //sanitize arguments

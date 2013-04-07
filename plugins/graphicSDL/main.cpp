@@ -54,15 +54,15 @@ initFunction Init(void){
 
     if((screen = SDL_SetVideoMode(GetScreenWidth(), GetScreenHeight(), DEPTH, SDL_VIDEO_FLAGS|((TS_conf->fullscreen)?SDL_FULLSCREEN:0)))==NULL)
     {
-        printf("SDL Video mode setup failed. Graphics subsystem closing.\n%s\n", SDL_GetError());
+        printf("[graphicSDL] SDL Video mode setup failed. Graphics subsystem closing.\n%s\n", SDL_GetError());
     }
 	else
 	{
-        printf("SDL Video mode setup succeeded.\n");
+        printf("[graphicSDL] SDL Video mode setup succeeded.\n");
 	}
 
     if (IMG_Init(IMG_FLAGS) <=0) {
-        printf("Unable to init SDL Image: %s\n", IMG_GetError());
+        printf("[graphicSDL] Unable to init SDL Image: %s\n", IMG_GetError());
     }
     if(SDL_GetVideoInfo()->wm_available){
         SDL_WM_SetCaption("TurboSphere Game Engine", "TurboSphere Game Engine");
