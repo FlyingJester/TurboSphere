@@ -4,7 +4,7 @@ import sys
 
 defaultenv	= Environment()
 
-linuxenv	= defaultenv.Clone(tools = ['default', 'textfile'], CCFLAGS = "-O3 -mfpmath=sse,387 -mmmx -msse -msse2 -std=c++11 -g")
+linuxenv	= defaultenv.Clone(tools = ['default', 'textfile'], CCFLAGS = "-O3 -mfpmath=sse,387 -mmmx -msse -msse2 -std=c++11 -Wcast-align -Wwrite-strings")
 
 windowsenv 	= defaultenv.Clone()
 

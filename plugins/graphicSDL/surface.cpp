@@ -118,36 +118,33 @@ v8::Handle<v8::Value> TS_CreateSurface(const v8::Arguments& args)
     v8::HandleScope loadsurfacescope;
     v8::Handle<v8::Value> external;
     SDL_Surface *surface = NULL;
-    if (args[0]->IsExternal()) {
-        external = v8::Local<v8::External>::Cast(args[0]);
+
+    if(args[0]->IsString()){//Load Image from file
+        v8::String::AsciiValue str(args[0]);
+        const char *file = *str;
+
+        SDL_Surface *tempsurface MINMEMALIGN = IMG_Load(string(TS_dirs->image).append(file).c_str());
+        if(!tempsurface) {
+            printf("[graphicSDL] TS_CreateSurface Error: %s\n", IMG_GetError());
+            return v8::ThrowException(v8::String::New(string("[graphicSDL] TS_CreateSurface Error: Could not open surface ").append(file).c_str()));
+        }
+        surface = tempsurface;
     }
-    else {
-        if(args[0]->IsString()){//Load Image from file
-            v8::String::AsciiValue str(args[0]);
-            const char *file = *str;
+    else if(args[0]->IsNumber()&&args[1]->IsNumber()){
 
-            surface = IMG_Load(string(TS_dirs->image).append(file).c_str());
-            if(!surface) {
-                printf("[graphicSDL] TS_CreateSurface Error: %s\n", IMG_GetError());
-                return v8::ThrowException(v8::String::New(string("[graphicSDL] TS_CreateSurface Error: Could not open surface ").append(file).c_str()));
-            }
-        }
-        else if(args[0]->IsNumber()&&args[1]->IsNumber()){
+        int w = args[0]->Int32Value();
+        int h = args[1]->Int32Value();
 
-            int w = args[0]->Int32Value();
-            int h = args[1]->Int32Value();
-
-            v8::Handle<v8::Object> color = v8::Handle<v8::Object>::Cast(args[2]);
-            TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
-            surface = TS_SurfaceFromSpec(w, h, c->toInt(), false);
-
-        }
-        else{
-            return v8::ThrowException(v8::String::New("[graphicSDL] TS_CreateSurface error: Bad args. Must be string (filename) or number, number, Color_object"));
-        }
-        external = v8::External::New(surface);
-
+        v8::Handle<v8::Object> color = v8::Handle<v8::Object>::Cast(args[2]);
+        TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
+        SDL_Surface *tempsurface MINMEMALIGN = TS_SurfaceFromSpec(w, h, c->toInt(), false);
+        surface = tempsurface;
     }
+    else{
+        return v8::ThrowException(v8::String::New("[graphicSDL] TS_CreateSurface error: Bad args. Must be string (filename) or number, number, Color_object"));
+    }
+    external = v8::External::New(surface);
+
 
   	SurfaceInsttempl->SetInternalFieldCount(1);
 	v8::Handle<v8::Function> Surfacector = Surfacetempl->GetFunction();
@@ -188,11 +185,12 @@ v8::Handle<v8::Value> TS_CreateImage(const v8::Arguments& args)
             v8::String::AsciiValue str(args[0]);
             const char *file = *str;
 
-            surface = IMG_Load(string(TS_dirs->image).append(file).c_str());
-            if(!surface) {
+            SDL_Surface *tempsurface MINMEMALIGN = IMG_Load(string(TS_dirs->image).append(file).c_str());
+            if(!tempsurface) {
                 printf("[graphicSDL] TS_CreateImage Error: %s\n", IMG_GetError());
                 return v8::ThrowException(v8::String::New(string("[graphicSDL] TS_CreateImage Error: Could not open surface ").append(file).c_str()));
             }
+            surface = tempsurface;
             //
         }
         else if(args[0]->IsNumber()&&args[1]->IsNumber()){
@@ -201,9 +199,9 @@ v8::Handle<v8::Value> TS_CreateImage(const v8::Arguments& args)
             int h = args[1]->Int32Value();
 
             v8::Handle<v8::Object> color = v8::Handle<v8::Object>::Cast(args[2]);
-            TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
-            surface = TS_SurfaceFromSpec(w, h, c->toInt(), true);
-
+            TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
+            SDL_Surface *tempsurface MINMEMALIGN = TS_SurfaceFromSpec(w, h, c->toInt(), true);
+            surface = tempsurface;
         }
         else{
             return v8::ThrowException(v8::String::New("[graphicSDL] TS_CreateImage error: Bad args. Must be string (filename) or number, number, Color_object"));
@@ -366,7 +364,7 @@ v8::Handle<v8::Value> TS_surfaceSetPixel(const v8::Arguments& args)
 
 	v8::Handle<v8::Object> color = v8::Handle<v8::Object>::Cast(args[2]);
 
-    TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
+    TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 	unsigned int concatColor = c->toInt();
 
 	SDL_Rect rect = {(short int)x, (short int)y, 1, 1};
@@ -401,7 +399,7 @@ v8::Handle<v8::Value> TS_surfaceGetPixel(const v8::Arguments& args){
 	Uint8 g = (color<<16)>>24;
 	Uint8 r = (color<<24)>>24;
 	Uint8 a = (color<<0)>>24;
-    TS_Color *retcolor = new TS_Color(r, g, b, a);
+    TS_Color *retcolor MINMEMALIGN= new TS_Color(r, g, b, a);
     external = v8::External::New(retcolor);
 
   	ColorInsttempl->SetInternalFieldCount(1);
@@ -436,7 +434,7 @@ v8::Handle<v8::Value> TS_surfaceLine(const v8::Arguments& args){
 
 	v8::Handle<v8::Object> color = v8::Handle<v8::Object>::Cast(args[4]);
 
-    TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
+    TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
 	v8::Local<v8::Object> self = args.Holder();
 	v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
@@ -450,9 +448,8 @@ v8::Handle<v8::Value> TS_surfaceLine(const v8::Arguments& args){
 
 v8::Handle<v8::Value> TS_surfaceRectangle(const v8::Arguments& args){
 	if(args.Length()<2){
-		printf("[graphicSDL] TS_surfaceRectangle Error: Called with fewer than 5 arguments.");
-		return v8::False();
-		}
+		THROWERROR("[graphicSDL] TS_surfaceRectangle Error: Called with fewer than 5 arguments.");
+    }
 
     CHECK_ARG_INT(0, "[graphicSDL] TS_surfaceRectangle Error: Argument 0 is not a number.");
     CHECK_ARG_INT(1, "[graphicSDL] TS_surfaceRectangle Error: Argument 1 is not a number.");
@@ -467,7 +464,7 @@ v8::Handle<v8::Value> TS_surfaceRectangle(const v8::Arguments& args){
 
 	v8::Handle<v8::Object> color = v8::Handle<v8::Object>::Cast(args[4]);
 
-    TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
+    TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 	unsigned int concatColor = c->toInt();
 
 	v8::Local<v8::Object> self = args.Holder();

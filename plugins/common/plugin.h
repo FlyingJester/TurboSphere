@@ -5,7 +5,12 @@
 
 #include "../../v8.h"
 
+#define MIN_V8_ALIGN 2
+
 #if defined _WIN32
+
+#define MEMALIGN(X) _declspec(align(X))
+
 #include "../../SDL/SDL.h"
 #include "../../SDL/SDL_ttf.h"
 #include "../../SDL/SDL_image.h"
@@ -15,6 +20,8 @@
 
 #else
 
+#define MEMALIGN(X) __attribute__((aligned(X)))
+
 #include "/usr/include/SDL/SDL.h"
 #include "/usr/include/SDL/SDL_ttf.h"
 #include "/usr/include/SDL/SDL_image.h"
@@ -22,6 +29,8 @@
 #include "/usr/include/SDL/SDL_mixer.h"
 #include "/usr/include/SDL/SDL_thread.h"
 #endif
+
+#define MINMEMALIGN MEMALIGN(MIN_V8_ALIGN)
 
 typedef const char* cstring;
 typedef v8::Handle<v8::Value> v8Function;

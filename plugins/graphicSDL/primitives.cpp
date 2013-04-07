@@ -23,7 +23,7 @@ v8::Handle<v8::Value> Point(const v8::Arguments& args)
 	int y = args[1]->v8::Value::Int32Value();
 
 	v8::Handle<v8::Object> color = v8::Handle<v8::Object>::Cast(args[2]);
-    TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
+    TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
     SDL_Rect rect = {(short int)x, (short int)y, 1, 1};
     SDL_FillRect(screen, &rect, c->toInt());
@@ -47,7 +47,7 @@ v8::Handle<v8::Value> FilledCircle(const v8::Arguments& args)
 	int rad = args[2]->v8::Value::Int32Value();
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[3]);
 
-    TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
+    TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
 	TS_FilledCircle(x, y, rad, c->toInt(), screen);
 	//TS_FilledCircle(x, y, rad, r, g, b, a);
@@ -64,7 +64,7 @@ v8::Handle<v8::Value> OutlinedCircle(const v8::Arguments& args)
 	int rad = args[2]->v8::Value::Int32Value();
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[3]);
 
-    TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
+    TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
 	TS_OutlinedCircle(x, y, rad, c->toInt(), screen);
 
@@ -90,7 +90,7 @@ v8::Handle<v8::Value> Rectangle(const v8::Arguments& args)
 
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[4]);
 
-    TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
+    TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
 	TS_Rectangle(screen, x, y, w, h, c->toInt());
 
@@ -124,7 +124,7 @@ v8::Handle<v8::Value> Line(const v8::Arguments& args)
 
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[4]);
 
-    TS_Color* c = (TS_Color*)color->GetPointerFromInternalField(0);
+    TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
 	TS_Line(screen, x1, y1, x2, y2, c);
 
@@ -239,10 +239,10 @@ v8::Handle<v8::Value> GradientRectangle(const v8::Arguments& args)
 	v8::Local<v8::Object> color3 = v8::Local<v8::Object>::Cast(args[6]);
 	v8::Local<v8::Object> color4 = v8::Local<v8::Object>::Cast(args[7]);
 
-    TS_Color* c1 = (TS_Color*)color1->GetPointerFromInternalField(0);
-    TS_Color* c2 = (TS_Color*)color2->GetPointerFromInternalField(0);
-    TS_Color* c3 = (TS_Color*)color3->GetPointerFromInternalField(0);
-    TS_Color* c4 = (TS_Color*)color4->GetPointerFromInternalField(0);
+    TS_Color* c1 = (TS_Color*)color1->GetAlignedPointerFromInternalField(0);
+    TS_Color* c2 = (TS_Color*)color2->GetAlignedPointerFromInternalField(0);
+    TS_Color* c3 = (TS_Color*)color3->GetAlignedPointerFromInternalField(0);
+    TS_Color* c4 = (TS_Color*)color4->GetAlignedPointerFromInternalField(0);
 
 	TS_GradientRectangle(x, y, w, h, c1, c2, c3, c4);
 	return v8::Undefined();

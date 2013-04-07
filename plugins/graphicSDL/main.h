@@ -23,7 +23,7 @@
 
 #ifndef _WIN32
     //this is a stop-gap until V8 has the full API for aligned pointers to internal fields. Probably will not be necessary in V8 v3.21
-    #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    //#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
 extern SDL_Rect cmpltscreen;

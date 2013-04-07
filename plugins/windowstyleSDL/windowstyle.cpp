@@ -96,8 +96,6 @@ int GetNumVariables(){
 
 v8FunctionArray GetVariables(){
     //no variables from this plugin.
-    //numerate(true);
-    //v8FunctionArray vars = (v8FunctionArray)calloc(GetNumVariables(), sizeof(v8Function));
     return NULL;
 }
 

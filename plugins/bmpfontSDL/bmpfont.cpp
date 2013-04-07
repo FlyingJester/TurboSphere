@@ -20,8 +20,10 @@
 #define NUMVARS 0
 
 #ifdef _WIN32
+
 #define STRDUP _strdup
 #else
+
 #include <cstring>
 #define STRDUP strdup
 #endif
@@ -193,26 +195,22 @@ v8Function LoadBMPFont(const v8::Arguments& args) {
     CHECK_ARG_STR(0);
     v8::HandleScope loadBMPfontscope;
 	v8::Handle<v8::Value> external;
-    TS_BMPFont *font = NULL;
-    if (args[0]->IsExternal()) {
-        external = v8::Local<v8::External>::Cast(args[0]);
-    }
-    else{
-        v8::String::Utf8Value str(args[0]);
-        const char *fontname = *str;
+    //TS_BMPFont *font = NULL;
+    v8::String::Utf8Value str(args[0]);
+    const char *fontname = *str;
 
-        SDL_RWops *fonttest = SDL_RWFromFile(string(TS_dirs->font).append(fontname).c_str(), "rb");
-        if(!fonttest){
-            SDL_RWclose(fonttest);
-            //printf("[bmpfontSDL] TS_LoadBMPFont Error: Could not open rfn file %s\n", fontname);
-            return v8::ThrowException(v8::String::New(string("[bmpfontSDL] TS_LoadFont Error: Could not load font ").append(fontname).c_str()));
-        }
+    SDL_RWops *fonttest = SDL_RWFromFile(string(TS_dirs->font).append(fontname).c_str(), "rb");
+    if(!fonttest){
         SDL_RWclose(fonttest);
-
-        font = new TS_BMPFont(string(TS_dirs->font).append(fontname).c_str());
-
-        external = v8::External::New(font);
+        //printf("[bmpfontSDL] TS_LoadBMPFont Error: Could not open rfn file %s\n", fontname);
+        return v8::ThrowException(v8::String::New(string("[bmpfontSDL] TS_LoadFont Error: Could not load font ").append(fontname).c_str()));
     }
+    SDL_RWclose(fonttest);
+
+    TS_BMPFont *font MEMALIGN(4) = new TS_BMPFont(string(TS_dirs->font).append(fontname).c_str());
+
+    external = v8::External::New(font);
+
 
   	BMPFontInsttempl->SetInternalFieldCount(1);
 	v8::Local<v8::Function> BMPFontctor = BMPFonttempl->GetFunction();
@@ -235,9 +233,9 @@ v8Function LoadSystemBMPFont(V8ARGS) {
         SDL_RWclose(fonttest);
         return v8::ThrowException(v8::String::New(string("[bmpfontSDL] TS_LoadSystemBMPFont Error: Could not open rfn file ").append(string(TS_dirs->system).append(TS_conf->systemfont)).c_str()));
     }
-    TS_BMPFont *font = new TS_BMPFont(string(TS_dirs->system).append(TS_conf->systemfont).c_str());
+    TS_BMPFont *font MEMALIGN(8) = new TS_BMPFont(string(TS_dirs->system).append(TS_conf->systemfont).c_str());
     external = v8::External::New(font);
-
+    printf("System Font is at address %p.\n", &font);
   	BMPFontInsttempl->SetInternalFieldCount(1);
 	v8::Local<v8::Function> BMPFontctor = BMPFonttempl->GetFunction();
 	v8::Local<v8::Object> BMPFontobj = BMPFontctor->NewInstance();
