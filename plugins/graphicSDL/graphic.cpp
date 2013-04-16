@@ -180,7 +180,7 @@ v8::Handle<v8::Value> TS_GetSystemArrow(const v8::Arguments& args)
 	TS_Directories *TS_dirs = GetDirs();
     v8::HandleScope loadsurfacescope;
     v8::Handle<v8::Value> external;
-	SDL_Surface *surface = IMG_Load(string(TS_dirs->system).append(TS_conf->systemarrow).c_str());
+	SDL_Surface *surface MINMEMALIGN = IMG_Load(string(TS_dirs->system).append(TS_conf->systemarrow).c_str());
 
     external = v8::External::New(surface);
 
@@ -277,20 +277,17 @@ v8::Handle<v8::Value> GetAlpha(v8::Local<v8::String> property,
 
 v8::Handle<v8::Value> CreateColor(const v8::Arguments& args) {
   v8::HandleScope loadcolorscope;
-   v8::Handle<v8::Value> external;
 
-  TS_Color *color = new TS_Color(255, 255, 255, 255);
+  MINMEMALIGN TS_Color *color = new TS_Color(255, 255, 255, 255);
+
+
     if(args.Length()<3){
-        return v8::ThrowException(v8::String::New("CreateColor Error: Called with fewer than 3 arguments!"));
+        return v8::ThrowException(v8::String::New("[graphicSDL] CreateColor Error: Called with fewer than 3 arguments."));
     }
-    if (args[0]->IsExternal()) {
-        external = v8::Local<v8::External>::Cast(args[0]);
-    } else {
 
-
-    CHECK_ARG_INT(0, "CreateColor Error: Could not parse arg 0 to number!");
-    CHECK_ARG_INT(1, "CreateColor Error: Could not parse arg 1 to number!");
-    CHECK_ARG_INT(2, "CreateColor Error: Could not parse arg 2 to number!");
+    CHECK_ARG_INT(0, "[graphicSDL] CreateColor Error: Could not parse arg 0 to number.");
+    CHECK_ARG_INT(1, "[graphicSDL] CreateColor Error: Could not parse arg 1 to number.");
+    CHECK_ARG_INT(2, "[graphicSDL] CreateColor Error: Could not parse arg 2 to number.");
 
     int r = args[0]->Int32Value();
     int g = args[1]->Int32Value();
@@ -306,8 +303,7 @@ v8::Handle<v8::Value> CreateColor(const v8::Arguments& args) {
     color->green    = g;
     color->blue     = b;
     color->alpha    = a;
-    external = v8::External::New(color);
-  }
+
 
   	ColorInsttempl->SetInternalFieldCount(1);
 	v8::Handle<v8::Function> colorctor = Colortempl->GetFunction();
@@ -320,12 +316,83 @@ v8::Handle<v8::Value> CreateColor(const v8::Arguments& args) {
     colorctor.Clear();
 
     Pcolorobj.MakeWeak(color, TS_ColorFinalizer);
-    Pcolorobj->SetInternalField(0, external);
+    Pcolorobj->SetAlignedPointerInInternalField(0, color);
 
     Pcolorobj->GetConstructorName()=v8::String::New("Color");
 
-    external.Clear();
 	return loadcolorscope.Close(Pcolorobj);
+}
+
+TS_Color *TS_BlendColors(TS_Color *c1, TS_Color *c2){
+    unsigned int r = c1->red    +c2->red;
+    unsigned int g = c1->green  +c2->green;
+    unsigned int b = c1->blue   +c2->blue;
+    unsigned int a = c1->alpha  +c2->alpha;
+    uint8_t r8 = (r>>1);
+    uint8_t g8 = (g>>1);
+    uint8_t b8 = (b>>1);
+    uint8_t a8 = (a>>1);
+
+    return new TS_Color(r8, g8, b8, a8);
+
+}
+
+TS_Color *TS_BlendColorsWeighted(TS_Color *c1, TS_Color *c2, int w1, int w2){
+
+    if(w2<=0){
+        return new TS_Color(c1->red, c1->green, c1->blue, c1->alpha);
+    }
+
+    if(w1<=0){
+        return new TS_Color(c2->red, c2->green, c2->blue, c2->alpha);
+    }
+
+    unsigned int r = (c1->red*w1)+(c2->red*w2);
+    unsigned int g = (c1->green*w1)+(c2->green*w2);
+    unsigned int b = (c1->blue*w1)+(c2->blue*w2);
+    unsigned int a = (c1->alpha*w1)+(c2->alpha*w2);
+
+    r/=w1+w2;
+    g/=w1+w2;
+    b/=w1+w2;
+    a/=w1+w2;
+
+    uint8_t r8 = r;
+    uint8_t g8 = g;
+    uint8_t b8 = b;
+    uint8_t a8 = a;
+
+    return new TS_Color(r8, g8, b8, a8);
+
+}
+
+TS_Color *TS_BlendColorsWeighted(TS_Color *c1, TS_Color *c2, double w1, double w2){
+
+    if(w2<=0){
+        return new TS_Color(c1->red, c1->green, c1->blue, c1->alpha);
+    }
+
+    if(w1<=0){
+        return new TS_Color(c2->red, c2->green, c2->blue, c2->alpha);
+    }
+
+    double r = (c1->red*w1)+(c2->red*w2);
+    double g = (c1->green*w1)+(c2->green*w2);
+    double b = (c1->blue*w1)+(c2->blue*w2);
+    double a = (c1->alpha*w1)+(c2->alpha*w2);
+
+    r/=w1+w2;
+    g/=w1+w2;
+    b/=w1+w2;
+    a/=w1+w2;
+
+    uint8_t r8 = (uint8_t) r;
+    uint8_t g8 = (uint8_t) g;
+    uint8_t b8 = (uint8_t) b;
+    uint8_t a8 = (uint8_t) a;
+
+    return new TS_Color(r8, g8, b8, a8);
+
 }
 
 v8Function SetClippingRectangle(V8ARGS){

@@ -34,6 +34,7 @@ regFunction::regFunction(const char *_name, v8::Handle<v8::Value> (*func)(const 
 }
 
 regFunction::~regFunction(){
+    //free((void*)name);
 }
 
 void regFunction::registerToContext(v8::Persistent<v8::Context> context){

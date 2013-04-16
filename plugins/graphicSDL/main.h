@@ -4,7 +4,6 @@
 #include "../common/plugin.h"
 #include "../common/graphic_algorithm.h"
 #include <cmath>
-
 //POS standard libraries!
 #ifndef UINT16_MAX
     #define UINT16_MAX 0xffff
@@ -18,7 +17,7 @@
     #define INT16_MIN -0x7ffe
 #endif
 
-#define NUMFUNCS 17
+#define NUMFUNCS 21
 #define NUMVARS  0
 
 #ifndef _WIN32

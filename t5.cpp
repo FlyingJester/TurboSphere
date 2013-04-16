@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
 
 #ifdef _WIN32
 #define STRDUP _strdup
@@ -97,7 +98,7 @@ T5_file::T5_file(const char*file){
 
 
         if(isSec&&secDone){
-            sec = STRDUP(val.c_str());
+            sec = val.c_str();
                 #ifdef VERBOSE
                 printf("Section Found: %s", sec.c_str());
                 #endif
@@ -115,6 +116,11 @@ T5_file::T5_file(){
 T5_file::~T5_file(){
     stream.flush();
     stream.close();
+//    while(!values.empty()) delete values.back(), values.pop_back();
+
+//    for(int i=0; i<values.size(); i++){
+//        delete values[i];
+//    }
 }
 
 void T5_close(T5_file *file){
@@ -240,4 +246,10 @@ INIvalue::INIvalue(const char *keyname, const char *value, const char *section){
     key = keyname;
     val = value;
     sec = section;
+}
+
+INIvalue::~INIvalue(){
+    free((void *)key);
+    free((void *)val);
+    free((void *)sec);
 }

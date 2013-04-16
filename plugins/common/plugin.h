@@ -107,46 +107,46 @@ typedef v8::Persistent<v8::ObjectTemplate> v8PrototypeTemplate;
 #include <string>
 
 #define THROWERROR(name)\
-    return v8::ThrowException(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string(name)).c_str()));
+    return v8::ThrowException(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string(name)).c_str()));
 
 #define THROWERROR_RANGE(name)\
-	return v8::ThrowException(v8::Exception::RangeError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string(name)).c_str())));
+	return v8::ThrowException(v8::Exception::RangeError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string(name)).c_str())));
 
 #define THROWERROR_REFERENCE(name)\
-	return v8::ThrowException(v8::Exception::ReferenceError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string(name)).c_str())));
+	return v8::ThrowException(v8::Exception::ReferenceError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string(name)).c_str())));
 
 #define THROWERROR_SYNTAX(name)\
-	return v8::ThrowException(v8::Exception::SyntaxError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string(name)).c_str())));
+	return v8::ThrowException(v8::Exception::SyntaxError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string(name)).c_str())));
 
 #define THROWERROR_TYPE(name)\
-	return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string(name)).c_str())));
+	return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string(name)).c_str())));
 
 #define THROWERROR_MSG(name)\
-	return v8::ThrowException(v8::Exception::Error(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string(name)).c_str())));
+	return v8::ThrowException(v8::Exception::Error(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string(name)).c_str())));
 
 #define CHECK_ARG_INT(index) \
     if (!args[index]->IsNumber()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string("Error: Argument " #index " is not an integer.")).c_str())));\
+        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string("Error: Argument " #index " is not an integer.")).c_str())));\
     }
 
 #define CHECK_ARG_STR(index) \
     if (!args[index]->IsString()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string("Error: Argument " #index " is not a string.")).c_str())));\
+        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string("Error: Argument " #index " is not a string.")).c_str())));\
     }
 
 #define CHECK_ARG_OBJ(index) \
     if (!args[index]->IsObject()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string("Error: Argument " #index " is not an object.")).c_str())));\
+        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string("Error: Argument " #index " is not an object.")).c_str())));\
     } \
 
 #define CHECK_ARG_BOOL(index) \
     if (!args[index]->IsBoolean()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string("Error: Argument " #index " is not a boolean.")).c_str())));\
+        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string("Error: Argument " #index " is not a boolean.")).c_str())));\
     } \
 
 #define CHECK_ARG_ARRAY(index) \
     if (!args[index]->IsArray()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string(PLUGINNAME " ")+std::string(__func__)+std::string("Error: Argument " #index " is not an array.")).c_str())));\
+        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string("Error: Argument " #index " is not an array.")).c_str())));\
     } \
 
 

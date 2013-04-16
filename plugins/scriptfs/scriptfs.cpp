@@ -1,4 +1,5 @@
 
+#define PLUGINNAME "scriptfs"
 #include "../common/plugin.h"
 #include "scriptfs.h"
 #include "../../t5.h"
@@ -18,7 +19,7 @@ int numerate(bool reset){
     return i-1;
 }
 
-#define NUMFUNCS 3
+#define NUMFUNCS 4
 #define NUMVARS 0
 
 v8Function TS_fileRead(V8ARGS);
@@ -28,15 +29,17 @@ v8Function TS_fileClose(V8ARGS);
 v8Function TS_OpenFile(V8ARGS);
 v8Function TS_RemoveFile(V8ARGS);
 v8Function TS_GetFileList(V8ARGS);
+v8Function TS_DoesFileExist(V8ARGS);
 
 void * TS_OpenFilePointer          = V8FUNCPOINTER(TS_OpenFile);
 void * TS_RemoveFilePointer        = V8FUNCPOINTER(TS_RemoveFile);
 void * TS_GetFileListPointer       = V8FUNCPOINTER(TS_GetFileList);
+void * TS_DoesFileExistPointer     = V8FUNCPOINTER(TS_DoesFileExist);
 
 DECLARE_OBJECT_TEMPLATES(ScriptFile);
 
-void Close(){
 
+void Close(){
 }
 initFunction Init(){
 	T5_init(1, GetDirs()->save);
@@ -59,6 +62,7 @@ functionArray GetFunctions(){
 	funcs[numerate(false)] = TS_OpenFilePointer;
 	funcs[numerate(false)] = TS_RemoveFilePointer;
 	funcs[numerate(false)] = TS_GetFileListPointer;
+	funcs[numerate(false)] = TS_DoesFileExistPointer;
 	return funcs;
 }
 
@@ -68,6 +72,7 @@ const char ** GetFunctionNames(){
 	funcs[numerate(false)] = (TS_name)"File";
 	funcs[numerate(false)] = (TS_name)"RemoveFile";
 	funcs[numerate(false)] = (TS_name)"GetFileList";
+	funcs[numerate(false)] = (TS_name)"DoesFileExist";
 	return funcs;
 }
 
@@ -86,7 +91,7 @@ v8Function TS_OpenFile(V8ARGS){
 	if(args.Length()<1){
         THROWERROR("[scriptfs] TS_OpenFile Error: Called with no arguments.");
     }
-    CHECK_ARG_STR(0, "[scriptfs] TS_OpenFile Error: Arg 0 is not a string.");
+    CHECK_ARG_STR(0);
 
     BEGIN_OBJECT_WRAP_CODE
 
@@ -111,7 +116,7 @@ v8Function TS_RemoveFile(V8ARGS){
 	if(args.Length()<1){
         THROWERROR("[scriptfs] TS_RemoveFile Error: Called with no arguments.");
     }
-    CHECK_ARG_STR(0, "[scriptfs] TS_RemoveFile Error: Arg 0 is not a string.");
+    CHECK_ARG_STR(0);
 	v8::String::Utf8Value str(args[0]);
     string filename = (*str);
 	if(remove((string(GetDirs()->save)+filename).c_str()) != 0 ){
@@ -128,25 +133,26 @@ v8Function TS_GetFileList(V8ARGS){
 	const char *directory;
 
 	if(args.Length()>0){
-			CHECK_ARG_STR(0, "[scriptfs] TS_GetFileList Error: Argument 0 is not a string.");
+			CHECK_ARG_STR(0);
 		    v8::String::Utf8Value str(args[0]);
-			if(strnlen(*str, 1023)<1){
+
+
+			if(strnlen(*str, 1022)<1){
 				directory = "";
 			}
 			else{
 				if(DEBUG) printf("[scriptfs] GetFileList Info: The relative directory was %s\n", *str);
-				char * tdir = (char *)malloc(strnlen(*str, 1023)+1);
-				tdir[0] = '/';
-				tdir[1] = '\0';
+				char * tdir = (char *)malloc(strlen(*str)+1);
 				if(DEBUG) printf("[scriptfs] GetFileList Info: tdir = %s\n", tdir);
-				tdir = strncat(tdir, *str, 1023);
-				char * ls = strrchr(tdir, '/');
-				if(ls[1]!='\0'){
-					strncat(tdir, "/", 1023);
-				}
-				if(DEBUG) printf("[scriptfs] GetFileList Info: The directory as concated was %s\n", tdir);
-				directory = STRDUP(tdir);
-				free(tdir);
+				tdir = strcat(tdir, *str);
+                char * ls = strrchr(tdir, '/');
+                if(ls[1]!='\0'){
+                    strcat(tdir, "/");
+                }
+                if(DEBUG) printf("[scriptfs] GetFileList Info: The directory as concated was %s\n", tdir);
+
+                directory = STRDUP(tdir);
+                free(tdir);
 			}
 		}
 	else{
@@ -199,11 +205,30 @@ v8Function TS_GetFileList(V8ARGS){
 	}
 	free(filenames);
 	free((void*)fulldir);
-	if(directory!=""){
+	if(directory!=NULL){
 		free((void*)directory);
 	}
 	return TS_GetFileListscope.Close(files);
 
+}
+
+v8Function TS_DoesFileExist(V8ARGS){
+    if(args.Length()<1){
+        THROWERROR("[scriptfs] TS_fileRead Error: Called with fewer than 2 arguments!\n");
+    }
+    CHECK_ARG_STR(0);
+    v8::String::Utf8Value str(args[0]);
+    const char *path = (string(GetDirs()->save)+string(*str)).c_str();
+
+    FILE *filep = fopen(path, "r");
+
+    if(filep!=NULL){
+        fclose(filep);
+        return v8::True();
+    }
+    else{
+        return v8::False();
+    }
 }
 
 v8Function TS_fileRead(V8ARGS)
@@ -211,8 +236,8 @@ v8Function TS_fileRead(V8ARGS)
     if(args.Length()<2){
         THROWERROR("[scriptfs] TS_fileRead Error: Called with fewer than 2 arguments!\n");
     }
-    CHECK_ARG_STR(0, "[scriptfs] TS_fileRead Error: Argument 0 is not a string.");
-	CHECK_ARG_STR(1, "[scriptfs] TS_fileRead Error: Argument 1 is not a string.");
+    CHECK_ARG_STR(0);
+	CHECK_ARG_STR(1);
     v8::String::AsciiValue key(args[0]);
     v8::String::AsciiValue def(args[1]);
 	v8::Local<v8::Object> self = args.Holder();
@@ -236,8 +261,8 @@ v8Function TS_fileWrite(V8ARGS)
     if(args.Length()<2){
         THROWERROR("[scriptfs] TS_fileWrite Error: Called with fewer than 2 arguments!\n");
     }
-    CHECK_ARG_STR(0, "[scriptfs] TS_fileWrite Error: Argument 0 is not a string.");
-    CHECK_ARG_STR(1, "[scriptfs] TS_fileWrite Error: Argument 1 is not a string.");
+    CHECK_ARG_STR(0);
+    CHECK_ARG_STR(1);
     v8::String::AsciiValue key(args[0]);
     v8::String::AsciiValue val(args[1]);
 	v8::Local<v8::Object> self = args.Holder();

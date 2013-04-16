@@ -7,7 +7,7 @@ plugin should be done. It also shows quite well how to
 cleanly and concisely read from Sphere files.
 */
 ///////////////////
-
+#define PLUGINNAME "windowstyleSDL"
 #include "../common/plugin.h"
 #include "../../configmanager/opengame.h"
 #include "../common/graphic_common.h"
@@ -119,7 +119,7 @@ TS_WSborder::TS_WSborder(SDL_Surface *im){
 }
 
 TS_WSborder::TS_WSborder(){
-    image = new SDL_Surface;
+    image = NULL;//new SDL_Surface;
     width = 0;
     height= 0;
     mask = TS_Color(0,0,0,0);
@@ -134,7 +134,7 @@ TS_WScorner::TS_WScorner(SDL_Surface *im, int xOff, int yOff){
 }
 
 TS_WScorner::TS_WScorner(){
-    image = new SDL_Surface;
+    image = NULL;//new SDL_Surface;
     width = 0;
     height= 0;
     xOffset = 0;
@@ -151,7 +151,7 @@ TS_WSbackground::TS_WSbackground(SDL_Surface *im, WSbackgroundType _type){
 }
 
 TS_WSbackground::TS_WSbackground(){
-    image = new SDL_Surface;
+    image = NULL;//new SDL_Surface;
     width = 0;
     height= 0;
 	type = WS_TILED;
@@ -184,7 +184,7 @@ SDL_Surface *TS_WindowStyle::getImage(int num){
         return background.image;
 		default:  //at least don't explode.
 		printf("[windowstyleSDL] Error: Error reading WindowStyle Element in %s. Element was %i.\n", name, num);
-		return new SDL_Surface;
+		return NULL;//new SDL_Surface;
 	}
 }
 
@@ -382,7 +382,7 @@ v8Function LoadWindowStyle(V8ARGS) {
     if(args.Length()<1){
         THROWERROR("LoadWindowStyle Error: Called with no arguments.");
     }
-    CHECK_ARG_STR(0, "LoadWindowStyle Error: Arg 0 is not a string.");
+    CHECK_ARG_STR(0);
 
     BEGIN_OBJECT_WRAP_CODE
 
@@ -449,15 +449,15 @@ v8Function TS_WSdrawWindow(V8ARGS) {
 	if(args.Length()<4){
         return v8::ThrowException(v8::String::New("TS_WSdrawWindow Error: called with less than 3 parameters."));
     }
-    CHECK_ARG_INT(0, "TS_WSdrawWindow Error: could not parse arg 0 to number.")
-    CHECK_ARG_INT(1, "TS_WSdrawWindow Error: could not parse arg 1 to number.")
-    CHECK_ARG_INT(2, "TS_WSdrawWindow Error: could not parse arg 2 to number.")
-    CHECK_ARG_INT(3, "TS_WSdrawWindow Error: could not parse arg 3 to number.")
+    CHECK_ARG_INT(0);
+    CHECK_ARG_INT(1);
+    CHECK_ARG_INT(2);
+    CHECK_ARG_INT(3);
 
-	int x = static_cast<int>(args[0]->NumberValue());
-	int y = static_cast<int>(args[1]->NumberValue());
-	int w = static_cast<int>(args[2]->NumberValue());
-	int h = static_cast<int>(args[3]->NumberValue());
+	int x = args[0]->Int32Value();
+	int y = args[1]->Int32Value();
+	int w = args[2]->Int32Value();
+	int h = args[3]->Int32Value();
 	//const char * z = args[2]->AsciiValue();
 	v8::Local<v8::Object> self = args.Holder();
 	//v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));

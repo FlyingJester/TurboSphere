@@ -219,6 +219,7 @@ int loadAllPlugins(){
     for(int i = 0; i<numplugins; i++){
         free((void*)plugins[i]);
     }
+    free((void*)plugins);
     //
     //
     return 0;
@@ -343,25 +344,24 @@ void grabFuncsFromLibrary(void *handle){
 
     int numVars = dlGetNumVars();
     if(numVars>0){
-    VariableArray Vars = (VariableArray)calloc(numVars, sizeof(v8::Handle<v8::Value>));
+        VariableArray Vars = (VariableArray)calloc(numVars, sizeof(v8::Handle<v8::Value>));
 
-    Vars = dlGetVars();
-    const char ** VarNames = (const char **)calloc(numVars, sizeof(const char*));
+        Vars = dlGetVars();
+        const char ** VarNames = (const char **)calloc(numVars, sizeof(const char*));
 
-    VarNames = dlGetVarNames();
+        VarNames = dlGetVarNames();
 
 
-    for(int i = 0; i<numVars; i++){
-        addVariableToList(VarNames[i], (v8::Handle<v8::Value>)Vars[i]);
+        for(int i = 0; i<numVars; i++){
+            addVariableToList(VarNames[i], (v8::Handle<v8::Value>)Vars[i]);
+        }
+
+        free(VarNames);
+        free(Vars);
     }
 
-    }
-
-    for(int i = 0; i<numFuncs; i++){
-        //delete FuncNames[i];
-        //delete Funcs[i];
-    }
-
+    free(FuncNames);
+    free(Funcs);
 }
 
 

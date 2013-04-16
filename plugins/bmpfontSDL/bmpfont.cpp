@@ -7,7 +7,7 @@
 #include <cmath>
 
 #define BMPFONT_INTERNAL
-#define PLUGINNAME "[bmpfontSDL]"
+#define PLUGINNAME "bmpfontSDL"
 #include "bmpfont.h"
 #include "../../configmanager/opengame.h"
 #include "../graphicSDL/graphic.h"

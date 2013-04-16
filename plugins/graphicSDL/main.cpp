@@ -38,6 +38,10 @@ void * RectanglePointer           = V8FUNCPOINTER(Rectangle);
 void * GradientRectanglePointer   = V8FUNCPOINTER(GradientRectangle);
 void * FilledCirclePointer        = V8FUNCPOINTER(FilledCircle);
 void * OutlinedCirclePointer      = V8FUNCPOINTER(OutlinedCircle);
+void * OutlinedPolygonPointer     = V8FUNCPOINTER(OutlinedPolygon);
+void * OutlinedRectanglePointer   = V8FUNCPOINTER(OutlinedRectangle);
+void * PointSeriesPointer         = V8FUNCPOINTER(PointSeries);
+void * GradientLinePointer         = V8FUNCPOINTER(GradientLine);
 
 initFunction Init(void){
 
@@ -126,6 +130,10 @@ functionArray GetFunctions(){
     funcs[numerate(false)] = GradientRectanglePointer;
     funcs[numerate(false)] = FilledCirclePointer;
     funcs[numerate(false)] = OutlinedCirclePointer;
+    funcs[numerate(false)] = OutlinedPolygonPointer;
+    funcs[numerate(false)] = OutlinedRectanglePointer;
+    funcs[numerate(false)] = PointSeriesPointer;
+    funcs[numerate(false)] = GradientLinePointer;
     return funcs;
 }
 
@@ -149,6 +157,10 @@ nameArray GetFunctionNames(){
     names[numerate(false)] = (functionName)"GradientRectangle";
     names[numerate(false)] = (functionName)"FilledCircle";
     names[numerate(false)] = (functionName)"OutlinedCircle";
+    names[numerate(false)] = (functionName)"OutlinedPolygon";
+    names[numerate(false)] = (functionName)"OutlinedRectangle";
+    names[numerate(false)] = (functionName)"PointSeries";
+    names[numerate(false)] = (functionName)"GradientLine";
     return names;
 }
 

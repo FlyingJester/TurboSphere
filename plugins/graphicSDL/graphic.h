@@ -95,6 +95,10 @@ v8::Handle<v8::Value> CreateColor(const v8::Arguments& args);
 v8::Handle<v8::Value> TS_surfaceGetPixel(const v8::Arguments& args);
 v8::Handle<v8::Value> Line(const v8::Arguments& args);
 v8::Handle<v8::Value> TS_GetSystemArrow(const v8::Arguments& args);
+v8Function OutlinedPolygon(V8ARGS);
+v8Function OutlinedRectangle(V8ARGS);
+v8Function PointSeries(V8ARGS);
+v8Function GradientLine(V8ARGS);
 
 void ColorClose();
 void SurfaceClose();
@@ -108,6 +112,9 @@ void ColorInit();
 
 #endif
 
+GRAPHICSDL_EXPORT TS_Color *TS_BlendColors(TS_Color *c1, TS_Color *c2);
+GRAPHICSDL_EXPORT TS_Color *TS_BlendColorsWeighted(TS_Color *c1, TS_Color *c2, int w1, int w2);
+TS_Color *TS_BlendColorsWeighted(TS_Color *c1, TS_Color *c2, double w1, double w2);
 GRAPHICSDL_EXPORT void TS_GradientRectangle(int x, int y, int w, int h, TS_Color *c1, TS_Color *c2, TS_Color *c3, TS_Color *c4);
 GRAPHICSDL_EXPORT void TS_Rectangle(SDL_Surface *dest, int x, int y, int w, int h, unsigned int color);
 GRAPHICSDL_EXPORT void TS_drawAlphaRect(int x, int y, int w, int h, int c, int a, SDL_Rect rect);

@@ -31,6 +31,7 @@ typedef HANDLE filehandle;
 	#define FILENAME(NAME) NAME->d_name
 	#define ISDIRECTORY(NAME) (NAME->d_type==DT_DIR)
 
+    #include <sys/stat.h>
     #include <cstring>
 	#define STRDUP strdup
 #endif

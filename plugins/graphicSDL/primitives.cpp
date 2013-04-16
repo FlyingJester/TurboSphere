@@ -213,11 +213,276 @@ void TS_Line(SDL_Surface *dest, int ax1, int ay1, int ax2, int ay2, TS_Color *c)
 }
 
 
+void TS_GradientLine(SDL_Surface *dest, int ax1, int ay1, int ax2, int ay2, TS_Color *c1, TS_Color *c2){
+    if((*c1)==(*c2)){
+        TS_Line(dest, ax1, ay1, ax2, ay2, c1);
+        return;
+    }
+    int color1 = c1->toInt();
+    int color2 = c2->toInt();
+
+    int w = abs(ax1-ax2);
+    int h = abs(ay1-ay2);
+
+    SDL_Rect rect = {(short int)min(ax1, ax2), (short int)min(ay1, ay2), (short unsigned int)w, (short unsigned int)h};
+
+    if(ax1-ax2==0){
+        SDL_Surface *surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, 1, h, DEPTH, CHANNEL_MASKS);
+        SDL_Rect allsurf = {0, 0, 1, (short unsigned int)h};
+
+        for(SDL_Rect temprect = {0, 0, 1, 1}; temprect.y<(short unsigned int)h; temprect.y++){
+            TS_Color *color = TS_BlendColorsWeighted(c1, c2, temprect.y, h-temprect.y);
+            SDL_FillRect(surface, &temprect, color->toInt());
+            delete color;
+        }
+
+        SDL_BlitSurface(surface, NULL, dest, &rect);
+        SDL_FreeSurface(surface);
+
+        return;
+    }
+    else if(ay1-ay2==0){
+        SDL_Surface *surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, w, 1, DEPTH, CHANNEL_MASKS);
+        SDL_Rect allsurf = {0, 0, (short unsigned int)w, 1};
+
+        for(SDL_Rect temprect = {0, 0, 1, 1}; temprect.x<(short unsigned int)w; temprect.x++){
+            TS_Color *color = TS_BlendColorsWeighted(c1, c2, temprect.x, w-temprect.x);
+            SDL_FillRect(surface, &temprect, color->toInt());
+            delete color;
+        }
+
+        SDL_BlitSurface(surface, NULL, dest, &rect);
+        SDL_FreeSurface(surface);
+
+        return;
+    }
+
+    double totalDist = sqrt((w*w)+(h*h));
+
+    int x1 = ax1-min(ax1, ax2);
+    int y1 = ay1-min(ay1, ay2);
+    int x2 = ax2-min(ax1, ax2);
+    int y2 = ay2-min(ay1, ay2);
+
+    SDL_Rect temprect = {(short int)x1, (short int)y1, 1, 1};
+
+	SDL_Surface *surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, w+1, h+1, DEPTH, CHANNEL_MASKS);
+
+    int sx;
+    int sy;
+    if (x1<x2){
+        sx  = 1;
+    }
+    else {
+        sx  = -1;
+    }
+    if (y1<y2){
+        sy  = 1;
+    }
+    else{
+        sy  = -1;
+    }
+    float err = (float)w-h;
+
+    float e2;
+    while(true){
+        temprect.x = x1;
+        temprect.y = y1;
+        double curdist = sqrt(((x1-x2)*(x1-x2))+((y1-y2)*(y1-y2)));
+        TS_Color *color = TS_BlendColorsWeighted(c1, c2, curdist, totalDist-curdist);//sqrt(((w-x1)*(w-x1))+((h-x1)*(h-y1))));
+        SDL_FillRect(surface, &temprect, color->toInt());
+        delete color;
+        if ((x1==x2)&&(y1==y2)){break;}
+        e2 = 2*err;
+
+        if (e2>-h){
+
+            err-= h;
+            x1 += sx;
+
+        }
+        if (e2<w){
+
+            err += w;
+            y1  += sy;
+
+        }
+    }
+
+	SDL_BlitSurface(surface, NULL, dest, &rect);
+    SDL_FreeSurface(surface);
+}
+
+v8Function GradientLine(V8ARGS){
+
+    if(args.Length()<4){
+        THROWERROR("[graphicSDL] GradientLine Error: Called with fewer than 4 arguments.");
+    }
+    CHECK_ARG_INT(0, "[graphicSDL] GradnientLine Error: Arg 0 is not a number.");
+    CHECK_ARG_INT(1, "[graphicSDL] GradnientLine Error: Arg 1 is not a number.");
+    CHECK_ARG_INT(2, "[graphicSDL] GradnientLine Error: Arg 2 is not a number.");
+    CHECK_ARG_INT(3, "[graphicSDL] GradnientLine Error: Arg 3 is not a number.");
+    CHECK_ARG_OBJ(4, "[graphicSDL] GradnientLine Error: Arg 4 is not an object.");
+    CHECK_ARG_OBJ(5, "[graphicSDL] GradnientLine Error: Arg 5 is not an object.");
+
+
+    int x1 = args[0]->Int32Value();
+    int y1 = args[1]->Int32Value();
+    int x2 = args[2]->Int32Value();
+    int y2 = args[3]->Int32Value();
+
+	v8::Local<v8::Object> colorobj1 = v8::Local<v8::Object>::Cast(args[4]);
+    TS_Color *c1 = (TS_Color*)colorobj1->GetAlignedPointerFromInternalField(0);
+
+	v8::Local<v8::Object> colorobj2 = v8::Local<v8::Object>::Cast(args[5]);
+    TS_Color *c2 = (TS_Color*)colorobj2->GetAlignedPointerFromInternalField(0);
+
+    TS_GradientLine(screen, x1, y1, x2, y2, c1, c2);
+
+
+}
+
+void TS_OutlinedRectangle(int x, int y, int w, int h, uint32_t color, int thickness){
+
+    SDL_Rect rect = {0, 0, 0, 0};
+
+    SDL_Surface *surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, w, h, DEPTH, CHANNEL_MASKS);
+    rect.w = thickness;
+    rect.h = h;
+    SDL_FillRect(surface, &rect, color);
+    rect.x = w-thickness;
+    SDL_FillRect(surface, &rect, color);
+
+    rect.x =thickness;
+    rect.w = w-(thickness*2);
+    rect.h = thickness;
+    SDL_FillRect(surface, &rect, color);
+    rect.y = h-thickness;
+    SDL_FillRect(surface, &rect, color);
+
+    TS_ShowSurface_Clear(surface, x, y);
+
+
+}
+
+v8Function OutlinedRectangle(V8ARGS){
+    if(args.Length()<5){
+        THROWERROR("[graphicSDL] OutlinedRectangle Error: Called with fewer than 5 arguments.")
+    }
+    CHECK_ARG_INT(0, "[graphicSDL] OutlinedRectangle Error: Arg 0 is not a number.");
+    CHECK_ARG_INT(1, "[graphicSDL] OutlinedRectangle Error: Arg 1 is not a number.");
+    CHECK_ARG_INT(2, "[graphicSDL] OutlinedRectangle Error: Arg 2 is not a number.");
+    CHECK_ARG_INT(3, "[graphicSDL] OutlinedRectangle Error: Arg 3 is not a number.");
+    CHECK_ARG_OBJ(4, "[graphicSDL] OutlinedRectangle Error: Arg 4 is not an object.");
+    int thickness = 1;
+    if(args.Length()>5){
+        CHECK_ARG_INT(5, "[graphicSDL] OutlinedRectangle Error: Arg 5 is not a number.")
+        thickness = args[5]->Int32Value();
+    }
+
+    int x = args[0]->Int32Value();
+    int y = args[1]->Int32Value();
+    int w = args[2]->Int32Value();
+    int h = args[3]->Int32Value();
+
+    if(w<0){
+        x+=w;
+        w=-w;
+    }
+    if(h<0){
+        y+=h;
+        h=-h;
+    }
+
+	v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[4]);
+    uint32_t color = ((TS_Color*)colorobj->GetAlignedPointerFromInternalField(0))->toInt();
+    TS_OutlinedRectangle(x, y, w, h, color, thickness);
+
+    return v8::Undefined();
+}
+
+void TS_OutlinedPolygon(TS_Point *points, int numpoints, TS_Color *color){
+    for(int i = 0; i < numpoints-1; i++){
+        TS_Line(screen, points[i].x, points[i].y, points[i+1].x, points[i+1].y, color);
+    }
+    TS_Line(screen, points[0].x, points[0].y, points[numpoints-1].x, points[numpoints-1].y, color);
+}
+
+v8Function PointSeries(V8ARGS){
+    if(args.Length()<2){
+        THROWERROR("[graphicSDL] OutlinedPolygon Error: Called with fewer than 2 arguments.");
+    }
+    CHECK_ARG_ARRAY(0, "[graphicSDL] OutlinedPolygon Error: Arg 0 is not an array.");
+    CHECK_ARG_OBJ(1, "[graphicSDL] OutlinedPolygon Error: Arg 1 is not an object.");
+
+    uint32_t numpoints = 0;
+	v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[1]);
+    TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
+
+    v8::Handle<v8::Array> pointarray = v8::Handle<v8::Array>::Cast(args[0]);
+
+    numpoints = pointarray->Length();
+
+    if(numpoints==0){
+        return v8::Undefined();
+    }
+    uint32_t colorint = color->toInt();
+    for(uint32_t i = 0; i < numpoints; i++){
+        v8::Local<v8::Object> point = (pointarray->Get(i))->ToObject();
+        TS_Rectangle(screen, point->Get(v8::String::New("x"))->Int32Value(), point->Get(v8::String::New("y"))->Int32Value(), 1, 1, colorint);
+    }
+
+}
+
+v8Function OutlinedPolygon(V8ARGS){
+    if(args.Length()<2){
+        THROWERROR("[graphicSDL] OutlinedPolygon Error: Called with fewer than 2 arguments.");
+    }
+    CHECK_ARG_ARRAY(0, "[graphicSDL] OutlinedPolygon Error: Arg 0 is not an array.");
+    CHECK_ARG_OBJ(1, "[graphicSDL] OutlinedPolygon Error: Arg 1 is not an object.");
+
+    uint32_t numpoints = 0;
+	v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[1]);
+    TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
+
+    v8::Handle<v8::Array> pointarray = v8::Handle<v8::Array>::Cast(args[0]);
+
+    numpoints = pointarray->Length();
+
+    if(numpoints==0){
+        return v8::Undefined();
+    }
+    else if(numpoints==1){
+        v8::Local<v8::Object> point = (pointarray->Get(0))->ToObject();
+        TS_Rectangle(screen, point->Get(v8::String::New("x"))->Int32Value(), point->Get(v8::String::New("y"))->Int32Value(), 1, 1, color->toInt());
+        return v8::Undefined();
+    }
+    else if(numpoints==2){
+        v8::Local<v8::Object> pointA = (pointarray->Get(0))->ToObject();
+        v8::Local<v8::Object> pointB = (pointarray->Get(1))->ToObject();
+        TS_Line(screen, pointA->Get(v8::String::New("x"))->Int32Value(), pointA->Get(v8::String::New("y"))->Int32Value(), pointB->Get(v8::String::New("x"))->Int32Value(), pointB->Get(v8::String::New("y"))->Int32Value(), color);
+        return v8::Undefined();
+    }
+
+    TS_Point *points = (TS_Point *)calloc(numpoints, sizeof(TS_Point));
+
+    for(uint32_t i = 0; i < numpoints; i++){
+        v8::Local<v8::Object> point = (pointarray->Get(i))->ToObject();
+        points[i] = TS_Point(point->Get(v8::String::New("x"))->Int32Value(), point->Get(v8::String::New("y"))->Int32Value());
+    }
+
+    TS_OutlinedPolygon(points, numpoints, color);
+
+    free(points);
+
+    return v8::Undefined();
+}
+
 v8::Handle<v8::Value> GradientRectangle(const v8::Arguments& args)
 {
 
     if(args.Length()<8){
-        return v8::ThrowException(v8::String::New("TS_GradientRectangle Error: Called with fewer than 8 arguments!"));
+        return v8::ThrowException(v8::String::New("TS_GradientRectangle Error: Called with fewer than 8 arguments."));
 	}
     CHECK_ARG_INT(0, "TS_GradientRectangle Error: Arg 0 is not a number.");
     CHECK_ARG_INT(1, "TS_GradientRectangle Error: Arg 1 is not a number.");
