@@ -32,7 +32,7 @@ typedef void** FunctionArray;
 class regFunction {
 public:
     regFunction(const char *, v8::Handle<v8::FunctionTemplate>);
-    regFunction(const char *name, v8::Handle<v8::Value> (*func)(const v8::Arguments& args));
+    regFunction(const char *_name, v8::Handle<v8::Value> (*func)(const v8::Arguments& args));
     ~regFunction();
     void registerToContext(v8::Persistent<v8::Context> context);
     const char *name;

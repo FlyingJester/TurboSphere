@@ -337,9 +337,12 @@ void grabFuncsFromLibrary(void *handle){
 
 
     for(int i = 0; i<numFuncs; i++){
-        //DEBUG_VERBOSE
-
-        addFunctionToList(FuncNames[i], (v8::Handle<v8::Value> (*)(const v8::Arguments& args))Funcs[i]);
+            if(FuncNames[i]==NULL){
+                printf("Problem with plugin %s: Function %i has no name.\n", repname, i);
+            }
+            else{
+                addFunctionToList(FuncNames[i], (v8::Handle<v8::Value> (*)(const v8::Arguments& args))Funcs[i]);
+            }
     }
 
     int numVars = dlGetNumVars();
@@ -353,7 +356,12 @@ void grabFuncsFromLibrary(void *handle){
 
 
         for(int i = 0; i<numVars; i++){
-            addVariableToList(VarNames[i], (v8::Handle<v8::Value>)Vars[i]);
+            if(VarNames[i]==NULL){
+                printf("Problem with plugin %s: Variable %i has no name.\n", repname, i);
+            }
+            else{
+                addVariableToList(VarNames[i], (v8::Handle<v8::Value>)Vars[i]);
+            }
         }
 
         free(VarNames);
@@ -362,6 +370,7 @@ void grabFuncsFromLibrary(void *handle){
 
     free(FuncNames);
     free(Funcs);
+    printf("Plugin %s successfully loaded.\n", repname);
 }
 
 

@@ -22,7 +22,11 @@ TS_Color::~TS_Color(void){
 
 }
 
-uint32_t TS_Color::toInt(void){
+bool TS_Color::operator==(const TS_Color &c2) {
+    return (c2.toInt()==this->toInt());
+}
+
+uint32_t TS_Color::toInt(void) const{
 uint32_t c = concatRGBA(red, green, blue, alpha);
 return c;
 }

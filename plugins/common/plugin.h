@@ -54,6 +54,11 @@ typedef v8::Persistent<v8::ObjectTemplate> v8InstanceTemplate;
 typedef v8::Persistent<v8::ObjectTemplate> v8PrototypeTemplate;
 
 #define V8ARGS const v8::Arguments& args
+
+#define V8GETTERARGS v8::Local<v8::String> property, const v8::AccessorInfo &info
+#define V8SETTERARGS v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info
+#define V8FINALIZERARGS v8::Persistent<v8::Value> object, void* parameter
+
 #define V8FUNCPOINTER(name)\
 	(void *)((v8Function (*)(V8ARGS))(name))
 
@@ -158,7 +163,9 @@ typedef v8::Persistent<v8::ObjectTemplate> v8PrototypeTemplate;
     QuitAll();
 
     void QuitAll();
+
 #define FINALIZER(NAME) void TS_##NAME##Finalizer(v8::Persistent<v8::Value> object, void* parameter)
+
 //Note!
 //This function requires you name your objects as:
 //obj_nameInsttempl
@@ -170,6 +177,14 @@ typedef v8::Persistent<v8::ObjectTemplate> v8PrototypeTemplate;
 v8::Persistent<v8::FunctionTemplate> JSOBJ##templ;\
 v8::Persistent<v8::ObjectTemplate> JSOBJ##Insttempl;\
 v8::Persistent<v8::ObjectTemplate> JSOBJ##proto
+
+#define SET_CLASS_NAME(JSOBJ, NAME) \
+JSOBJ##templ->SetClassName(v8::String::New(NAME))
+
+#define EXTERN_OBJECT_TEMPLATES(JSOBJ) \
+extern v8::Persistent<v8::FunctionTemplate> JSOBJ##templ;\
+extern v8::Persistent<v8::ObjectTemplate> JSOBJ##Insttempl;\
+extern v8::Persistent<v8::ObjectTemplate> JSOBJ##proto
 
 
 #define INIT_OBJECT_TEMPLATES(JSOBJ) \
@@ -185,7 +200,8 @@ v8::Persistent<v8::ObjectTemplate> JSOBJ##proto
 	JSOBJ##Insttempl.Dispose();\
     JSOBJ##proto.Dispose()
 
-
+#define SET_CLASS_ACCESSOR(JSOBJ, NAME, GETTER, SETTER)\
+    JSOBJ##Insttempl->SetAccessor(v8::String::New(NAME), GETTER, SETTER)
 
 #define ADD_TO_PROTO(JSOBJ, PROPNAME, CALL){\
     JSOBJ##proto->Set(PROPNAME, v8::FunctionTemplate::New(CALL));\
@@ -193,18 +209,31 @@ v8::Persistent<v8::ObjectTemplate> JSOBJ##proto
 
 #define BEGIN_OBJECT_WRAP_CODE \
     v8::HandleScope temporary_scope;\
-    v8External external;
+    //v8External external;
 
 #define END_OBJECT_WRAP_CODE(JSOBJ, TO_WRAP){\
-    external = v8::External::New(TO_WRAP);\
     JSOBJ##Insttempl->SetInternalFieldCount(1);\
     v8::Local<v8::Function> JSOBJ##ctor = JSOBJ##templ->GetFunction();\
 	v8::Local<v8::Object> JSOBJ##obj = JSOBJ##ctor->NewInstance();\
     v8::Persistent<v8::Object> P##JSOBJ##obj = v8::Persistent<v8::Object>::New(JSOBJ##obj);\
     P##JSOBJ##obj.MakeWeak(TO_WRAP, TS_##JSOBJ##Finalizer);\
-	P##JSOBJ##obj->SetInternalField(0, external);\
+    P##JSOBJ##obj->SetAlignedPointerInInternalField(0, TO_WRAP);\
+    P##JSOBJ##obj->GetConstructorName()=v8::String::New( #JSOBJ );\
     return temporary_scope.Close(P##JSOBJ##obj);\
 }
+
+#define GET_SELF(TYPE) static_cast<TYPE>(args.Holder()->GetAlignedPointerFromInternalField(0))
+
+#define GET_ACCESSOR_SELF(TYPE) static_cast<TYPE>(info.Holder()->GetAlignedPointerFromInternalField(0))
+
+    //v8::Local<v8::Object> self = info.Holder();
+    //v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
+    //void* ptr = wrap->Value();
+
+    //v8::Local<v8::Object> self = args.Holder();
+    //SDL_Surface *sstatic_cast<TS_Image*>(v8::Local<v8::External>::Cast((args.Holder())->GetAlignedPointerInInternalField(0)))->CreateSurface();
+
+//#define GET_SELF(TYPE) static_cast<TYPE>(v8::Local<v8::External>::Cast((args.Holder())->GetInternalField(0))->Value())
 
 /*
 #define INTERNAL_CHECK_int(ARGNAME, WORDS)\

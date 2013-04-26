@@ -26,8 +26,9 @@ public:
 	TS_Color(uint8_t, uint8_t, uint8_t, uint8_t);
 	TS_Color(void);
 	~TS_Color(void);
-	uint32_t toInt(void);
+	uint32_t toInt(void) const;
 		uint8_t red, green, blue, alpha;
+    bool operator==(const TS_Color &c2);
 };
 
 GRAPHICC_EXPORT uint32_t concatRGBA(int, int, int, int);

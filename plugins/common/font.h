@@ -2,32 +2,9 @@
 #define FONT_HEAD
 #include <vector>
 
-class TS_BMPFont{
-public:
-	TS_BMPFont (const char *);
-	~TS_BMPFont();
-		const char *fontname;
-		SDL_Color mask;
-		std::vector<SDL_Surface*> glyphs;
-	void drawText(int, int, const char*);
-	void drawZoomedText(int, int, float, const char*);
-	int getStringWidth(const char*) const;
-	int getStringHeight(const char*);
-	int getHeight(void);
-	const char **wordWrapString(const char *, int, int *);
-private:
-    int inheight;
-    inline void addline(const char **tl, int *nl, char *lb) const;
-};
-
-    void BMPFontInit();
-    void BMPFontClose();
-
-    v8::Handle<v8::Value> TS_BMPdrawText(const v8::Arguments& args);
-	v8::Handle<v8::Value> LoadSystemTTFFont(const v8::Arguments& args);
-	v8::Handle<v8::Value> LoadBMPFont(const v8::Arguments& args);
-	v8::Handle<v8::Value> LoadSystemBMPFont(const v8::Arguments& args);
-	v8::Handle<v8::Value> TS_BMPgetStringWidth(const v8::Arguments& args);
+typedef GLuint TS_Texture;
+typedef GLuint TS_TexVertexBuffer;
+typedef GLuint TS_TextureBuffer;
 
 class TS_TTFFont{
 public:
@@ -42,7 +19,6 @@ public:
 	void drawZoomedText(int, int, float, const char*);
 	int  getStringWidth(const char*);
     ~TS_TTFFont  ();
-
 };
 
 	v8::Handle<v8::Value> TS_TTFdrawText(const v8::Arguments& args);

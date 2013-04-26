@@ -6,10 +6,10 @@ WORKDIR = `pwd`
 
 
 
-CC = gcc
-CXX = g++
+CC = i686-w64-mingw32-gcc
+CXX = i686-w64-mingw32-g++
 AR = ar
-LD = g++
+LD = i686-w64-mingw32-g++
 
 ARCH =: $(shell uname -m)
 
@@ -58,8 +58,8 @@ LIB_RELEASE_T5 = $(LIB_T5)
 LDFLAGS_RELEASE_T5 =  $(LDFLAGS_T5) -s
 OBJDIR_RELEASE_T5 = obj/Release
 DEP_RELEASE_T5 = 
-OUT_RELEASE_T5 = ./libt5.so
-OUT_RELEASE_T5_ONLY = bin/Release/libt5.so
+OUT_RELEASE_T5 = ./libt5.dll
+OUT_RELEASE_T5_ONLY = bin/Release/libt5.dll
 
 OBJ_RELEASE_T5 = $(OBJDIR_RELEASE_T5)/t5.a
 OBJ_RELEASE_T5_only = $(OBJDIR_RELEASE_T5)/t5/t5.a
@@ -142,8 +142,8 @@ t5: before_release t5dyn after_release
 t5dyn: $(OBJ_RELEASE_T5) $(DEP_RELEASE_T5)
 	$(LD) $(LDFLAGS_RELEASE_T5) $(LIBDIR_RELEASE_T5) $(OBJ_RELEASE_T5) $(LIB_RELEASE_T5) -o $(OUT_RELEASE_T5)
 
-$(OBJDIR_RELEASE)/t5.a: t5.cpp
-	$(CXX) $(CFLAGS_RELEASE_T5) $(INC_RELEASE_T5) -c t5.cpp -o $(OBJDIR_RELEASE_T5)/t5.a
+$(OBJDIR_RELEASE)/t5.dll: t5.cpp
+	$(CXX) $(CFLAGS_RELEASE_T5) $(INC_RELEASE_T5) -c t5.cpp -o $(OBJDIR_RELEASE_T5)/t5.dll
 
 out_release: $(OBJ_RELEASE) $(DEP_RELEASE)
 	$(LD) $(LDFLAGS_RELEASE) $(LIBDIR_RELEASE) $(OBJ_RELEASE) $(LIB_RELEASE) -o $(OUT_RELEASE)

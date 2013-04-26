@@ -1,0 +1,8 @@
+*.[oa]
+*.so
+*.dll
+*.exe
+*.html
+v8.h
+v8*.h
+!Turbo.*

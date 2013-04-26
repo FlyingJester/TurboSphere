@@ -1,0 +1,30 @@
+Devlog.
+All entries are dated using United States date notation.
+Entries indicate the date the feature or change was added or removed.
+Newline characters should be NOT added manually rather than using automatic wordwrap. 
+To prepare for the unlikely event that another dev starts working on this project, always initial or (sign) your entry. Anything is fine, as long as you pick one name and stick with it.
+
+3/23/13  - Fixed reported issues on the SDL window becoming unreponsive on Windows, GetVersionString returning inancurate values, and new Color() returning an error on garbage alhpa values (should just ignore them).
+Fixed AreKeysLeft returning false positives (added check for if there were no pending events, originally there was just a check if the next event was a KEY_DOWN).
+
+1/2/13   - Rebuilt TS_MapLayer and TS_Map classes, made TS_TileInfo. Began creating a new map engine. Initial tileset (.rts file) reading implemented.
+
+1/1/13   - Added SDL_VideoQuit to the graceful quit system and to the normal shutdown procedure, closing the SDL window immediately. Much more satisfying, though not any faster.
+
+12/31/12 - Added TendEvents function, and replaced all instances of SDL's PollEvents with it. TendEvents performs a PollEvent, and then checks if the next event will be an SDL_QUIT event and quits TS if it is. Added a TendEvents to FlipScreens, so TS can quit by hitting the window manager's close button now.
+Changed FilledPolygon to start looking at line's pixels at px 1 instead of px 0, since the first pixel of every line is the last pixel of another, and so would cause the parity to be flipped twice for every vertex.
+Added the 'getinfo' argument to the binary, which will report on SDL and SDL's libraries version and available hardware and software capabilities. -MM
+
+12/30/12 - Fixed all found memory leaks in FilledPolygon. Relocated FilledCircle and OutlinedCircle functions from engine.cpp to graphics.cpp. Overloaded TS_Point objects to take on the x and y of an SDL_Rect when assigned the value of one. I would like to do the inverse as well, and have TS_Points cast as SDL_Rects to expose their x and y, and report their w and h to be 1.
+Added sound_object.isPlaying on JS side. -MM
+
+12/29/12 - Added FilledPolygon function. Uses a naive parity check to draw a filled polygon. Leaks memory like a seive right now. 
+Changed the Makefile and CB project to build T5 from scratch, and locate it in the appropriate directories for linking and running with TS without requiring extra shell commands after compilation. The Code::Blocks project will not build from scratch unless the makefile is used at least once before. So long as the makfile works first time, every time, the CB project does not need to be perfect. -MM
+
+12/27/12 - Changed makefile. T5 is now built automatically before TurboSphere, so we are now dynamically linking to T5 (libt5.so). Code::Blocks project not yet updated.
+Added T5_file.writeValue and writeValueToSection methods (not finished), to begin replacing the TS_File object with T5_file objects in scriptfs.cpp. -MM
+
+12/26/12 - Added GetSystemWindowStyle. Added T5 static object building steps to the makefile. -MM
+
+12/21/12 (the end of the world) Modified TS_LoadSurface and TS_CreateSurface, now called TS_CreateImage and TS_CreateSurface, respectively. Both functions have been set up to take either a string corresponding to a filename, or two numbers and a color object.
+Changed Font.size accessor (void SetFontSize) to check if value passed is a number. If not, nothing happens at all. - MM

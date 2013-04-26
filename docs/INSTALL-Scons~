@@ -1,0 +1,3 @@
+TurboSphere can be built and installed on both Linux and experimentally on Windows using the Scons build system.
+
+The basic command for building TurboSphere using scons is just 'scons'.

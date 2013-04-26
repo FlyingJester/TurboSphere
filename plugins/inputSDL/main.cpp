@@ -54,7 +54,9 @@ initFunction Init(void){
     SDL_EventState(SDL_VIDEOEXPOSE, SDL_IGNORE);
     InitJoystick();
 
-    return (initFunction)"keySDL";
+    printf("[inputSDL] Info: Event state setup succeeded.\n");
+
+    return (initFunction)"inputSDL";
 }
 
 int GetNumFunctions(){

@@ -1,129 +1,65 @@
-
-var c = new Color(0, 0, 0);
- 
-
-var fn = GetSystemFont();
-var ws = new WindowStyle("property.rws");
-var int = 0;
-var str = "hello";
-var orange = new Color(255, 128, 0, 64);
-var files = GetFileList("../../system");
-while(!IsKeyPressed(KEY_R)){
-
-while(AreKeysLeft()) {
-	var k = GetKey();
-  switch(k) {
-    case KEY_BACKSPACE: 
-      str = str.substr(0, str.length-1);
-      break;
-    case KEY_SPACE: 
-      str = str.substr(0, str.length-1);
-      break;
-    case KEY_ENTER:
-      str = "hello";
-      break;  
-  }
-  fn.drawText(10, 10, GetKey);
-int++;
-}
-fn.drawText(0, 10, c instanceof Color);
-fn.drawText(100, 20, c.toString());
-fn.drawText(100, 10, "Press R. "+(typeof(c)));
-fn.drawText(10, 200, c.constructor);
-Delay(10);
-fn.drawText(10, 10, str);
-ws.drawWindow(10, 40, fn.getStringWidth("Files in the system directory:"), 10+(files.length*12));
-fn.drawText(10, 40, "Files in the system directory:");
-
-if(IsKeyPressed(KEY_ENTER)){
-	Rectangle(10, 40, 200, 10+(files.length*12), orange);
-}
-
-for(var i = 0; i<files.length; i++){
-	fn.drawText(10, 50+(i*10), files[i]);
-}
-
-FlipScreen();
-}
-
-RequireScript("MJ-12.js");
-
-var start = GetTime();
-var arrow = GetSystemArrow();
-var ws = new WindowStyle("property.rws");
-//var ws2 = GetSystemWindowStyle();
-
-var imagey1= new Image("test1.png");
-var imagey2= new Surface("test1.png");
-
-
-//400x320
+	var far = new TTFFont("DejaVuSans.ttf");
+	var Red		= new Color(255, 0, 0, 255);
+	var Green	= new Color(0, 255, 0, 128);
+	var Blue	= new Color(0, 0, 255, 255);
+		FlipScreen();
+		Triangle(64, 32, 16, GetScreenHeight()-16, GetScreenWidth()-64, 256, Blue, Green, Red);
+		far.drawText(128, 65, "Do a barrel roll!");
+		FlipScreen();
+		GetKey();
 
 function game(){
-  while(!IsKeyPressed(KEY_ESCAPE)){
-	var lion = fn.wordWrapString("Plug in a joystick and try this again. It's not very much fun to use\n non existant joysticks! And here are six more words.", GetScreenWidth()-20);
+	var fn = GetSystemFont();
+	var ws1 = new WindowStyle("property.rws");
+	var ws = GetSystemWindowStyle();
+	var Red		= new Color(255, 0, 0, 255);
+	var Green	= new Color(0, 255, 0, 128);
+	var Blue	= new Color(0, 0, 255, 255);
+	var im1 = new Image("test1.png");
+	var im2 = new Image("sphere.png");
+	var sf1 = new Surface("test1.png");
+	var sf2 = new Surface("sphere.png");
 	
-	fn.drawText(10, 32, lion.length);
-	
-	for(var i = 0; i< lion.length; i++){
-		fn.drawText(10, 50+(i*20), lion[i]);
+	var sf3 = im2.createSurface();
+	var str = "Sphere rfn fonts...IN OPENGL!";
+	while(!IsKeyPressed(KEY_Q)){
+		var t = GetTime();
+		ws1.drawWindow(128, 22, fn.getStringWidth(str), 12);
+		fn.drawText(128, 22, str);
+		Rectangle(48, 16, 32, 32, Blue);
+		Rectangle(16, 16, 32, 32, Red);
+		Rectangle(32, 32, 32, 32, Green);
+		Rectangle(48, 48, 32, 32, Red);
+		
+		im1.blit(64, 16);
+		
+		
+		far.drawText(16, GetScreenHeight()-16, "Do a barrel roll! With TTF Fonts!");
+		FlipScreen();
+		
+		GradientTriangle(64, 32, 16, GetScreenHeight()-16, GetScreenWidth()-64, 256, Blue, Green, Red);
+		
+		ws.drawWindow(128, 22, 128, 256);
+		fn.drawTextBox(128, 44, 128, 244, 0, "This is a text box. These things gave me a bit of trouble, but now they work. I tried to make them lightning fast, which made it hard to debug any problems. But some solid reasoning and carefully spent blood, sweat, and tears, and now it works just pretty good. Sometiems cuts the lines a little early, but overall OK.");
+		
+		im1.transformBlit(92, 128, 160, 144, 160, 196, 92, 256);
+		
+		
+		im2.blit(256, 64)
+		im2.blitMask(256, 92, Red);
+		im2.blitMask(256, 128, Green);
+		im2.blitMask(256, 144, Blue);
+		im2.zoomBlit(196, 196, 2, Red);
+		im2.rotateBlitMask(256, 228, 0, Green);
+		
+		sf1.blit(-4, -4);
+		im1.blit(0, 0);
+		sf1.blit(4, 4);
+		im1.blit((GetScreenWidth()/2)-8, (GetScreenHeight()/2)-8);
+		sf3.blit(92, 32);
+		GradientLine(GetScreenWidth()-64, GetScreenHeight()-64, GetMouseX(), GetMouseY(), Green, Red);
+		Rectangle(0, 0, GetTime()-t, 16, Red);
+		Rectangle(0, 0, GetTime()-t, 16, Green);
+		Delay(1);
 	}
-	delete lion;  
-	
-	fn.drawText(10, 10, "I hope this doesn't leak!");
-	FlipScreen();  
-  }
-	
-  imagey1.rectangle(2, 2, 4, 4, Black);
-  var fontu = GetSystemFont();
-  var w = GetScreenWidth();
-  var h = GetScreenHeight();
-  var c = new Color(255, 255, 255, 255);
-  var rad = 20;
-  testJS();
-}
-
-
-function testJS(){
-  var cont = true;
-  while(cont){
-	  if(IsKeyPressed(KEY_ESCAPE)){cont = false}
-	  fn.drawText(10, 12, "Joystick Test Menu. Press Escape to exit.");
-          fn.drawText(10, 22, "Num Joysticks: "+GetNumJoysticks());
-if(GetNumJoysticks()==0) {
-	var lion = fn.wordWrapString("Plug in a joystick and try this again. It's not very much fun to use non existant joysticks!", GetScreenWidth()-20);
-	
-	fn.drawText(10, 32, lion.length);
-	
-	for(var i = 0; i< lion.length; i++){
-		fn.drawText(10, 50+(i*20), lion[i]);
-	}
-	delete lion;
-	
-//	fn.drawText(10, 32, "Plug in a joystick or gamepad and try this again!");
-}
-    var r = 0;
-    for(var i = 0; i<GetNumJoysticks(); i++){
-	fn.drawText(10, 34+((r+i)*12), GetJoystickName(i));
-	r++
-	fn.drawText(10, 34+((r+i)*12), "    Number of Axes: "+GetNumJoystickAxes(i));
-	r++
-	for(var e = 0; e<GetNumJoystickAxes(i); e++){
-		fn.drawText(10, 34+((r+i)*12), "        Axis "+e+" is at "+Math.round(GetJoystickAxis(i, e)/3276.7));
-		r++;
-	}
-	r = 1;
-        for(var e = 0; e<GetNumJoystickButtons(i); e++){
-		fn.drawText(200, 34+((r+i)*12), "Button "+e+" is "+(IsJoystickButtonPressed(i, e)?"":"not ")+"pressed.");
-		r++;
-	}
-	
-	    
-    }
-    FlipScreen();
-    Delay(15);
-    }
-  while(AreKeysLeft()){
-	GetKey();  
-  }
 }

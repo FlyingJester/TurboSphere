@@ -42,7 +42,7 @@ OUT_RELEASE = ../../bin/Release/plugin/inputSDL.so
 
 OBJ_DEBUG =  $(OBJDIR_DEBUG)/key.o $(OBJDIR_DEBUG)/mouse.o $(OBJDIR_DEBUG)/main.o
 
-OBJ_RELEASE = $(OBJDIR_RELEASE)/key.o $(OBJDIR_RELEASE)/mouse.o $(OBJDIR_RELEASE)/main.o
+OBJ_RELEASE = $(OBJDIR_RELEASE)/key.o $(OBJDIR_RELEASE)/mouse.o $(OBJDIR_RELEASE)/main.o $(OBJDIR_RELEASE)/joystick.o
 
 all: release
 
@@ -67,6 +67,9 @@ $(OBJDIR_DEBUG)/key.o: key.cpp
 	
 $(OBJDIR_DEBUG)/main.o: main.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c main.cpp -o $(OBJDIR_DEBUG)/main.o
+	
+$(OBJDIR_DEBUG)/joystick.o: joystick.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c joystick.cpp -o $(OBJDIR_DEBUG)/joystick.o
 
 clean_debug: 
 	rm -f $(OBJ_DEBUG) $(OUT_DEBUG)
@@ -92,6 +95,9 @@ $(OBJDIR_RELEASE)/key.o: key.cpp
 	
 $(OBJDIR_RELEASE)/main.o: main.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c main.cpp -o $(OBJDIR_RELEASE)/main.o
+	
+$(OBJDIR_RELEASE)/joystick.o: joystick.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c joystick.cpp -o $(OBJDIR_RELEASE)/joystick.o
 
 clean_release: 
 	rm -f $(OBJ_RELEASE) $(OUT_RELEASE)

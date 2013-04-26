@@ -1,6 +1,7 @@
 #ifndef T5_HEAD
 #define T5_HEAD
 
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -27,6 +28,7 @@
 class INIvalue{
 public:
     INIvalue(const char*,const char*,const char*);
+    ~INIvalue();
     const char *key;
     const char *val;
     const char *sec;

@@ -1,0 +1,136 @@
+
+
+import sys
+
+defaultenv	= Environment()
+
+linuxenv	= defaultenv.Clone(tools = ['default', 'textfile'], CCFLAGS = "-O3 -mfpmath=sse,387 -mmmx -msse -msse2 -std=c++11")
+
+windowsenv 	= defaultenv.Clone()
+
+win32env	= windowsenv.Clone()
+win64env	= windowsenv.Clone()
+
+linux32env	= linuxenv.Clone()
+linux64env	= linuxenv.Clone()
+
+macintoshenv	= defaultenv.Clone()
+
+AddOption('--install_libs',
+                  dest='install_libs',
+                  type='string',
+                  nargs=1,
+                  action='store',
+                  help='Determines whether or not to try and install the core TurboSphere libraries')
+AddOption('--build_plugins',
+                  dest='build_plugins',
+                  type='string',
+                  nargs=1,
+                  action='store',
+                  help='Determines whether or not to build the plugins for TurboSphere.')
+AddOption('--usemingw',
+                  dest='usemingw',
+                  type='string',
+                  nargs=1,
+                  action='store',
+                  help='Use the MingW toolchain.')
+
+#set up the environment depending on platform. Mainly for installing libraries.
+if sys.platform == 'win32':
+	lib_install_dir = './bin/Release'
+	currentenv = win32env.Clone(LIBPATH=lib_install_dir)
+
+	graphicalg_name    = './bin/Release/graphicalg'
+	graphiccommon_name = './bin/Release/graphiccommon'
+	configmanager_name = './bin/Release/configmanager'
+
+else:
+	graphicalg_name    = 'graphicalg'
+	graphiccommon_name = 'graphiccommon'
+	configmanager_name = 'configmanager'
+	
+	if sys.platform == 'linux':
+		lib_install_dir = '/usr/lib/turbosphere'
+		currentenv = linux32env.Clone(LIBPATH=lib_install_dir)
+	else:
+		lib_install_dir = '/usr/lib64/turbosphere'
+		currentenv = linux64env.Clone(LIBPATH=lib_install_dir)
+
+
+usemingw = GetOption('usemingw')
+if usemingw == "y":
+	#currentenv.Replace(tools = ['mingw'])
+	currentenv.Tool('mingw')
+	dummy = ""
+	
+setuplibs = "False"
+
+lib_path = lib_install_dir
+pluginpath = 'bin/Release/plugin'
+
+graphiccommon_files = Split("""
+	graphiccommon/screen.cpp
+	graphiccommon/color.cpp""")
+
+graphiccommon_path = ['graphiccommon']
+
+graphicalg_files = Split("""./graphicalg/structures.cpp""")
+
+graphicalg_path = ['./graphicalg']
+
+configmanager_files = Split("""
+	./configmanager/opengame.cpp
+	./configmanager/openscript.cpp""")
+
+configmanager_path = ['./configmanager']
+
+turbosphere_files = Split("""
+	./engine.cpp
+	./loadplugins.cpp
+	./functionload.cpp
+	./variableregister.cpp""")
+
+t5 = currentenv.SharedLibrary('t5', ['t5.cpp'])
+
+graphicalg = currentenv.SharedLibrary('graphicalg', graphicalg_files, CPPPATH = graphicalg_path)
+
+graphiccommon = currentenv.SharedLibrary('graphiccommon', graphiccommon_files, CPPPATH = graphiccommon_path)
+
+configmanager = currentenv.SharedLibrary('configmanager', configmanager_files, CPPPATH = configmanager_path, LIBS = [t5, graphiccommon], LIBPATH = lib_path)
+
+turbosphere = currentenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
+	LIBS=['v8', 'SDL', t5, graphicalg, graphiccommon, configmanager, 'pthread', 'dl'], 
+	LIBPATH = lib_path)
+
+plugin_libs = [t5, configmanager, graphicalg, graphiccommon, 'SDL', 'v8']
+pluginsrc_path = 'plugins'
+graphicSDL_files = ['graphic.cpp']
+bmpfontSDL_files = ['bmpfont.cpp']
+ttffontSDL_files = ['ttffont.cpp']
+inputSDL_files = ['main.cpp,', 'mouse.cpp', 'key.cpp']
+scriptfs_files = ['scriptfs.cpp']
+getkeystring_files = ['getkeystring.cpp']
+
+build_plugins = GetOption('build_plugins')
+if build_plugins != "n":
+	if build_plugins == "y" or build_plugins == "all":
+
+		graphicSDL = currentenv.SharedLibrary('./bin/Release/plugin/graphicSDL', ['plugins/graphicSDL/main.cpp', 'plugins/graphicSDL/graphic.cpp', 'plugins/graphicSDL/primitives.cpp', 'plugins/graphicSDL/surface.cpp'], LIBS = [plugin_libs, 'SDL_image'], LIBPATH = lib_path)
+		bmpfontSDL = currentenv.SharedLibrary('./bin/Release/plugin/bmpfontSDL', ['plugins/bmpfontSDL/bmpfont.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
+		ttffontSDL = currentenv.SharedLibrary('./bin/Release/plugin/ttffontSDL', ['plugins/ttffontSDL/ttffont.cpp'], LIBS = [plugin_libs, 'SDL_ttf'], LIBPATH = lib_path)
+		inputSDL = currentenv.SharedLibrary('./bin/Release/plugin/inputSDL', ['plugins/inputSDL/main.cpp', 'plugins/inputSDL/joystick.cpp', 'plugins/inputSDL/mouse.cpp', 'plugins/inputSDL/key.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
+		scriptfs = currentenv.SharedLibrary('./bin/Release/plugin/scriptfs', ['plugins/scriptfs/scriptfs.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
+		getkeystring = currentenv.SharedLibrary('./bin/Release/plugin/getkeystring', ['plugins/getkeystring/getkeystring.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
+		windowstyleSDL = currentenv.SharedLibrary('./bin/Release/plugin/windowstyleSDL', ['plugins/windowstyleSDL/windowstyle.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
+
+setuplibs = GetOption('install_libs')
+if setuplibs == "y":
+	print "Setting up libraries."
+	currentenv.Install(lib_install_dir, [graphicalg, graphiccommon, configmanager, t5])
+	if sys.platform != 'win32':
+		print "Writing conf file."
+		currentenv.Textfile(target = '/etc/ld.so.conf.d/turbosphere.conf', source = [lib_install_dir])
+	
+currentenv.Alias('libinstall', lib_install_dir)
+currentenv.Alias('confwrite', '/etc/ld.so.conf.d')
+currentenv.Alias('buildplugins', 'bin/Release')

@@ -84,7 +84,7 @@ void setDirectories(string basedirectory){
         TS_dirs->windowstyle = STRDUP(string(TS_dirs->root).append("windowstyles/").c_str());
         TS_dirs->system      = "system/";
         TS_dirs->systemscript= "system/scripts";
-        T5_init(2, "", STRDUP(TS_dirs->root));
+        T5_init(2, "", TS_dirs->root);
 }
 
 void setConfig(string basedirectory){

@@ -1,10 +1,11 @@
 
 import os
 import sys
+import os
 
 defaultenv	= Environment()
 
-linuxenv	= defaultenv.Clone(tools = ['default', 'textfile'], CCFLAGS = "-O3 -mfpmath=sse,387 -mmmx -msse -msse2 -std=c++11 -Wcast-align -Wwrite-strings")
+linuxenv	= defaultenv.Clone(tools = ['default', 'textfile'], CCFLAGS = "-O3 -g -mfpmath=sse,387 -mmmx -msse -msse2 -Wcast-align")
 
 windowsenv 	= defaultenv.Clone(CCFLAGS = "/O2")
 
@@ -59,8 +60,8 @@ else:
 
 usemingw = GetOption('usemingw')
 if usemingw == "y":
-	#currentenv.Replace(tools = ['mingw'])
-	currentenv.Tool('mingw')
+	currentenv.Replace(CC = ['i686-w64-mingw32-g++'])
+	#currentenv.Tool('i686-w64-mingw32-g++')
 	dummy = ""
 	
 setuplibs = "False"
@@ -110,18 +111,22 @@ ttffontSDL_files = ['ttffont.cpp']
 inputSDL_files = ['main.cpp,', 'mouse.cpp', 'key.cpp']
 scriptfs_files = ['scriptfs.cpp']
 getkeystring_files = ['getkeystring.cpp']
+SDL_GL_path 	 = ['plugins/graphicSDL_GL']
+SDL_GL_files	 = ['plugins/graphicSDL_GL/main.cpp', 'plugins/graphicSDL_GL/image.cpp', 'plugins/graphicSDL_GL/surface.cpp', 'plugins/graphicSDL_GL/color.cpp', 'plugins/graphicSDL_GL/primitives.cpp', 'plugins/graphicSDL_GL/screen.cpp']
+
 
 build_plugins = GetOption('build_plugins')
 if build_plugins != "n":
 	if build_plugins == "y" or build_plugins == "all":
 
-		graphicSDL = currentenv.SharedLibrary('./bin/Release/plugin/graphicSDL', ['plugins/graphicSDL/main.cpp', 'plugins/graphicSDL/graphic.cpp', 'plugins/graphicSDL/primitives.cpp', 'plugins/graphicSDL/surface.cpp'], LIBS = [plugin_libs, 'SDL_image'], LIBPATH = lib_path)
-		bmpfontSDL = currentenv.SharedLibrary('./bin/Release/plugin/bmpfontSDL', ['plugins/bmpfontSDL/bmpfont.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
-		ttffontSDL = currentenv.SharedLibrary('./bin/Release/plugin/ttffontSDL', ['plugins/ttffontSDL/ttffont.cpp'], LIBS = [plugin_libs, 'SDL_ttf'], LIBPATH = lib_path)
+		SDL_GL = currentenv.SharedLibrary('./bin/Release/plugin/SDL_GL', SDL_GL_files , LIBS = [plugin_libs, 'SDL_image', 'GL', 'GLU', 'X11'], LIBPATH = lib_path)
+		bmpfontGL = currentenv.SharedLibrary('./bin/Release/plugin/bmpfontGL', ['plugins/bmpfontGL/bmpfont.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
+		ttffontGL = currentenv.SharedLibrary('./bin/Release/plugin/ttffontGL', ['plugins/ttffontGL/ttffont.cpp'], LIBS = [plugin_libs, 'SDL_ttf'], LIBPATH = lib_path)
 		inputSDL = currentenv.SharedLibrary('./bin/Release/plugin/inputSDL', ['plugins/inputSDL/main.cpp', 'plugins/inputSDL/joystick.cpp', 'plugins/inputSDL/mouse.cpp', 'plugins/inputSDL/key.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
 		scriptfs = currentenv.SharedLibrary('./bin/Release/plugin/scriptfs', ['plugins/scriptfs/scriptfs.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
 		getkeystring = currentenv.SharedLibrary('./bin/Release/plugin/getkeystring', ['plugins/getkeystring/getkeystring.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
-		windowstyleSDL = currentenv.SharedLibrary('./bin/Release/plugin/windowstyleSDL', ['plugins/windowstyleSDL/windowstyle.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
+		windowstyleGL = currentenv.SharedLibrary('./bin/Release/plugin/windowstyleGL', ['plugins/windowstyleGL/windowstyle.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
+		#mapengineSDL = currentenv.SharedLibrary('./bin/Release/plugin/mapengineSDL', ['plugins/mapengineSDL/map.cpp', 'plugins/mapengineSDL/tileset.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
 
 setuplibs = GetOption('install_libs')
 if setuplibs == "y":
