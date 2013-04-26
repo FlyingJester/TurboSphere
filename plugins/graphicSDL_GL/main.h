@@ -1,17 +1,20 @@
 #ifndef SDL_GL_MAIN_HEAD
 #define SDL_GL_MAIN_HEAD
 
-#ifndef APIENTRY
-#define APIENTRY
-#endif
-
 #define PLUGINNAME "SDL_GL"
 #include "../common/plugin.h"
+#ifdef _WIN32
+#include "../../SDL/SDL_opengl.h"
+#else
 #include <SDL/SDL_opengl.h>
+#endif
 #include "../common/graphic_algorithm.h"
 #include "../common/graphic_common.h"
 #include "../../configmanager/opengame.h"
 #include <cmath>
+#ifndef APIENTRY
+#define APIENTRY
+#endif
 
 #ifdef _WIN32
 	#define SDL_GL_EXPORT __declspec(dllexport)
