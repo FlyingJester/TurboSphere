@@ -100,7 +100,7 @@ TS_Image::TS_Image(TS_Texture tex, int w, int h){
     height  = h;
     dwidth  = w;
     dheight = h;
-    diaglength = (int)ceil(sqrt((w*w)+(h*h))/2);
+    diaglength = (int)ceil(sqrt(float(w*w)+float(h*h))/2);
 
     this->resetMask();
 

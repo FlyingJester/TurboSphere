@@ -3,9 +3,6 @@
 #include <assert.h>
 
 #include "main.h"
-
-#include <GL/glext.h>
-#include <SDL/SDL.h>
 #include "image.h"
 #include "surface.h"
 #include "color.h"
