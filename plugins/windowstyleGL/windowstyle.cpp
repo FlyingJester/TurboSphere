@@ -314,8 +314,10 @@ TS_WindowStyle::~TS_WindowStyle(){
 void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
     for(int i = 0; i<8; i++){
     glEnable(GL_TEXTURE_2D);
-        int width  = this->getComponentDimensions(i)[0];
-        int height = this->getComponentDimensions(i)[1];
+	int *dimensions = this->getComponentDimensions(i);
+        int width  = dimensions[0];
+        int height = dimensions[1];
+	free(dimensions);
         int tx = 0;
         int ty = 0;
         TS_Texture texture = this->textures[i];
