@@ -46,6 +46,7 @@ T5_file *T5_OpenFile(const char* file){ //Make T5_ifile from filename
 T5_file::T5_file(const char*file){
     values.resize(0);
     stream.open(file, std::fstream::in|std::fstream::out|std::fstream::app);
+    stream.seekg(std::ios_base::beg);
     std::string buffer;
     std::string val = "";
     std::string key = "";
