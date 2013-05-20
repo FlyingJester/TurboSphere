@@ -97,11 +97,19 @@ graphicalg = currentenv.SharedLibrary('graphicalg', graphicalg_files, CPPPATH = 
 
 graphiccommon = currentenv.SharedLibrary('graphiccommon', graphiccommon_files, CPPPATH = graphiccommon_path)
 
-configmanager = currentenv.SharedLibrary('configmanager', configmanager_files, CPPPATH = configmanager_path, LIBS = [t5, graphiccommon], LIBPATH = lib_path)
+configmanager = currentenv.SharedLibrary('configmanager', configmanager_files, CPPPATH = configmanager_path, LIBS = [t5, graphiccommon, 'v8'], LIBPATH = lib_path)
 
-turbosphere = currentenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
-	LIBS=['v8', 'SDL', t5, graphicalg, graphiccommon, configmanager, 'pthread', 'dl'], 
-	LIBPATH = lib_path)
+if sys.platform == 'darwin':
+	programenv = currentenv.Clone()
+	programenv.Append(FRAMEWORKS=['Cocoa', 'OpenGL'])
+	turbosphere = programenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
+		LIBS=['v8', 'SDL', t5, graphicalg, graphiccommon, configmanager, 'pthread', 'dl', 'libSDLmain' ], 
+		LIBPATH = lib_path)
+else:
+	turbosphere = currentenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
+		LIBS=['v8', 'SDL', t5, graphicalg, graphiccommon, configmanager, 'pthread', 'dl' ], 
+		LIBPATH = lib_path)
+
 
 plugin_libs = [t5, configmanager, graphicalg, graphiccommon, 'SDL', 'v8']
 pluginsrc_path = 'plugins'
@@ -119,7 +127,11 @@ build_plugins = GetOption('build_plugins')
 if build_plugins != "n":
 	if build_plugins == "y" or build_plugins == "all":
 
-		SDL_GL = currentenv.SharedLibrary('./bin/Release/plugin/SDL_GL', SDL_GL_files , LIBS = [plugin_libs, 'SDL_image', 'GL', 'GLU', 'X11'], LIBPATH = lib_path)
+		if sys.platform == 'darwin':
+			SDL_GL = currentenv.SharedLibrary('./bin/Release/plugin/SDL_GL', SDL_GL_files , LIBS = [plugin_libs, 'SDL_image', 'libSDLmain'], LIBPATH = lib_path)
+		else:
+			SDL_GL = currentenv.SharedLibrary('./bin/Release/plugin/SDL_GL', SDL_GL_files , LIBS = [plugin_libs, 'SDL_image', 'GL', 'GLU', 'X11'], LIBPATH = lib_path)
+		
 		bmpfontGL = currentenv.SharedLibrary('./bin/Release/plugin/bmpfontGL', ['plugins/bmpfontGL/bmpfont.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
 		ttffontGL = currentenv.SharedLibrary('./bin/Release/plugin/ttffontGL', ['plugins/ttffontGL/ttffont.cpp'], LIBS = [plugin_libs, 'SDL_ttf'], LIBPATH = lib_path)
 		inputSDL = currentenv.SharedLibrary('./bin/Release/plugin/inputSDL', ['plugins/inputSDL/main.cpp', 'plugins/inputSDL/joystick.cpp', 'plugins/inputSDL/mouse.cpp', 'plugins/inputSDL/key.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
