@@ -1,4 +1,3 @@
-
 import os
 import sys
 import os
@@ -49,7 +48,7 @@ else:
 	graphicalg_name    = 'graphicalg'
 	graphiccommon_name = 'graphiccommon'
 	configmanager_name = 'configmanager'
-	
+
 	if sys.platform == 'linux':
 		lib_install_dir = '/usr/lib/turbosphere'
 		currentenv = linux32env.Clone(LIBPATH=lib_install_dir)
@@ -63,7 +62,7 @@ if usemingw == "y":
 	currentenv.Replace(CC = ['i686-w64-mingw32-g++'])
 	#currentenv.Tool('i686-w64-mingw32-g++')
 	dummy = ""
-	
+
 setuplibs = "False"
 
 lib_path = lib_install_dir
@@ -121,6 +120,7 @@ scriptfs_files = ['scriptfs.cpp']
 getkeystring_files = ['getkeystring.cpp']
 SDL_GL_path 	 = ['plugins/graphicSDL_GL']
 SDL_GL_files	 = ['plugins/graphicSDL_GL/main.cpp', 'plugins/graphicSDL_GL/image.cpp', 'plugins/graphicSDL_GL/surface.cpp', 'plugins/graphicSDL_GL/color.cpp', 'plugins/graphicSDL_GL/primitives.cpp', 'plugins/graphicSDL_GL/screen.cpp']
+mapengineGL_files= ['plugins/mapengineGL/map.cpp', 'plugins/mapengineGL/mapengine.cpp', 'plugins/mapengineGL/tileset.cpp', 'plugins/mapengineGL/spriteset.cpp', 'plugins/mapengineGL/person.cpp']
 
 
 build_plugins = GetOption('build_plugins')
@@ -131,14 +131,14 @@ if build_plugins != "n":
 			SDL_GL = currentenv.SharedLibrary('./bin/Release/plugin/SDL_GL', SDL_GL_files , LIBS = [plugin_libs, 'SDL_image', 'libSDLmain'], LIBPATH = lib_path)
 		else:
 			SDL_GL = currentenv.SharedLibrary('./bin/Release/plugin/SDL_GL', SDL_GL_files , LIBS = [plugin_libs, 'SDL_image', 'GL', 'GLU', 'X11'], LIBPATH = lib_path)
-		
+
 		bmpfontGL = currentenv.SharedLibrary('./bin/Release/plugin/bmpfontGL', ['plugins/bmpfontGL/bmpfont.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
 		ttffontGL = currentenv.SharedLibrary('./bin/Release/plugin/ttffontGL', ['plugins/ttffontGL/ttffont.cpp'], LIBS = [plugin_libs, 'SDL_ttf'], LIBPATH = lib_path)
 		inputSDL = currentenv.SharedLibrary('./bin/Release/plugin/inputSDL', ['plugins/inputSDL/main.cpp', 'plugins/inputSDL/joystick.cpp', 'plugins/inputSDL/mouse.cpp', 'plugins/inputSDL/key.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
 		scriptfs = currentenv.SharedLibrary('./bin/Release/plugin/scriptfs', ['plugins/scriptfs/scriptfs.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
 		getkeystring = currentenv.SharedLibrary('./bin/Release/plugin/getkeystring', ['plugins/getkeystring/getkeystring.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
 		windowstyleGL = currentenv.SharedLibrary('./bin/Release/plugin/windowstyleGL', ['plugins/windowstyleGL/windowstyle.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
-		#mapengineSDL = currentenv.SharedLibrary('./bin/Release/plugin/mapengineSDL', ['plugins/mapengineSDL/map.cpp', 'plugins/mapengineSDL/tileset.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
+		mapengineGL = currentenv.SharedLibrary('./bin/Release/plugin/mapengineGL', mapengineGL_files, LIBS = plugin_libs, LIBPATH = lib_path)
 
 setuplibs = GetOption('install_libs')
 if setuplibs == "y":
@@ -147,7 +147,7 @@ if setuplibs == "y":
 	if sys.platform != 'win32':
 		print "Writing conf file."
 		currentenv.Textfile(target = '/etc/ld.so.conf.d/turbosphere.conf', source = [lib_install_dir])
-	
+
 currentenv.Alias('libinstall', lib_install_dir)
 currentenv.Alias('confwrite', '/etc/ld.so.conf.d')
 currentenv.Alias('buildplugins', 'bin/Release')

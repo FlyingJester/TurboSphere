@@ -111,10 +111,6 @@ typedef v8::Persistent<v8::ObjectTemplate> v8PrototypeTemplate;
 
 #include <string>
 
-#ifdef _WIN32
-#define __func__ __FUNCTION__
-#endif
-
 #define THROWERROR(name)\
     return v8::ThrowException(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string(name)).c_str()));
 

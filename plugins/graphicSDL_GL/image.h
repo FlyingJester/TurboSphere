@@ -37,7 +37,6 @@ public:
     TS_TextureBuffer pixelBuffer;
     GLuint texCoordBuffer;
 
-
     SDL_Surface *CreateSurface(void);
     TS_Image *Clone(void);
 

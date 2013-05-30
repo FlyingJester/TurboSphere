@@ -4,15 +4,11 @@
 #include "image.h"
 #include "color.h"
 #include <sstream>
+#include <assert.h>
 
 #define XPROP v8::String::New("x")
 #define YPROP v8::String::New("y")
 
-static void (APIENTRY * glGenBuffers)(GLsizei, GLuint*) = NULL;
-static void (APIENTRY * glGenVertexArrays)(GLsizei, GLuint*) = NULL;
-static void (APIENTRY * glBindBuffer)(GLenum,  GLuint) = NULL;
-static void (APIENTRY * glBindVertexArray)(GLuint) = NULL;
-static void (APIENTRY * glBufferData)(GLenum, GLsizeiptr, const GLvoid *, GLenum) = NULL;
 
 #define GLSL(version, shader)  "#version " #version "\n" #shader
 
@@ -33,20 +29,28 @@ const GLchar *frag = GLSL(150,
     }
 );
 
-void PrimitivesInit(void){
-    char *extensions = (char *)glGetString(GL_EXTENSIONS);
-    if ((SDL_GL_GetProcAddress("glGenBuffers")!=NULL)&&(strstr(extensions, "GL_EXT_pixel_buffer_object"))){
-        glGenBuffers        = (void (APIENTRY *)(GLsizei, GLuint*))   SDL_GL_GetProcAddress("glGenBuffers");
-        glGenVertexArrays   = (void (APIENTRY *)(GLsizei, GLuint*))   SDL_GL_GetProcAddress("glGenVertexArrays");
-        glBindBuffer        = (void (APIENTRY *)(GLenum, GLuint))     SDL_GL_GetProcAddress("glBindBuffer");
-        glBindVertexArray   = (void (APIENTRY *)(GLuint))             SDL_GL_GetProcAddress("glBindVertexArray");
-        glBufferData        = (void (APIENTRY *)(GLenum, GLsizeiptr, const GLvoid *, GLenum))   SDL_GL_GetProcAddress("glBufferData");
+GLuint priInd;
+GLuint triVBO;
+GLuint rctVBO;
+GLuint linVBO;
 
-    }
-    else{
-        printf("[" PLUGINNAME "] Error: GL_EXT_pixel_buffer_object is not present.\n");
-        exit(3);
-    }
+void PrimitivesInit(void){
+    const GLubyte primitiveInd[] = {0, 1, 2, 3, 4, 5};
+
+    glGenBuffers(1, &triVBO);
+    glGenBuffers(1, &rctVBO);
+    glGenBuffers(1, &linVBO);
+    glGenBuffers(1, &priInd);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, priInd);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(primitiveInd), primitiveInd, GL_STATIC_DRAW);
+}
+
+void PutPrimitiveElementArray(GLuint numArrays){
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, priInd);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_INT, GL_FALSE, sizeof(GLint) * 2, 0);
 }
 
 v8Function Rectangle(V8ARGS)
@@ -488,6 +492,36 @@ v8Function OutlinedPolygon(V8ARGS){
 v8Function OutlinedCircle(V8ARGS);
 
 void TS_Rectangle(int x, int y, int w, int h, TS_Color *color){
+
+    const GLint   vertexData[] = {x, y, x+w, y, x+w, y+h, x, y+h};
+    const GLuint  colorData[]  = {
+        color->toInt(),
+        color->toInt(),
+        color->toInt(),
+        color->toInt()
+    };
+
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_QUADS, 0, 4);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+
+    /*
+    const GLint vertexData[] = {x, y, x+w, y, x+w, y+h, x, y+h};
+
+    glBindBuffer(GL_ARRAY_BUFFER, rctVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_DYNAMIC_DRAW);
+
+    PutPrimitiveElementArray(4);
+
+    GLColor(color);
+    glDrawElements(GL_QUADS, 4, GL_UNSIGNED_BYTE, 0);
+    glDisableVertexAttribArray(0);
+    */
+    /*
     glBegin(GL_QUADS);
         GLColor(color);
         glVertex2i(x,   y);
@@ -495,14 +529,24 @@ void TS_Rectangle(int x, int y, int w, int h, TS_Color *color){
         glVertex2i(x+w, y+h);
         glVertex2i(x,   y+h);
     glEnd();
+    */
 }
 
 void TS_Line(int x1, int y1, int x2, int y2, TS_Color *color){
-    glBegin(GL_LINES);
-        GLColor(color);
-        glVertex2i(x1, y1);
-        glVertex2i(x2, y2);
-    glEnd();
+
+    const GLint vertexData[] = {x1, y1, x2, y2};
+    const GLuint  colorData[]  = {
+        color->toInt(),
+        color->toInt()
+    };
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_LINES, 0, 2);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+
 }
 
 void TS_Pixel(int x, int y, TS_Color *color){
@@ -514,111 +558,545 @@ void TS_Pixel(int x, int y, TS_Color *color){
 
 void TS_Triangle(int x1, int y1, int x2, int y2, int x3, int y3, TS_Color *color){
 
-    glBegin(GL_TRIANGLES);
-        GLColor(color);
-        glVertex2i(x1, y1);
-        glVertex2i(x2, y2);
-        glVertex2i(x3, y3);
-    glEnd();
+    const GLint   vertexData[] = {x1, y1, x2, y2, x3, y3};
+    const GLuint  colorData[]  = {
+        color->toInt(),
+        color->toInt(),
+        color->toInt()
+    };
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
 
 }
 
 void TS_Polygon(int numPoints, int *x, int *y, TS_Color *color){
-    glBegin(GL_POLYGON);
-            GLColor(color);
-        for(int i = 0; i<numPoints; i++){
-            glVertex2i(x[i], y[i]);
-        }
-    glEnd();
+    GLint *vertexData = (GLint*)calloc(numPoints*2, sizeof(GLint));
+    GLuint *colorData = (GLuint*)calloc(numPoints, sizeof(GLuint));
+    for(int i = 0; i<numPoints; i++){
+        vertexData[i*2]     = x[i];
+        vertexData[(i*2)+1] = y[i];
+        colorData[i] = color->toInt();
+    }
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_POLYGON, 0, numPoints);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    free(vertexData);
+    free(colorData);
 }
 
 
 void TS_GradientRectangle(int x, int y, int w, int h, TS_Color *color1, TS_Color *color2, TS_Color *color3, TS_Color *color4){
-    glBegin(GL_QUADS);
-        GLColor(color1);
-        glVertex2f(x,   y);
-        GLColor(color2);
-        glVertex2f(x+w, y);
-        GLColor(color3);
-        glVertex2f(x+w, y+h);
-        GLColor(color4);
-        glVertex2f(x,   y+h);
-    glEnd();
+
+    const GLint   vertexData[] = {x, y, x+w, y, x+w, y+h, x, y+h};
+    const GLuint  colorData[]  = {
+        color1->toInt(),
+        color2->toInt(),
+        color3->toInt(),
+        color4->toInt()
+    };
+
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_QUADS, 0, 4);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 void TS_GradientLine(int x1, int y1, int x2, int y2, TS_Color *color1, TS_Color *color2){
-    glBegin(GL_LINES);
-        GLColor(color1);
-        glVertex2f(x1,  y1);
-        GLColor(color2);
-        glVertex2f(x2,  y2);
-    glEnd();
+
+    const GLint vertexData[] = {x1, y1, x2, y2};
+    const GLuint  colorData[]  = {
+        color1->toInt(),
+        color2->toInt()
+    };
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_LINES, 0, 2);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
 }
 void TS_GradientTriangle(int x1, int y1, int x2, int y2, int x3, int y3, TS_Color *color1, TS_Color *color2, TS_Color *color3){
-    glBegin(GL_TRIANGLES);
-        GLColor(color1);
-        glVertex2f(x1,  y1);
-        GLColor(color2);
-        glVertex2f(x2,  y2);
-        GLColor(color3);
-        glVertex2f(x3,  y3);
-    glEnd();
+
+    const GLint   vertexData[] = {x1, y1, x2, y2, x3, y3};
+    const GLuint  colorData[]  = {
+        color1->toInt(),
+        color2->toInt(),
+        color3->toInt()
+    };
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 void TS_GradientPolygon(int numPoints, int *x, int *y, TS_Color **color){
-    glBegin(GL_POLYGON);
-        for(int i = 0; i<numPoints; i++){
-            GLColor(color[i]);
-            glVertex2i(x[i], y[i]);
-        }
-    glEnd();
+    GLint *vertexData = (GLint*)calloc(numPoints*2, sizeof(GLint));
+    GLuint *colorData = (GLuint*)calloc(numPoints, sizeof(GLuint));
+    for(int i = 0; i<numPoints; i++){
+        vertexData[i*2]     = x[i];
+        vertexData[(i*2)+1] = y[i];
+        colorData[i] = color[i]->toInt();
+    }
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_POLYGON, 0, numPoints);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    free(vertexData);
+    free(colorData);
+
 }
 
 void TS_OutlinedRectangle(int x, int y, int w, int h, TS_Color *color, int thickness){
-    glBegin(GL_QUADS);
-        GLColor(color);
-        glVertex2i(x,   y);
-        glVertex2i(x+w, y);
-        glVertex2i(x+w, y+thickness);
-        glVertex2i(x,   y+thickness);
+//This is easier if thickness == 1.
+    assert(thickness>=0);
 
-        glVertex2i(x,   y+h-thickness);
-        glVertex2i(x+w, y+h-thickness);
-        glVertex2i(x+w, y+h);
-        glVertex2i(x,   y+h);
+    if(thickness==0)    return;
 
-        glVertex2i(x,             y-thickness);
-        glVertex2i(x+thickness,   y-thickness);
-        glVertex2i(x+thickness,   y+h-thickness);
-        glVertex2i(x,             y+h-thickness);
+    if(thickness==1){
+        const GLint vertexData[] = {x, y, x+w, y, x+w, y+h, x, y+h};
 
-        glVertex2i(x+w-thickness, y+thickness);
-        glVertex2i(x+w,           y+thickness);
-        glVertex2i(x+w,           y+h-thickness);
-        glVertex2i(x+w-thickness, y+h-thickness);
-        /*
-        for(int i = 0; i<thickness; i++){
-            glVertex2i(x,   y+i);
-            glVertex2i(x+w, y+i);
+        const GLuint  colorData[]  = {
+            color->toInt(),
+            color->toInt(),
+            color->toInt(),
+            color->toInt()
+        };
 
-            glVertex2i(x,   y+h-i);
-            glVertex2i(x+w, y+h-i);
+        glVertexPointer(2, GL_INT, 0, vertexData);
+        glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_COLOR_ARRAY);
+        glDrawArrays(GL_LINE_LOOP, 0, 4);
+        glDisableClientState(GL_COLOR_ARRAY);
+        glDisableClientState(GL_VERTEX_ARRAY);
+        return;
+    }
 
-            glVertex2i(x+i,   y+thickness);
-            glVertex2i(x+i,   y+h-thickness);
+/*
+    3--------5
+    |\   __//|
+    |\\ /  / |
+    || 4--6  |
+    | \|  |\ |
+    |  2--8 ||
+    | /10  \\|
+    |/      \|
+    19-------7
 
-            glVertex2i(x+w-i, y+thickness);
-            glVertex2i(x+w-i, y+h-thickness);
-        }
-        */
-    glEnd();
+    So the last 2 vertices are duped, but it's good enough.
+*/
+
+    const GLint vertexData[] = {
+        x,              y+h, //1
+        x+thickness,   (y+h)-thickness, //2
+        x,              y, //3
+        x+thickness,    y+thickness, //4
+        x+w,            y, //5
+       (x+w)-thickness, y+thickness, //6
+        x+w,            y+h, //7
+       (x+w)-thickness, y+h, //8
+        x,              y+h, //9
+        x+thickness,   (y+h)-thickness //10
+    };
+
+    GLuint colorData[10];
+    std::fill(colorData, colorData+sizeof(colorData), (int)(color->toInt()));
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 10);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+
+}
+
+void TS_OutlinedGradientRectangle(int x, int y, int w, int h, TS_Color **color, int thickness){
+//This is easier if thickness == 1.
+    assert(thickness>=0);
+
+    if(thickness==0)    return;
+
+    if(thickness==1){
+        const GLint vertexData[] = {x, y, x+w, y, x+w, y+h, x, y+h};
+
+        const GLuint  colorData[]  = {
+            color[0]->toInt(),
+            color[1]->toInt(),
+            color[2]->toInt(),
+            color[3]->toInt()
+        };
+
+        glVertexPointer(2, GL_INT, 0, vertexData);
+        glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_COLOR_ARRAY);
+        glDrawArrays(GL_LINE_LOOP, 0, 4);
+        glDisableClientState(GL_COLOR_ARRAY);
+        glDisableClientState(GL_VERTEX_ARRAY);
+        return;
+    }
+
+/*
+    3--------5
+    |\   __//|
+    |\\ /  / |
+    || 4--6  |
+    | \|  |\ |
+    |  2--8 ||
+    | /10  \\|
+    |/      \|
+    19-------7
+
+    So the last 2 vertices are duped, but it's good enough.
+*/
+
+    const GLint vertexData[] = {
+        x,              y+h, //1
+        x+thickness,   (y+h)-thickness, //2
+        x,              y, //3
+        x+thickness,    y+thickness, //4
+        x+w,            y, //5
+       (x+w)-thickness, y+thickness, //6
+        x+w,            y+h, //7
+       (x+w)-thickness, y+h, //8
+        x,              y+h, //9
+        x+thickness,   (y+h)-thickness //10
+    };
+
+    const GLuint colorData[] = {
+        color[3]->toInt(), //1
+        color[3]->toInt(), //2
+        color[0]->toInt(), //3
+        color[0]->toInt(), //4
+        color[1]->toInt(), //5
+        color[1]->toInt(), //6
+        color[2]->toInt(), //7
+        color[2]->toInt(), //8
+        color[3]->toInt(), //9
+        color[3]->toInt(), //10
+    };
+
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 10);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+
 }
 
 void TS_OutlinedPolygon(int numPoints, int *x, int *y, TS_Color *color){
-    glBegin(GL_LINE_LOOP);
-        GLColor(color);
-        for(int i = 0; i<numPoints; i++){
-            glVertex2i(x[i], y[i]);
+    GLint *vertexData = (GLint*)calloc(numPoints*2, sizeof(GLint));
+    GLuint *colorData = (GLuint*)calloc(numPoints, sizeof(GLuint));
+    for(int i = 0; i<numPoints; i++){
+        vertexData[i*2]     = x[i];
+        vertexData[(i*2)+1] = y[i];
+        colorData[i] = color->toInt();
+    }
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_LINE_LOOP, 0, numPoints);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    free(vertexData);
+    free(colorData);
+}
+
+//Software Primitives
+
+void TS_SoftRectangle(int x, int y, int w, int h, TS_Color *c, SDL_Surface *destination){
+
+    uint32_t color = c->toInt();
+
+    SDL_Rect rect = {(short int)x, (short int)y, (short unsigned int)w, (short unsigned int)h};
+    SDL_Rect locrect = {0, 0, (short unsigned int)w, (short unsigned int)h};
+
+	SDL_Surface* surface = SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA, w, h, DEPTH, CHANNEL_MASKS);
+	SDL_FillRect(surface, &locrect, color);
+	SDL_BlitSurface(surface, NULL, destination, &rect);
+    SDL_FreeSurface(surface);
+}
+
+void TS_SoftLine(int ax1, int ay1, int ax2, int ay2, TS_Color *c, SDL_Surface *destination){
+
+    uint32_t color = c->toInt();
+
+    int w = abs(ax1-ax2);
+    int h = abs(ay1-ay2);
+
+    SDL_Rect rect = {(short int)min(ax1, ax2), (short int)min(ay1, ay2), (short unsigned int)w, (short unsigned int)h};
+
+    if(ax1-ax2<=1&&ax1-ax2>=-1){
+        SDL_Surface *surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, 1, h, DEPTH, CHANNEL_MASKS);
+        SDL_Rect allsurf = {0, 0, 1, (short unsigned int)h};
+        SDL_FillRect(surface, &allsurf, color);
+
+        SDL_BlitSurface(surface, NULL, screen, &rect);
+        SDL_FreeSurface(surface);
+
+        return;
+    }
+    else if(ay1-ay2<=1&&ay1-ay2>=-1){
+        SDL_Surface *surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, w, 1, DEPTH, CHANNEL_MASKS);
+        SDL_Rect allsurf = {0, 0, (short unsigned int)w, 1};
+        SDL_FillRect(surface, &allsurf, color);
+
+        SDL_BlitSurface(surface, NULL, screen, &rect);
+        SDL_FreeSurface(surface);
+
+        return;
+    }
+
+    int x1 = ax1-min(ax1, ax2);
+    int y1 = ay1-min(ay1, ay2);
+    int x2 = ax2-min(ax1, ax2);
+    int y2 = ay2-min(ay1, ay2);
+
+    SDL_Rect temprect = {(short int)x1, (short int)y1, 1, 1};
+
+	SDL_Surface *surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, w+1, h+1, DEPTH, CHANNEL_MASKS);
+
+    int sx;
+    int sy;
+    if (x1<x2){
+        sx  = 1;
+    }
+    else {
+        sx  = -1;
+    }
+    if (y1<y2){
+        sy  = 1;
+    }
+    else{
+        sy  = -1;
+    }
+    float err = (float)w-h;
+
+    float e2;
+    while(true){
+        temprect.x = x1;
+        temprect.y = y1;
+
+        SDL_FillRect(surface, &temprect, color);
+
+        if ((x1==x2)&&(y1==y2)){break;}
+        e2 = 2*err;
+
+        if (e2>-h){
+
+            err-= h;
+            x1 += sx;
+
         }
-    glEnd();
+        if (e2<w){
+
+            err += w;
+            y1  += sy;
+
+        }
+    }
+
+	SDL_BlitSurface(surface, NULL, destination, &rect);
+    SDL_FreeSurface(surface);
+}
+
+void TS_SoftGradientRectangle(int x, int y, int w, int h, TS_Color *c1, TS_Color *c2, TS_Color *c3, TS_Color *c4, SDL_Surface *destination){
+
+    SDL_Rect rect       = {(short int)x, (short int)y, (short unsigned int)w, (short unsigned int)h};
+    SDL_Rect temprect   = {0, 0, 1, 1};
+    SDL_Surface* surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, w, h, DEPTH, CHANNEL_MASKS);
+
+    TS_Color color(0, 0, 0, 0);
+
+    int rDeltaTop = c2->red   - c1->red;
+    int gDeltaTop = c2->green - c1->green;
+    int bDeltaTop = c2->blue  - c1->blue;
+    int aDeltaTop = c2->alpha - c1->alpha;
+
+    int rDeltaLow = c3->red   - c4->red;
+    int gDeltaLow = c3->green - c4->green;
+    int bDeltaLow = c3->blue  - c4->blue;
+    int aDeltaLow = c3->alpha - c4->alpha;
+
+    color.red   = c1->red;
+    color.green = c1->green;
+    color.blue  = c1->blue;
+    color.alpha = c1->alpha;
+
+    int rLineDelta;
+    int gLineDelta;
+    int bLineDelta;
+    int aLineDelta;
+
+    TS_Color topColor = *c1;
+    TS_Color lowColor = *c4;
+
+    for(int tx = 0; tx<w; tx++){
+        rLineDelta = lowColor.red   -topColor.red;
+        gLineDelta = lowColor.green -topColor.green;
+        bLineDelta = lowColor.blue  -topColor.blue;
+        aLineDelta = lowColor.alpha -topColor.alpha;
+        for(int ty = 0; ty<h; ty++){
+
+            SDL_FillRect(surface, &temprect, color.toInt());
+            color.red  =topColor.red  + (rLineDelta*ty/h);
+            color.green=topColor.green+ (gLineDelta*ty/h);
+            color.blue =topColor.blue + (bLineDelta*ty/h);
+            color.alpha=topColor.alpha+ (aLineDelta*ty/h);
+            temprect.y=ty;
+        }
+
+        topColor.red  =c1->red  + (rDeltaTop*tx/w);
+        topColor.green=c1->green+ (gDeltaTop*tx/w);
+        topColor.blue =c1->blue + (bDeltaTop*tx/w);
+        topColor.alpha=c1->alpha+ (aDeltaTop*tx/w);
+
+        lowColor.red  =c4->red  + (rDeltaLow*tx/w);
+        lowColor.green=c4->green+ (gDeltaLow*tx/w);
+        lowColor.blue =c4->blue + (bDeltaLow*tx/w);
+        lowColor.alpha=c4->alpha+ (aDeltaLow*tx/w);
+
+        temprect.x=tx;
+    }
+
+	SDL_BlitSurface(surface, NULL, destination, &rect);
+	SDL_FreeSurface(surface);
+}
+
+void TS_SoftFilledCircle(int x, int y, int rad, TS_Color *c, SDL_Surface *destination){
+
+    uint32_t color = c->toInt();
+
+    //Repair poor parameters.
+    if(rad<0){
+        rad*=-1;
+    }
+    else if(rad>0){
+
+    }
+    else{
+        return;
+    }
+
+    SDL_Surface* surface = SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA, rad*2, rad*2, DEPTH, CHANNEL_MASKS);
+
+    int w = rad*2;
+    double dis= 0;
+    int xd2 = 0;
+    int yd2 = 0;
+    double r  = rad;
+
+    int inf = (rad>4)?((rad>>3)+rad-floor((double)(((double)rad)/sqrt(2.0)))):(rad);
+
+    SDL_Rect dest = {1, 1, 1, 1};
+
+    for(int xt = 0; xt<=rad; xt++){
+        xd2 = rad-xt;
+        xd2*= xd2;
+        for(int yt = 0; yt<inf; yt++){
+            yd2 = rad-yt;
+            yd2*= yd2;
+            dis = floor(sqrt((float)(yd2+xd2)));
+            if(dis<r){
+                dest.x = yt;
+                dest.y = xt;
+                dest.w = (rad-yt)*2;
+                SDL_FillRect(surface, &dest, color);
+
+                dest.y=((rad*2)-dest.y);
+                SDL_FillRect(surface, &dest, color);
+
+                dest.x = xt;
+                dest.y = yt;
+                dest.w = (rad-xt)*2;
+                SDL_FillRect(surface, &dest, color);
+
+                dest.y=((rad*2)-dest.y);
+                SDL_FillRect(surface, &dest, color);
+                break;
+            }
+        }
+    }
+
+    SDL_Rect rect = {(short int)(x-rad), (short int)(y-rad), (short unsigned int)(w), (short unsigned int)(w)};
+    SDL_BlitSurface(surface, NULL, destination, &rect);
+    SDL_FreeSurface(surface);
+
+}
+
+
+void TS_SoftOutlinedCircle(int x, int y, int rad, TS_Color *c, SDL_Surface* destination){
+
+    uint32_t color = c->toInt();
+
+    //Repair poor parameters.
+    if(rad<0){
+        rad*=-1;
+    }
+    else if(rad>0){
+
+    }
+    else{
+        return;
+    }
+
+    SDL_Surface* surface = SDL_CreateRGBSurface(SDL_HWSURFACE|SDL_SRCALPHA, rad*2, rad*2, DEPTH, CHANNEL_MASKS);
+
+    Uint32 *field = (Uint32 *)surface->pixels;
+    int w = rad*2;
+    double dis= 0;
+    int xd2 = 0;
+    int yd2 = 0;
+    double r  = rad;
+    int inf = (rad>4)?((rad>>2)+rad-floor((double)(((double)rad)/sqrt(2.0)))):(rad);
+
+    for(int xt = 0; xt<=rad; xt++){
+        xd2 = rad-xt;
+        xd2*= xd2;
+        for(int yt = 0; yt<inf; yt++){
+            yd2 = rad-yt;
+            yd2*= yd2;
+            dis = floor(sqrt(double(yd2+xd2)));
+            if(dis<r){
+                field[(yt*surface->w)+xt] = color;
+                field[((w-yt)*surface->w)+(w-xt)] = color;
+                field[(xt*surface->w)+yt] = color;
+                field[((w-xt)*surface->w)+(w-yt)] = color;
+
+                field[((w-yt)*surface->w)+xt] = color;
+                field[((w-xt)*surface->w)+yt] = color;
+                field[(yt*surface->w)+(w-xt)] = color;
+                field[(xt*surface->w)+(w-yt)] = color;
+                break;
+            }
+        }
+    }
+
+    SDL_Rect rect = {(short int)(x-rad), (short int)(y-rad), (short unsigned int)(w), (short unsigned int)(w)};
+    SDL_BlitSurface(surface, NULL, destination, &rect);
+    SDL_FreeSurface(surface);
+
 }

@@ -2,12 +2,17 @@
 	var Red		= new Color(255, 0, 0, 255);
 	var Green	= new Color(0, 255, 0, 128);
 	var Blue	= new Color(0, 0, 255, 255);
-		FlipScreen();
-		Triangle(64, 32, 16, GetScreenHeight()-16, GetScreenWidth()-64, 256, Blue, Green, Red);
-		far.drawText(128, 65, "Do a barrel roll!");
+		//Rectangle(64, 32, GetScreenWidth()-64, GetScreenHeight()-16, Red);
+		//Rectangle(10, 10, 10, 10, Green);
+		Triangle(64, 32, 16, GetScreenHeight()-16, GetScreenWidth()-64, 256, Blue);
+		Triangle(0, 0, 0, 16, 16, 0, Blue);
+		//far.drawText(128, 65, "Do a barrel roll!");
 		FlipScreen();
 		GetKey();
-
+		//SetRenderScript("Rectangle(10, 10, 16, 16, Red);");
+		MapEngine("test.rmp");
+		GetKey();
+		
 function game(){
 	var fn = GetSystemFont();
 	var ws1 = new WindowStyle("property.rws");
@@ -35,6 +40,9 @@ function game(){
 		
 		
 		far.drawText(16, GetScreenHeight()-16, "Do a barrel roll! With TTF Fonts!");
+		
+		Triangle(GetScreenWidth(), GetScreenHeight(), GetScreenWidth()-16, GetScreenHeight(), GetScreenWidth(), GetScreenHeight()-16, Red);
+		
 		FlipScreen();
 		
 		GradientTriangle(64, 32, 16, GetScreenHeight()-16, GetScreenWidth()-64, 256, Blue, Green, Red);
@@ -50,7 +58,7 @@ function game(){
 		im2.blitMask(256, 128, Green);
 		im2.blitMask(256, 144, Blue);
 		im2.zoomBlit(196, 196, 2, Red);
-		im2.rotateBlitMask(256, 228, 0, Green);
+		im2.rotateBlitMask(256, 228, GetTime()/256, Green);
 		
 		sf1.blit(-4, -4);
 		im1.blit(0, 0);
@@ -58,8 +66,9 @@ function game(){
 		im1.blit((GetScreenWidth()/2)-8, (GetScreenHeight()/2)-8);
 		sf3.blit(92, 32);
 		GradientLine(GetScreenWidth()-64, GetScreenHeight()-64, GetMouseX(), GetMouseY(), Green, Red);
+		Line(GetScreenWidth()-24, GetScreenHeight()-96, GetMouseX(), GetMouseY(), Green, Red);
 		Rectangle(0, 0, GetTime()-t, 16, Red);
 		Rectangle(0, 0, GetTime()-t, 16, Green);
-		Delay(1);
+		Delay(16);
 	}
 }

@@ -29,6 +29,7 @@ public:
 	uint32_t toInt(void) const;
 		uint8_t red, green, blue, alpha;
     bool operator==(const TS_Color &c2);
+    uint64_t reserved;
 };
 
 GRAPHICC_EXPORT uint32_t concatRGBA(int, int, int, int);

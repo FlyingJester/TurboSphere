@@ -1,20 +1,17 @@
 #ifndef SDL_GL_MAIN_HEAD
 #define SDL_GL_MAIN_HEAD
 
+#ifndef APIENTRY
+#define APIENTRY
+#endif
+
 #define PLUGINNAME "SDL_GL"
 #include "../common/plugin.h"
-#ifdef _WIN32
-#include "../../SDL/SDL_opengl.h"
-#else
 #include <SDL/SDL_opengl.h>
-#endif
 #include "../common/graphic_algorithm.h"
 #include "../common/graphic_common.h"
 #include "../../configmanager/opengame.h"
 #include <cmath>
-#ifndef APIENTRY
-#define APIENTRY
-#endif
 
 #ifdef _WIN32
 	#define SDL_GL_EXPORT __declspec(dllexport)
@@ -49,6 +46,19 @@
 #define DEPTH 32
 
 #define CHANNEL_MASKS Frmask, Fgmask, Fbmask, Famask
+
+extern void (APIENTRY * glGenBuffers)(GLsizei, GLuint*);
+extern void (APIENTRY * glDeleteBuffers)(GLsizei, GLuint*);
+extern void (APIENTRY * glGenVertexArrays)(GLsizei, GLuint*);
+extern void (APIENTRY * glBindBuffer)(GLenum,  GLuint);
+extern void (APIENTRY * glBindVertexArray)(GLuint);
+extern void (APIENTRY * glBufferData)(GLenum, GLsizeiptr, const GLvoid *, GLenum);
+extern void (APIENTRY * glEnableVertexAttribArray)(GLint);
+extern void (APIENTRY * glDisableVertexAttribArray)(GLint);
+extern void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*);
+extern void (APIENTRY * glVertexAttribIPointer)(GLuint, GLint, GLenum, GLsizei, const GLvoid*);
+
+extern const GLubyte primitiveInd[];
 
 extern SDL_Rect cmpltscreen;
 

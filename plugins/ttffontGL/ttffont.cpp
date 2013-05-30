@@ -116,19 +116,28 @@ void TS_TTFFont::drawText(int x, int y, const char *text){
 
         if(strcmp(text, strings[i])==0){
             if(cacheattribs[i].age>0) cacheattribs[i].age--;
+
+            const GLint   vertexData[]   = {x, y, x+cacheattribs[i].width, y, x+cacheattribs[i].width, y+cacheattribs[i].height, x, y+cacheattribs[i].height};
+            const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
+            const GLuint  colorData[]    = {
+                tsmask->toInt(),
+                tsmask->toInt(),
+                tsmask->toInt(),
+                tsmask->toInt()
+            };
+
+            glTexCoordPointer(2, GL_INT, 0, texcoordData);
+            glVertexPointer(2, GL_INT, 0, vertexData);
+            glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, cache[i]);
-            glBegin(GL_QUADS);
-                GLColor(tsmask);
-                glTexCoord2i(0, 0);
-                glVertex2i(x,       y);
-                glTexCoord2i(1, 0);
-                glVertex2i(x+cacheattribs[i].width, y);
-                glTexCoord2i(1, 1);
-                glVertex2i(x+cacheattribs[i].width, y+cacheattribs[i].height);
-                glTexCoord2i(0, 1);
-                glVertex2i(x,       y+cacheattribs[i].height);
-            glEnd();
+            glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+            glEnableClientState(GL_VERTEX_ARRAY);
+            glEnableClientState(GL_COLOR_ARRAY);
+            glDrawArrays(GL_QUADS, 0, 4);
+            glDisableClientState(GL_COLOR_ARRAY);
+            glDisableClientState(GL_VERTEX_ARRAY);
+            glDisableClientState(GL_TEXTURE_COORD_ARRAY);
             glDisable(GL_TEXTURE_2D);
             needtobind = false;
         }
@@ -155,19 +164,27 @@ void TS_TTFFont::drawText(int x, int y, const char *text){
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->w, surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->pixels);
     SDL_FreeSurface(surface);
 
+    const GLint   vertexData[]   = {x, y, x+cacheattribs[oldest].width, y, x+cacheattribs[oldest].width, y+cacheattribs[oldest].height, x, y+cacheattribs[oldest].height};
+    const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
+    const GLuint  colorData[]    = {
+        tsmask->toInt(),
+        tsmask->toInt(),
+        tsmask->toInt(),
+        tsmask->toInt()
+    };
+
+    glTexCoordPointer(2, GL_INT, 0, texcoordData);
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, cache[oldest]);
-    glBegin(GL_QUADS);
-        GLColor(tsmask);
-        glTexCoord2i(0, 0);
-        glVertex2i(x,       y);
-        glTexCoord2i(1, 0);
-        glVertex2i(x+cacheattribs[oldest].width, y);
-        glTexCoord2i(1, 1);
-        glVertex2i(x+cacheattribs[oldest].width, y+cacheattribs[oldest].height);
-        glTexCoord2i(0, 1);
-        glVertex2i(x,       y+cacheattribs[oldest].height);
-    glEnd();
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_QUADS, 0, 4);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisable(GL_TEXTURE_2D);
 
 }

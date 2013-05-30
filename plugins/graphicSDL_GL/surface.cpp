@@ -1,6 +1,7 @@
 #include "main.h"
 #include "surface.h"
 #include "color.h"
+#include "primitives.h"
 
 #include <assert.h>
 
@@ -122,6 +123,7 @@ void TS_SurfaceReplaceColor(SDL_Surface *surface, TS_Color *oldColor, TS_Color *
 }
 
 v8Function SurfaceToImage(V8ARGS){
+
     BEGIN_OBJECT_WRAP_CODE;
 
 	SDL_Surface *surface = GET_SELF(SDL_Surface*);
@@ -131,6 +133,7 @@ v8Function SurfaceToImage(V8ARGS){
     TS_Image *image = new TS_Image(texture, surface->w, surface->h);
 
     END_OBJECT_WRAP_CODE(Image, image);
+
 }
 
 v8Function SurfaceClone(V8ARGS){
@@ -443,6 +446,54 @@ v8Function SurfaceRectangle(V8ARGS){
         SDL_ClearError();
         THROWERROR("[" PLUGINNAME "] SurfaceRectangle Error: Could not draw rectangle.");
     }
+
+	return v8::Undefined();
+}
+
+
+v8Function SurfaceLine(V8ARGS){
+    if(args.Length()<5){
+        THROWERROR("[" PLUGINNAME "] SurfaceLine Error: Called with fewer than 5 arguments.");
+    }
+    CHECK_ARG_INT(0);
+    CHECK_ARG_INT(1);
+    CHECK_ARG_INT(2);
+    CHECK_ARG_INT(3);
+    CHECK_ARG_OBJ(4);
+
+	int x1 = args[0]->Int32Value();
+	int y1 = args[1]->Int32Value();
+	int x2 = args[2]->Int32Value();
+	int y2 = args[3]->Int32Value();
+
+    v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[4]);
+    TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
+
+    SDL_Surface *surface = GET_SELF(SDL_Surface*);
+
+    TS_SoftLine(x1, y1, x2, y2, color, surface);
+
+	return v8::Undefined();
+}
+
+
+v8Function SurfaceCircle(V8ARGS){
+    if(args.Length()<5){
+        THROWERROR("[" PLUGINNAME "] SurfaceCircle Error: Called with fewer than 4 arguments.");
+    }
+    CHECK_ARG_INT(0);
+    CHECK_ARG_INT(1);
+    CHECK_ARG_INT(2);
+    CHECK_ARG_OBJ(3);
+
+	int x = args[0]->Int32Value();
+	int y = args[1]->Int32Value();
+	int r = args[2]->Int32Value();
+
+    v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[4]);
+    TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
+
+    SDL_Surface *surface = GET_SELF(SDL_Surface*);
 
 	return v8::Undefined();
 }

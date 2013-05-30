@@ -11,5 +11,5 @@ v8Function V8GetScreenHeight(V8ARGS){
 
 void FlipScreen(void){
     SDL_GL_SwapBuffers();
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 }

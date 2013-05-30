@@ -66,6 +66,7 @@ public:
     const char *systemdownarrow;
     int fixedplugins;
     const char ** plugins;
+    void *reserved;
 };
 
 CONFIGMGR_EXPORT TS_Config *GetConfig(void);

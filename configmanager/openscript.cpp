@@ -19,7 +19,6 @@ using namespace std;
 
 std::string openfile(const char *Rfile)
 {
-	printf("Opening script %s\n", Rfile);
 	std::stringstream filetext;
 	filetext.str("");
 
@@ -27,10 +26,10 @@ std::string openfile(const char *Rfile)
     ifstream file(Rfile);
 
     if(!file){
-        printf("Could not open script: %s\n", Rfile);
+        printf("[ConfigManager] Error: Could not open script %s\n", Rfile);
     }
     else{
-        //filetext<<" ";
+        printf("[ConfigManager] Info: Successfully opened script %s\n", Rfile);
     }
 
     if (file.is_open()){
@@ -42,7 +41,7 @@ std::string openfile(const char *Rfile)
 		}
 	}
 	else{
-		printf("File not readable.\n");
+		printf("[ConfigManager] Error: File not readable.\n");
 	}
     file.close();
 

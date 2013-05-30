@@ -9,6 +9,7 @@ TS_Color::TS_Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a){
     green	= g;
     blue	= b;
     alpha	= a;
+    reserved= 0;
 }
 
 TS_Color::TS_Color(void){
@@ -16,6 +17,7 @@ TS_Color::TS_Color(void){
     green   = 0;
     blue    = 0;
     alpha   = 0;
+    reserved= 0;
 }
 
 TS_Color::~TS_Color(void){

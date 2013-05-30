@@ -17,10 +17,8 @@ DECLARE_OBJECT_TEMPLATES(Image);
 TS_Color *fullmask;
 GLint *texcoord;
 
-static void (APIENTRY * glGenBuffers)(GLsizei, GLuint*) = NULL;
-static void (APIENTRY * glBindBuffer)(GLenum,  GLuint) = NULL;
-static void (APIENTRY * glBufferData)(GLenum, GLsizeiptr, const GLvoid *, GLenum) = NULL;
 
+static GLint texCoordArray[] = {0, 0, 1, 0, 1, 1, 0, 1};
 
 //void glGenBuffers(GLsizei n, GLuint *ids);
 
@@ -33,8 +31,8 @@ void ImageInit(void){
     texcoord[5] = 1;
     texcoord[7] = 1;
 
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glTexCoordPointer(2, GL_INT, 0, texcoord);
+    //glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    //glTexCoordPointer(2, GL_INT, 0, texcoord);
 //    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     INIT_OBJECT_TEMPLATES(Image);
     SET_CLASS_NAME(Image, "Image");
@@ -57,17 +55,6 @@ void ImageInit(void){
 
     SET_CLASS_ACCESSOR(Image, "width",    ImageGetWidth,    ImageSetWidth);
     SET_CLASS_ACCESSOR(Image, "height",   ImageGetHeight,   ImageSetHeight);
-
-    char *extensions = (char *)glGetString(GL_EXTENSIONS);
-    if ((SDL_GL_GetProcAddress("glGenBuffers")!=NULL)&&(strstr(extensions, "GL_EXT_pixel_buffer_object"))){
-        glGenBuffers = (void (APIENTRY *)(GLsizei, GLuint*)) SDL_GL_GetProcAddress("glGenBuffers");
-        glBindBuffer = (void (APIENTRY *)(GLenum, GLuint))   SDL_GL_GetProcAddress("glBindBuffer");
-        glBufferData = (void (APIENTRY *)(GLenum, GLsizeiptr, const GLvoid *, GLenum))   SDL_GL_GetProcAddress("glBufferData");
-    }
-    else{
-        printf("[" PLUGINNAME "] Error: GL_EXT_pixel_buffer_object is not present.\n");
-        exit(3);
-    }
 
 }
 
@@ -100,7 +87,7 @@ TS_Image::TS_Image(TS_Texture tex, int w, int h){
     height  = h;
     dwidth  = w;
     dheight = h;
-    diaglength = (int)ceil(sqrt(float(w*w)+float(h*h))/2);
+    diaglength = (int)ceil(sqrt((w*w)+(h*h))/2);
 
     this->resetMask();
 
@@ -251,20 +238,29 @@ TS_Image *TS_LoadTexture(const char *filename){
 
 void TS_Image::blit(int x, int y){
 
+    const GLint   vertexData[]   = {x, y, x+width, y, x+width, y+height, x, y+height};
+    const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
+    const GLuint  colorData[]    = {
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt()
+    };
+
+    glTexCoordPointer(2, GL_INT, 0, texcoordData);
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glBegin(GL_QUADS);
-        GLColor(mask);
-        glTexCoord2i(0, 0);
-        glVertex2i(x,       y);
-        glTexCoord2i(1, 0);
-        glVertex2i(x+width, y);
-        glTexCoord2i(1, 1);
-        glVertex2i(x+width, y+height);
-        glTexCoord2i(0, 1);
-        glVertex2i(x,       y+height);
-    glEnd();
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_QUADS, 0, 4);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisable(GL_TEXTURE_2D);
+
 }
 
 TS_Image *TS_Image::Clone(void){
@@ -293,21 +289,29 @@ TS_Image *TS_Image::Clone(void){
 
 void TS_Image::zoomBlit(int x, int y, double factor){
 
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, texture);
     double scaleWidth   = factor*dwidth;
     double scaleHeight  = factor*dheight;
-    glBegin(GL_QUADS);
-        GLColor(mask);
-        glTexCoord2i(0, 0);
-        glVertex2i(x,                   y);
-        glTexCoord2i(1, 0);
-        glVertex2i((int)(x+scaleWidth), y);
-        glTexCoord2i(1, 1);
-        glVertex2i((int)(x+scaleWidth), (int)(y+scaleHeight));
-        glTexCoord2i(0, 1);
-        glVertex2i(x,                   (int)(y+scaleHeight));
-    glEnd();
+    const GLint   vertexData[]   = {x, y, x+scaleWidth, y, x+scaleWidth, y+scaleHeight, x, y+scaleHeight};
+    const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
+    const GLuint  colorData[]    = {
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt()
+    };
+
+    glTexCoordPointer(2, GL_INT, 0, texcoordData);
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_QUADS, 0, 4);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisable(GL_TEXTURE_2D);
 }
 
@@ -317,20 +321,30 @@ void TS_Image::stretchBlit(int x, int y, double wfactor, double hfactor){
     glBindTexture(GL_TEXTURE_2D, texture);
     double scaleWidth   = hfactor*dwidth;
     double scaleHeight  = wfactor*dheight;
-    glBegin(GL_QUADS);
-        GLColor(mask);
-        glTexCoord2i(0, 0);
-        glVertex2i(x,                   y);
-        glTexCoord2i(1, 0);
-        glVertex2i((int)(x+scaleWidth), y);
-        glTexCoord2i(1, 1);
-        glVertex2i((int)(x+scaleWidth), (int)(y+scaleHeight));
-        glTexCoord2i(0, 1);
-        glVertex2i(x,                   (int)(y+scaleHeight));
-    glEnd();
-    glDisable(GL_TEXTURE_2D);
-}
+    const GLint   vertexData[]   = {x, y, x+scaleWidth, y, x+scaleWidth, y+scaleHeight, x, y+scaleHeight};
+    const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
+    const GLuint  colorData[]    = {
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt()
+    };
 
+    glTexCoordPointer(2, GL_INT, 0, texcoordData);
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_QUADS, 0, 4);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDisable(GL_TEXTURE_2D);
+
+}
 
 void TS_Image::rotateBlit(int x, int y, double angle){
 
@@ -344,35 +358,57 @@ void TS_Image::rotateBlit(int x, int y, double angle){
     int ymod2 = (int)ceil(sin(angle+4.7123)*diaglength);
     int ymod3 = (int)ceil(sin(angle)*diaglength);
     int ymod4 = (int)ceil(sin(angle+1.5707)*diaglength);
-    glBegin(GL_QUADS);
-        GLColor(mask);
-        glTexCoord2i(0, 0);
-        glVertex2i(x+xmod1, y+ymod1);
-        glTexCoord2i(1, 0);
-        glVertex2i(x+xmod2, y+ymod2);
-        glTexCoord2i(1, 1);
-        glVertex2i(x+xmod3, y+ymod3);
-        glTexCoord2i(0, 1);
-        glVertex2i(x+xmod4, y+ymod4);
-    glEnd();
+
+
+    const GLint   vertexData[]   = {x+xmod1, y+ymod1, x+xmod2, y+ymod2, x+xmod3, y+ymod3, x+xmod4, y+ymod4};
+    const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
+    const GLuint  colorData[]    = {
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt()
+    };
+
+    glTexCoordPointer(2, GL_INT, 0, texcoordData);
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_QUADS, 0, 4);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisable(GL_TEXTURE_2D);
 }
 
 void TS_Image::transformBlit(int x[4], int y[4]){
+
+    const GLint   vertexData[]   = {x[0], y[0], x[1], y[1], x[2], y[2], x[3], y[3]};
+    const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
+    const GLuint  colorData[]    = {
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt()
+    };
+
+    glTexCoordPointer(2, GL_INT, 0, texcoordData);
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glBegin(GL_QUADS);
-        GLColor(mask);
-        glTexCoord2i(0, 0);
-        glVertex2i(x[0], y[0]);
-        glTexCoord2i(1, 0);
-        glVertex2i(x[1], y[1]);
-        glTexCoord2i(1, 1);
-        glVertex2i(x[2], y[2]);
-        glTexCoord2i(0, 1);
-        glVertex2i(x[3], y[3]);
-    glEnd();
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_QUADS, 0, 4);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisable(GL_TEXTURE_2D);
+
 }
 
 v8Function LoadImage(V8ARGS){

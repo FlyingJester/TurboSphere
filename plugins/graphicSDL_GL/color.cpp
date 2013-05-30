@@ -3,6 +3,8 @@
 
 DECLARE_OBJECT_TEMPLATES(Color);
 
+const uint32_t ColorGLMagic = 0x0707464C; //Bell, Bell, G, L.
+
 void GLColor(TS_Color *color){
     glColor4ub(color->red, color->green, color->blue, color->alpha);
 }
@@ -56,6 +58,7 @@ v8Function CreateColor(V8ARGS) {
     color->blue     = b;
     color->alpha    = a;
 
+    color->reserved = (ColorGLMagic<<32);
 
   	ColorInsttempl->SetInternalFieldCount(1);
 	v8::Handle<v8::Function> colorctor = Colortempl->GetFunction();

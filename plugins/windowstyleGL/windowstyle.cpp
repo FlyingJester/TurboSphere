@@ -314,84 +314,99 @@ TS_WindowStyle::~TS_WindowStyle(){
 void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
     for(int i = 0; i<8; i++){
     glEnable(GL_TEXTURE_2D);
-	int *dimensions = this->getComponentDimensions(i);
-        int width  = dimensions[0];
-        int height = dimensions[1];
-	free(dimensions);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+        int *dim = this->getComponentDimensions(i);
+        int width  = dim[0];
+        int height = dim[1];
+        free(dim);
         int tx = 0;
         int ty = 0;
         TS_Texture texture = this->textures[i];
         glBindTexture(GL_TEXTURE_2D, texture);
-        glBegin(GL_QUADS);
-            GLColor(fullmask);
+        const GLuint  colorData[]    = {
+            fullmask->toInt(),
+            fullmask->toInt(),
+            fullmask->toInt(),
+            fullmask->toInt()
+        };
 
-            if(i%2==0){//is a corner.
-                if(i==0||i==6){
-                    tx = x-width;
-                }
-                else{
-                    tx = x+w;
-                }
-                if(i>3){
-                    ty = y+h;
-                }
-                else{
-                    ty = y-height;
-                }
-                glTexCoord2i(0, 0);
-                glVertex2i(tx,       ty);
-                glTexCoord2i(1, 0);
-                glVertex2i(tx+width, ty);
-                glTexCoord2i(1, 1);
-                glVertex2i(tx+width, ty+height);
-                glTexCoord2i(0, 1);
-                glVertex2i(tx,       ty+height);
+        if(i%2==0){//is a corner.
+            if(i==0||i==6){
+                tx = x-width;
             }
             else{
-                if(i==1||i==5){ //this runs horizontal.
-                    float wtile = ((float)w)/((float)width);
-                    tx = x;
-                    if(i==1){
-                        ty = y-height;
-                    }
-                    else{
-                        ty = y+h;
-                    }
-                    glTexCoord2f(0.0f,  0.0f);
-                    glVertex2i(x,       ty);
-                    glTexCoord2f(wtile, 0.0f);
-                    glVertex2i(x+w,     ty);
-                    glTexCoord2f(wtile, 1.0f);
-                    glVertex2i(x+w,     ty+height);
-                    glTexCoord2f(0.0f,  1.0f);
-                    glVertex2i(x,       ty+height);
-
-                }
-                else{   //this runs vertical.
-                    float htile = ((float)h)/((float)height);
-                    ty = y;
-                    if(i==3){
-                        tx = x+w;
-                    }
-                    else{
-                        tx = x-width;
-                    }
-                    //printf("Width: %i ; Height %i ; variant: %f\n", width, height, htile);
-
-                    glTexCoord2f(0.0f, 0.0f);
-                    glVertex2i(tx, ty);
-                    glTexCoord2f(1.0f, 0.0f);
-                    glVertex2i(tx+width,  ty);
-                    glTexCoord2f(1.0f, htile);
-                    glVertex2i(tx+width,  ty+h);
-                    glTexCoord2f(0.0f, htile);
-                    glVertex2i(tx, ty+h);
-
-                }
+                tx = x+w;
             }
+            if(i>3){
+                ty = y+h;
+            }
+            else{
+                ty = y-height;
+            }
+            const GLint   vertexData[]   = {tx, ty, tx+width, ty, tx+width, ty+height, tx, ty+height};
+            const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
 
-        glEnd();
-    glDisable(GL_TEXTURE_2D);
+            glTexCoordPointer(2, GL_INT, 0, texcoordData);
+            glVertexPointer(2, GL_INT, 0, vertexData);
+            glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glDrawArrays(GL_QUADS, 0, 4);
+
+        }
+        else{
+            if(i==1||i==5){ //this runs horizontal.
+                float wtile = ((float)w)/((float)width);
+                tx = x;
+                if(i==1){
+                    ty = y-height;
+                }
+                else{
+                    ty = y+h;
+                }
+                const GLint     vertexData[]   = {tx, ty, tx+w, ty, tx+w, ty+height, tx, ty+height};
+                const GLfloat   texcoordData[] = {0, 0, wtile, 0, wtile, 1, 0, 1};
+
+                glTexCoordPointer(2, GL_FLOAT, 0, texcoordData);
+                glVertexPointer(2, GL_INT, 0, vertexData);
+                glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+                glEnable(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, texture);
+                glDrawArrays(GL_QUADS, 0, 4);
+
+                glTexCoord2f(0.0f,  0.0f);
+                glVertex2i(x,       ty);
+                glTexCoord2f(wtile, 0.0f);
+                glVertex2i(x+w,     ty);
+                glTexCoord2f(wtile, 1.0f);
+                glVertex2i(x+w,     ty+height);
+                glTexCoord2f(0.0f,  1.0f);
+                glVertex2i(x,       ty+height);
+            }
+            else{   //this runs vertical.
+                float htile = ((float)h)/((float)height);
+                ty = y;
+                if(i==3){
+                    tx = x+w;
+                }
+                else{
+                    tx = x-width;
+                }
+                //printf("Width: %i ; Height %i ; variant: %f\n", width, height, htile);
+
+                const GLint     vertexData[]   = {tx, ty, tx+width, ty, tx+width, ty+h, tx, ty+h};
+                const GLfloat   texcoordData[] = {0, 0, 1, 0, 1, htile, 0, htile};
+
+                glTexCoordPointer(2, GL_FLOAT, 0, texcoordData);
+                glVertexPointer(2, GL_INT, 0, vertexData);
+                glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+                glEnable(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, texture);
+                glDrawArrays(GL_QUADS, 0, 4);
+            }
+        }
         }
 
 	//draw background.
@@ -400,52 +415,62 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
 	float fv;
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, background.texture);
-    glBegin(GL_QUADS);
     float wtile = 0.0f;
     float htile = 0.0f;
+
+    GLuint  colorData[]    = {
+            fullmask->toInt(),
+            fullmask->toInt(),
+            fullmask->toInt(),
+            fullmask->toInt()
+    };
+
+
+
+    GLint     vertexData1[]   = {x, y, x+w, y, x+w, y+h, x, y+h};
+    GLfloat   texcoordData1[] = {0, 0, 1, 0, 1, 1, 0, 1};
+
 	switch(background.type){
 		case WS_TILED:
 		case WS_TILED_GRADIENT:
             wtile = ((float)w)/((float)background.width );
             htile = ((float)h)/((float)background.height);
-            glTexCoord2f(0.0f, 0.0f);
-            glVertex2i(x,   y);
-            glTexCoord2f(wtile, 0.0f);
-            glVertex2i(x+w, y);
-            glTexCoord2f(wtile, htile);
-            glVertex2i(x+w, y+h);
-            glTexCoord2f(0.0f,  htile);
-            glVertex2i(x,   y+h);
+
+            texcoordData1[2] = wtile;
+            texcoordData1[4] = wtile;
+            texcoordData1[5] = htile;
+            texcoordData1[7] = htile;
+
+            glTexCoordPointer(2, GL_FLOAT, 0, texcoordData1);
+            glVertexPointer(2, GL_INT, 0, vertexData1);
+            glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+            glDrawArrays(GL_QUADS, 0, 4);
+
 			break;
 		case WS_STRETCHED:
 		case WS_STRETCHED_GRADIENT:
-            glTexCoord2i(0, 0);
-            glVertex2i(x,   y);
-            glTexCoord2i(1, 0);
-            glVertex2i(x+w, y);
-            glTexCoord2i(1, 1);
-            glVertex2i(x+w, y+h);
-            glTexCoord2i(0,  1);
-            glVertex2i(x,   y+h);
-
-			break;
-		default:
+            glTexCoordPointer(2, GL_FLOAT, 0, texcoordData1);
+            glVertexPointer(2, GL_INT, 0, vertexData1);
+            glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+            glDrawArrays(GL_QUADS, 0, 4);
 			break;
 	}
-	glEnd();
-    glDisable(GL_TEXTURE_2D);
-	if(background.type>=2){ //If the background is a gradient.
-		glBegin(GL_QUADS);
-            GLColor(&cornerColors[0]);
-            glVertex2i(x,   y);
-            GLColor(&cornerColors[1]);
-            glVertex2i(x+w, y);
-            GLColor(&cornerColors[2]);
-            glVertex2i(x+w, y+h);
-            GLColor(&cornerColors[3]);
-            glVertex2i(x,   y+h);
-        glEnd();
+
+	glDisable(GL_TEXTURE_2D);
+
+    if(background.type>=2){ //If the background is a gradient.
+        colorData[0] = cornerColors[0].toInt();
+        colorData[1] = cornerColors[1].toInt();
+        colorData[2] = cornerColors[2].toInt();
+        colorData[3] = cornerColors[3].toInt();
+        glDrawArrays(GL_QUADS, 0, 4);
     }
+
+	glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+
 }
 
 

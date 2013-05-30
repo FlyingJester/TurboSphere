@@ -3,19 +3,71 @@
 #include <assert.h>
 
 #include "main.h"
+
+#include <GL/glext.h>
+#include <SDL/SDL.h>
 #include "image.h"
 #include "surface.h"
 #include "color.h"
 #include "screen.h"
 #include "primitives.h"
+#include "../../t5.h"
+
+#define CHECK_FOR_PROCESS(NAME){\
+        if(SDL_GL_GetProcAddress(NAME)==NULL){\
+        printf("[" PLUGINNAME "] Init Error: " NAME " is not present in OpenGL library.\n");\
+        exit(1);\
+    }\
+}
+
+#define GET_GL_FUNCTION(NAME, TYPING)\
+CHECK_FOR_PROCESS( #NAME );\
+NAME = TYPING SDL_GL_GetProcAddress( #NAME )
 
 SDL_Rect cmpltscreen = {0, 0, (Uint16)GetScreenWidth(), (Uint16)GetScreenHeight()};
 
 SDL_Event event;
 SDL_Surface *screen = NULL;
 
+void (APIENTRY * glGenBuffers)(GLsizei, GLuint*) = NULL;
+void (APIENTRY * glDeleteBuffers)(GLsizei, GLuint*) = NULL;
+void (APIENTRY * glGenVertexArrays)(GLsizei, GLuint*) = NULL;
+void (APIENTRY * glBindBuffer)(GLenum,  GLuint) = NULL;
+void (APIENTRY * glBindVertexArray)(GLuint) = NULL;
+void (APIENTRY * glBufferData)(GLenum, GLsizeiptr, const GLvoid *, GLenum) = NULL;
+void (APIENTRY * glEnableVertexAttribArray)(GLint) = NULL;
+void (APIENTRY * glDisableVertexAttribArray)(GLint) = NULL;
+void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*) = NULL;
+GLuint (APIENTRY * glCreateShader)(GLenum) = NULL;
+void (APIENTRY * glDeleteShader)(GLenum) = NULL;
+void (APIENTRY * glShaderSource)(GLuint, GLint, const GLchar **, const GLint *) = NULL;
+void (APIENTRY * glGetShaderiv)(GLuint, GLenum, GLint*) = NULL;
+void (APIENTRY * glCompileShader)(GLuint) = NULL;
+GLuint (APIENTRY * glCreateProgram)(void) = NULL;
+void (APIENTRY * glAttachShader)(GLuint, GLuint) = NULL;
+void (APIENTRY * glLinkProgram)(GLuint) = NULL;
+void (APIENTRY * glGetProgramiv)(GLuint, GLenum, GLint*) = NULL;
+
 void LoadGLFunctions(){
 
+    GET_GL_FUNCTION(glGenBuffers,               (void (APIENTRY *)(GLsizei, GLuint*)));
+    GET_GL_FUNCTION(glDeleteBuffers,            (void (APIENTRY *)(GLsizei, GLuint*)));
+    GET_GL_FUNCTION(glGenVertexArrays,          (void (APIENTRY *)(GLsizei, GLuint*)));
+    GET_GL_FUNCTION(glBindBuffer,               (void (APIENTRY *)(GLenum, GLuint)));
+    GET_GL_FUNCTION(glBindVertexArray,          (void (APIENTRY *)(GLuint)));
+    GET_GL_FUNCTION(glBufferData,               (void (APIENTRY *)(GLenum, GLsizeiptr, const GLvoid *, GLenum)));
+    GET_GL_FUNCTION(glEnableVertexAttribArray,  (void (APIENTRY *)(GLint)));
+    GET_GL_FUNCTION(glDisableVertexAttribArray, (void (APIENTRY *)(GLint)));
+    GET_GL_FUNCTION(glVertexAttribPointer,      (void (APIENTRY *)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid *)));
+    GET_GL_FUNCTION(glCreateShader,           (GLuint (APIENTRY *)(GLenum)));
+    GET_GL_FUNCTION(glDeleteShader,             (void (APIENTRY *)(GLenum)));
+    GET_GL_FUNCTION(glShaderSource,             (void (APIENTRY *)(GLuint, GLsizei, const GLchar **, const GLint *)));
+    GET_GL_FUNCTION(glGetShaderiv,              (void (APIENTRY *)(GLuint, GLenum, GLint *)));
+    GET_GL_FUNCTION(glCompileShader,            (void (APIENTRY *)(GLuint)));
+    GET_GL_FUNCTION(glCreateProgram,          (GLuint (APIENTRY *)(void)));
+    GET_GL_FUNCTION(glAttachShader,             (void (APIENTRY *)(GLuint,  GLuint)));
+    GET_GL_FUNCTION(glLinkProgram,              (void (APIENTRY *)(GLuint)));
+    GET_GL_FUNCTION(glGetProgramiv,             (void (APIENTRY *)(GLuint, GLenum, GLint*)));
 
 }
 
@@ -27,6 +79,16 @@ int numerate(bool reset){
     }
     i++;
     return i-1;
+}
+
+int BuildDefaultShaders(){
+    TS_Directories *TS_Dirs = GetDirs();
+    const char *VertexShaderSource      = T5_LoadFileAsText((string(TS_Dirs->system)+string("vertex.glsl")).c_str());
+    const char *FragmentShaderSource    = T5_LoadFileAsText((string(TS_Dirs->system)+string("fragment.glsl")).c_str());
+
+    T5_FreeFileText(VertexShaderSource);
+    T5_FreeFileText(FragmentShaderSource);
+    return 1;
 }
 
 int TS_Filter(const SDL_Event *event);
@@ -54,11 +116,12 @@ void * NewSurfacePointer            = V8FUNCPOINTER(NewSurface);
 void * SurfaceGrabPointer           = V8FUNCPOINTER(SurfaceGrab);
 void * ImageGrabPointer             = V8FUNCPOINTER(ImageGrab);
 
-
 initFunction Init(void){
 
 	TS_Config *TS_conf = GetConfig();
-
+    int *num_shaders = (int *)malloc(4);
+    *num_shaders = 1;
+    TS_conf->reserved = num_shaders;
 
     if(SDL_WasInit(SDL_INIT_EVERYTHING)==0){
         SDL_Init(SDL_INIT_VIDEO);
@@ -81,9 +144,15 @@ initFunction Init(void){
 
     LoadGLFunctions();
 
+
+
+
     glClearColor(0, 0, 0, 255);
     glClearDepth(1.0f);
     glEnable(GL_BLEND);
+    glEnable(GL_SCISSOR_TEST);
+    //glEnable(GL_PROGRAM_POINT_SIZE);
+    //glPointSize();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glDisable(GL_DEPTH_TEST);
@@ -91,13 +160,15 @@ initFunction Init(void){
     glDisable(GL_CULL_FACE);
 
     glViewport(0, 0, GetScreenWidth(), GetScreenHeight());
+    glScissor(0, 0, GetScreenWidth(), GetScreenHeight());
+
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
+
 
     glOrtho(0, GetScreenWidth(), GetScreenHeight(), 0, 1, -1);
 
     glMatrixMode(GL_MODELVIEW);
-
     ColorInit();
     ImageInit();
     SurfaceInit();
@@ -109,7 +180,7 @@ initFunction Init(void){
         printf("[graphicSDL] Unable to init SDL Image: %s\n", IMG_GetError());
     }
     if(SDL_GetVideoInfo()->wm_available){
-        SDL_WM_SetCaption("TurboSphere Game Engine", "TurboSphere Game Engine");
+        SDL_WM_SetCaption("TurboSphere Game Engine", "TurboSphere Game Engine"); //TODO: Make this set in the config file.
     }
 	SDL_ShowCursor(SDL_DISABLE);
 

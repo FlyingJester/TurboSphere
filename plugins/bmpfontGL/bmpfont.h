@@ -35,7 +35,7 @@ public:
 		TS_Color *mask;
 		std::vector<TS_BMPGlyph*> glyphs;
 	void drawText(int, int, const char*);
-	void drawZoomedText(int, int, float, const char*);
+	void drawZoomedText(int, int, double, const char*);
 	int getStringWidth(const char*) const;
 	int getStringHeight(const char*);
 	int getCharWidth(char) const;

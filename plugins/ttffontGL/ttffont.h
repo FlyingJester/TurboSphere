@@ -1,5 +1,5 @@
-#ifndef BMPFONT_HEAD
-#define BMPFONT_HEAD
+#ifndef TTFFONT_HEAD
+#define TTFFONT_HEAD
 
 #include"../common/plugin.h"
 #include <SDL/SDL_opengl.h>

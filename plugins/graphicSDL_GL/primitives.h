@@ -28,6 +28,12 @@ void TS_GradientPolygon(int numPoints, int *x, int *y, TS_Color *color);
 
 void TS_OutlinedRectangle(int x, int y, int w, int h, TS_Color *color, int thickness);
 void TS_OutlinedPolygon(int numPoints, int *x, int *y, TS_Color *color);
-//void TS_OutlinedCircle(V8ARGS);
+
+void TS_SoftLine(int x1, int y1, int x2, int y2, TS_Color *c, SDL_Surface *dest);
+void TS_SoftGradientRectangle(int x, int y, int w, int h, TS_Color *c1, TS_Color *c2, TS_Color *c3, TS_Color *c4, SDL_Surface *destination);
+void TS_SoftFilledCircle(int x, int y, int rad, TS_Color *c, SDL_Surface *destination);
+void TS_SoftOutlinedCircle(int x, int y, int rad, TS_Color *c, SDL_Surface* destination);
+void TS_SoftRectangle(int x, int y, int w, int h, TS_Color *c, SDL_Surface *destination);
+
 void PrimitivesInit(void);
 #endif

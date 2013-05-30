@@ -248,37 +248,21 @@ v8Function LoadSystemBMPFont(V8ARGS) {
 }
 
 void TS_BMPGlyph::blit(int x, int y, TS_Color *mask){
+    const GLint vertexData[] = {x, y, x+width, y, x+width, y+height, x, y+height};
+    glVertexPointer(2, GL_INT, 0, vertexData);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glBegin(GL_QUADS);
-        GLColor(mask);
-        glTexCoord2i(0, 0);
-        glVertex2i(x,       y);
-        glTexCoord2i(1, 0);
-        glVertex2i(x+width, y);
-        glTexCoord2i(1, 1);
-        glVertex2i(x+width, y+height);
-        glTexCoord2i(0, 1);
-        glVertex2i(x,       y+height);
-    glEnd();
+    glDrawArrays(GL_QUADS, 0, 4);
 }
 
 int TS_BMPGlyph::zoomBlit(int x, int y, double factor, TS_Color *mask){
 
-    double scaleWidth   = factor*dwidth;
-    double scaleHeight  = factor*dheight;
+    int scaleWidth   = factor*dwidth;
+    int scaleHeight  = factor*dheight;
+    const GLint vertexData[] = {x, y, x+(int)scaleWidth, y, x+scaleWidth, y+scaleHeight, x, y+scaleHeight};
+    glVertexPointer(2, GL_INT, 0, vertexData);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glBegin(GL_QUADS);
-        GLColor(mask);
-        glTexCoord2i(0, 0);
-        glVertex2i(x,                   y);
-        glTexCoord2i(1, 0);
-        glVertex2i((int)(x+scaleWidth), y);
-        glTexCoord2i(1, 1);
-        glVertex2i((int)(x+scaleWidth), (int)(y+scaleHeight));
-        glTexCoord2i(0, 1);
-        glVertex2i(x,                   (int)(y+scaleHeight));
-    glEnd();
-    return (int)scaleWidth;
+    glDrawArrays(GL_QUADS, 0, 4);
+    return scaleWidth;
 }
 
 void TS_BMPFont::drawText(int x, int y, const char *t) {
@@ -286,26 +270,71 @@ void TS_BMPFont::drawText(int x, int y, const char *t) {
     int glyphnum = 0;
     std::string text = t;
     glEnable(GL_TEXTURE_2D);
+    const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
 
-        for (size_t i=0; i < text.length(); i++){
-            glyphnum = int(text.at(i));
-            glyphs[glyphnum]->blit(x+curWidth, y, mask);
-            curWidth+=glyphs[glyphnum]->width;
-        }
+    const GLuint  colorData[]    = {
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt()
+    };
 
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glTexCoordPointer(2, GL_INT, 0, texcoordData);
+
+
+
+
+    for (size_t i=0; i < text.length(); i++){
+        glyphnum = int(text.at(i));
+        glyphs[glyphnum]->blit(x+curWidth, y, mask);
+        curWidth+=glyphs[glyphnum]->width;
+    }
+
+
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisable(GL_TEXTURE_2D);
+
 }
 
-void TS_BMPFont::drawZoomedText(int x, int y, float f, const char* t) {
-    float curWidth = 0;
+void TS_BMPFont::drawZoomedText(int x, int y, double f, const char* t) {
+    double curWidth = 0;
     int glyphnum = 0;
     std::string text = t;
+
     glEnable(GL_TEXTURE_2D);
+    const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
+
+    const GLuint  colorData[]    = {
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt()
+    };
+
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    glTexCoordPointer(2, GL_INT, 0, texcoordData);
+
+
+
         for (size_t i=0; i < text.length(); i++){
             glyphnum = int(text.at(i));
             curWidth+=glyphs[glyphnum]->zoomBlit(x+curWidth, y, f, mask);
         }
+
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisable(GL_TEXTURE_2D);
+
 }
 
 int TS_BMPFont::getStringWidth(const char *t) const{
