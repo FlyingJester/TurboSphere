@@ -9,11 +9,20 @@
 		//far.drawText(128, 65, "Do a barrel roll!");
 		FlipScreen();
 		GetKey();
-		//SetRenderScript("Rectangle(10, 10, 16, 16, Red);");
-		MapEngine("test.rmp");
-		GetKey();
+		
+//		m.Stop();
 		
 function game(){
+	
+		var r = new Sound("Attack.ogg");
+		var m = new Sound("spiders.mid");
+		//var r = m;
+		
+		//var m = new Sound("Attack.wav");
+		
+		r.Play();
+		//m.Play();
+		GetKey();
 	var fn = GetSystemFont();
 	var ws1 = new WindowStyle("property.rws");
 	var ws = GetSystemWindowStyle();
@@ -24,7 +33,7 @@ function game(){
 	var im2 = new Image("sphere.png");
 	var sf1 = new Surface("test1.png");
 	var sf2 = new Surface("sphere.png");
-	
+		//m.Stop();
 	var sf3 = im2.createSurface();
 	var str = "Sphere rfn fonts...IN OPENGL!";
 	while(!IsKeyPressed(KEY_Q)){
@@ -38,6 +47,14 @@ function game(){
 		
 		im1.blit(64, 16);
 		
+		if(IsKeyPressed(KEY_M)){
+			m.Play(true);
+			r.Stop();
+		}
+		if(IsKeyPressed(KEY_N)){
+			r.Play();
+			m.Stop();
+		}
 		
 		far.drawText(16, GetScreenHeight()-16, "Do a barrel roll! With TTF Fonts!");
 		
