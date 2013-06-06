@@ -128,7 +128,7 @@ v8Function Point(V8ARGS){
 
 v8Function Triangle(V8ARGS){
     if(args.Length()<7){
-        THROWERROR("["PLUGINNAME "] Triangle Error: Called with fewer than 7 arguments.");
+        THROWERROR("[" PLUGINNAME "] Triangle Error: Called with fewer than 7 arguments.");
     }
 
     CHECK_ARG_INT(0);
@@ -158,7 +158,7 @@ v8Function Triangle(V8ARGS){
 v8Function Polygon(V8ARGS){
 
     if(args.Length()<2){
-        THROWERROR("["PLUGINNAME "] Polygon Error: Called with fewer than 2 arguments.");
+        THROWERROR("[" PLUGINNAME "] Polygon Error: Called with fewer than 2 arguments.");
     }
     CHECK_ARG_ARRAY(0);
     CHECK_ARG_OBJ(1);
@@ -295,7 +295,7 @@ v8Function GradientRectangle(V8ARGS)
 v8Function GradientLine(V8ARGS){
 
     if(args.Length()<6){
-        THROWERROR("["PLUGINNAME "] GradientLine Error: Called with fewer than 6 arguments.");
+        THROWERROR("[" PLUGINNAME "] GradientLine Error: Called with fewer than 6 arguments.");
     }
 
     CHECK_ARG_INT(0);
@@ -325,7 +325,7 @@ v8Function GradientLine(V8ARGS){
 
 v8Function GradientTriangle(V8ARGS){
     if(args.Length()<7){
-        THROWERROR("["PLUGINNAME "] GradientTriangle Error: Called with fewer than 9 arguments.");
+        THROWERROR("[" PLUGINNAME "] GradientTriangle Error: Called with fewer than 9 arguments.");
     }
 
     CHECK_ARG_INT(0);
@@ -394,7 +394,7 @@ v8Function OutlinedRectangle(V8ARGS){
 v8Function OutlinedPolygon(V8ARGS){
 
     if(args.Length()<2){
-        THROWERROR("["PLUGINNAME "] OutlinedPolygon Error: Called with fewer than 2 arguments.");
+        THROWERROR("[" PLUGINNAME "] OutlinedPolygon Error: Called with fewer than 2 arguments.");
     }
     CHECK_ARG_ARRAY(0);
     CHECK_ARG_OBJ(1);
@@ -923,7 +923,93 @@ void TS_SoftLine(int ax1, int ay1, int ax2, int ay2, TS_Color *c, SDL_Surface *d
     SDL_FreeSurface(surface);
 }
 
+//Labelled horiz and vert for the direction in which the color changes.
+
+void TS_SoftHorizGradRectangle(int x, int y, int w, int h, TS_Color *c1, TS_Color *c2, SDL_Surface *destination){
+    SDL_Rect rect       = {(short int)x, (short int)y, (short unsigned int)w, (short unsigned int)h};
+    SDL_Rect temprect   = {0, 0, 1, (short unsigned int)h};
+    SDL_Surface* surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, w, h, DEPTH, CHANNEL_MASKS);
+
+    TS_Color *color =  new TS_Color(c1->red, c1->green, c1->blue, c1->alpha);
+
+    uint8_t redDif = c1->red  - c2->red;
+    uint8_t grnDif = c1->green- c2->green;
+    uint8_t bluDif = c1->blue - c2->blue;
+    uint8_t alpDif = c1->alpha- c2->alpha;
+
+    uint_fast32_t step = 0;
+
+    for (int i = 0; i<w; i++){
+
+        if(i!=0){
+            step = i/w;
+        }
+        else{
+            step = 0;
+        }
+        temprect.x = i;
+        color->red   = c1->red  + (redDif*step);
+        color->green = c1->green+ (grnDif*step);
+        color->blue  = c1->blue + (bluDif*step);
+        color->alpha = c1->alpha+ (alpDif*step);
+        SDL_FillRect(surface, &temprect, color->toInt());
+    }
+	SDL_BlitSurface(surface, NULL, destination, &rect);
+    SDL_FreeSurface(surface);
+    delete color;
+}
+
+void TS_SoftVertGradRectangle(int x, int y, int w, int h, TS_Color *c1, TS_Color *c2, SDL_Surface *destination){
+    SDL_Rect rect       = {(short int)x, (short int)y, (short unsigned int)w, (short unsigned int)h};
+    SDL_Rect temprect   = {0, 0, (unsigned short int)w, 1};
+    SDL_Surface* surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, w, h, DEPTH, CHANNEL_MASKS);
+
+    TS_Color *color =  new TS_Color(c1->red, c1->green, c1->blue, c1->alpha);
+
+    uint8_t redDif = c1->red  - c2->red;
+    uint8_t grnDif = c1->green- c2->green;
+    uint8_t bluDif = c1->blue - c2->blue;
+    uint8_t alpDif = c1->alpha- c2->alpha;
+
+    uint_fast32_t step = 0;
+
+    for (int i = 0; i<h; i++){
+
+        if(i!=0){
+            step = i/h;
+        }
+        else{
+            step = 0;
+        }
+        temprect.y = i;
+        color->red   = c1->red  + (redDif*step);
+        color->green = c1->green+ (grnDif*step);
+        color->blue  = c1->blue + (bluDif*step);
+        color->alpha = c1->alpha+ (alpDif*step);
+        SDL_FillRect(surface, &temprect, color->toInt());
+    }
+	SDL_BlitSurface(surface, NULL, destination, &rect);
+    SDL_FreeSurface(surface);
+    delete color;
+}
+
 void TS_SoftGradientRectangle(int x, int y, int w, int h, TS_Color *c1, TS_Color *c2, TS_Color *c3, TS_Color *c4, SDL_Surface *destination){
+
+
+    if(
+        ((c1->toInt()==c2->toInt())||((c1->alpha==0)&&(c2->alpha==0))) &&
+        ((c3->toInt()==c4->toInt())||((c3->alpha==0)&&(c4->alpha==0)))
+    ){
+        TS_SoftVertGradRectangle(x, y, w, h, c1, c3, destination);
+        return;
+    }
+    else if(
+        ((c1->toInt()==c4->toInt())||((c1->alpha==0)&&(c4->alpha==0))) &&
+        ((c3->toInt()==c2->toInt())||((c3->alpha==0)&&(c2->alpha==0)))
+    ){
+        TS_SoftHorizGradRectangle(x, y, w, h, c1, c2, destination);
+        return;
+    }
 
     SDL_Rect rect       = {(short int)x, (short int)y, (short unsigned int)w, (short unsigned int)h};
     SDL_Rect temprect   = {0, 0, 1, 1};

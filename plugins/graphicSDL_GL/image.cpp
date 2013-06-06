@@ -18,7 +18,7 @@ TS_Color *fullmask;
 GLint *texcoord;
 
 
-static GLint texCoordArray[] = {0, 0, 1, 0, 1, 1, 0, 1};
+//static GLint texCoordArray[] = {0, 0, 1, 0, 1, 1, 0, 1};
 
 //void glGenBuffers(GLsizei n, GLuint *ids);
 
@@ -291,7 +291,7 @@ void TS_Image::zoomBlit(int x, int y, double factor){
 
     double scaleWidth   = factor*dwidth;
     double scaleHeight  = factor*dheight;
-    const GLint   vertexData[]   = {x, y, x+scaleWidth, y, x+scaleWidth, y+scaleHeight, x, y+scaleHeight};
+    const GLint   vertexData[]   = {x, y, x+(int)scaleWidth, y, x+(int)scaleWidth, y+(int)scaleHeight, x, y+(int)scaleHeight};
     const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
     const GLuint  colorData[]    = {
         mask->toInt(),
@@ -321,7 +321,7 @@ void TS_Image::stretchBlit(int x, int y, double wfactor, double hfactor){
     glBindTexture(GL_TEXTURE_2D, texture);
     double scaleWidth   = hfactor*dwidth;
     double scaleHeight  = wfactor*dheight;
-    const GLint   vertexData[]   = {x, y, x+scaleWidth, y, x+scaleWidth, y+scaleHeight, x, y+scaleHeight};
+    const GLint   vertexData[]   = {x, y, x+(int)scaleWidth, y, x+(int)scaleWidth, y+(int)scaleHeight, x, y+(int)scaleHeight};
     const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
     const GLuint  colorData[]    = {
         mask->toInt(),

@@ -3,7 +3,7 @@
 
 EXTERN_OBJECT_TEMPLATES(Color);
 
-extern const uint32_t ColorGLMagic;
+extern const uint64_t ColorGLMagic;
 
 void GLColor(TS_Color *color);
 

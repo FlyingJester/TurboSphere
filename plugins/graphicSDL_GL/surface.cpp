@@ -5,6 +5,12 @@
 
 #include <assert.h>
 
+v8Function SurfaceRectangle (V8ARGS);
+v8Function SurfaceLine (V8ARGS);
+v8Function SurfaceOutlinedCircle (V8ARGS);
+v8Function SurfaceFilledCircle (V8ARGS);
+v8Function SurfaceGradientRectangle (V8ARGS);
+
 DECLARE_OBJECT_TEMPLATES(Surface);
 
 void SurfaceInit(void){
@@ -21,7 +27,11 @@ void SurfaceInit(void){
     ADD_TO_PROTO(Surface, "getClippingRectangle", SurfaceGetClippingRectangle);
     ADD_TO_PROTO(Surface, "setClippingRectangle", SurfaceSetClippingRectangle);
 
-    ADD_TO_PROTO(Surface, "rectangle",      SurfaceRectangle);
+    ADD_TO_PROTO(Surface, "rectangle",          SurfaceRectangle);
+    ADD_TO_PROTO(Surface, "line",               SurfaceLine);
+    ADD_TO_PROTO(Surface, "outlinedCircle",     SurfaceOutlinedCircle);
+    ADD_TO_PROTO(Surface, "filledCircle",       SurfaceFilledCircle);
+    ADD_TO_PROTO(Surface, "gradientRectangle",  SurfaceGradientRectangle);
 
     SET_CLASS_ACCESSOR(Surface, "width",    SurfaceGetWidth,    SurfaceSetWidth);
     SET_CLASS_ACCESSOR(Surface, "height",   SurfaceGetHeight,   SurfaceSetHeight);
@@ -244,9 +254,6 @@ v8Function SurfaceSave(V8ARGS){
 }
 
 v8Function NewSurface(V8ARGS){
-    if(args.Length()<1){
-        THROWERROR("[" PLUGINNAME "] NewSurface Error: Called with no arguments.");
-    }
 
     BEGIN_OBJECT_WRAP_CODE;
     SDL_Surface *surface = NULL;
@@ -425,6 +432,10 @@ v8Function SurfaceRectangle(V8ARGS){
 	int w = args[2]->Int32Value();
 	int h = args[3]->Int32Value();
 
+    if((w==0)||(h==0)){
+        return v8::Undefined();
+    }
+
     if(w<0){
         x+=w;
         w=-w;
@@ -476,10 +487,60 @@ v8Function SurfaceLine(V8ARGS){
 	return v8::Undefined();
 }
 
+v8Function SurfaceGradientRectangle(V8ARGS){
+    if(args.Length()<8){
+        THROWERROR("[" PLUGINNAME "] SurfaceGradientRectangle Error: Called with fewer than 8 arguments.");
+    }
+    CHECK_ARG_INT(0);
+    CHECK_ARG_INT(1);
+    CHECK_ARG_INT(2);
+    CHECK_ARG_INT(3);
+    CHECK_ARG_OBJ(4);
 
-v8Function SurfaceCircle(V8ARGS){
-    if(args.Length()<5){
-        THROWERROR("[" PLUGINNAME "] SurfaceCircle Error: Called with fewer than 4 arguments.");
+	int x = args[0]->Int32Value();
+	int y = args[1]->Int32Value();
+	int w = args[2]->Int32Value();
+	int h = args[3]->Int32Value();
+
+    if((w==0)||(h==0)){
+        return v8::Undefined();
+    }
+
+    if(w<0){
+        x+=w;
+        w=-w;
+    }
+    if(h<0){
+        y+=h;
+        h=-h;
+    }
+
+    v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[4]);
+    TS_Color *color1 = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
+
+    colorobj = v8::Local<v8::Object>::Cast(args[5]);
+    TS_Color *color2 = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
+
+    colorobj = v8::Local<v8::Object>::Cast(args[6]);
+    TS_Color *color3 = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
+
+    colorobj = v8::Local<v8::Object>::Cast(args[7]);
+    TS_Color *color4 = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
+
+    SDL_Surface *surface = GET_SELF(SDL_Surface*);
+
+    if(((color1==color2)&&(color1==color3)&&(color1==color4))||((color1->toInt()==color2->toInt())&&(color1->toInt()==color3->toInt())&&(color1->toInt()==color4->toInt()))){
+        TS_SoftRectangle(x, y, w, h, color1, surface);
+    }
+
+    TS_SoftGradientRectangle(x, y, w, h, color1, color2, color3, color4, surface);
+
+	return v8::Undefined();
+}
+
+v8Function SurfaceOutlinedCircle(V8ARGS){
+    if(args.Length()<4){
+        THROWERROR("[" PLUGINNAME "] SurfaceOutlinedCircle Error: Called with fewer than 4 arguments.");
     }
     CHECK_ARG_INT(0);
     CHECK_ARG_INT(1);
@@ -490,13 +551,53 @@ v8Function SurfaceCircle(V8ARGS){
 	int y = args[1]->Int32Value();
 	int r = args[2]->Int32Value();
 
-    v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[4]);
+    if(r<0){
+        r*=-1;
+    }
+    else if(r==0){
+        return v8::Undefined();
+    }
+
+    v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[3]);
     TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
 
     SDL_Surface *surface = GET_SELF(SDL_Surface*);
 
+    TS_SoftOutlinedCircle(x, y, r, color, surface);
+
 	return v8::Undefined();
 }
+
+v8Function SurfaceFilledCircle(V8ARGS){
+    if(args.Length()<4){
+        THROWERROR("[" PLUGINNAME "] SurfaceFilledCircle Error: Called with fewer than 4 arguments.");
+    }
+    CHECK_ARG_INT(0);
+    CHECK_ARG_INT(1);
+    CHECK_ARG_INT(2);
+    CHECK_ARG_OBJ(3);
+
+	int x = args[0]->Int32Value();
+	int y = args[1]->Int32Value();
+	int r = args[2]->Int32Value();
+
+    if(r<0){
+        r*=-1;
+    }
+    else if(r==0){
+        return v8::Undefined();
+    }
+
+    v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[3]);
+    TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
+
+    SDL_Surface *surface = GET_SELF(SDL_Surface*);
+
+    TS_SoftFilledCircle(x, y, r, color, surface);
+
+	return v8::Undefined();
+}
+
 
 v8Function SurfaceBlit(V8ARGS){
     if(args.Length()<2){

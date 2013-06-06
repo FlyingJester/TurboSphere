@@ -3,7 +3,7 @@
 
 DECLARE_OBJECT_TEMPLATES(Color);
 
-const uint32_t ColorGLMagic = 0x0707464C; //Bell, Bell, G, L.
+const uint64_t ColorGLMagic = 0x0707464C; //Bell, Bell, G, L.
 
 void GLColor(TS_Color *color){
     glColor4ub(color->red, color->green, color->blue, color->alpha);
