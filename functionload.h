@@ -3,7 +3,7 @@
 
 #include "v8.h"
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 #include <windows.h>
 #define DLOPENFUNCTION(_type, _dlfunc, _handle, _name, _error, action)\
     _dlfunc = (_type)GetProcAddress(_handle, _name);\
@@ -12,7 +12,7 @@
         action;\
     }
 
-#elif defined __GNUC__
+#else
 
 #include <stdlib.h>
 #include <dlfcn.h>

@@ -1,9 +1,11 @@
+
+#include "engine.h"
 #include "functionload.h"
 #include <cstring>
 #include <string>
 #include <vector>
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 	#define STRDUP _strdup
 #else
 	#define STRDUP strdup

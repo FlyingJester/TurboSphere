@@ -1,6 +1,6 @@
 #ifdef _WIN32
 #include <windows.h>
-#include <WinBase.h>
+//#include <WinBase.h>
 #else
 #include <dirent.h>
 #endif
@@ -11,11 +11,11 @@
 #include <stdio.h>
 #include <string>
 
+#include "engine.h"
 #include "functionload.h"
 #include "loadplugins.h"
 #include "variableregister.h"
 #include "configmanager/opengame.h"
-#include "engine.h"
 
 using namespace std;
 
@@ -31,7 +31,6 @@ int getNumPlugins(void);
 
 int getNumPlugins(){
     HANDLE dir;
-	printf("Getting number of plugins.\n");
     WIN32_FIND_DATA data;
     int num = 0;
     dir = FindFirstFile("plugin/*.*", &data);
@@ -42,11 +41,11 @@ int getNumPlugins(){
         FindClose(dir);
 	}
     else{
-        printf("getNumPlugins Error: No Plugins.\n");
+        printf("[Engine] getNumPlugins Error: No Plugins.\n");
         exit(1);
     }
 	if (num==0){
-	    printf("getNumPlugins Error: No Plugins.\n");
+	    printf("[Engine] getNumPlugins Error: No Plugins.\n");
         exit(1);
 
 	}
@@ -71,7 +70,7 @@ const char ** getPluginNames(){
         FindClose(dir);
     }
     else{
-        printf("getNumPlugins Error: No Plugins.\n");
+        printf("[Engine] getNumPlugins Error: No Plugins.\n");
         exit(1);
     }
     return pluginnames;
@@ -89,7 +88,7 @@ int getNumPlugins(){
         closedir(dir);
     }
     else{
-        printf("getNumPlugins Error:cannot find plugin directory.\n");
+        printf("[Engine] getNumPlugins Error:cannot find plugin directory.\n");
         exit(1);
     }
     return num;
@@ -113,7 +112,7 @@ const char ** getPluginNames(){
         closedir(dir);
     }
     else{
-        printf("getPluginNames Error:cannot find plugin directory.\n");
+        printf("[Engine] getPluginNames Error: cannot find plugin directory.\n");
         exit(1);
     }
     return pluginnames;
@@ -148,7 +147,7 @@ int loadAllPlugins(){
         }
 
 
-        #ifdef _MSC_VER
+        #ifdef _WIN32
 		DWORD error;
 	    HINSTANCE handle = LoadLibrary(string("plugin\\").append(string(plugins[i])).c_str());
         if(handle!=NULL) {
@@ -160,7 +159,7 @@ int loadAllPlugins(){
 			error = GetLastError();
             printf("Error: %i\n", error);
         }
-        #elif defined __GNUC__
+        #else
         void * handle = dlopen(string("plugin/").append(string(plugins[i])).c_str(), RTLD_GLOBAL|RTLD_NOW);
         if(handle!=NULL) {
             printf("Plugin %s is open.\n", plugins[i]);
@@ -190,7 +189,7 @@ int loadAllPlugins(){
             continue;
         }
 
-        #ifdef _MSC_VER
+        #ifdef _WIN32
 		DWORD error;
 	    HINSTANCE handle = LoadLibrary(string("plugin\\").append(string(plugins[i])).c_str());
         if(handle!=NULL) {
@@ -202,7 +201,7 @@ int loadAllPlugins(){
 			error = GetLastError();
             printf("Error: %i\n", error);
         }
-        #elif defined __GNUC__
+        #else
         void * handle = dlopen(string("plugin/").append(plugins[i]).c_str(), RTLD_GLOBAL|RTLD_NOW);
         if(handle!=NULL) {
             printf("Plugin %s is open.\n", plugins[i]);
@@ -226,7 +225,7 @@ int loadAllPlugins(){
 }
 
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 
 void grabFuncsFromLibrary(HINSTANCE handle){
     //printf("We'll try.\n");
@@ -292,7 +291,7 @@ void grabFuncsFromLibrary(HINSTANCE handle){
     }
 
 }
-#elif defined __GNUC__
+#else
 
 //void grabFuncsFromLibrary(void *handle, const char *name = "Unkown"){
 void grabFuncsFromLibrary(void *handle){

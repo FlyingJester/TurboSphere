@@ -18,6 +18,28 @@
 
 static std::vector<const char*> T5_Directories(0);
 
+T5_FileText T5CALL T5_LoadFileAsText(const char *file){ //Open a text file and return the contents as a c string.
+    std::fstream stream;
+    stream.open(file, std::fstream::in);
+
+    std::string buffer;
+
+    while(stream.good()){
+        getline(stream, buffer);
+		buffer+="\n";
+    }
+
+    stream.close();
+
+    T5_FileText text = STRDUP(buffer.c_str());
+
+    return text;
+}
+
+void T5CALL T5_FreeFileText(T5_FileText text){ //free the filetext.
+    free((void *)text);
+}
+
 void T5CALL T5_init(int ndirs, ...){   //load T5_Directories, and init T5.
     T5_Directories.resize(0);
     va_list Dirs;
@@ -46,7 +68,6 @@ T5_file *T5_OpenFile(const char* file){ //Make T5_ifile from filename
 T5_file::T5_file(const char*file){
     values.resize(0);
     stream.open(file, std::fstream::in|std::fstream::out|std::fstream::app);
-    stream.seekg(std::ios_base::beg);
     std::string buffer;
     std::string val = "";
     std::string key = "";

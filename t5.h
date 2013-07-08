@@ -6,7 +6,7 @@
 #include <fstream>
 #include <vector>
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 	#ifdef T5_INTERNAL
 		#define T5_EXPORT __declspec(dllexport)
 	#else
@@ -18,12 +18,13 @@
 #else
 	#define T5_EXPORT extern "C"
 
-    #define T5CALL //
+    #define T5CALL
 
 	#define T5_CLASS_EXPORT extern "C" class
 
 #endif
 
+typedef const char * T5_FileText;
 
 class INIvalue{
 public:
@@ -50,6 +51,9 @@ private:
 	std::vector<INIvalue*> values;
 #endif
 };
+
+T5_EXPORT T5_FileText T5CALL T5_LoadFileAsText(const char *file);
+T5_EXPORT void T5CALL T5_FreeFileText(T5_FileText text);
 
 T5_EXPORT void T5CALL T5_AddDir(const char *dir);
 T5_EXPORT T5_file* T5CALL T5_OpenFile(const char*);

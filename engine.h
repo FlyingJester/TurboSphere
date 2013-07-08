@@ -4,28 +4,29 @@
 
 #include <string>
 #include <math.h>
+#define V8_ALLOW_ACCESS_TO_RAW_HANDLE_CONSTRUCTOR
+#define V8_USE_UNSAFE_HANDLES
 #if defined _WIN32
-#include "stdafx.h"
 #include "v8.h"
 #include "SDL/SDL.h"
 #include "SDL/SDL_ttf.h"
 #include "SDL/SDL_image.h"
-#include "SDL/SDL_audio.h"
-#include "SDL/SDL_mixer.h"
 #include "SDL/SDL_thread.h"
+#error Fix these includes for SDL2!
+    //TODO: Fix these includes for SDL2.
 #endif
 
 #ifndef _WIN32
 
 #include "v8.h"
-#include "/usr/include/SDL/SDL.h"
-#include "/usr/include/SDL/SDL_ttf.h"
-#include "/usr/include/SDL/SDL_image.h"
-#include "/usr/include/SDL/SDL_audio.h"
-#include "/usr/include/SDL/SDL_mixer.h"
-#include "/usr/include/SDL/SDL_thread.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_image.h>
+#include <SDL2/SDL_thread.h>
 #endif
 
+#undef V8_ALLOW_ACCESS_TO_RAW_HANDLE_CONSTRUCTOR
+#undef V8_USE_UNSAFE_HANDLES
 
 #if defined _WIN32
 

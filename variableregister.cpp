@@ -1,3 +1,4 @@
+#include "engine.h"
 #include "variableregister.h"
 
 static std::vector<regVariable> varlist;
