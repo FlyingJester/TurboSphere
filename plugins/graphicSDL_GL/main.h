@@ -7,7 +7,11 @@
 
 #define PLUGINNAME "SDL_GL"
 #include "../common/plugin.h"
+#ifdef _WIN32
+#include "../../SDL/SDL_opengl.h"
+#else
 #include <SDL/SDL_opengl.h>
+#endif
 #include "../common/graphic_algorithm.h"
 #include "../common/graphic_common.h"
 #include "../../configmanager/opengame.h"
@@ -24,7 +28,7 @@
 #define SDL_GL_EXPORT extern "C"
 #endif
 
-#define NUMFUNCS 17
+#define NUMFUNCS 20
 #define NUMVARS  0
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
@@ -41,11 +45,26 @@
 
 #define IMG_FLAGS (IMG_INIT_JPG|IMG_INIT_PNG|IMG_INIT_TIF)
 #define SDL_VIDEO_FLAGS SDL_HWSURFACE|SDL_GL_DOUBLEBUFFER|SDL_OPENGL
+#define SDL2_VIDEO_FLAGS SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS
 
 #define BPP 4
 #define DEPTH 32
 
+//TODO: BIG UGLY HACK FOR SDL2:
+#define SDL_SRCALPHA 0
+
+
 #define CHANNEL_MASKS Frmask, Fgmask, Fbmask, Famask
+
+struct TS_GLVideoData{
+    bool NVCopyTexture;
+    bool ARBCopyTexture;
+    bool NVPathRendering;
+    bool EXTSecondaryColor;
+    bool ARBPointSprite;
+};
+
+TS_GLVideoData *GetGLVideoData(void);
 
 extern void (APIENTRY * glGenBuffers)(GLsizei, GLuint*);
 extern void (APIENTRY * glDeleteBuffers)(GLsizei, GLuint*);
@@ -57,13 +76,17 @@ extern void (APIENTRY * glEnableVertexAttribArray)(GLint);
 extern void (APIENTRY * glDisableVertexAttribArray)(GLint);
 extern void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*);
 extern void (APIENTRY * glVertexAttribIPointer)(GLuint, GLint, GLenum, GLsizei, const GLvoid*);
+//extern void (APIENTRY * CopyImageSubData)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei);
+//extern void (APIENTRY * CopyImageSubDataNV)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei);
+
+
 
 extern const GLubyte primitiveInd[];
 
 extern SDL_Rect cmpltscreen;
 
 extern SDL_Event event;
-extern SDL_Surface *screen;
+extern SDL_Window *screen;
 
 #ifdef _WIN32
 	extern "C" {

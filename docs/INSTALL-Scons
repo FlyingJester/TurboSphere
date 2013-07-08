@@ -2,10 +2,12 @@ TurboSphere can be built and installed on both Linux and experimentally on Windo
 
 The basic command for building TurboSphere using scons is just 'scons'. This fully builds TurboSphere, and TurboSphere is now fully usable on Windows.
 
+You must supply the headers (if they are not present) for SDL, BASS, and optionally BASSmidi. You will need the libraries SDL, SDL_ttf, SDL_img, freetype, BASS, and optionally BASSMidi. Freetype comes with most linux distros, and SDL comes with some. If they are not already present, get the SDL headers and place them in the SDL directory of the TurboSphere build. You may need to create the directory. Place the bass.h and bassmidi.h headers into plugins/audioBASS/include.
+
 On Linux, the core libraries and V8 must be installed as well. The command to do this is
   'scons --install_libs=y --build_plugins=all buildplugins libinstall confwrite'
 
-You can either install V8 using google's guide (which seems to be deprecated but still works), or simply copy libv8.so to /usr/lib/turbosphere (32-bits) or /usr/lib64/turbosphere (64-bits).
-You omit build_plugins and buildplugins to not build the plugins for TurboSphere.
+You can either install V8 using google's guide (which seems to be deprecated but still works), or on Linux simply copy libv8.so to /usr/lib/turbosphere (32-bits) or /usr/lib64/turbosphere (64-bits). You must copy libbass.so to the same directory, and libbassmidi.so can be placed in the same directory as the binary (bin/Release).
+You can omit build_plugins and buildplugins to not build the plugins for TurboSphere.
 
 If you have built any version of TurboSphere before using Scons, you can omit the confwrite option. Finally, run 'ldconfig' as root and you will be able to use TurboSphere.

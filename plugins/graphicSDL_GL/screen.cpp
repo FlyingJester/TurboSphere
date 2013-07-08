@@ -10,6 +10,9 @@ v8Function V8GetScreenHeight(V8ARGS){
 }
 
 void FlipScreen(void){
-    SDL_GL_SwapBuffers();
+        //Old SDL 1.2 code.
+    //SDL_GL_SwapBuffers();
+
+    SDL_GL_SwapWindow(screen);
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 }

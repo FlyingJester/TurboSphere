@@ -21,7 +21,7 @@
 #endif
 
 #define NUMFUNCS 2
-#define NUMVARS  0
+#define NUMVARS  2
 
 #ifdef _WIN32
 	extern "C" {

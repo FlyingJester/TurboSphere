@@ -1,7 +1,5 @@
 #ifndef SDL_GL_IMAGE_HEAD
 #define SDL_GL_IMAGE_HEAD
-#include "main.h"
-#include "surface.h"
 
 typedef GLuint TS_Texture;
 typedef GLuint TS_TexVertexBuffer;

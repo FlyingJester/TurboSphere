@@ -93,10 +93,10 @@ TS_GlyphAttribs::TS_GlyphAttribs(void){
     height   = 0;
 }
 
-void TS_TTFFontFinalizer(v8::Persistent<v8::Value> object, void* parameter) {
+void TS_TTFFontFinalizer(V8FINALIZERARGS) {
     TS_TTFFont* font = (TS_TTFFont*)parameter;
     delete font;
-    object.Dispose();
+    object->Dispose();
 }
 
 void TS_TTFFont::drawText(int x, int y, const char *text){

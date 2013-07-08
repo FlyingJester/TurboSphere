@@ -17,7 +17,7 @@
 using namespace std;
 
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 typedef struct CONFIGMGR_EXPORT TS_Directories {
 #else
 struct TS_Directories {
@@ -36,15 +36,16 @@ public:
     const char * spriteset;
     const char * animation;
     const char * windowstyle;
+    const char * soundfont;
     const char * system;
     const char * systemscript;
-#ifdef _WIN32
+#ifdef _MSC_VER
 } TS_Directories;
 #else
 };
 #endif
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 struct CONFIGMGR_EXPORT TS_Config {
 #else
 struct TS_Config {
@@ -58,16 +59,23 @@ public:
     int screenheight;
     int soundchannels;
     bool fullscreen;
+    int scale;
+    void *filter;
     const char *systemfont;
     const char *systemttffont;
     const char *systemwindowstyle;
     const char *systemarrow;
     const char *systemuparrow;
     const char *systemdownarrow;
+    const char *systemsoundfont;
     int fixedplugins;
     const char ** plugins;
     void *reserved;
+#ifdef _MSC_VER
+} TS_Config;
+#else
 };
+#endif
 
 CONFIGMGR_EXPORT TS_Config *GetConfig(void);
 CONFIGMGR_EXPORT TS_Directories *GetDirs(void);

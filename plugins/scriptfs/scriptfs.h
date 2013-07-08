@@ -11,6 +11,8 @@
 #define STRDUP strdup
 #endif
 
+#include "../../graphicalg/structures.h"
+
 #ifdef _WIN32
 	#define SCRIPTFS_EXPORT __declspec(dllexport)
     #define CCALL __cdecl
@@ -35,6 +37,8 @@ typedef HANDLE filehandle;
     #include <cstring>
 	#define STRDUP strdup
 #endif
+
+typedef TS_ByteArray RawData;
 
 #ifdef _WIN32
 	extern "C" {

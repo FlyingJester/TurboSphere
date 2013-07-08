@@ -9,7 +9,11 @@ cleanly and concisely read from Sphere files.
 ///////////////////
 #define PLUGINNAME "windowstyleGL"
 #include "../common/plugin.h"
+#ifdef _WIN32
+#include "../../SDL/SDL_opengl.h"
+#else
 #include <SDL/SDL_opengl.h>
+#endif
 #include "../../configmanager/opengame.h"
 #include "../common/graphic_common.h"
 #include "../common/graphic_algorithm.h"
@@ -17,8 +21,10 @@ cleanly and concisely read from Sphere files.
 
 #ifdef _MSC_VER
    typedef __int16 int16_t;
+   #define STRDUP _strdup
 #else
    #include <stdint.h>
+   #define STRDUP strdup
 #endif
 
 v8Function TS_WSdrawWindow(V8ARGS);
@@ -117,11 +123,11 @@ nameArray GetVariableNames(){
     return NULL;
 }
 
-void TS_WindowStyleFinalizer(v8::Persistent<v8::Value> object, void* parameter) {
+void TS_WindowStyleFinalizer(V8FINALIZERARGS) {
     //basic finalizer. Thanks, Kyuu!
     TS_WindowStyle* ws = (TS_WindowStyle*)parameter;
     delete ws;
-    object.Dispose();
+    object->Dispose();
 }
 
 TS_WSborder::TS_WSborder(TS_Texture tex, int w, int h){
@@ -411,8 +417,8 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
 
 	//draw background.
 	//WS_TILED, WS_STRETCHED, WS_GRADIENT, WS_TILED_GRADIENT, WS_STRETCHED_GRADIENT;
-	float fh;
-	float fv;
+	//float fh;
+	//float fv;
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, background.texture);
     float wtile = 0.0f;
@@ -454,6 +460,8 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
             glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
             glDrawArrays(GL_QUADS, 0, 4);
 			break;
+        case WS_GRADIENT:
+            break;
 	}
 
 	glDisable(GL_TEXTURE_2D);
@@ -516,26 +524,32 @@ v8Function GetSystemWindowStyle(V8ARGS) {
 	TS_Directories *TS_dirs = GetDirs();
 	TS_Config *TS_conf = GetConfig();
 
-        const char *wsname = string(TS_dirs->system).append(TS_conf->systemwindowstyle).c_str();
+        const char *wsname = STRDUP(string(TS_dirs->system).append(TS_conf->systemwindowstyle).c_str());
 
         SDL_RWops *wstest = SDL_RWFromFile(wsname, "rb");
         if(!wstest){
             SDL_RWclose(wstest);
-            return v8::ThrowException(v8::String::New(string("GetSystemWindowStyle Error: Could not load windowstyle ").append(wsname).c_str()));
+            string errorname = string("GetSystemWindowStyle Error: Could not load windowstyle ").append(wsname).c_str();
+            free((void *)wsname);
+            return v8::ThrowException(v8::String::New(errorname.c_str()));
         }
         SDL_RWclose(wstest);
 
-       MINMEMALIGN TS_WindowStyle *ws = new TS_WindowStyle(string(TS_dirs->system).append(TS_conf->systemwindowstyle).c_str());
+       MINMEMALIGN TS_WindowStyle *ws = new TS_WindowStyle(wsname);
+
+    free((void *)wsname);
 
     END_OBJECT_WRAP_CODE(WindowStyle, ws);
 }
 
 v8Function TS_WSgetElementWidth(V8ARGS){
 
+    return v8::Undefined();
 }
 
 v8Function TS_WSgetElementHeight(V8ARGS){
 
+    return v8::Undefined();
 }
 
 v8Function TS_WSdrawWindow(V8ARGS) {

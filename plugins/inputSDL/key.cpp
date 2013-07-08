@@ -10,14 +10,15 @@ v8Function GetKey(V8ARGS)
 	SDL_PollEvent(&keyevent1);
 	while(keyevent1.type!=SDL_KEYDOWN)
 	{
-		SDL_WaitEvent(&keyevent1);
-        SDL_PeepEvents(&keyevent1, 1, SDL_GETEVENT, SDL_ALLEVENTS);
+		//SDL_WaitEvent(&keyevent1);
+        SDL_PeepEvents(&keyevent1, 1, SDL_GETEVENT, SDL_KEYDOWN, SDL_KEYDOWN);
 		SDL_PollEvent(&keyevent1);
 	}
 	int key = keyevent1.key.keysym.sym;
 	if(!key) {
         printf("GetKey Recoverable Error: You are probably using an unsupported keyboard layout\nSDLKey Error: %s\n", SDL_GetError());
     }
+    printf("The key pressed was %i, also known as %i.\n", key, SDL_SCANCODE_TO_KEYCODE(key));
 	return v8::Number::New(key);
 }
 
@@ -27,7 +28,7 @@ v8Function AreKeysLeft(V8ARGS){
     int remevents = SDL_PollEvent(&keyevent1);
     //SDL_PumpEvents();
     bool ret = (keyevent1.type==SDL_KEYDOWN);
-    SDL_PeepEvents(&keyevent1, 1, SDL_ADDEVENT, SDL_ALLEVENTS);
+    SDL_PeepEvents(&keyevent1, 1, SDL_ADDEVENT, 0, 0xFFFF);
     SDL_PumpEvents();
     if(remevents==0){
         return v8::Boolean::New(false);
@@ -43,8 +44,8 @@ v8Function IsKeyPressed(V8ARGS)
 	CHECK_ARG_INT(0, "IsKeyPressed Error: arg 0 is not a number.");
 	SDL_PumpEvents();
 	int key = args[0]->Int32Value();
-	Uint8 *keystate = SDL_GetKeyState(NULL);
-	if(keystate[key]){return v8::True();}
+	const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+	if(keystate[SDL_GetScancodeFromKey(key)]){return v8::True();}
 	else {return v8::False();}
 }
 
@@ -53,7 +54,7 @@ v8Function IsAnyKeyPressed(V8ARGS)
 	SDL_PumpEvents();
 	int numkeys = 343;
 	int *keys = &numkeys;
-	Uint8 *keystate = SDL_GetKeyState(keys);
+	const Uint8 *keystate = SDL_GetKeyboardState(keys);
 	for(int i = 0; i<numkeys; i++){
 		if(keystate[i]){
         return v8::True();

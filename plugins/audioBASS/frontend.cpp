@@ -45,14 +45,22 @@ initFunction Init(){
     SET_CLASS_NAME(SoundEffect, "SoundEffect");
 
 
-    ADD_TO_PROTO(Sound,       "Play",  PlaySound);
-    ADD_TO_PROTO(SoundEffect, "Play",  PlaySoundEffect);
+    ADD_TO_PROTO(Sound,       "play",  PlaySound);
+    ADD_TO_PROTO(SoundEffect, "play",  PlaySound);
 
-    ADD_TO_PROTO(Sound,       "Pause", PauseSound);
-    ADD_TO_PROTO(SoundEffect, "Pause", PauseSoundEffect);
+    ADD_TO_PROTO(Sound,       "pause", PauseSound);
+    ADD_TO_PROTO(SoundEffect, "pause", PauseSound);
 
-    ADD_TO_PROTO(Sound,       "Stop",  StopSound);
-    ADD_TO_PROTO(SoundEffect, "Stop",  StopSoundEffect);
+    ADD_TO_PROTO(Sound,       "stop",  StopSound);
+    ADD_TO_PROTO(SoundEffect, "stop",  StopSound);
+
+    ADD_TO_PROTO(Sound,       "isPlaying",  IsSoundPlaying);
+    ADD_TO_PROTO(SoundEffect, "isPlaying",  IsSoundPlaying);
+
+    ADD_TO_PROTO(Sound,       "getLength",  SoundGetLength);
+
+    ADD_TO_PROTO(Sound,       "setVolume",  SoundSetVolume);
+    ADD_TO_PROTO(SoundEffect, "setVolume",  SoundSetVolume);
 
     return (initFunction)PLUGINNAME;
 }
@@ -96,9 +104,23 @@ int GetNumVariables(){
 }
 
 v8FunctionArray GetVariables(){
-    return NULL;
+    numerate(true);
+
+    v8FunctionArray vars = (v8FunctionArray)calloc(NUMVARS, sizeof(v8Function));
+
+    vars[numerate(false)]=v8::Integer::New(TS_SINGLE);
+    vars[numerate(false)]=v8::Integer::New(TS_MULTIPLE);
+
+    return vars;
 }
 
 nameArray GetVariableNames(){
-    return NULL;
+    numerate(true);
+
+    nameArray varnames = (nameArray)calloc(NUMFUNCS, sizeof(variableName));
+
+    varnames[numerate(false)] = (functionName)"SE_SINGLE";
+    varnames[numerate(false)] = (functionName)"SE_MULTIPLE";
+
+    return varnames;
 }

@@ -21,6 +21,26 @@
 #define NUMVARS 115
 #define NUMFUNCS 13
 
+//BIG UGLY HACK FOR SDL2 MIGRATION!
+#define SDLK_NUMLOCK 0
+#define SDLK_SCROLLOCK 0
+#define SDLK_KP0 0
+#define SDLK_KP1 0
+#define SDLK_KP2 0
+#define SDLK_KP3 0
+#define SDLK_KP4 0
+#define SDLK_KP5 0
+#define SDLK_KP6 0
+#define SDLK_KP7 0
+#define SDLK_KP8 0
+#define SDLK_KP9 0
+#define SDLK_RMETA 0
+#define SDLK_LMETA 0
+#define SDLK_RSUPER 0
+#define SDLK_LSUPER 0
+#define SDLK_BREAK 0
+#define SDLK_EURO 0
+
 #ifdef _WIN32
 	extern "C" {
 #endif

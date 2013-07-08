@@ -1,0 +1,33 @@
+Android builds of TurboSphere are in no way supported. This file is a list of what I had to go through (and I'm not done going through it!) to get TS running on Android.
+
+Before you begin: Use Linux for this. 
+No really, use Linux for this. 
+
+You're building ELF files for a Unix machine that has the Linux Kernel, using GCC. Use Linux.
+
+
+Don't use Windows. 
+
+
+
+It will be a huge hassle to not use Linux.
+
+
+
+1. You need V8. Get it: svn checkout http://v8.googlecode.com/svn/branches/3.19 v8
+
+2. Get the Android NDK. Which is a huge download.
+
+3. Do this at the V8 root: make dependencies
+
+4. Do this, too: make android_arm.release library=shared snapshot=off
+
+5. It will probably complain about the NDK not being found. Export the variable it wants as the root of the NDK.
+
+6. On x64 Linux, you CAN use the 64-bit NDK. You will just need to change the Android.makefile in V8. It's VERY SIMPLE! (I know, something in V8 after Scons went away being easy to hack!?)
+	Change:
+		    TOOLCHAIN_DIR = linux-x86
+		  to
+		    TOOLCHAIN_DIR = linux-x86_64
+		    
+	Why doesn't V8 do this to begin with? I don't know.

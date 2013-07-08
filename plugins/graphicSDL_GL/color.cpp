@@ -1,5 +1,6 @@
 #include "main.h"
 #include "color.h"
+#include <climits>
 
 DECLARE_OBJECT_TEMPLATES(Color);
 
@@ -9,11 +10,20 @@ void GLColor(TS_Color *color){
     glColor4ub(color->red, color->green, color->blue, color->alpha);
 }
 
+inline unsigned char CleanseColorComponent(int val){
+    int ret = val;
+    if(ret<0)
+        ret=0;
+    else if(ret>UCHAR_MAX)
+        ret=UCHAR_MAX;
+
+    return ret;
+}
+
 void ColorInit(void){
-    Colortempl     = *v8::FunctionTemplate::New();
-	ColorInsttempl = *Colortempl->InstanceTemplate();
-    Colorproto     = *Colortempl->PrototypeTemplate();
-    Colortempl->SetClassName(v8::String::New("Color"));
+
+    INIT_OBJECT_TEMPLATES(Color);
+    SET_CLASS_NAME(Color, "Color");
 
     ColorInsttempl->SetAccessor(v8::String::New("red"), GetRed, SetRed);
 	ColorInsttempl->SetAccessor(v8::String::New("green"), GetGreen, SetGreen);
@@ -22,18 +32,15 @@ void ColorInit(void){
 }
 
 void ColorClose(void){
-    Colortempl.Clear();
-	ColorInsttempl.Clear();
-    Colortempl.Dispose();
-	ColorInsttempl.Dispose();
+    //Colortempl.Clear();
+	//ColorInsttempl.Clear();
+    //Colortempl.Dispose();
+	//ColorInsttempl.Dispose();
 
 }
 
 v8Function CreateColor(V8ARGS) {
-  v8::HandleScope loadcolorscope;
-
-  MINMEMALIGN TS_Color *color = new TS_Color(255, 255, 255, 255);
-
+    BEGIN_OBJECT_WRAP_CODE
 
     if(args.Length()<3){
         THROWERROR("[" PLUGINNAME "] CreateColor Error: Called with fewer than 3 arguments.");
@@ -43,35 +50,21 @@ v8Function CreateColor(V8ARGS) {
     CHECK_ARG_INT(1);
     CHECK_ARG_INT(2);
 
-    int r = args[0]->Int32Value();
-    int g = args[1]->Int32Value();
-    int b = args[2]->Int32Value();
+    int r = CleanseColorComponent(args[0]->Int32Value());
+    int g = CleanseColorComponent(args[1]->Int32Value());
+    int b = CleanseColorComponent(args[2]->Int32Value());
     int a = 255;
     if(args.Length()>3){
-        if(args[3]->IsNumber()){
-            a = args[3]->Int32Value();
-        }
+        CHECK_ARG_INT(3);
+        a = CleanseColorComponent(args[3]->Int32Value());
     }
 
-    color->red      = r;
-    color->green    = g;
-    color->blue     = b;
-    color->alpha    = a;
+
+    MINMEMALIGN TS_Color *color = new TS_Color(r, g, b, a);
 
     color->reserved = (ColorGLMagic<<32);
 
-  	ColorInsttempl->SetInternalFieldCount(1);
-	v8::Handle<v8::Function> colorctor = Colortempl->GetFunction();
-	v8::Local<v8::Object> colorobj = colorctor->NewInstance();
-
-	v8::Persistent<v8::Object> Pcolorobj = v8::Persistent<v8::Object>::New(colorobj);
-
-    Pcolorobj.MakeWeak(color, TS_ColorFinalizer);
-    Pcolorobj->SetAlignedPointerInInternalField(0, color);
-
-    Pcolorobj->GetConstructorName()=v8::String::New("Color");
-
-	return loadcolorscope.Close(Pcolorobj);
+    END_OBJECT_WRAP_CODE(Color, color);
 }
 
 
@@ -136,8 +129,7 @@ TS_Color *TS_BlendColorsWeighted(TS_Color *c1, TS_Color *c2, double w1, double w
 void TS_ColorFinalizer(V8FINALIZERARGS) {
     TS_Color* color = (TS_Color*)parameter;
     delete color;
-    object.Dispose();
-    object.Clear();
+    object->Dispose();
 }
 
 v8Function GetRed(V8GETTERARGS) {
@@ -146,51 +138,37 @@ v8Function GetRed(V8GETTERARGS) {
 }
 
 void SetRed(V8SETTERARGS) {
-    GET_ACCESSOR_SELF(TS_Color*)->red = value->Int32Value();
+    auto r = CleanseColorComponent(value->Int32Value());
+    GET_ACCESSOR_SELF(TS_Color*)->red = r;
 }
 
 v8Function GetGreen(V8GETTERARGS) {
-    v8::Local<v8::Object> self = info.Holder();
-    v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
-    void* ptr = wrap->Value();
-    int value = static_cast<TS_Color*>(ptr)->green;
+    int value = GET_ACCESSOR_SELF(TS_Color*)->green;
     return v8::Integer::New(value);
 }
 
 void SetGreen(V8SETTERARGS) {
-    v8::Local<v8::Object> self = info.Holder();
-    v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
-    void* ptr = wrap->Value();
-    static_cast<TS_Color*>(ptr)->green = value->Int32Value();
+    auto g = CleanseColorComponent(value->Int32Value());
+    GET_ACCESSOR_SELF(TS_Color*)->green = g;
 }
 
 
 v8Function GetBlue(V8GETTERARGS) {
-    v8::Local<v8::Object> self = info.Holder();
-    v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
-    void* ptr = wrap->Value();
-    int value = static_cast<TS_Color*>(ptr)->blue;
+    int value = GET_ACCESSOR_SELF(TS_Color*)->blue;
     return v8::Integer::New(value);
 }
 
 void SetBlue(V8SETTERARGS) {
-    v8::Local<v8::Object> self = info.Holder();
-    v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
-    void* ptr = wrap->Value();
-    static_cast<TS_Color*>(ptr)->blue = value->Int32Value();
+    auto b = CleanseColorComponent(value->Int32Value());
+    GET_ACCESSOR_SELF(TS_Color*)->blue = b;
 }
 
 v8Function GetAlpha(V8GETTERARGS) {
-    v8::Local<v8::Object> self = info.Holder();
-    v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
-    void* ptr = wrap->Value();
-    int value = static_cast<TS_Color*>(ptr)->alpha;
+    int value = GET_ACCESSOR_SELF(TS_Color*)->alpha;
     return v8::Integer::New(value);
 }
 
 void SetAlpha(V8SETTERARGS) {
-    v8::Local<v8::Object> self = info.Holder();
-    v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
-    void* ptr = wrap->Value();
-    static_cast<TS_Color*>(ptr)->alpha = value->Int32Value();
+    auto a = CleanseColorComponent(value->Int32Value());
+    GET_ACCESSOR_SELF(TS_Color*)->alpha = a;
 }

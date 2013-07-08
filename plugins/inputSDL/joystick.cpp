@@ -46,7 +46,7 @@ v8Function GetJoystickName(V8ARGS) {
     CHECK_ARG_INT(0, "GetNumJoySticks Error: Argument 0 is not a number.");
 
     int n = args[0]->Int32Value();
-    const char *ret;
+    const char *ret = NULL;
     int good = checkJoystick(n, ret);
 
     switch(good){
@@ -57,7 +57,7 @@ v8Function GetJoystickName(V8ARGS) {
             THROWERROR_RANGE(((string)"GetJoystickName Error: Argument 0 is "+string(ret)).c_str());
             break;
         case(JOY_GOOD):
-            return v8::String::New(SDL_JoystickName(n));
+            return v8::String::New(SDL_JoystickName(OpenJoysticks[n]));
             break;
         default:
             THROWERROR("GetJoyStickName Error: Internal error.");
@@ -69,7 +69,7 @@ v8Function GetNumJoystickButtons(V8ARGS) {
     CHECK_ARG_INT(0, "GetNumJoystickButtons Error: Argument 0 is not a number.");
 
     int n = args[0]->Int32Value();
-    const char *ret;
+    const char *ret = NULL;
     int good = checkJoystick(n, ret);
 
     switch(good){
@@ -92,7 +92,7 @@ v8Function GetNumJoystickAxes(V8ARGS) {
     CHECK_ARG_INT(0, "GetNumJoystickAxes Error: Argument 0 is not a number.");
 
     int n = args[0]->Int32Value();
-    const char *ret;
+    const char *ret = NULL;
     int good = checkJoystick(n, ret);
 
     switch(good){
@@ -118,7 +118,7 @@ v8Function IsJoystickButtonPressed(V8ARGS) {
 
     int n = args[0]->Int32Value();
     int b = args[1]->Int32Value();
-    const char *ret;
+    const char *ret = NULL;
     int good = checkJoystick(n, ret);
 
     switch(good){
@@ -146,7 +146,7 @@ v8Function GetJoystickAxis(V8ARGS) {
 
     int n = args[0]->Int32Value();
     int a = args[1]->Int32Value();
-    const char *ret;
+    const char *ret = NULL;
     int good = checkJoystick(n, ret);
 
     switch(good){

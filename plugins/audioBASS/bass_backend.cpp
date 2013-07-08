@@ -1,30 +1,17 @@
 #include "include/bass.h"
 #include "frontend.h"
 #include "bass_backend.h"
-#include <vector>
+#include <cmath>
+#include <cassert>
 //TODO: Add seperate error for OS X.
 #ifdef _WIN32
 static const char *TS_MSG_DXError = "DirectX is not installed.\n";
+#define fabs TS_FABS
 #else
 static const char *TS_MSG_DXError = "ALSA is not installed.";
 #endif
 
 static DWORD *defaultSoundFont;
-
-static std::vector<TS_AudioChannel*> channels;
-
-float fabs(float f){
-    if(f<0.0f){
-        return -f;
-    }
-    return f;
-}
-
-TS_AudioSample::~TS_AudioSample(){
-    if(file!=NULL){
-        free(file);
-    }
-}
 
 //TODO: Perhaps having a T5 file (and even localizations) would be a good idea?
 static const char *TS_MSG_WillReopen    = "\tTurboSphere will attempt to close and reopen the device.";
@@ -36,6 +23,12 @@ static const char *TS_MSG_BadFormat     = "The default default format is not sup
 static const char *TS_MSG_BadFormatFS   = "The default failsafe format is not supported by the device.";
 static const char *TS_MSG_OutOfMemory   = "Out of memory.";
 static const char *TS_MSG_UnkownErrorPRT= "Unkown error (internal code is [decimal] %i).";
+
+uint64_t generateUniqueId(int skip = 0){
+    static uint64_t ID = 0;
+    ID+=skip;
+    return ID++;
+}
 
 void TS_ExplainBassErrorCode(int error, bool willTryAgain, bool FormatIsFailsafe){
 
@@ -104,17 +97,12 @@ int TS_InitBassMidi(){
         bassMidiLoaded = false;
     }
     else{
-        printf("[" PLUGINNAME "] Info: Initialized BASSmidi.\n");
+        printf("[" PLUGINNAME "] Info: Initialized BASSmidi as bass plugin %i.\n", bassmidi);
     }
     defaultSoundFont = (DWORD *)malloc(sizeof(DWORD));
 
     *defaultSoundFont = BASS_MIDI_FontInit(string(TS_Dirs->system).append(TS_Conf->systemsoundfont).c_str(), 0);
 
-/*
-    BOOL defaultFontLoaded = BASS_MIDI_FontLoad(*defaultSoundFont, -1, -1);
-
-
-*/
     BASS_MIDI_FONT defaultFont;
 
     BASS_MIDI_StreamGetFonts(0, &defaultFont, 1);
@@ -150,17 +138,8 @@ int TS_InitBassMidi(){
         printf("\n");
     }
 
+    BASS_SetConfig(BASS_CONFIG_MIDI_VOICES, 200);
 
-/*
-typedef struct {
-	HSOUNDFONT font;	// soundfont
-	int spreset;		// source preset number
-	int sbank;			// source bank number
-	int dpreset;		// destination preset/program number
-	int dbank;			// destination bank number
-	int dbanklsb;		// destination bank number LSB
-} BASS_MIDI_FONTEX;
-*/
     return 0;
 }
 
@@ -172,7 +151,8 @@ int TS_InitBass(){
         printf("[" PLUGINNAME "] Warning: Wrong version of BASS loaded (expected %x, version was %x). Crashes will likely follow.\n", BASSVERSION, version);
     }
 
-	if (!BASS_Init(-1,44100,0,NULL,NULL)) {
+    TS_InitBassMidi();
+	if (!BASS_Init(-1,44100,BASS_DEVICE_FREQ,NULL,NULL)) {
 	    int error = BASS_ErrorGetCode();
         TS_ExplainBassErrorCode(error, true, false);
 
@@ -180,7 +160,7 @@ int TS_InitBass(){
 
         if((error==BASS_ERROR_ALREADY)||(error==BASS_ERROR_ALREADY)){
             BASS_Free();
-            couldstart = BASS_Init(-1, 44100, 0, NULL, NULL);
+            couldstart = BASS_Init(-1, 44100, BASS_DEVICE_FREQ, NULL, NULL);
             error = BASS_ErrorGetCode();
             if(error==BASS_ERROR_FORMAT){
                 BASS_Free();
@@ -188,7 +168,7 @@ int TS_InitBass(){
         }
 
         if(error==BASS_ERROR_FORMAT){
-            BASS_Init(-1, 22050, FAILSAFE_BASS_INIT_FLAGS, NULL, NULL);
+            BASS_Init(-1, 22050, FAILSAFE_BASS_INIT_FLAGS|BASS_DEVICE_FREQ, NULL, NULL);
         }
 
         if(!couldstart){
@@ -203,255 +183,435 @@ int TS_InitBass(){
 	else{
         printf("[" PLUGINNAME "] Info: loaded and initialized BASS.\n");
 	}
-    TS_InitBassMidi();
     BASS_Start();
     return 0;
 }
 
-void TS_RestartChannel(TS_AudioChannel *channel){
-    BASS_ChannelSetPosition(channel->channel, 0, BASS_POS_BYTE);
-    BASS_ChannelPlay(channel->channel, channel->repeat);
-}
-
-void TS_PlaySound(TS_AudioSample *sample, bool loop){
-    for(size_t i = 0; i<channels.size(); i++){
-        if(channels[i]->sample->handle == sample->handle){
-            channels[i]->repeat = (loop)?1:0;
-            TS_RestartChannel(channels[i]);
-            return;
-        }
-    }
-    TS_AudioChannel *channel = TS_CreateChannel(sample);
-    channel->repeat =(loop)?1:0;
-    channel->Play(channel->repeat);
-}
-
-void TS_PlaySoundEffect(TS_AudioSample *sample){
-    TS_AudioChannel *channel = TS_CreateChannel(sample);
-    channel->Play(0);
-}
-
-TS_AudioSample::TS_AudioSample(){
-    handle   = 0;
-    file     = (char*)malloc(1);
-    *file    = '\0';
-    playbacks= 0;
-    volume   = 1.0f;
-}
-
-TS_AudioChannel::TS_AudioChannel(){
-    channel = 0;
-    repeat  = false;
-}
-
-TS_AudioChannel::TS_AudioChannel(TS_AudioSample *_sample){
-    sample = _sample;
-    if(_sample->type==TS_STREAM)
-        channel = _sample->handle;
-
-    repeat  = false;
-}
-
-TS_AudioChannel *TS_CreateChannel(TS_AudioSample *sample){
-    TS_AudioChannel *channel = new TS_AudioChannel(sample);
-    channels.push_back(channel);
-    return channel;
-}
-
-void TS_AudioChannel::Play(int loops){
-
-    if((sample->type==TS_STREAM)&&(channel==sample->handle)){
-        BASS_ChannelPlay(channel, loops);
-        return;
-    }
-
-    if(sample->type==TS_STREAM){
-        channel = sample->handle;
-    }
-    else if(sample->type==TS_SAMPLE){
-        channel = BASS_SampleGetChannel(sample->handle, 0);
-        int error = BASS_ErrorGetCode();
-        if(error)
-            TS_ExplainBassErrorCode(error, false, false);
-    }
-
 
 /*
-typedef struct {
-	HSOUNDFONT font;	// soundfont
-	int spreset;		// source preset number
-	int sbank;			// source bank number
-	int dpreset;		// destination preset/program number
-	int dbank;			// destination bank number
-	int dbanklsb;		// destination bank number LSB
-} BASS_MIDI_FONTEX;
 
-
-    BASS_MIDI_FONTEX fontex;
-
-    BASS_MIDI_StreamGetFonts(channel, &fontex, 1);
-
-    fontex.font = *defaultSoundFont;
-
-    BASS_MIDI_StreamSetFonts(channel, &fontex, 1);
-*/
-    BASS_ChannelPlay(channel, 0);
-    if(sample->type==TS_STREAM){
-        BASS_ChannelSetAttribute(channel, BASS_ATTRIB_VOL, 1.0f);
-    }
-
-}
-
-/*
-class TS_AudioSample{
+class TS_Sound{
 public:
-    TS_AudioSample(void);
-    ~TS_AudioSample(void);
+    TS_AudioDataFormat format;
+    TS_AudioSimul simul;
 
-    HSAMPLE sample;   //BASS-side sample.
-    char *file; //Filename.
-    int playbacks;    //Number of simultaneous playbacks.
-    DWORD flags;
+    virtual ~TS_Sound() = 0;
+
+    char *file;
     float volume;
+    float pan;
+
+    virtual void ResetPlayback(void) const = 0;
+
+    virtual long long GetPosition(void) const = 0;
+    virtual void SetPosition(long long) = 0;
+
+    virtual long long GetLength(void) const = 0;
+    virtual bool IsPlaying(void) const = 0;
+
+    virtual void Play(bool repeat) = 0;
+
+    virtual void Stop(void) = 0;
+
+    float GetVolume(void) const;
+    void SetVolume(float);
+    void SetVolume(unsigned char);
+    float GetPan(void) const;
+    void SetPan(float);
+    void SetPan(short);
+
+    bool repeat;
+
 };
+
+struct TS_ChannelWrap{
+    DWORD handle;
+    bool repeat;
+    uint64_t ID;
+    TS_Sound *ptr;
+};
+
 */
 
-TS_AudioSample::TS_AudioSample(const char *filename){
-    //BASS_SampleLoad(           BOOL mem, void *file, QWORD offset, DWORD length, DWORD max, DWORD flags);
-    //BASS_MIDI_StreamCreateFile(BOOL mem, void *file, QWORD offset, QWORD length, DWORD flags, DWORD freq);
-    //BASS_StreamCreateFile(     BOOL mem, void *file, QWORD offset, QWORD length, DWORD flags);
-    file = STRDUP(filename);
-
-    type = TS_STREAM;
-
-    handle = 0;
-    if(type==TS_STREAM){
-        //handle = BASS_StreamCreateFile(0, filename, 0, 0, 0);
-        handle = BASS_MIDI_StreamCreateFile(0, filename, 0, 0, BASS_SAMPLE_FLOAT|BASS_SAMPLE_LOOP|BASS_MIDI_DECAYSEEK, 1);
-        if (!handle){
-            handle = BASS_StreamCreateFile(0, filename, 0, 0, 0);
-        }
-        int error = BASS_ErrorGetCode();
-        if((!handle)||(error)){
-            printf("[" PLUGINNAME "] TS_AudioSample Error: Could not load stream %s.", filename);
-            if(error)
-                printf(TS_MSG_UnkownErrorPRT, error);
-
-            printf("\n");
-        }
-    }
-    else if(type==TS_SAMPLE){
-
-        handle = BASS_SampleLoad(0, filename, 0, 0, 8, 0);
-        BASS_SAMPLE sampleInfo;
-        BASS_SampleGetInfo(handle, &sampleInfo);
-        sampleInfo.volume = 1.0f;
-        sampleInfo.pan    = 0.0f;
-        BASS_SampleSetInfo(handle, &sampleInfo);
-        int error = BASS_ErrorGetCode();
-        TS_ExplainBassErrorCode(error, false, false);
-
-        if(!handle){
-            printf("[" PLUGINNAME "] TS_AudioSample Error: Could not load sample %s.\n", filename);
-        }
-    }
-}
-
-void TS_AudioSample::SetVolume(float vol){
-    if(type!=TS_SAMPLE)
-        return; //TODO: Add volume support for streams.
-
-    if(volume==vol){
-        return;
-    }
-
-    if((fabs(volume-vol)<VOLUME_RESOLUTION)&&(vol!=0.0f)&&(vol!=1.0f)){
-        return;
-    }
-
-    volume = vol;
-
-    BASS_SAMPLE sampleInfo;
-    BASS_SampleGetInfo(handle, &sampleInfo);
-    sampleInfo.volume = vol;
-    BASS_SampleSetInfo(handle, &sampleInfo);
-}
-
-void TS_AudioSample::SetVolume(unsigned char vol){
-    if(type!=TS_SAMPLE)
-        return; //TODO: Add volume support for streams.
-
-    float nvol = ((float)vol);
-    nvol/=255.0f;
-    this->SetVolume(nvol);
-}
-
-float TS_AudioSample::GetVolume(){
-    if(type!=TS_SAMPLE)
-        return 0.1f; //TODO: Add volume support for streams.
-
-    BASS_SAMPLE sampleInfo;
-    BASS_SampleGetInfo(handle, &sampleInfo);
-    volume = sampleInfo.volume;
+float TS_Sound::GetVolume() const{
     return volume;
 }
 
-void TS_AudioSample::SetPan(float p){
-    if(type!=TS_SAMPLE)
-        return; //TODO: Add volume support for streams.
-
-    if(pan==p){
-        return;
-    }
-
-    if((fabs(pan-p)<PAN_RESOLUTION)&&(p!=0.0f)&&(p!=1.0f)&&(p!=-1.0f)){
-        return;
-    }
-
-    pan = p;
-
-    BASS_SAMPLE sampleInfo;
-    BASS_SampleGetInfo(handle, &sampleInfo);
-    sampleInfo.pan = p;
-    BASS_SampleSetInfo(handle, &sampleInfo);
-}
-
-void TS_AudioSample::SetPan(unsigned char p){
-    if(type!=TS_SAMPLE)
-        return; //TODO: Add volume support for streams.
-    float np = ((float)p);
-    np/=255.0f;
-    this->SetPan(np);
-}
-
-float TS_AudioSample::GetPan(){
-    if(type!=TS_SAMPLE)
-        return 0.0f; //TODO: Add volume support for streams.
-    BASS_SAMPLE sampleInfo;
-    BASS_SampleGetInfo(handle, &sampleInfo);
-    volume = sampleInfo.pan;
+float TS_Sound::GetPan() const{
     return pan;
 }
 
-void TS_MakeSampleSound(TS_AudioSample *sample){
-    BASS_SAMPLE sampleInfo;
-    BASS_SampleGetInfo(sample->handle, &sampleInfo);
-    sampleInfo.priority = 0xFFFF;
-    BASS_SampleSetInfo(sample->handle, &sampleInfo);
+void TS_Sound::SetVolume(unsigned char v){
+    SetVolume((float)((float)v/255.0f));
+}
+
+void TS_Sound::SetVolume(float v){
+    if(v>1.0f){
+        v=1.0f;
+    }
+    else if(v<-1.0f){
+        v=-1.0f;
+    }
+    volume = v;
+}
+
+void TS_Sound::SetPan(short p){
+    if(p>255){
+        p=255;
+    }
+    else if(p<-256){
+        p=256;
+    }
+    SetPan((float)((float)p/255.0f));
+}
+
+void TS_Sound::SetPan(float p){
+    if(p>1.0f){
+        p=1.0f;
+    }
+    else if(p<-1.0f){
+        p=-1.0f;
+    }
+    pan = p;
+}
+
+/*
+
+class TS_AudioStream : public TS_Sound{
+public:
+    ~TS_AudioStream(void);
+    TS_AudioStream(void);
+    TS_AudioStream(const char *, TS_AudioSimul);
+
+
+    virtual void ResetPlayback(void) const;
+
+    virtual void Play(bool repeat);
+
+    virtual void Stop(void);
+
+    virtual void Pause(void);
+
+    virtual long long GetPosition(void) const;
+    virtual void SetPosition(long long);
+    virtual bool IsPlaying(void) const;
+
+    virtual long long GetLength(void) const;
+
+private:
+    HSTREAM stream;
+    DWORD flags;
+    bool loop;
+};
+
+*/
+
+TS_AudioStream::TS_AudioStream(const char *f){
+
+    stream =  BASS_MIDI_StreamCreateFile(0, f, 0, 0, BASS_MIDI_DECAYEND|BASS_MIDI_NOCROP|BASS_MIDI_SINCINTER, 0);
+    int error = BASS_ErrorGetCode();
+    if(error)
+        stream = BASS_StreamCreateFile(0, f, 0, 0, BASS_STREAM_PRESCAN);
+}
+
+TS_AudioStream::~TS_AudioStream(){
+    BASS_StreamFree(stream);
+}
+
+void TS_AudioStream::ResetPlayback(){
+    BASS_ChannelStop(stream);
+    BASS_ChannelPlay(stream, loop);
+}
+
+void TS_AudioStream::Play(bool repeat){
+    loop = repeat;
+    ResetPlayback();
+}
+
+void TS_AudioStream::Stop(){
+    BASS_ChannelSetPosition(stream, 0, BASS_POS_BYTE);
+    BASS_ChannelStop(stream);
+}
+
+void TS_AudioStream::Pause(){
+    BASS_ChannelPause(stream);
+}
+
+long long TS_AudioStream::GetPosition() const{
+        long long pos = BASS_ChannelGetPosition(stream, BASS_POS_BYTE);
+        double dlength = BASS_ChannelBytes2Seconds(stream, pos);
+        return (long long)(dlength*1000.0d);
+}
+
+void TS_AudioStream::SetPosition(long long position){
+    BASS_ChannelSetPosition(stream, BASS_ChannelSeconds2Bytes(stream, (double)(position)/1000.0d), BASS_POS_BYTE);
+}
+
+long long TS_AudioStream::GetLength() const{
+        long long end = BASS_ChannelGetLength(stream, BASS_POS_BYTE);
+        double dlength = BASS_ChannelBytes2Seconds(stream, end);
+        return (long long)(dlength*1000.0d);
+}
+
+bool TS_AudioStream::IsPlaying() const{
+    return (bool)BASS_ChannelIsActive(stream);
+}
+
+/*
+
+class TS_AudioSample : public TS_Sound{
+public:
+
+    virtual ~TS_AudioSample() = 0;
+
+    virtual void ResetPlayback(void) const = 0;
+
+    virtual void Play(bool repeat) = 0;
+
+    virtual void Stop(void) = 0;
+
+    virtual void Pause(void) = 0;
+
+    virtual long long GetPosition(void) const = 0;
+    virtual void SetPosition(long long) = 0;
+    virtual bool IsPlaying(void) const = 0;
+    virtual long long GetLength(void) const;
+};
+
+*/
+
+long long TS_AudioSample::GetLength() const{
+    HCHANNEL channel = BASS_SampleGetChannel(sample, 0);
+    long long end = BASS_ChannelGetLength(channel, BASS_POS_BYTE);
+    double dlength = BASS_ChannelBytes2Seconds(channel, end);
+    return (long long)(dlength*1000.0d);
+}
+
+TS_AudioSample::~TS_AudioSample(){
+    BASS_SampleFree(sample);
+}
+
+/*
+
+class TS_AudioSampleMultiple : public TS_AudioSample{
+
+    TS_AudioSampleMultiple(const char*);
+    ~TS_AudioSampleMultiple(void);
+
+    virtual void ResetPlayback(void) const;
+
+    virtual void Play(bool repeat);
+
+    virtual void Stop(void);
+
+    virtual long long GetPosition(void) const;
+    virtual void SetPosition(long long);
+    virtual bool IsPlaying(void) const;
+
+private:
+    std::vector<TS_ChannelWrap> channels;
+    HSAMPLE sample;   //BASS-side handle (stream, sample).
+    DWORD flags;
+};
+
+struct TS_ChannelWrap{
+    DWORD handle;
+    bool repeat;
+    uint64_t ID;
+    TS_Sound *ptr;
+};
+*/
+
+void ChannelCallback(HSYNC handle, DWORD channel, DWORD data, void *wrapv){
+    TS_ChannelWrap *wrap = (TS_ChannelWrap *)wrapv;
+    TS_AudioSampleMultiple *sound = (TS_AudioSampleMultiple *)(wrap->ptr);
+    printf("A channel has finished. Channel number is %i.\n", channel);
 
 }
 
-void TS_MakeSampleSoundEffect(TS_AudioSample *sample){
-    BASS_SAMPLE sampleInfo;
-    BASS_SampleGetInfo(sample->handle, &sampleInfo);
-    sampleInfo.priority = 0xFFFF;
-    BASS_SampleSetInfo(sample->handle, &sampleInfo);
+TS_AudioSampleMultiple::TS_AudioSampleMultiple(const char *f){
+    sample = BASS_SampleLoad(0, f, 0, 0, 16, 0);
 }
 
-void TS_SetGlobalVolume(float volume){
-    BASS_SetVolume(volume);
+void TS_AudioSampleMultiple::ResetPlayback(void){
+
 }
 
-void TS_ResetGlobalVolume(){
-    BASS_SetVolume(1.0f);
+TS_AudioSampleMultiple::~TS_AudioSampleMultiple(void){
+
 }
+
+void TS_AudioSampleMultiple::Play(bool repeat){
+
+    int highestIndex = 0;
+    uint64_t highestID = 0;
+    bool foundPaused = false;
+    for(size_t i = 1; i<channels.size(); i++){
+        if((BASS_ChannelIsActive(channels[i].handle) == BASS_ACTIVE_PAUSED)&&(channels[i].ID>highestID)){
+            highestID = channels[i].ID;
+            highestIndex = i;
+            foundPaused = true;
+        }
+    }
+
+    if(foundPaused){
+        BASS_ChannelPlay(channels[highestIndex].handle, repeat);
+        return;
+    }
+
+    TS_ChannelWrap *wrap = (TS_ChannelWrap *)malloc(sizeof(TS_ChannelWrap));
+    wrap->ID = generateUniqueId(0);
+    wrap->handle = BASS_SampleGetChannel(sample, 0);
+    wrap->ptr = this;
+    wrap->repeat = repeat;
+    if(!repeat){
+        BASS_ChannelSetSync(wrap->handle, BASS_SYNC_END, 0, ChannelCallback, (void *)wrap);
+    }
+}
+
+void TS_AudioSampleMultiple::Pause(void){
+
+    int highestIndex = 0;
+    uint64_t highestID = 0;
+    bool foundPlaying = false;
+    for(size_t i = 1; i<channels.size(); i++){
+        if(((BASS_ChannelIsActive(channels[i].handle) == BASS_ACTIVE_PLAYING)||(BASS_ChannelIsActive(channels[i].handle) == BASS_ACTIVE_STALLED))&&(channels[i].ID>highestID)){
+            highestID = channels[i].ID;
+            highestIndex = i;
+            foundPlaying = true;
+        }
+    }
+    if(foundPlaying){
+        BASS_ChannelPause(channels[highestIndex].handle);
+    }
+}
+
+void TS_AudioSampleMultiple::Stop(void){
+    for(size_t i = 0; i<channels.size(); i++){
+        BASS_ChannelStop(channels[i].handle);
+    }
+    channels.resize(0);
+}
+
+long long TS_AudioSampleMultiple::GetPosition(void) const{
+    return 0;
+}
+
+void TS_AudioSampleMultiple::SetPosition(long long p){
+    if(channels.size()==0){
+        Play(false);
+        SetPosition(p);
+        Pause();
+    }
+
+    int highestIndex = 0;
+    uint64_t highestID = channels[0].ID;
+    for(size_t i = 1; i<channels.size(); i++){
+        if(channels[i].ID>highestID){
+            highestID = channels[i].ID;
+            highestIndex = i;
+        }
+    }
+
+    BASS_ChannelSetPosition(channels[highestIndex].handle, BASS_ChannelSeconds2Bytes(channels[highestIndex].handle, (double)(p)/1000.0d), BASS_POS_BYTE);
+}
+
+bool TS_AudioSampleMultiple::IsPlaying(void) const{
+    return (channels.size()>0);
+}
+
+/*
+class TS_AudioSampleSingle : public TS_AudioSample{
+
+    TS_AudioSampleSingle(const char*);
+    ~TS_AudioSampleSingle(void);
+
+    virtual void ResetPlayback(void) const;
+
+    virtual void Play(bool repeat);
+
+    virtual void Stop(void);
+
+    virtual long long GetPosition(void) const;
+    virtual void SetPosition(long long);
+    virtual bool IsPlaying(void) const;
+
+private:
+    HCHANNEL channel;
+    HSAMPLE sample;   //BASS-side handle (stream, sample).
+    DWORD flags;
+};
+
+*/
+
+TS_AudioSampleSingle::TS_AudioSampleSingle(const char *f){
+    sample = BASS_SampleLoad(0, f, 0, 0, 1, 0);
+    channel = BASS_SampleGetChannel(sample, 0);
+}
+
+TS_AudioSampleSingle::~TS_AudioSampleSingle(void){
+
+}
+
+void TS_AudioSampleSingle::ResetPlayback(void){
+    Stop();
+    Play(false);
+}
+
+void TS_AudioSampleSingle::Play(bool repeat){
+    if(IsPlaying()){
+        Stop();
+        Play(repeat);
+        return;
+    }
+    BASS_SAMPLE sampleinfo;
+
+    BASS_SampleGetInfo(sample, &sampleinfo);
+    if(repeat)
+        sampleinfo.flags|=BASS_SAMPLE_LOOP;
+    else
+        sampleinfo.flags&=(~BASS_SAMPLE_LOOP);
+
+    BASS_SampleSetInfo(sample, &sampleinfo);
+
+    channel = BASS_SampleGetChannel(sample, 0);
+    BASS_ChannelPlay(channel, 1);
+}
+
+void TS_AudioSampleSingle::Stop(void){
+    if(IsPlaying())
+        BASS_ChannelStop(channel);
+}
+
+bool TS_AudioSampleSingle::IsPlaying(void) const{
+    return (BASS_ChannelIsActive(channel) == BASS_ACTIVE_PLAYING)||(BASS_ChannelIsActive(channel) == BASS_ACTIVE_STALLED);
+}
+
+
+long long TS_AudioSampleSingle::GetPosition(void) const{
+    if(IsPlaying()){
+        long long pos = BASS_ChannelGetPosition(channel, BASS_POS_BYTE);
+        double dlength = BASS_ChannelBytes2Seconds(channel, pos);
+        return (long long)(dlength*1000.0d);
+    }
+    return 0;
+}
+
+
+long long TS_AudioSampleSingle::GetLength() const{
+    long long end = BASS_ChannelGetLength(channel, BASS_POS_BYTE);
+    double dlength = BASS_ChannelBytes2Seconds(channel, end);
+    return (long long)(dlength*1000.0d);
+}
+
+void TS_AudioSampleSingle::SetPosition(long long position){
+    BASS_ChannelSetPosition(channel, BASS_ChannelSeconds2Bytes(channel, (double)(position)/1000.0d), BASS_POS_BYTE);
+}
+
+void TS_AudioSampleSingle::Pause(void){
+    BASS_ChannelPause(channel);
+}
+
+#ifdef _WIN32
+#undef fabs
+#endif

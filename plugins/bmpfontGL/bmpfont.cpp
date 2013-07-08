@@ -56,11 +56,13 @@ initFunction Init(void) {
     INIT_OBJECT_TEMPLATES(BMPFont);
     SET_CLASS_NAME(BMPFont, "Font");
     ADD_TO_PROTO(BMPFont, "drawText",        TS_BMPdrawText);
+    ADD_TO_PROTO(BMPFont, "drawZoomedText",  TS_BMPdrawZoomedText);
     ADD_TO_PROTO(BMPFont, "getStringWidth",  TS_BMPgetStringWidth);
     ADD_TO_PROTO(BMPFont, "getStringHeight", TS_BMPgetStringHeight);
     ADD_TO_PROTO(BMPFont, "getHeight",       TS_BMPgetHeight);
     ADD_TO_PROTO(BMPFont, "drawTextBox",     TS_BMPdrawTextBox);
     ADD_TO_PROTO(BMPFont, "wordWrapString",  TS_BMPwordWrapString);
+    ADD_TO_PROTO(BMPFont, "setColorMask",    TS_BMPsetColorMask);
 	return (char *)PLUGINNAME;
 }
 
@@ -105,10 +107,10 @@ void BMPFontClose() {
 }
 
 
-void TS_BMPFontFinalizer(v8::Persistent<v8::Value> object, void* parameter) {
+void TS_BMPFontFinalizer(V8FINALIZERARGS) {
     TS_BMPFont* font = (TS_BMPFont*)parameter;
     delete font;
-    object.Dispose();
+    object->Dispose();
 }
 
 
@@ -225,7 +227,7 @@ v8Function LoadBMPFont(const v8::Arguments& args) {
     }
     SDL_RWclose(fonttest);
 
-    TS_BMPFont *font MEMALIGN(4) = new TS_BMPFont(string(TS_dirs->font).append(fontname).c_str());
+    MINMEMALIGN TS_BMPFont *font = new TS_BMPFont(string(TS_dirs->font).append(fontname).c_str());
 
     END_OBJECT_WRAP_CODE(BMPFont, font);
 }
@@ -247,6 +249,19 @@ v8Function LoadSystemBMPFont(V8ARGS) {
     END_OBJECT_WRAP_CODE(BMPFont, font);
 }
 
+v8Function TS_BMPsetColorMask(V8ARGS){
+    if(args.Length()<1){
+        THROWERROR(" Error: Called with no arguments.");
+    }
+	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[0]);
+
+    TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
+
+    GET_SELF(TS_BMPFont*)->setColorMask(c);
+
+    return v8::Undefined();
+}
+
 void TS_BMPGlyph::blit(int x, int y, TS_Color *mask){
     const GLint vertexData[] = {x, y, x+width, y, x+width, y+height, x, y+height};
     glVertexPointer(2, GL_INT, 0, vertexData);
@@ -263,6 +278,10 @@ int TS_BMPGlyph::zoomBlit(int x, int y, double factor, TS_Color *mask){
     glBindTexture(GL_TEXTURE_2D, texture);
     glDrawArrays(GL_QUADS, 0, 4);
     return scaleWidth;
+}
+
+void TS_BMPFont::setColorMask(TS_Color *c){
+    mask = new TS_Color(c->red, c->green, c->blue, c->alpha);
 }
 
 void TS_BMPFont::drawText(int x, int y, const char *t) {
@@ -371,17 +390,19 @@ int TS_BMPFont::getHeight() {
     return inheight;
 }
 
-inline const char ** TS_BMPFont::addline(const char **textlines, int *readylines, char *linebuffer) const{
+inline const char ** TS_BMPFont::addline(const char **textlines, int * __restrict__ readylines, char **linebuffer) const{
     (*readylines)++;
     textlines = (const char **)realloc(textlines, (*readylines)*sizeof(const char *));
-    textlines[(*readylines)-1] = STRDUP(linebuffer+(((linebuffer[0]==' ')||(linebuffer[0]=='\n'))?1:0));
+    textlines[(*readylines)-1] = STRDUP((char *)((*linebuffer)+((((*linebuffer)[0]==' ')||((*linebuffer)[0]=='\n'))?1:0)));
+	(*linebuffer)  = (char *)realloc((*linebuffer), 1);
+	(*linebuffer)[0] = '\0';
     return textlines;
 }
 
-const char **TS_BMPFont::wordWrapString(const char *t, int w, int* num) {
+const char **TS_BMPFont::wordWrapString(const char *t, int w, int* __restrict__ num) {
 
     intptr_t startOfWord    = (intptr_t)t; //NUMBER OF CHARACTERS
-    const char **textlines  = (const char **)calloc(0, sizeof(const char *));
+    const char **textlines  = NULL;// (const char **)calloc(0, sizeof(const char *));
     int readylines          = 0;
     int lineWidth           = 0; //PIXEL WIDTH!
     int tlength             = strlen(t);
@@ -390,71 +411,34 @@ const char **TS_BMPFont::wordWrapString(const char *t, int w, int* num) {
 
     for(int i = 0; i<tlength+1; i++){
         if((t[i]==' ')||(t[i]=='\n')||(i==tlength)){
-
             const int wordlen = (((intptr_t)t)+i)-startOfWord; //NUMBER OF CHARACTERS
-            const char *tword = strncpy((char *)calloc(wordlen, sizeof(char)), (const char *)startOfWord, wordlen);
+            const char *tword = strncpy((char *)calloc(wordlen+1, sizeof(char)), (const char *)startOfWord, wordlen);
             const int twwidth = this->getStringWidth(tword);
             if(lineWidth-this->getCharWidth(' ')+twwidth>w){
-                textlines   = this->addline(textlines, &readylines, linebuffer);
-                linebuffer  = (char *)realloc(linebuffer, 1);
-                *linebuffer = '\0';
+                textlines   = this->addline(textlines, &readylines, &linebuffer);
                 lineWidth=twwidth;
+
+				linebuffer = (char *)realloc(linebuffer,(strlen(tword)+1)*sizeof(char));
                 linebuffer = strcat(linebuffer, tword);
             }
             else{
+				linebuffer = (char *)realloc(linebuffer, (strnlen(linebuffer, tlength+1)+wordlen+2)*sizeof(char)); //two extra bytes to handle if '\n' and ' ' in sequence.
                 linebuffer = strcat(linebuffer, tword);
-                linebuffer = (char *)realloc(linebuffer, (strlen(linebuffer)+wordlen+2)*sizeof(char)); //two extra bytes to handle if '\n' and ' ' in sequence.
                 lineWidth+=twwidth;
                 if(t[i]=='\n'){
-                    textlines   = this->addline(textlines, &readylines, linebuffer);
-                    linebuffer  = (char *)realloc(linebuffer, 1);
-                    *linebuffer = '\0';
+                    textlines = this->addline(textlines, &readylines, &linebuffer);
                     lineWidth = 0;
                 }
             }
-
-            /*
-            bool newline = false;
-            int wordlen = (((intptr_t)t)+i)-startOfWord; //NUMBER OF CHARACTERS
-            const char *tword = strncpy((char *)calloc(wordlen, sizeof(char)), (const char *)startOfWord, wordlen);
-
-            if(lineWidth+this->getStringWidth(tword)>w){
-                this->addline(textlines, &readylines, linebuffer);
-                lineWidth=this->getStringWidth(tword);
-                newline   = true;
-            }
-            else{
-                lineWidth+=this->getStringWidth(tword);
-            }
-            linebuffer = strcat(linebuffer, tword);
-            linebuffer = (char *)realloc(linebuffer, (strlen(linebuffer)+wordlen)*sizeof(char));
-            if((t[i]=='\n')&&(!newline)){
-                this->addline(textlines, &readylines, linebuffer);
-                lineWidth = 0;
-            }
-            /*
-            else if(false&&i==tlength-1){
-                if(lineWidth+this->getStringWidth((const char *)((intptr_t)t+i))<=w){
-                    linebuffer = strcat(linebuffer, (const char *)((intptr_t)t+i));
-                }
-                else{
-                    char * templines = STRDUP((const char *)((intptr_t)t+i));
-                    this->addline(textlines, &readylines, templines);
-                    free(templines);
-                }
-            }
-            */
-
             free((void*)tword);
             startOfWord = ((intptr_t)t)+i;
         }
     }
     (readylines)++;
     textlines = (const char **)realloc(textlines, (readylines)*sizeof(const char *));
-    textlines[(readylines)-1] = strdup(linebuffer+(((linebuffer[0]==' ')||(linebuffer[0]=='\n'))?1:0));
+    textlines[(readylines)-1] = STRDUP(linebuffer+(((linebuffer[0]==' ')||(linebuffer[0]=='\n'))?1:0));
     free(linebuffer);
     (*num) = readylines;
-
     return textlines;
 }
 
@@ -494,15 +478,17 @@ v8Function TS_BMPdrawTextBox(V8ARGS) {
         return v8::Undefined();
 	}
 
-
-
 	const char ** lines = font->wordWrapString((const char*)(*str), w, &numlines);
     int inheight = font->getHeight();
-    for(int i = 0; i<numlines; i++){
-        font->drawText(x, y+y_offset+(i*inheight), lines[i]);
+    int i = 0;
+    while(i<numlines){
+        if((y_offset+((i+1)*inheight))<=h)
+            font->drawText(x, y+y_offset+(i*inheight), lines[i]);
+
         free((void*)lines[i]);
-        if((y+y_offset+((i+1)*inheight))>h) {break;}
+        i++;
     }
+
     free(lines);
     return v8::Undefined();
 }
@@ -524,7 +510,7 @@ v8Function TS_BMPwordWrapString(V8ARGS) {
 
     v8::Local<v8::Object> linearray = v8::Array::New(numlines);
 
-    for(uint32_t i = 0; i<numlines; i++){
+    for(int32_t i = 0; i<numlines; i++){
         linearray->Set(i, v8::String::New(lines[i]));
         free((void*)lines[i]);
     }
@@ -567,6 +553,7 @@ v8Function TS_BMPdrawTextSurface(V8ARGS){
     CHECK_ARG_INT(2);
 	CHECK_ARG_STR(3);
 
+    return v8::Undefined();
 
 }
 
@@ -584,6 +571,26 @@ v8Function TS_BMPdrawText(V8ARGS) {
 	v8::String::Utf8Value str(args[2]);
 
 	GET_SELF(TS_BMPFont*)->drawText(x,y,(const char*)(*str));
+
+	return v8::Undefined();
+}
+
+v8Function TS_BMPdrawZoomedText(V8ARGS) {
+
+
+	if(args.Length()<4){
+		return v8::ThrowException(v8::String::New("[" PLUGINNAME "] TS_BMPdrawZoomedText Error: called with less than 3 parameters!"));
+    }
+    CHECK_ARG_INT(0);
+    CHECK_ARG_INT(1);
+    CHECK_ARG_INT(2);
+
+	int x = args[0]->Int32Value();
+	int y = args[1]->Int32Value();
+	double zoom = args[2]->NumberValue();
+	v8::String::Utf8Value str(args[3]);
+
+	GET_SELF(TS_BMPFont*)->drawZoomedText(x, y, zoom, (const char*)(*str));
 
 	return v8::Undefined();
 }

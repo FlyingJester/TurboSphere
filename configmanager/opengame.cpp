@@ -8,7 +8,7 @@
 #include "opengame.h"
 #include "../t5.h"
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 #define STRDUP _strdup
 #else
 #include <cstring>
@@ -24,6 +24,8 @@ TS_Config::TS_Config(void){
     screenheight = 320;
     soundchannels = 16;
     fullscreen = false;
+    scale = 1;
+    filter = NULL;
     systemfont = "";
     systemttffont = "";
     systemwindowstyle = "";
@@ -52,6 +54,7 @@ TS_Directories::TS_Directories(void){
     windowstyle = "";
     system = "";
     systemscript = "";
+    soundfont = "";
 }
 
 
@@ -82,8 +85,9 @@ void setDirectories(string basedirectory){
         TS_dirs->spriteset   = STRDUP(string(TS_dirs->root).append("spritesets/").c_str());
         TS_dirs->animation   = STRDUP(string(TS_dirs->root).append("animations/").c_str());
         TS_dirs->windowstyle = STRDUP(string(TS_dirs->root).append("windowstyles/").c_str());
+        TS_dirs->soundfont   = STRDUP(string(TS_dirs->root).append("soundfonts/").c_str());
         TS_dirs->system      = "system/";
-        TS_dirs->systemscript= "system/scripts";
+        TS_dirs->systemscript= "system/scripts/";
         T5_init(2, "", TS_dirs->root);
 }
 
@@ -92,9 +96,22 @@ void setConfig(string basedirectory){
     TS_Directories *TS_dirs = GetDirs();
 	T5_file *enginefile = T5_OpenFile("engine.ini");
     TS_conf->fullscreen = (atoi(enginefile->getValueFromSection("fullscreen", "Video"))>0)?true:false;
-    printf("Fixed plugins: %s\n", enginefile->getValue("fixedplugins"));
+    TS_conf->scale      = atoi(enginefile->getValueFromSection("scale", "Video"));
+
+
+    //Negative scale may take on a meaning. Technically I shouldn't even cleanse these values here.
+    //But I do want all graphics plugins to be able to both give and recieve something at least slightly standardized.
+    if(TS_conf->scale<0){
+        TS_conf->scale*=-1;
+    }
+
+    if(TS_conf->scale>16){
+        TS_conf->scale = 16;
+    }
+
+    printf("[ConfigManager] Info: Fixed plugins: %s\n", enginefile->getValue("fixedplugins"));
     TS_conf->fixedplugins        = atoi(enginefile->getValue("fixedplugins"));
-    printf("Fixed plugins as recorded: %i\n", TS_conf->fixedplugins);
+    printf("[ConfigManager] Info: Fixed plugins as recorded: %i\n", TS_conf->fixedplugins);
     T5_file *systemfile = T5_OpenFile(string(TS_dirs->system).append("system.ini").c_str());
 
     TS_conf->systemfont          = systemfile->getValue("Font");
@@ -103,6 +120,7 @@ void setConfig(string basedirectory){
     TS_conf->systemarrow         = systemfile->getValue("Arrow");
     TS_conf->systemuparrow       = systemfile->getValue("UpArrow");
     TS_conf->systemdownarrow     = systemfile->getValue("DownArrow");
+    TS_conf->systemsoundfont     = systemfile->getValue("SoundFont");
 
     TS_conf->plugins             = (const char **)calloc(TS_conf->fixedplugins, sizeof(const char *));
 
@@ -124,7 +142,7 @@ void opengame(const char *Rfile)
 	TS_Config *TS_conf = GetConfig();
 	TS_Directories *TS_dirs = GetDirs();
     TS_conf->soundchannels = 32;
-	printf("Opening SGM file %s\n", Rfile);
+	printf("[ConfigManager] Info: Opening SGM file %s\n", Rfile);
 	//printf("base dir: %s\n", TS_dirs->root);
     string txt;
     std::ifstream file(Rfile, std::ios_base::in);
@@ -152,7 +170,9 @@ void opengame(const char *Rfile)
 
 			}
 		}
-	else {printf("game.sgm is not readable");}
+	else {
+	    printf("[ConfigManager] Error: game.sgm is not readable");
+    }
 
     file.close();
 }

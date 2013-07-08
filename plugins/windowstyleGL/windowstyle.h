@@ -8,6 +8,7 @@
 #define WINDOWSTYLE_HEAD
 
 #ifdef _WIN32
+#undef WS_TILED
 	#define WS_EXPORT __declspec(dllexport)
 
     #define CCALL __cdecl
@@ -20,7 +21,7 @@
 
 typedef GLuint TS_Texture;
 
-enum WSbackgroundType{WS_TILED, WS_STRETCHED, WS_GRADIENT, WS_TILED_GRADIENT, WS_STRETCHED_GRADIENT};
+enum WSbackgroundType {WS_TILED, WS_STRETCHED, WS_GRADIENT, WS_TILED_GRADIENT, WS_STRETCHED_GRADIENT};
 
 #ifdef _WIN32
 	extern "C" {

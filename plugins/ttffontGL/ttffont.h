@@ -2,7 +2,11 @@
 #define TTFFONT_HEAD
 
 #include"../common/plugin.h"
+#ifdef _WIN32
+#include "../../SDL/SDL_opengl.h"
+#else
 #include <SDL/SDL_opengl.h>
+#endif
 #include "../common/graphic_common.h"
 
 #ifdef _WIN32

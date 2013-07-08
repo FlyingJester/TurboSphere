@@ -2,32 +2,36 @@
 #define COMMON_PLUGIN_HEAD
 
 #include "../../configmanager/opengame.h"
-
+#define V8_USE_UNSAFE_HANDLES
 #include "../../v8.h"
+#undef V8_USE_UNSAFE_HANDLES
 
 #define MIN_V8_ALIGN 2
 
-#if defined _WIN32
+#ifdef MSC_VER
 
-#define MEMALIGN(X) _declspec(align(X))
+    #define __func__ __FUNCTION__
 
-#include "../../SDL/SDL.h"
-#include "../../SDL/SDL_ttf.h"
-#include "../../SDL/SDL_image.h"
-#include "../../SDL/SDL_audio.h"
-#include "../../SDL/SDL_mixer.h"
-#include "../../SDL/SDL_thread.h"
-
+    #define MEMALIGN(X) _declspec(align(X))
 #else
 
-#define MEMALIGN(X) __attribute__((aligned(X)))
+    #define MEMALIGN(X) __attribute__((aligned(X)))
+#endif
 
-#include "/usr/include/SDL/SDL.h"
-#include "/usr/include/SDL/SDL_ttf.h"
-#include "/usr/include/SDL/SDL_image.h"
-#include "/usr/include/SDL/SDL_audio.h"
-#include "/usr/include/SDL/SDL_mixer.h"
-#include "/usr/include/SDL/SDL_thread.h"
+#ifdef _WIN32
+
+    //TODO: Fix these includes for SDL2.
+#error Fix these includes for SDL2!
+    #include "../../SDL/SDL.h"
+    #include "../../SDL/SDL_ttf.h"
+    #include "../../SDL/SDL_image.h"
+    #include "../../SDL/SDL_thread.h"
+
+#else
+    #include <SDL2/SDL.h>
+    #include <SDL2/SDL_ttf.h>
+    #include <SDL2/SDL_image.h>
+    #include <SDL2/SDL_thread.h>
 #endif
 
 #define MINMEMALIGN MEMALIGN(MIN_V8_ALIGN)
@@ -57,7 +61,7 @@ typedef v8::Persistent<v8::ObjectTemplate> v8PrototypeTemplate;
 
 #define V8GETTERARGS v8::Local<v8::String> property, const v8::AccessorInfo &info
 #define V8SETTERARGS v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info
-#define V8FINALIZERARGS v8::Persistent<v8::Value> object, void* parameter
+#define V8FINALIZERARGS v8::Isolate* isolate, v8::Persistent<v8::Object>* object, void* parameter
 
 #define V8FUNCPOINTER(name)\
 	(void *)((v8Function (*)(V8ARGS))(name))
@@ -164,7 +168,7 @@ typedef v8::Persistent<v8::ObjectTemplate> v8PrototypeTemplate;
 
     void QuitAll();
 
-#define FINALIZER(NAME) void TS_##NAME##Finalizer(v8::Persistent<v8::Value> object, void* parameter)
+#define FINALIZER(NAME) void TS_##NAME##Finalizer(v8::Handle<v8::Value> object, void* parameter)
 
 //Note!
 //This function requires you name your objects as:
@@ -174,31 +178,28 @@ typedef v8::Persistent<v8::ObjectTemplate> v8PrototypeTemplate;
 //
 
 #define DECLARE_OBJECT_TEMPLATES(JSOBJ) \
-v8::Persistent<v8::FunctionTemplate> JSOBJ##templ;\
-v8::Persistent<v8::ObjectTemplate> JSOBJ##Insttempl;\
-v8::Persistent<v8::ObjectTemplate> JSOBJ##proto
+v8::Handle<v8::FunctionTemplate> JSOBJ##templ;\
+v8::Handle<v8::ObjectTemplate> JSOBJ##Insttempl;\
+v8::Handle<v8::ObjectTemplate> JSOBJ##proto
 
 #define SET_CLASS_NAME(JSOBJ, NAME) \
 JSOBJ##templ->SetClassName(v8::String::New(NAME))
 
 #define EXTERN_OBJECT_TEMPLATES(JSOBJ) \
-extern v8::Persistent<v8::FunctionTemplate> JSOBJ##templ;\
-extern v8::Persistent<v8::ObjectTemplate> JSOBJ##Insttempl;\
-extern v8::Persistent<v8::ObjectTemplate> JSOBJ##proto
+extern v8::Handle<v8::FunctionTemplate> JSOBJ##templ;\
+extern v8::Handle<v8::ObjectTemplate> JSOBJ##Insttempl;\
+extern v8::Handle<v8::ObjectTemplate> JSOBJ##proto
 
 
 #define INIT_OBJECT_TEMPLATES(JSOBJ) \
-    JSOBJ##templ    = *v8::FunctionTemplate::New();\
-	JSOBJ##Insttempl= *JSOBJ##templ->InstanceTemplate();\
-    JSOBJ##proto    = *JSOBJ##templ->PrototypeTemplate()
+    JSOBJ##templ    = v8::FunctionTemplate::New();\
+	JSOBJ##Insttempl= JSOBJ##templ->InstanceTemplate();\
+    JSOBJ##proto    = JSOBJ##templ->PrototypeTemplate()
 
 #define CLOSE_OBJECT_TEMPLATES(JSOBJ) \
     JSOBJ##templ.Clear();\
 	JSOBJ##Insttempl.Clear();\
-    JSOBJ##proto.Clear();\
-    JSOBJ##templ.Dispose();\
-	JSOBJ##Insttempl.Dispose();\
-    JSOBJ##proto.Dispose()
+    JSOBJ##proto.Clear();
 
 #define SET_CLASS_ACCESSOR(JSOBJ, NAME, GETTER, SETTER)\
     JSOBJ##Insttempl->SetAccessor(v8::String::New(NAME), GETTER, SETTER)
@@ -213,14 +214,26 @@ extern v8::Persistent<v8::ObjectTemplate> JSOBJ##proto
 
 #define END_OBJECT_WRAP_CODE(JSOBJ, TO_WRAP){\
     JSOBJ##Insttempl->SetInternalFieldCount(1);\
-    v8::Local<v8::Function> JSOBJ##ctor = JSOBJ##templ->GetFunction();\
-	v8::Local<v8::Object> JSOBJ##obj = JSOBJ##ctor->NewInstance();\
-    v8::Persistent<v8::Object> P##JSOBJ##obj = v8::Persistent<v8::Object>::New(JSOBJ##obj);\
-    P##JSOBJ##obj.MakeWeak(TO_WRAP, TS_##JSOBJ##Finalizer);\
-    P##JSOBJ##obj->SetAlignedPointerInInternalField(0, TO_WRAP);\
+    v8::Handle<v8::Function> JSOBJ##ctor = JSOBJ##templ->GetFunction();\
+	v8::Handle<v8::Object> JSOBJ##obj = JSOBJ##ctor->NewInstance();\
+    v8::Persistent<v8::Object> P##JSOBJ##obj = v8::Persistent<v8::Object>::New(v8::Isolate::GetCurrent(), JSOBJ##obj);\
+    P##JSOBJ##obj.MakeWeak((void *)TO_WRAP, TS_##JSOBJ##Finalizer);\
+    P##JSOBJ##obj->SetAlignedPointerInInternalField(0, (void *)TO_WRAP);\
     P##JSOBJ##obj->GetConstructorName()=v8::String::New( #JSOBJ );\
     return temporary_scope.Close(P##JSOBJ##obj);\
 }
+
+#define RETURN_OBJECT_WRAP_CODE(JSOBJ, TO_WRAP)\
+    JSOBJ##Insttempl->SetInternalFieldCount(1);\
+    v8::Handle<v8::Function> JSOBJ##ctor = JSOBJ##templ->GetFunction();\
+	v8::Handle<v8::Object> JSOBJ##obj = JSOBJ##ctor->NewInstance();\
+    v8::Persistent<v8::Object> P##JSOBJ##obj = v8::Persistent<v8::Object>::New(v8::Isolate::GetCurrent(), JSOBJ##obj);\
+    P##JSOBJ##obj.MakeWeak((void *)TO_WRAP, TS_##JSOBJ##Finalizer);\
+    P##JSOBJ##obj->SetAlignedPointerInInternalField(0, (void *)TO_WRAP);\
+    P##JSOBJ##obj->GetConstructorName()=v8::String::New( #JSOBJ );\
+
+#define GET_OBJECT_WRAP_CODE(JSOBJ) temporary_scope.Close(P##JSOBJ##obj)
+
 
 #define GET_SELF(TYPE) static_cast<TYPE>(args.Holder()->GetAlignedPointerFromInternalField(0))
 

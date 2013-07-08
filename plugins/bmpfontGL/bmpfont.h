@@ -6,7 +6,11 @@
 }
 
 #include"../common/plugin.h"
+#ifdef _WIN32
+#include "../../SDL/SDL_opengl.h"
+#else
 #include <SDL/SDL_opengl.h>
+#endif
 #include "../../configmanager/opengame.h"
 #include "../common/graphic_common.h"
 #include "../common/graphic_algorithm.h"
@@ -41,10 +45,11 @@ public:
 	int getCharWidth(char) const;
 	int getCharHeight(char);
 	int getHeight(void);
-	const char **wordWrapString(const char *, int, int *);
+	void setColorMask(TS_Color *c);
+	const char **wordWrapString(const char *, int, int * __restrict__ );
 private:
     int inheight;
-    inline const char ** addline(const char **tl, int *nl, char *lb) const;
+    inline const char ** addline(const char **tl, int * __restrict__ nl, char **lb) const;
 };
 
 class TS_BMPGlyph{
@@ -69,10 +74,12 @@ private:
     void BMPFontClose();
 
     v8::Handle<v8::Value> TS_BMPdrawText(const v8::Arguments& args);
+    v8Function TS_BMPdrawZoomedText(V8ARGS);
 	v8::Handle<v8::Value> LoadSystemTTFFont(const v8::Arguments& args);
 	v8::Handle<v8::Value> LoadBMPFont(const v8::Arguments& args);
 	v8::Handle<v8::Value> LoadSystemBMPFont(const v8::Arguments& args);
 	v8::Handle<v8::Value> TS_BMPgetStringWidth(const v8::Arguments& args);
+    v8Function TS_BMPsetColorMask(V8ARGS);
 
 #ifdef BMPFONT_INTERNAL
 #ifdef _WIN32

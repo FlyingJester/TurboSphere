@@ -1,9 +1,10 @@
 #ifndef STRUCURES_HEAD
 #define STRUCURES_HEAD
-
+#include <stdint.h>
+#include <cstdio>
 #ifdef _WIN32
 	#ifdef GRAPHICALG_INTERNAL
-		#define GRAPHICALG_EXPORT __declspec(dllexport) 
+		#define GRAPHICALG_EXPORT __declspec(dllexport)
 	#else
 		#define GRAPHICALG_EXPORT __declspec(dllimport)
 	#endif
@@ -38,5 +39,27 @@ GRAPHICALG_EXPORT typedef struct TS_Segment {
     TS_Segment();
     ~TS_Segment();
 } TS_Segment;
+
+#ifdef _WIN32
+typedef struct GRAPHICALG_EXPORT TS_ByteArray {
+#else
+GRAPHICALG_EXPORT typedef struct TS_ByteArray {
+#endif
+
+    void * data;
+    size_t size;
+    uint8_t compressed;
+
+    //TS_ByteArray();
+    //TS_ByteArray(void *data, size_t size);
+    //~TS_ByteArray();
+    //void concat(TS_ByteArray ba);
+} TS_ByteArray;
+
+//compression types:
+
+
+
+
 
 #endif

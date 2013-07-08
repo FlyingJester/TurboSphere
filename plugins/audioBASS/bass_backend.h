@@ -5,6 +5,8 @@
 #include "include/bassmidi.h"
 #include "stdlib.h"
 
+#include <vector>
+
 #ifndef STRDUP
     #ifdef _WIN32
         #define STRDUP _strdup
@@ -16,62 +18,167 @@
 #define VOLUME_RESOLUTION 0.003f
 #define PAN_RESOLUTION 0.01f
 
-enum TS_AudioType {TS_STREAM, TS_SAMPLE, TS_VIRTUALOUT};
-
-typedef DWORD TS_SoundHandle;
+enum TS_AudioDataFormat {TS_RENDERED, TS_MIDI, TS_MODULAR, TS_SAMPLED};
+enum TS_AudioSimul {TS_SINGLE, TS_MULTIPLE};
 
 int TS_InitBass();
 void TS_ExplainBassErrorCode(int, bool, bool);
 
-class TS_AudioSample{
+class TS_Sound{
 public:
-    TS_AudioSample(void);
-    TS_AudioSample(const char*);
-    ~TS_AudioSample(void);
+    TS_AudioDataFormat format;
+    TS_AudioSimul simul;
 
-    TS_AudioType type;
+    virtual ~TS_Sound() { };
 
-    DWORD handle;   //BASS-side handle (stream, sample).
-    char *file; //Filename.
-    int playbacks;    //Number of simultaneous playbacks.
-    DWORD flags;
+    char *file;
     float volume;
     float pan;
 
-    float GetVolume(void);
+    virtual void ResetPlayback(void) = 0;
+
+    virtual long long GetPosition(void) const = 0;
+    virtual void SetPosition(long long) = 0;
+
+    virtual long long GetLength(void) const = 0;
+    virtual bool IsPlaying(void) const = 0;
+
+    virtual void Play(bool repeat) = 0;
+
+    virtual void Stop(void) = 0;
+
+    virtual void Pause(void) = 0;
+
+    float GetVolume(void) const;
     void SetVolume(float);
     void SetVolume(unsigned char);
-    float GetPan(void);
+    float GetPan(void) const;
     void SetPan(float);
-    void SetPan(unsigned char);
+    void SetPan(short);
+
+    bool repeat;
+
 };
 
-class TS_AudioChannel{
-public:
-    TS_AudioChannel(void);
-    TS_AudioChannel(TS_AudioSample*);
-    ~TS_AudioChannel(void);
-    HCHANNEL channel;  //BASS-side channel.
-    TS_AudioSample *sample;
-    BOOL repeat;       //Should this channel be on repeat?
+struct TS_ChannelWrap{
+    DWORD handle;
+    bool repeat;
+    uint64_t ID;
+    TS_Sound *ptr;
+};
 
-    void Play(int);
+class TS_AudioStream : public TS_Sound{
+public:
+    ~TS_AudioStream(void);
+    //TS_AudioStream(void);
+    TS_AudioStream(const char *);
+
+
+    virtual void ResetPlayback(void);
+
+    virtual void Play(bool repeat);
+
+    virtual void Stop(void);
+
+    virtual void Pause(void);
+
+    virtual long long GetPosition(void) const;
+    virtual void SetPosition(long long);
+
+    virtual long long GetLength(void) const;
+
+    virtual bool IsPlaying(void) const;
+
+private:
+    HSTREAM stream;
+    DWORD flags;
+    bool loop;
+};
+
+class TS_AudioSample : public TS_Sound{
+public:
+
+    virtual ~TS_AudioSample() = 0;
+
+    virtual void ResetPlayback(void) = 0;
+
+    virtual void Play(bool repeat) = 0;
+
+    virtual void Stop(void) = 0;
+
+    virtual void Pause(void) = 0;
+
+    virtual long long GetPosition(void) const = 0;
+    virtual void SetPosition(long long) = 0;
+    virtual bool IsPlaying(void) const = 0;
+    virtual long long GetLength(void) const;
+
+private:
+    HSAMPLE sample;   //BASS-side handle (stream, sample).
+    DWORD flags;
+
+};
+
+class TS_AudioSampleMultiple : public TS_AudioSample{
+public:
+friend void ChannelCallback(HSYNC handle, DWORD channel, DWORD data, void *wrapv);
+
+    TS_AudioSampleMultiple(const char*);
+    ~TS_AudioSampleMultiple(void);
+
+    virtual void ResetPlayback(void);
+
+    virtual void Play(bool repeat);
+
+    virtual void Stop(void);
+
+    virtual void Pause(void);
+
+    virtual long long GetPosition(void) const;
+    virtual void SetPosition(long long);
+    virtual bool IsPlaying(void) const;
+
+private:
+
+    std::vector<TS_ChannelWrap> channels;
+    HSAMPLE sample;   //BASS-side handle (stream, sample).
+    DWORD flags;
+
+};
+
+
+class TS_AudioSampleSingle : public TS_AudioSample{
+public:
+
+    TS_AudioSampleSingle(const char*);
+    ~TS_AudioSampleSingle(void);
+
+    virtual void ResetPlayback(void);
+
+    virtual void Play(bool repeat);
+
+    virtual void Stop(void);
+
+    virtual void Pause(void);
+
+    virtual long long GetPosition(void) const;
+    virtual void SetPosition(long long);
+    virtual bool IsPlaying(void) const;
+    virtual long long GetLength(void) const;
+
+private:
+
+    HCHANNEL channel;
+    HSAMPLE sample;   //BASS-side handle (stream, sample).
+    DWORD flags;
+
 };
 
 //Loading and playing sounds
-void TS_PlaySound(TS_AudioSample);
 
 //Controlling playback
+void ChannelCallback(HSYNC handle, DWORD channel, DWORD data, void *user);
 void TS_SetGlobalVolume(float volume);
 void TS_ResetGlobalVolume(void);
 
-float fabs(float f);
-
-
-void TS_PlaySound(TS_AudioSample *sample, bool loop);
-void TS_PlaySoundEffect(TS_AudioSample *sample);
-TS_AudioChannel *TS_CreateChannel(TS_AudioSample *sample);
-void TS_MakeSampleSound(TS_AudioSample *sample);
-void TS_MakeSampleSoundEffect(TS_AudioSample *sample);
-void TS_RestartChannel(TS_AudioChannel*);
 #endif

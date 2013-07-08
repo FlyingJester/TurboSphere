@@ -1,6 +1,7 @@
 #include "main.h"
 #include "image.h"
 #include "color.h"
+#include "surface.h"
 #include <assert.h>
 #include <math.h>
 
@@ -87,7 +88,7 @@ TS_Image::TS_Image(TS_Texture tex, int w, int h){
     height  = h;
     dwidth  = w;
     dheight = h;
-    diaglength = (int)ceil(sqrt((w*w)+(h*h))/2);
+    diaglength = (int)ceil(sqrt(double((w*w)+(h*h)))/2);
 
     this->resetMask();
 
@@ -104,7 +105,7 @@ void TS_Image::setMask(TS_Color c){
 
 SDL_Surface *TS_Image::CreateSurface(){
 
-    MINMEMALIGN SDL_Surface *surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, width, height, DEPTH, CHANNEL_MASKS);
+    MINMEMALIGN SDL_Surface *surface = SDL_CreateRGBSurface(0, width, height, DEPTH, CHANNEL_MASKS);
 
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->pixels);
 
@@ -129,7 +130,7 @@ TS_Image *TS_ImageGrab(int x, int y, int w, int h){
 v8Function ImageToSurface(V8ARGS){
     BEGIN_OBJECT_WRAP_CODE;
     MINMEMALIGN SDL_Surface *surface = GET_SELF(TS_Image*)->CreateSurface();
-    END_OBJECT_WRAP_CODE(Surface, surface);
+    END_OBJECT_WRAP_CODE(Surface, (void *)surface);
 }
 
 v8Function ImageSave(V8ARGS){
@@ -209,7 +210,7 @@ void TS_ImageFinalizer(V8FINALIZERARGS) {
 
     TS_Image* im = (TS_Image*)parameter;
     delete im;
-    object.Dispose();
+    object->Dispose();
 }
 
 TS_Image *TS_LoadTexture(const char *filename){
@@ -217,8 +218,8 @@ TS_Image *TS_LoadTexture(const char *filename){
     TS_Texture texture;
     MINMEMALIGN SDL_Surface *surface = NULL;
 
-
-    if(!(surface = IMG_Load(filename))){
+    surface = IMG_Load(filename);
+    if(!surface){
         return NULL;
     }
 
@@ -264,15 +265,15 @@ void TS_Image::blit(int x, int y){
 }
 
 TS_Image *TS_Image::Clone(void){
-    //BAD! Replace with FBO based cloning.
-    uint32_t *pixels = (uint32_t *)calloc(width*height, sizeof(uint32_t));
-
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     TS_Texture newtexture;
     glGenTextures(1, &newtexture);
 
     glBindTexture(GL_TEXTURE_2D, newtexture);
+
+    uint32_t *pixels = (uint32_t *)calloc(width*height, sizeof(uint32_t));
+
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -281,7 +282,7 @@ TS_Image *TS_Image::Clone(void){
 
     free(pixels);
 
-    MINMEMALIGN TS_Image *image = new TS_Image(texture, width, height);
+    MINMEMALIGN TS_Image *image = new TS_Image(newtexture, width, height);
 
     return image;
 

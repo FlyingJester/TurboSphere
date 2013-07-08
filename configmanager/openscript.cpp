@@ -96,20 +96,41 @@ bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::Value> name,bool
 v8::Handle<v8::Value> TS_LoadScript(const v8::Arguments& args){
 	TS_Directories *TS_dirs = GetDirs();
     if(args.Length()<1){
-        return v8::ThrowException(v8::String::New("TS_LoadScript Error: No arguments given.\n"));
+        return v8::ThrowException(v8::String::New("[ConfigManager] TS_LoadScript Error: No arguments given.\n"));
     }
 
-    CHECK_ARG_STR(0, "TS_LoadScript Error: could not parse arg 0 to string.");
+    CHECK_ARG_STR(0, "[ConfigManager] TS_LoadScript Error: could not parse arg 0 to string.");
 
     v8::String::AsciiValue str(args[0]);
     const char *scriptname = *str;
     const char *scriptpath = STRDUP(string(TS_dirs->script).append(scriptname).c_str());
     string ScriptStr = openfile(scriptpath).c_str();
     if(ScriptStr.empty()){
-        return v8::ThrowException(v8::String::New("TS_LoadScript Error: Could not load script."));
+        return v8::ThrowException(v8::String::New("[ConfigManager] TS_LoadScript Error: Could not load script."));
     }
     if(!ExecuteString(v8::String::New(ScriptStr.c_str()), v8::String::New(scriptname), true)){
 		return v8::ThrowException(v8::String::New(((string)"Error in script "+string(scriptname)).c_str()));
+	}
+    return v8::Undefined();
+}
+
+v8::Handle<v8::Value> TS_LoadSystemScript(const v8::Arguments& args){
+	TS_Directories *TS_dirs = GetDirs();
+    if(args.Length()<1){
+        return v8::ThrowException(v8::String::New("[ConfigManager] TS_LoadSystemScript Error: No arguments given.\n"));
+    }
+
+    CHECK_ARG_STR(0, "[ConfigManager] TS_LoadSystemScript Error: could not parse arg 0 to string.");
+
+    v8::String::AsciiValue str(args[0]);
+    const char *scriptname = *str;
+    const char *scriptpath = STRDUP(string(TS_dirs->systemscript).append(scriptname).c_str());
+    string ScriptStr = openfile(scriptpath).c_str();
+    if(ScriptStr.empty()){
+        return v8::ThrowException(v8::String::New("[ConfigManager] TS_LoadSystemScript Error: Could not load script."));
+    }
+    if(!ExecuteString(v8::String::New(ScriptStr.c_str()), v8::String::New(scriptname), true)){
+		return v8::ThrowException(v8::String::New(((string)"[ConfigManager] Error in script "+string(scriptname)).c_str()));
 	}
     return v8::Undefined();
 }
