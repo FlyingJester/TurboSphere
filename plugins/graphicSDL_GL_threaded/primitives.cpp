@@ -3,6 +3,7 @@
 #include "primitives.h"
 #include "image.h"
 #include "color.h"
+#include "surface.h"
 #include <sstream>
 #include <assert.h>
 #include <SDL2/SDL_opengl.h>
@@ -1030,8 +1031,20 @@ void TS_GradientCircle(int x, int y, int r, TS_Color *c1, TS_Color *c2, bool AA)
 
 }
 
+//typedef struct {SDL_Surface *surface; TS_Color *color; int x1; int y1; int x2; int y2; } SoftLineArgs;
 
-void TS_SoftLine(int ax1, int ay1, int ax2, int ay2, TS_Color *c, SDL_Surface *destination){
+//void TS_SoftLine(int ax1, int ay1, int ax2, int ay2, TS_Color *c, SDL_Surface *destination){
+void TS_SoftLine(void *arg){
+    SoftLineArgs *carg = (SoftLineArgs*)arg;
+    int ax1 = carg->x1;
+    int ay1 = carg->y1;
+    int ax2 = carg->x2;
+    int ay2 = carg->y2;
+
+    TS_Color *c = carg->color;
+    SDL_Surface *destination = carg->surface;
+
+    free(carg);
 
     uint32_t color = c->toInt();
 
@@ -1068,7 +1081,7 @@ void TS_SoftLine(int ax1, int ay1, int ax2, int ay2, TS_Color *c, SDL_Surface *d
 
     SDL_Rect temprect = {(short int)x1, (short int)y1, 1, 1};
 
-	SDL_Surface *surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, w+1, h+1, DEPTH, CHANNEL_MASKS);
+	SDL_Surface *surface = SDL_CreateRGBSurface(0, w+1, h+1, DEPTH, CHANNEL_MASKS);
 
     int sx;
     int sy;

@@ -99,8 +99,6 @@ extern void (APIENTRY * glVertexAttribIPointer)(GLuint, GLint, GLenum, GLsizei, 
 
 extern const GLubyte primitiveInd[];
 
-extern SDL_Rect cmpltscreen;
-
 extern SDL_Event event;
 extern SDL_Window *screen;
 

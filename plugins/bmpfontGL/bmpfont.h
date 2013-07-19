@@ -33,8 +33,9 @@ class TS_BMPGlyph;
 
 class MINMEMALIGN TS_BMPFont{
 public:
-	TS_BMPFont (const char *);
+	TS_BMPFont();
 	~TS_BMPFont();
+	int Load(const char *);
 		const char *fontname;
 		TS_Color *mask;
 		std::vector<TS_BMPGlyph*> glyphs;
@@ -69,6 +70,14 @@ private:
     void blit(int x, int y, TS_Color *mask);
     int  zoomBlit(int x, int y, double factor, TS_Color *mask);
 };
+
+#define TS_BMPERROR_NOERROR 0x0
+#define TS_BMPERROR_HEADER  0x1
+#define TS_BMPERROR_SIG     0x2
+#define TS_BMPERROR_GLYPH   0x3
+#define TS_BMPERROR_ENDDATA 0x3
+#define TS_BMPERROR_BADFILE 0x4
+#define TS_BMPERROR_UNKOWN  0xFF
 
     void BMPFontInit();
     void BMPFontClose();

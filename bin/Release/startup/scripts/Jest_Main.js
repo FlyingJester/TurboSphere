@@ -9,12 +9,12 @@
 		Triangle(0, 0, 0, 16, 16, 0, Blue);
 		far.drawText(128, 65, "Do a barrel roll!");
 		FlipScreen();
-		GetKey();
-		
+		//GetKey();
+		RequireScript("MJ-12.js");
+		FlipScreen();
 //		m.Stop();
 		
 function game(){
-	
 		var r = new Sound("Attack.ogg", true);
 		var m = new Sound("spiders.mid", true);
 		//var r = m;
@@ -23,7 +23,7 @@ function game(){
 		
 		r.play();
 		//m.Play();
-		GetKey();
+		//GetKey();
 	var fn = GetSystemFont();
 	var ws1 = new WindowStyle("property.rws");
 	var ws = GetSystemWindowStyle();
@@ -35,15 +35,32 @@ function game(){
 	var sf1 = new Surface("test1.png");
 	var sf2 = new Surface("sphere.png");
 		//m.Stop();
-	var sf3 = im2.createSurface();
 	var str = "Sphere rfn fonts...IN OPENGL!";
 	
+	var sf3 = im2.createSurface();
+		var mjMap = new MjEngineMap("test", "test");
+	sf3.blitSurface(mjMap.controltile, 0, 0);
+	sf3.line(0, 0, 16, 16, Red);
+	sf3 = sf3.createImage();
+	var endt = GetTime()+2000
+	/*
+	for(var i = 0; i<endt; i=GetTime()){
+		FlipScreen();
+		Rectangle(GetMouseX(), GetMouseY(), 16, 16, Red);
+		fonty2.drawText(10, 10, endt-GetTime());
+	}
+	*/
+	var sfMJ;
 	var Rad1 = 18;
 	var Rad2 = 16;
-	
+	var firstDraw = true;
 	var ss = new SpriteSet("test.rss");
-	
+	var f = 0;
+	var z = GetTime();
 	while(!IsKeyPressed(KEY_Q)){
+		f++;
+		if(f==10000)
+			break;
 		var s = ss.images;
 		for(var i in s){
 			s[i].blit(i*16,  GetScreenHeight()-32);
@@ -90,14 +107,19 @@ function game(){
 			m.stop();
 		}
 		
-		far.drawText(16, GetScreenHeight()-16, "Do a barrel roll! With TTF Fonts!");
-		//far.drawText(16, GetScreenHeight()-32, "How did this break so bad? "+Green.alpha);
+		far.drawText(16, GetScreenHeight()-32, "Do a barrel roll! With TTF Fonts! The mjMap's width is "+mjMap.image.width+" and its height is "+mjMap.image.height);
 		far.drawText(200, GetScreenHeight()-16, "Attack.ogg's length is "+r.getLength()+", Spider's length is "+m.getLength());
 		
 		Triangle(GetScreenWidth(), GetScreenHeight(), GetScreenWidth()-16, GetScreenHeight(), GetScreenWidth(), GetScreenHeight()-16, Red);
 		
 		FlipScreen();
-		
+		if(IsKeyPressed(KEY_J)){
+		if(firstDraw){
+			sfMJ = mjMap.image.createImage();
+			firstDraw = false;
+		}
+		sfMJ.blit(-16, -16);
+		}
 		GradientTriangle(64, 32, 16, GetScreenHeight()-16, GetScreenWidth()-64, 256, Blue, Green, Red);
 		
 		ws.drawWindow(128, 22, 128, 256);
@@ -127,6 +149,7 @@ function game(){
 		
 		var t = GetTime();
 	}
+	z = GetTime()-z;
 	delete m;
 	delete r;
 	
@@ -137,7 +160,7 @@ function game(){
 		fonty2.drawText(10, 30, 'Press Escape to just give up.');
 		fonty2.drawText(10, 50, "'the quick brown fox jumped over the lazy dog.'");
 		fonty2.drawText(10, 60, '"THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG!"');
-		fonty2.drawText(10, 70, "Aptiva?");
+		fonty2.drawText(10, 70, "Aptiva? We drew 10,000 frames in "+z+" milliseconds. Good? You be the judge.");
 		
 		Delay(10);
 		FlipScreen();

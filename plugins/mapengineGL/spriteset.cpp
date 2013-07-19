@@ -1,5 +1,5 @@
 #include "spriteset.h"
-#include "../graphicSDL_GL/image.h"
+#include "../graphicSDL_GL_threaded/image.h"
 
 /*
 struct TS_SpriteSetFrame{

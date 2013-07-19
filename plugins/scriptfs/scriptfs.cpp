@@ -9,7 +9,6 @@
 #include <cstdio>
 #include <cstring>
 #include <assert.h>
-#include "../../zlib.h"
 
 #ifdef _WIN32
 #include <fcntl.h>
@@ -316,7 +315,7 @@ v8Function TS_fileClose(V8ARGS)
 v8Function TS_OpenRawFile(V8ARGS){
     return v8::Undefined();
 }
-
+/*
 RawData TS_DeflateRawData(RawData data){
     RawData out;
     out.size = 0;
@@ -372,4 +371,4 @@ RawData TS_InflateRawData(RawData data){
 return RawData();
 }
 
-
+*/

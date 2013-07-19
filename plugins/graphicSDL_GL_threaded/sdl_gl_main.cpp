@@ -24,8 +24,6 @@
 CHECK_FOR_PROCESS( #NAME );\
 NAME = TYPING SDL_GL_GetProcAddress( #NAME )
 
-SDL_Rect cmpltscreen = {0, 0, (Uint16)GetScreenWidth(), (Uint16)GetScreenHeight()};
-
 SDL_GLContext glcontext;
 
 SDL_Event event;
@@ -292,7 +290,7 @@ initFunction Init(void){
 
     glUseProgram(shader_prog);
 */
-    return (const char *)"SDL_GL";
+    return (const char *)"SDL_GL_threaded";
 }
 
 

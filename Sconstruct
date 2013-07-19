@@ -152,8 +152,8 @@ ttffontSDL_files = ['ttffont.cpp']
 inputSDL_files = ['main.cpp,', 'mouse.cpp', 'key.cpp']
 scriptfs_files = ['scriptfs.cpp']
 getkeystring_files = ['getkeystring.cpp']
-SDL_GL_path 	 = ['plugins/graphicSDL_GL']
-SDL_GL_files	 = ['plugins/graphicSDL_GL/sdl_gl_main.cpp', 'plugins/graphicSDL_GL/image.cpp', 'plugins/graphicSDL_GL/surface.cpp', 'plugins/graphicSDL_GL/color.cpp', 'plugins/graphicSDL_GL/primitives.cpp', 'plugins/graphicSDL_GL/screen.cpp']
+SDL_GL_path 	 = ['plugins/graphicSDL_GL_threaded']
+SDL_GL_files	 = ['plugins/graphicSDL_GL_threaded/sdl_gl_main.cpp', 'plugins/graphicSDL_GL_threaded/image.cpp', 'plugins/graphicSDL_GL_threaded/surface.cpp', 'plugins/graphicSDL_GL_threaded/surface_thread.cpp', 'plugins/graphicSDL_GL_threaded/color.cpp', 'plugins/graphicSDL_GL_threaded/primitives.cpp', 'plugins/graphicSDL_GL_threaded/screen.cpp']
 mapengineGL_files= ['plugins/mapengineGL/map.cpp', 'plugins/mapengineGL/mapengine.cpp', 'plugins/mapengineGL/tileset.cpp', 'plugins/mapengineGL/spriteset.cpp', 'plugins/mapengineGL/person.cpp']
 audioBASS_files	 = ['plugins/audioBASS/frontend.cpp', 'plugins/audioBASS/bass_backend.cpp', 'plugins/audioBASS/script.cpp'] 
 
@@ -168,7 +168,7 @@ if build_plugins != "n":
 		elif sys.platform == 'win32' or sys.platform == 'win64':
 			SDL_GL = currentenv.SharedLibrary('./bin/Release/plugin/SDL_GL', SDL_GL_files , LIBS = [plugin_libs, 'SDL2_image'], LIBPATH = lib_path)
 		else:
-			SDL_GL = currentenv.SharedLibrary('./bin/Release/plugin/SDL_GL', SDL_GL_files , LIBS = [plugin_libs, 'SDL2_image', 'GL', 'GLU', 'X11'], LIBPATH = lib_path)
+			SDL_GL = currentenv.SharedLibrary('./bin/Release/plugin/SDL_GL_threaded', SDL_GL_files , LIBS = [plugin_libs, 'SDL2_image', 'GL', 'GLU', 'X11'], LIBPATH = lib_path)
 
 		bmpfontGL     = currentenv.SharedLibrary('./bin/Release/plugin/bmpfontGL', ['plugins/bmpfontGL/bmpfont.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
 		ttffontGL     = currentenv.SharedLibrary('./bin/Release/plugin/ttffontGL', ['plugins/ttffontGL/ttffont.cpp'], LIBS = [plugin_libs, 'SDL2_ttf'], LIBPATH = lib_path)

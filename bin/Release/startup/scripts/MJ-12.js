@@ -12,11 +12,11 @@ function MjEngineMap(map, tileset){
 this.name = map
 	var mapFileName="maps/"+map;
 	var tilesetFileName="tilesets/"+tileset;
-	this.mapim = LoadSurface(mapFileName+"/map.tga");
-	this.mapim.setBlendMode(RGB_ONLY)
+	this.mapim = new Surface(mapFileName+"/map.png");
+	//this.mapim.setBlendMode(RGB_ONLY)
 	this.width = this.mapim.width
 	this.height = this.mapim.height
-  this.controltile = LoadSurface(tilesetFileName+"/r0g0b0.tga")
+	this.controltile = new Surface(tilesetFileName+"/r0g0b0.png")
 	this.tilesize = this.controltile.width
 	this.tileimages = []
 	this.tileset = []
@@ -40,11 +40,11 @@ this.name = map
 this.tileimages = []
 i = 0
 	while(i<this.tileset.length){
-	this.tileimages[i]=LoadSurface(tilesetFileName+"/"+this.tileset[i]+".tga")
+	this.tileimages[i]= new Surface(tilesetFileName+"/"+this.tileset[i]+".png")
 	i++
 	}
 this.master = drawMap(this)
-this.image = this.master
+this.image = this.master;
 }
 
 
@@ -52,10 +52,10 @@ function MjEngineMapFromSurface(surface, tileset){
 this.name = "temp";
 	var tilesetFileName="tilesets/"+tileset;
 	this.mapim = surface;//= LoadSurface(mapFileName+"/map.tga");
-	this.mapim.setBlendMode(RGB_ONLY);
+	//this.mapim.setBlendMode(RGB_ONLY);
 	this.width = this.mapim.width;
 	this.height = this.mapim.height;
-  this.controltile = LoadSurface(tilesetFileName+"/r0g0b0.tga");
+  this.controltile = new Surface(tilesetFileName+"/r0g0b0.png");
 	this.tilesize = this.controltile.width;
 	this.tileimages = [];
 	this.tileset = [];
@@ -79,7 +79,7 @@ this.name = "temp";
 this.tileimages = []
 i = 0
 	while(i<this.tileset.length){
-	this.tileimages[i]=LoadSurface(tilesetFileName+"/"+this.tileset[i]+".tga")
+	this.tileimages[i]=LoadSurface(tilesetFileName+"/"+this.tileset[i]+".png")
 	i++
 	}
 this.master = drawMap(this)
@@ -110,7 +110,7 @@ function calculateMap(map){
 map.tileimages = []
 i = 0
 	while(i<map.tileset.length){
-	map.tileimages[i]=LoadSurface(tilesetFileName+"/"+map.tileset[i]+".tga")
+	map.tileimages[i]=LoadSurface(tilesetFileName+"/"+map.tileset[i]+".png")
 	i++
 	}
 map.master = drawMap(map)
@@ -123,7 +123,7 @@ map.image = map.master
 
 function drawMap(map)
 {
-  var mainsurface = new Surface(map.width*map.tilesize, map.height*map.tilesize, new Color(0,0,0,0))
+  var mainsurface = new Surface(map.width*map.tilesize, map.height*map.tilesize, new Color(0,0,0,255))
   i = 1
   var a = 1
   while((i<map.width-1))
@@ -136,6 +136,7 @@ function drawMap(map)
 	mainsurface.blitSurface(map.tileimages[map.maptilecon[i][e]], i*map.tilesize, e*map.tilesize);
       }
     }
+    i++;
   }
   return mainsurface
 }

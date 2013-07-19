@@ -141,13 +141,28 @@ TS_BMPGlyph::~TS_BMPGlyph(){
     glDeleteTextures(1, &texture);
 }
 
-TS_BMPFont::TS_BMPFont(const char* file) {
+TS_BMPFont::TS_BMPFont(){
+    mask = new TS_Color(255, 255, 255, 255);
+    fontname = NULL;
+}
+
+#define TS_BMPERROR_HEADER  0x1
+#define TS_BMPERROR_SIG     0x2
+#define TS_BMPERROR_GLYPH   0x3
+#define TS_BMPERROR_ENDDATA 0x3
+int TS_BMPFont::Load(const char* file) {
     mask = new TS_Color(0xFF, 0xFF, 0xFF, 0xFF);
     SDL_RWops *fontfile;
 	inheight = 0;
 	fontfile = SDL_RWFromFile(file, "rb");
     if(!fontfile){
 		printf("[" PLUGINNAME "] Error: Could not open file %s\n", file);   //the file should be checked BEFORE passing it to the constructor!
+        return TS_BMPERROR_BADFILE;
+	}
+	if(fontfile->size(fontfile)<(long long)256){
+        printf("[" PLUGINNAME "] Error: File %s is not a valid .rfn file: no file header.\n", file);
+        SDL_RWclose(fontfile);
+        return TS_BMPERROR_HEADER;
 	}
     unsigned short version[1];
 	unsigned short numchars[1];
@@ -168,18 +183,30 @@ TS_BMPFont::TS_BMPFont(const char* file) {
 
 	SDL_RWseek(fontfile, 256, SEEK_SET);
     glyphs.reserve(numchars[0]);
-
+	if(fontfile->size(fontfile)<(long long)256+(4*(*numchars))){
+	    //Benefit of the doubt--an rfn could possibly contain a bunch of empty characters.
+        printf("[" PLUGINNAME "] Error: File %s is not a valid .rfn file: no glyph data.\n", file);
+        return TS_BMPERROR_ENDDATA;
+	}
     if(version[0]==1){
 
     }
     if(version[0]==2){
+        long long current_pos = 256;
         uint32_t *pixels = (uint32_t*)calloc(0, sizeof(uint32_t));
         if(*compressed==0){
             for(unsigned short i = 0; i<numchars[0]; i++){
                 unsigned short   width[1];
                 unsigned short  height[1];
-                SDL_RWread(fontfile,  width, 2, 1);
-                SDL_RWread(fontfile, height, 2, 1);
+                current_pos += SDL_RWread(fontfile,  width, 1, 2);
+                current_pos += SDL_RWread(fontfile, height, 1, 2);
+
+                if(fontfile->size(fontfile)<(long long)((*width)*(*height)*sizeof(uint32_t))+(long long)28+current_pos){
+                    printf("[" PLUGINNAME "] Error: File %s is not a valid .rfn file: unexpected end of glyph data.\n", file);
+                    free(pixels);
+                    SDL_RWclose(fontfile);
+                    return TS_BMPERROR_ENDDATA;
+                }
 
                 pixels = (uint32_t *)realloc(pixels, (*width)*(*height)*sizeof(uint32_t));
 
@@ -187,14 +214,19 @@ TS_BMPFont::TS_BMPFont(const char* file) {
 
                 SDL_RWseek(fontfile, 28, SEEK_CUR);
 
-                SDL_RWread(fontfile, pixels, sizeof(uint32_t),(*width)*(*height));
+                current_pos += 28+(sizeof(uint32_t)*SDL_RWread(fontfile, pixels, sizeof(uint32_t),(*width)*(*height)));
 
                 glyphs.push_back(new TS_BMPGlyph(pixels, *width, *height));
             }
         }
+        if(current_pos!=fontfile->size(fontfile)){
+            printf("[" PLUGINNAME "] Warning: .rfn %s is abnormal: %i bytes of unused data at end of file.", file, (int)(fontfile->size(fontfile)-current_pos));
+        }
         SDL_RWclose(fontfile);
         free(pixels);
     }
+
+    return TS_BMPERROR_NOERROR;
 
 }
 
@@ -227,7 +259,12 @@ v8Function LoadBMPFont(const v8::Arguments& args) {
     }
     SDL_RWclose(fonttest);
 
-    MINMEMALIGN TS_BMPFont *font = new TS_BMPFont(string(TS_dirs->font).append(fontname).c_str());
+    MINMEMALIGN TS_BMPFont *font = new TS_BMPFont();
+    int error = font->Load(string(TS_dirs->font).append(fontname).c_str());
+
+    if(error){
+        THROWERROR(string("Error: Could not load bmp font.").append(fontname).c_str());
+    }
 
     END_OBJECT_WRAP_CODE(BMPFont, font);
 }
@@ -244,7 +281,13 @@ v8Function LoadSystemBMPFont(V8ARGS) {
         SDL_RWclose(fonttest);
         return v8::ThrowException(v8::String::New(string("[" PLUGINNAME "] TS_LoadSystemBMPFont Error: Could not open rfn file ").append(string(TS_dirs->system).append(TS_conf->systemfont)).c_str()));
     }
-    MEMALIGN(8) TS_BMPFont *font = new TS_BMPFont(string(TS_dirs->system).append(TS_conf->systemfont).c_str());
+
+    MEMALIGN(8) TS_BMPFont *font = new TS_BMPFont();
+    int error = font->Load(string(TS_dirs->system).append(TS_conf->systemfont).c_str());
+
+    if(error){
+        THROWERROR("Error: Could not load system font.");
+    }
 
     END_OBJECT_WRAP_CODE(BMPFont, font);
 }
@@ -266,7 +309,7 @@ void TS_BMPGlyph::blit(int x, int y, TS_Color *mask){
     const GLint vertexData[] = {x, y, x+width, y, x+width, y+height, x, y+height};
     glVertexPointer(2, GL_INT, 0, vertexData);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glDrawArrays(GL_QUADS, 0, 4);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
 int TS_BMPGlyph::zoomBlit(int x, int y, double factor, TS_Color *mask){
@@ -276,7 +319,7 @@ int TS_BMPGlyph::zoomBlit(int x, int y, double factor, TS_Color *mask){
     const GLint vertexData[] = {x, y, x+(int)scaleWidth, y, x+scaleWidth, y+scaleHeight, x, y+scaleHeight};
     glVertexPointer(2, GL_INT, 0, vertexData);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glDrawArrays(GL_QUADS, 0, 4);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     return scaleWidth;
 }
 
@@ -418,7 +461,7 @@ const char **TS_BMPFont::wordWrapString(const char *t, int w, int* __restrict__ 
                 textlines   = this->addline(textlines, &readylines, &linebuffer);
                 lineWidth=twwidth;
 
-				linebuffer = (char *)realloc(linebuffer,(strlen(tword)+1)*sizeof(char));
+				linebuffer = (char *)realloc(linebuffer,(wordlen+2)*sizeof(char));
                 linebuffer = strcat(linebuffer, tword);
             }
             else{
