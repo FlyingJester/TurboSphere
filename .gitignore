@@ -6,3 +6,6 @@
 v8.h
 v8*.h
 !Turbo.*
+v8
+V8
+plugins-backup
