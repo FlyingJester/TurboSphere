@@ -24,6 +24,8 @@
 
 #endif
 
+
+
 typedef const char * T5_FileText;
 
 class INIvalue{
@@ -51,6 +53,9 @@ private:
 	std::vector<INIvalue*> values;
 #endif
 };
+
+T5_EXPORT bool T5CALL T5_IsFile(const char *path);
+T5_EXPORT bool T5CALL T5_IsDir(const char *path);
 
 T5_EXPORT T5_FileText T5CALL T5_LoadFileAsText(const char *file);
 T5_EXPORT void T5CALL T5_FreeFileText(T5_FileText text);

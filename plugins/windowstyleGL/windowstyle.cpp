@@ -1,13 +1,5 @@
-
-//////////////////
-/*
-Let's try and keep this file a paragon of cleanliness.
-The windowstyle plugin is a prime example of how every
-plugin should be done. It also shows quite well how to
-cleanly and concisely read from Sphere files.
-*/
-///////////////////
 #define PLUGINNAME "windowstyleGL"
+#define BRACKNAME "[" PLUGINNAME "]"
 #include "../common/plugin.h"
 #ifdef _WIN32
 #include "../../SDL/SDL_opengl.h"
@@ -224,24 +216,47 @@ int * TS_WindowStyle::getComponentDimensions(int num){
 	return dims;
 }
 
-TS_WindowStyle::TS_WindowStyle(const char *file){
+#define TS_WSERROR_NOERROR 0x0
+#define TS_WSERROR_HEADER  0x1
+#define TS_WSERROR_SIG     0x2
+#define TS_WSERROR_SECTION 0x3
+#define TS_WSERROR_ENDDATA 0x3
+#define TS_WSERROR_BADFILE 0x4
+#define TS_WSERROR_UNKOWN  0xFF
+
+#define TS_WS_THROWERROR(rwfile, errname, errcode)\
+    printf(BRACKNAME " Error: " errname, file);\
+    SDL_RWclose(rwfile);\
+    return errcode;\
+
+
+#define TS_WS_CHECKLENGTH(rwfile, lsize, errname, errcode)\
+    if(rwfile->size(rwfile)<(long long)lsize){\
+    TS_WS_THROWERROR(rwfile, errname, errcode);}
+
+TS_WindowStyle::TS_WindowStyle(){
+    glGenTextures(9, textures);
+    name = NULL;
+}
+
+int TS_WindowStyle::Load(const char *file){
 
 	SDL_RWops *wsfile;
 	wsfile = SDL_RWFromFile(file, "rb");
     if(!wsfile){
-		printf("Could not open file %s\n", file);   //the file should be checked BEFORE passing it to the constructor!
-	}
+	TS_WS_THROWERROR(wsfile, "Could not open file %s\n", TS_WSERROR_BADFILE);
+    }
 
-
-    glGenTextures(9, textures);
-
-	name = file;
+    name = STRDUP(file);
     uint8_t   sig[5]    = "    ";
-	uint16_t  version[1];
-	uint8_t   edge_width[1];
-	uint8_t   background_mode[1];
-	uint8_t   corner_color_comp[16];
+    uint16_t  version[1];
+    uint8_t   edge_width[1];
+    uint8_t   background_mode[1];
+    uint8_t   corner_color_comp[16];
     uint8_t   edge_offsets[4];
+
+
+    TS_WS_CHECKLENGTH(wsfile, 64, "File %s ends before header\n", TS_WSERROR_HEADER);
 
 	//sig
     SDL_RWread(wsfile, sig, 1,4);
@@ -255,6 +270,10 @@ TS_WindowStyle::TS_WindowStyle(const char *file){
     //background mode
     SDL_RWread(wsfile, background_mode, 1,1);
 
+    if((*background_mode)>4){
+	TS_WS_THROWERROR(wsfile, "File %s has an invalid background mode\n", TS_WSERROR_BADBGMODE);
+    }
+
     //corner colors
     SDL_RWread(wsfile, corner_color_comp, 1,16);
 
@@ -267,54 +286,60 @@ TS_WindowStyle::TS_WindowStyle(const char *file){
 	int e = c*4;
 		cornerColors[c]=TS_Color(corner_color_comp[e], corner_color_comp[e+1], corner_color_comp[e+2], corner_color_comp[e+3]);
 	}
-	background.type = (WSbackgroundType)background_mode[0];
+	background.type = (WSbackgroundType)(*background_mode);
     if(version[0]==1){
-
+      TS_WS_THROWERROR(wsfile, "Version 1 windowstyles are not supported. Please upgrade %s using a newer editor.\n", TS_WSERROR_BADVERSION);
     }
     if(version[0]==2){
+	int blocks_read = 64;
         uint16_t dimensions[2];
         for(int i = 0; i<WSelementsSize; i++){
-            SDL_RWread(wsfile, dimensions, 2, 2);
+	    TS_WS_CHECKLENGTH(wsfile, (blocks_read+4), "Unexpected end of data in file %s\n", TS_WSERROR_ENDDATA);
+            blocks_read+=SDL_RWread(wsfile, dimensions, 2, 2);
+	    TS_WS_CHECKLENGTH(wsfile, (blocks_read+(dimensions[0]*dimensions[1])), "Unexpected end of data in file %s\n", TS_WSERROR_ENDDATA);
             switch(i){
             case WS_UPPERLEFT:
-                CREATE_WS_COMPONENT(upperleft, i, dimensions[0], dimensions[1]);
+                CREATE_WS_COMPONENT(blocks_read, wsfile, upperleft, i, dimensions[0], dimensions[1]);
                 break;
             case WS_TOP:
-                CREATE_WS_COMPONENT(top, i, dimensions[0], dimensions[1]);
+                CREATE_WS_COMPONENT(blocks_read, wsfile, top, i, dimensions[0], dimensions[1]);
                 break;
             case WS_UPPERRIGHT:
-                CREATE_WS_COMPONENT(upperright, i, dimensions[0], dimensions[1]);
+                CREATE_WS_COMPONENT(blocks_read, wsfile, upperright, i, dimensions[0], dimensions[1]);
                 break;
             case WS_RIGHT:
-                CREATE_WS_COMPONENT(right, i, dimensions[0], dimensions[1]);
+                CREATE_WS_COMPONENT(blocks_read, wsfile, right, i, dimensions[0], dimensions[1]);
                 break;
             case WS_LOWERRIGHT:
-                CREATE_WS_COMPONENT(lowerright, i, dimensions[0], dimensions[1]);
+                CREATE_WS_COMPONENT(blocks_read, wsfile, lowerright, i, dimensions[0], dimensions[1]);
                 break;
             case WS_BOTTOM:
-                CREATE_WS_COMPONENT(bottom, i, dimensions[0], dimensions[1]);
+                CREATE_WS_COMPONENT(blocks_read, wsfile, bottom, i, dimensions[0], dimensions[1]);
                 break;
             case WS_LOWERLEFT:
-                CREATE_WS_COMPONENT(lowerleft, i, dimensions[0], dimensions[1]);
+                CREATE_WS_COMPONENT(blocks_read, wsfile, lowerleft, i, dimensions[0], dimensions[1]);
                 break;
             case WS_LEFT:
-                CREATE_WS_COMPONENT(left, i, dimensions[0], dimensions[1]);
+                CREATE_WS_COMPONENT(blocks_read, wsfile, left, i, dimensions[0], dimensions[1]);
                 break;
 			case WS_BACKGROUND:
-				CREATE_WS_COMPONENT(background, i, dimensions[0], dimensions[1]);
+				CREATE_WS_COMPONENT(blocks_read, wsfile, background, i, dimensions[0], dimensions[1]);
 				break;
             default:
-				printf("[windowstyleGL] Error: Error reading WindowStyle Element in %s. Element was %i.\n", file, i);
-                CREATE_WS_COMPONENT(upperleft, i, dimensions[0], dimensions[1]);
+		printf("[windowstyleGL] Warning: Error reading WindowStyle Element in %s. Element was %i.\n", file, i);
+                CREATE_WS_COMPONENT(blocks_read, wsfile, upperleft, i, dimensions[0], dimensions[1]);
                 break;
             }
         }
     }
 	SDL_RWclose(wsfile);
+	return 0;
 }
 
 TS_WindowStyle::~TS_WindowStyle(){
-
+    glDeleteTextures(9, textures);
+    if(name!=NULL)
+	free((void *)name);
 }
 
 void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
@@ -359,7 +384,7 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
             glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
             glEnable(GL_TEXTURE_2D);
             glBindTexture(GL_TEXTURE_2D, texture);
-            glDrawArrays(GL_QUADS, 0, 4);
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
         }
         else{
@@ -381,7 +406,7 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
                 glEnable(GL_TEXTURE_2D);
                 glBindTexture(GL_TEXTURE_2D, texture);
                 glDrawArrays(GL_QUADS, 0, 4);
-
+                /*
                 glTexCoord2f(0.0f,  0.0f);
                 glVertex2i(x,       ty);
                 glTexCoord2f(wtile, 0.0f);
@@ -390,6 +415,7 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
                 glVertex2i(x+w,     ty+height);
                 glTexCoord2f(0.0f,  1.0f);
                 glVertex2i(x,       ty+height);
+                */
             }
             else{   //this runs vertical.
                 float htile = ((float)h)/((float)height);
@@ -503,15 +529,12 @@ v8Function LoadWindowStyle(V8ARGS) {
         v8::String::Utf8Value str(args[0]);
         const char *wsname = *str;
 
-        SDL_RWops *wstest = SDL_RWFromFile(string(TS_dirs->windowstyle).append(wsname).c_str(), "rb");
-        if(!wstest){
-            SDL_RWclose(wstest);
-            printf("TS: Could not open rws file %s\n", wsname);
-            THROWERROR(string("LoadWindowStyle Error: Could not load windowstyle ").append(wsname).c_str());
-        }
-        SDL_RWclose(wstest);
+        ws = new TS_WindowStyle();
+	int error = ws->Load(string(TS_dirs->windowstyle).append(wsname).c_str());
 
-        ws = new TS_WindowStyle(string(TS_dirs->windowstyle).append(wsname).c_str());
+	if(error!=TS_WSERROR_NOERROR){
+	    THROWERROR(" Error: Could not load windowstyle.");
+	}
 
     END_OBJECT_WRAP_CODE(WindowStyle, ws);
 
@@ -535,7 +558,12 @@ v8Function GetSystemWindowStyle(V8ARGS) {
         }
         SDL_RWclose(wstest);
 
-       MINMEMALIGN TS_WindowStyle *ws = new TS_WindowStyle(wsname);
+        TS_WindowStyle *ws = new TS_WindowStyle();
+	int error = ws->Load(wsname);
+	if(error!=TS_WSERROR_NOERROR){
+	    free((void *)wsname);
+	    THROWERROR(" Error: Could not load system windowstyle.");
+	}
 
     free((void *)wsname);
 

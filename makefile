@@ -6,10 +6,10 @@ WORKDIR = `pwd`
 
 
 
-CC = i686-w64-mingw32-gcc
-CXX = i686-w64-mingw32-g++
+CC = gcc
+CXX = g++
 AR = ar
-LD = i686-w64-mingw32-g++
+LD = g++
 
 ARCH =: $(shell uname -m)
 
@@ -19,7 +19,7 @@ INC =
 CFLAGS =  -Wall -O3
 RESINC = 
 LIBDIR = 
-LIB =  -lSDL -ldl -lpthread -lSDL_mixer -lSDL_ttf -lSDL_image ./libt5.so ./libv8.so ./graphiccommon.so ./graphicalg.so ./configmanager.so
+LIB =  /usr/lib64/turbosphere/libSDL2.so -ldl -lpthread /usr/lib64/turbosphere/libSDL2_ttf-2.0.so.0 /usr/lib64/turbosphere/libSDL2_image-2.0.so.0 /usr/lib64/turbosphere/libt5.so /usr/lib64/turbosphere/libv8.so /usr/lib64/turbosphere/libgraphiccommon.so /usr/lib64/turbosphere/libgraphicalg.so /usr/lib64/turbosphere/libconfigmanager.so
 LDFLAGS =
 
 INC_T5 = 
@@ -58,11 +58,11 @@ LIB_RELEASE_T5 = $(LIB_T5)
 LDFLAGS_RELEASE_T5 =  $(LDFLAGS_T5) -s
 OBJDIR_RELEASE_T5 = obj/Release
 DEP_RELEASE_T5 = 
-OUT_RELEASE_T5 = ./libt5.dll
-OUT_RELEASE_T5_ONLY = bin/Release/libt5.dll
+OUT_RELEASE_T5 = ./libt5.so
+OUT_RELEASE_T5_ONLY = bin/Release/libt5.so
 
-OBJ_RELEASE_T5 = $(OBJDIR_RELEASE_T5)/t5.a
-OBJ_RELEASE_T5_only = $(OBJDIR_RELEASE_T5)/t5/t5.a
+OBJ_RELEASE_T5 = $(OBJDIR_RELEASE_T5)/t5.so
+OBJ_RELEASE_T5_only = $(OBJDIR_RELEASE_T5)/t5/t5.so
 
 
 INC_RELEASE_PLG =  $(INC_PLG)
@@ -142,8 +142,8 @@ t5: before_release t5dyn after_release
 t5dyn: $(OBJ_RELEASE_T5) $(DEP_RELEASE_T5)
 	$(LD) $(LDFLAGS_RELEASE_T5) $(LIBDIR_RELEASE_T5) $(OBJ_RELEASE_T5) $(LIB_RELEASE_T5) -o $(OUT_RELEASE_T5)
 
-$(OBJDIR_RELEASE)/t5.dll: t5.cpp
-	$(CXX) $(CFLAGS_RELEASE_T5) $(INC_RELEASE_T5) -c t5.cpp -o $(OBJDIR_RELEASE_T5)/t5.dll
+$(OBJDIR_RELEASE)/t5.so: t5.cpp
+	$(CXX) $(CFLAGS_RELEASE_T5) $(INC_RELEASE_T5) -c t5.cpp -o $(OBJDIR_RELEASE_T5)/t5.so
 
 out_release: $(OBJ_RELEASE) $(DEP_RELEASE)
 	$(LD) $(LDFLAGS_RELEASE) $(LIBDIR_RELEASE) $(OBJ_RELEASE) $(LIB_RELEASE) -o $(OUT_RELEASE)

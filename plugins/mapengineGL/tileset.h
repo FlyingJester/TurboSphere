@@ -1,7 +1,8 @@
 #ifndef MAPENGINE_TS_HEAD
 #define MAPENGINE_TS_HEAD
 
-#include "mapengine.h"
+#include "typedef.h"
+
 #include <vector>
 
 class TS_Tile{

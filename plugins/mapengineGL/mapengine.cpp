@@ -104,6 +104,7 @@ void* ChangeMapPointer          = V8FUNCPOINTER(ChangeMap);
 void* ExitMapEnginePointer      = V8FUNCPOINTER(ExitMapEngine);
 void* MapEnginePointer          = V8FUNCPOINTER(MapEngine);
 void* LoadSpriteSetPointer      = V8FUNCPOINTER(LoadSpriteSet);
+void* CreatePersonPointer      = V8FUNCPOINTER(CreatePerson);
 
 initFunction Init(void){
 
@@ -117,12 +118,15 @@ initFunction Init(void){
     SET_CLASS_NAME(Map, "Map");
 
     InitSpriteSet();
+    InitMapMain();
 
     return (const char *)"mapengineGL";
 }
 
 void Close(void){
     CLOSE_OBJECT_TEMPLATES(Map);
+    CloseSpriteSet();
+    CloseMapMain();
 }
 
 int GetNumFunctions(void){
@@ -139,6 +143,7 @@ functionArray GetFunctions(void){
     funcs[5] = ExitMapEnginePointer;
     funcs[6] = MapEnginePointer;
     funcs[7] = LoadSpriteSetPointer;
+    funcs[8] = CreatePersonPointer;
     return funcs;
 }
 
@@ -152,6 +157,7 @@ nameArray GetFunctionNames(void){
     funcnames[5] = (const char *)"ExitMapEngine";
     funcnames[6] = (const char *)"MapEngine";
     funcnames[7] = (const char *)"SpriteSet";
+    funcnames[8] = (const char *)"CreatePerson";
     return funcnames;
 }
 
@@ -179,15 +185,10 @@ v8Function LoadMap(V8ARGS){
 
     v8::String::Utf8Value str(args[0]);
 
-    const char *cstr = *str;
-
-    int screenwidth = GetScreenWidth();
-    int screenheight = GetScreenHeight();
-
-    TS_Map *map = new TS_Map((std::string(TS_dirs->map)+std::string(cstr)).c_str());
+    TS_Map *map = new TS_Map((std::string(TS_dirs->map)+std::string(*str)).c_str());
 
     if(map==NULL){
-        THROWERROR(string("[" PLUGINNAME "] LoadMap Error: Could not open map ").append(cstr).c_str());
+        THROWERROR(string("[" PLUGINNAME "] LoadMap Error: Could not open map ").append(*str).c_str());
     }
 
     END_OBJECT_WRAP_CODE(Map, map);
@@ -204,15 +205,10 @@ v8Function MapEngine(V8ARGS){
 
     v8::String::Utf8Value str(args[0]);
 
-    const char *cstr = *str;
-
-    int screenwidth = GetScreenWidth();
-    int screenheight = GetScreenHeight();
-
-    TS_Map *map = new TS_Map((std::string(TS_dirs->map)+std::string(cstr)).c_str());
+    TS_Map *map = new TS_Map((std::string(TS_dirs->map)+std::string(*str)).c_str());
 
     if(map==NULL){
-        THROWERROR(string("[" PLUGINNAME "] MapEngine Error: Could not open map ").append(cstr).c_str());
+        THROWERROR(string("[" PLUGINNAME "] MapEngine Error: Could not open map ").append(*str).c_str());
     }
     TS_MapEngine(map);
     return v8::Undefined();

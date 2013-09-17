@@ -117,6 +117,8 @@ SDL_GL_EXPORT int             CCALL GetNumVariables(void);
 SDL_GL_EXPORT v8FunctionArray CCALL GetVariables(void);
 SDL_GL_EXPORT nameArray       CCALL GetVariableNames(void);
 
+SDL_GL_EXPORT void *	      CCALL TS_SDL_GL_MakeV8SurfaceHandleFromPixels(int w, int h, void *pixels);
+
 #ifdef _WIN32
 	}
 #endif

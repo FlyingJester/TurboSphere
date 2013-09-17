@@ -4,8 +4,8 @@
 #include "main.h"
 
 #ifndef _WIN32
-#include <GL/glext.h>
-#include <SDL2/SDL_opengl.h>
+//#include <GL/glext.h>
+#include "../../SDL2/SDL_opengl.h"
 #endif
 #include "image.h"
 #include "surface.h"
@@ -200,6 +200,8 @@ initFunction Init(void){
     //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,3);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1); //TODO: make this set in the config.
 
     if((screen = SDL_CreateWindow("TurboSphere Game Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -392,4 +394,14 @@ int TS_Filter(void * _unused, SDL_Event *event){
         exit(0);
     }
     return 1;
+}
+
+
+v8::Local<v8::Object> TS_SDL_GL_MakeV8SurfaceHandleFromPixels(int w, int h, void *pixels){
+
+    SDL_Surface * surface = SDL_CreateRGBSurfaceFrom(pixels, w, h, DEPTH, w, CHANNEL_MASKS);
+
+    BEGIN_OBJECT_WRAP_CODE;
+    END_OBJECT_WRAP_CODE(Surface, surface);
+
 }

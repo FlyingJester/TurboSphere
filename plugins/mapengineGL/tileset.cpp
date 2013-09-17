@@ -1,3 +1,4 @@
+#include "mapengine.h"
 #include "tileset.h"
 
 static const int maxVersion = 1;

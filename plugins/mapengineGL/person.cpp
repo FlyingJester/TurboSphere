@@ -11,6 +11,11 @@ TS_Camera::TS_Camera(int _x, int _y){
     y = _y;
 }
 
+TS_Camera::TS_Camera(void){
+    x = 0;
+    y = 0;
+}
+
 TS_Person::TS_Person(const char *n, TS_SpriteSet *ss, bool dWM){
 
     x = 0;
@@ -37,7 +42,32 @@ void TS_CreatePerson(const char *name, TS_SpriteSet *spriteset, bool destroyWith
 }
 
 void TS_Person::BaseDraw(){
+    printf("We are drawing at %i, %i\n", x, y);
+    /*
+    const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
+    const GLuint  colorData[]    = {
+        0xFFFFFFFF,
+        0xFFFFFFFF,
+        0xFFFFFFFF,
+        0xFFFFFFFF
+    };
+    glTexCoordPointer(2, GL_INT, 0, texcoordData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+    */
+    const GLint   vertexData[]   = {x, y,
+                                    x+spriteset->textureWidth, y,
+                                    x+spriteset->textureWidth, y+spriteset->textureHeight,
+                                    x, y+spriteset->textureHeight};
 
+                glVertexPointer(2, GL_INT, 0, vertexData);
+                glBindTexture(GL_TEXTURE_2D, spriteset->textures[0]);
+                /*glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+                glEnableClientState(GL_VERTEX_ARRAY);
+                glEnableClientState(GL_COLOR_ARRAY);*/
+                glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+                /*glDisableClientState(GL_COLOR_ARRAY);
+                glDisableClientState(GL_VERTEX_ARRAY);
+                glDisableClientState(GL_TEXTURE_COORD_ARRAY);*/
 }
 
 void TS_ClearTemporaryPersons(){
@@ -46,6 +76,25 @@ void TS_ClearTemporaryPersons(){
             TS_DestroyPerson(i);
         }
     }
+}
+
+
+v8Function CreatePerson(V8ARGS){
+    if(args.Length()<1){
+        THROWERROR(BRACKNAME "DestroyPerson Error: Called with no arguments.");
+    }
+    CHECK_ARG_STR(0);
+    CHECK_ARG_STR(1);
+    CHECK_ARG_BOOL(2);
+
+    v8::String::Utf8Value name(args[0]);
+    v8::String::Utf8Value sset(args[1]);
+    bool destroyWithMap = args[2]->BooleanValue();
+
+    TS_Directories *dirs = GetDirs();
+    TS_CreatePerson(*name, new TS_SpriteSet(string(dirs->spriteset).append(*sset).c_str()), destroyWithMap);
+
+    return v8::Undefined();
 }
 
 v8Function DestroyPerson(V8ARGS){

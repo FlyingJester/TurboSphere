@@ -1,8 +1,11 @@
 #ifndef MAPENGINE_PR_HEAD
 #define MAPENGINE_PR_HEAD
-#include "mapengine.h"
-#include "spriteset.h"
+
+#include "typedef.h"
+
 #include <vector>
+
+extern std::vector<TS_Person*> personList;
 
 struct TS_MEPlayerConfig {
     int MenuKey;
@@ -27,6 +30,7 @@ TS_MEControlConfig *GetMEControlConfig(void);
 
 struct TS_Camera{
     TS_Camera(int, int);
+    TS_Camera();
     int x;
     int y;
 };
@@ -70,6 +74,8 @@ struct TS_MEPersonConfig{
     TS_Person *controlPerson;
     TS_Person *cameraPerson;
 };
+
+v8Function CreatePerson(V8ARGS);
 
 TS_MEPersonConfig *TS_GetPersonConfig(void);
 #endif

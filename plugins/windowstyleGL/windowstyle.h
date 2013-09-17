@@ -78,8 +78,9 @@ class MINMEMALIGN TS_WSbackground{
 
 class MINMEMALIGN TS_WindowStyle{
     public:
-    TS_WindowStyle(const char*);
+    TS_WindowStyle();
     ~TS_WindowStyle();
+    int Load(const char*);
     TS_Texture textures[9];
     TS_WScorner upperleft;  //0
     TS_WSborder top;        //1
@@ -100,6 +101,17 @@ private:
 	const char *name;
 };
 
+#define TS_WSERROR_NOERROR 	0x0
+#define TS_WSERROR_HEADER  	0x1
+#define TS_WSERROR_SIG     	0x2
+#define TS_WSERROR_SECTION 	0x3
+#define TS_WSERROR_ENDDATA 	0x3
+#define TS_WSERROR_BADFILE 	0x4
+#define TS_WSERROR_BADBGMODE	0xF0
+#define TS_WSERROR_BADVERSION	0xF1
+#define TS_WSERROR_UNKOWN  	0xFF
+
+
 void WindowStyleInit();
 void WindowStyleClose();
 
@@ -107,11 +119,11 @@ v8Function TS_WSdrawWindow(V8ARGS);
 
 //Macro for creating WindowStyle components.
 
-#define CREATE_WS_COMPONENT(component, i, w, h){ \
+#define CREATE_WS_COMPONENT(sum, rwfile, component, i, w, h){ \
         component.width     = w;\
         component.height    = h;\
         uint32_t *pixels    = (uint32_t *)calloc(w*h, sizeof(uint32_t));\
-        SDL_RWread(wsfile, pixels, sizeof(uint32_t), w*h);\
+        sum+=SDL_RWread(rwfile, pixels, sizeof(uint32_t), w*h);\
         glBindTexture(GL_TEXTURE_2D, textures[i]);\
         component.texture   = textures[i];\
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);\

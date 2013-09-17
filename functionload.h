@@ -3,29 +3,8 @@
 
 #include "v8.h"
 
-#ifdef _WIN32
-#include <windows.h>
-#define DLOPENFUNCTION(_type, _dlfunc, _handle, _name, _error, action)\
-    _dlfunc = (_type)GetProcAddress(_handle, _name);\
-    if ((_dlfunc) == NULL)  {\
-        printf("Error loading plugin : No function \"%s\".\n", _name);\
-        action;\
-    }
-
-#else
-
-#include <stdlib.h>
-#include <dlfcn.h>
-
-#define DLOPENFUNCTION(_type, _dlfunc, _handle, _name, _error, action)\
-    _dlfunc = (_type)dlsym(_handle, _name);\
-    if ((_error = dlerror()) != NULL)  {\
-        fprintf (stderr, "%s\n", error);\
-        printf("Error loading plugin : No function \"%s\".\n", _name);\
-        action;\
-    }
-
-#endif
+#include "common/dlopenwrap.h"
+#define DLOPENFUNCTONPRESET(_type, _dlfunc, _handle, _name, _error, action) DLOPENFUNCTION(_type, _dlfunc, _handle, _name, "Error loading plugin : No function \"%s\".\n", _error, action)
 
 typedef void** FunctionArray;
 

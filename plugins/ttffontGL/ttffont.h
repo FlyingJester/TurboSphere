@@ -3,9 +3,10 @@
 
 #include"../common/plugin.h"
 #ifdef _WIN32
-#include "../../SDL/SDL_opengl.h"
+#include "../../SDL2/SDL_opengl.h"
 #else
-#include <SDL/SDL_opengl.h>
+#include <SDL2/SDL_opengl.h>
+#include <SDL2/SDL_ttf.h>
 #endif
 #include "../common/graphic_common.h"
 
@@ -25,12 +26,15 @@
 
 #define MAX_CACHED_STRINGS 0x0040
 
+#define DEFAULT_FONT_SIZE 10
+#define DEFAULT_SYSTEM_FONT_SIZE DEFAULT_FONT_SIZE
+
 struct TS_GlyphAttribs;
 
 class TS_TTFFont{
 public:
-	TS_TTFFont(const char *);
-	TS_TTFFont(const char *, int);
+	TS_TTFFont();
+	int Load(const char *, int);
 	TTF_Font *font;
 	const char *fontname;
 	int size;

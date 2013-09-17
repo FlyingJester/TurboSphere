@@ -2,6 +2,7 @@
 #include "surface.h"
 #include "color.h"
 #include "primitives.h"
+#include "save.h"
 #include <functional>
 #include <assert.h>
 
@@ -243,6 +244,8 @@ v8Function SurfaceClone(V8ARGS){
     if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
         exit(0x117);
 
+    SDL_SetSurfaceRLE(surface, 1);
+
     END_OBJECT_WRAP_CODE(Surface, surface)
 
 }
@@ -290,6 +293,8 @@ v8Function SurfaceCloneSection(V8ARGS){
     if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
         exit(0x117);
 
+    SDL_SetSurfaceRLE(surface, 1);
+
     END_OBJECT_WRAP_CODE(Surface, surface)
 
 }
@@ -321,7 +326,7 @@ v8Function SurfaceGrab(V8ARGS){
     TS_Image *image = TS_ImageGrab(x, y, w, h);
 
     SDL_Surface *surface = image->CreateSurface();
-
+    SDL_SetSurfaceRLE(surface, 1);
     delete image;
 
     END_OBJECT_WRAP_CODE(Surface, surface);
@@ -345,6 +350,15 @@ v8Function SurfaceSave(V8ARGS){
 
     v8::String::Utf8Value str(args[0]);
     const char *filename = string(TS_dirs->image).append(*str).c_str();
+
+    size_t len = strlen(filename);
+    if(strstr(filename, ".png")==filename+len-4){
+                printf("\n\nSaving PNG to file %s.\n\n", filename);
+                save_PNG(filename, surface->pixels, surface->w, surface->h, 0);
+                if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
+                    exit(0x116);
+                return v8::Undefined();
+            }
     if(SDL_SaveBMP(surface, filename)!=0){
         printf("[" PLUGINNAME "] SurfaceSave Error: Could not save image %s: %s\n", *str, SDL_GetError());
         SDL_ClearError();
@@ -373,10 +387,12 @@ v8Function NewSurface(V8ARGS){
         v8::String::Utf8Value str(args[0]);
         const char *filename = strdup(string(TS_dirs->image).append(*str).c_str());
         surface = IMG_Load(filename);
+        SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_NONE);
         if(!surface){
             THROWERROR((std::string("Error: Could not load surface from file ")+std::string(filename)).c_str());
         }
         else{
+            SDL_SetSurfaceRLE(surface, 1);
             END_OBJECT_WRAP_CODE(Surface, surface);
         }
     }
@@ -389,11 +405,12 @@ v8Function NewSurface(V8ARGS){
         uint32_t height = args[1]->Uint32Value();
 
         surface = SDL_CreateRGBSurface(0, width, height, DEPTH, CHANNEL_MASKS);
-
+        SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_NONE);
         v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[2]);
         TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
 
         SDL_FillRect(surface, NULL, color->toInt());
+        SDL_SetSurfaceRLE(surface, 1);
 
         END_OBJECT_WRAP_CODE(Surface, surface);
 

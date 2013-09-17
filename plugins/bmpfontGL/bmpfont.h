@@ -1,20 +1,31 @@
 #ifndef BMPFONT_HEAD
 #define BMPFONT_HEAD
 
-#define TS_TEST(Words){\
-    printf("This is a test of some stuff. Module: %s, function: %s, and %s of course\n", MODULE, __FUNCTION__, (const char *)Words);\
-}
-
 #include"../common/plugin.h"
 #ifdef _WIN32
 #include "../../SDL/SDL_opengl.h"
 #else
-#include <SDL/SDL_opengl.h>
+#include "../../SDL2/SDL_opengl.h"
 #endif
+
 #include "../../configmanager/opengame.h"
 #include "../common/graphic_common.h"
 #include "../common/graphic_algorithm.h"
 #include "../common/font.h"
+
+
+#define BPP 4
+#define DEPTH 32
+
+    #define Frmask 0x000000ff
+	#define Fgmask 0x0000ff00
+	#define Fbmask 0x00ff0000
+	#define Famask 0xff000000
+
+#define CHANNEL_MASKS Frmask, Fgmask, Fbmask, Famask
+
+#define MAX_CACHED_TEXTLINES 64
+#define MAX_CACHED_WORDWRAPS 8
 
 #ifdef _WIN32
     #ifdef BMPFONT_INTERNAL
@@ -30,6 +41,12 @@
 #define BMPFONT_EXPORT extern "C"
 #endif
 class TS_BMPGlyph;
+
+struct TS_BMPWordWrapResult{
+    int numlines;
+    const char *str;
+    const char **lines;
+};
 
 class MINMEMALIGN TS_BMPFont{
 public:
@@ -49,6 +66,9 @@ public:
 	void setColorMask(TS_Color *c);
 	const char **wordWrapString(const char *, int, int * __restrict__ );
 private:
+    unsigned short *widths;
+    SDL_Surface *surfaceAtlas;
+    TS_Texture textureAtlas;
     int inheight;
     inline const char ** addline(const char **tl, int * __restrict__ nl, char **lb) const;
 };
@@ -56,7 +76,7 @@ private:
 class TS_BMPGlyph{
 public:
     friend class TS_BMPFont;
-    TS_BMPGlyph(TS_Texture texture, int width, int height);
+    //TS_BMPGlyph(TS_Texture texture, int width, int height);
     TS_BMPGlyph(uint32_t *pixels, int width, int height);
     ~TS_BMPGlyph();
     TS_Texture texture;
@@ -66,6 +86,7 @@ public:
     double dheight;
     int SetImage(TS_Texture texture, int width, int height);
     int SetImage(SDL_Surface*);
+    SDL_Surface *surface;
 private:
     void blit(int x, int y, TS_Color *mask);
     int  zoomBlit(int x, int y, double factor, TS_Color *mask);

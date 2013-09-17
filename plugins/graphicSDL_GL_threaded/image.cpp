@@ -112,6 +112,15 @@ SDL_Surface *TS_Image::CreateSurface(){
     return surface;
 }
 
+v8::Local<v8::Object> TS_SDL_GL_MakeV8ImageHandleFromGLTexture(int w, int h, GLuint tex){
+
+    BEGIN_OBJECT_WRAP_CODE;
+
+    TS_Image *im = new TS_Image(tex, w, h);
+
+    END_OBJECT_WRAP_CODE(Image, im);
+}
+
 TS_Image *TS_ImageGrab(int x, int y, int w, int h){
     TS_Texture texture;
 
@@ -119,7 +128,7 @@ TS_Image *TS_ImageGrab(int x, int y, int w, int h){
 
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glCopyTexImage2D(texture, 0, GL_RGBA, x, y, w, h, 0);
@@ -227,7 +236,7 @@ TS_Image *TS_LoadTexture(const char *filename){
 
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->w, surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->pixels);
 
@@ -276,7 +285,7 @@ TS_Image *TS_Image::Clone(void){
 
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);

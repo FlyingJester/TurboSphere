@@ -1,0 +1,118 @@
+\hypertarget{opengame_8cpp}{\section{opengame.\-cpp File Reference}
+\label{opengame_8cpp}\index{opengame.\-cpp@{opengame.\-cpp}}
+}
+
+
+Contains functions for opening a game's configuration and metadata.  
+
+
+{\ttfamily \#include $<$iostream$>$}\\*
+{\ttfamily \#include $<$fstream$>$}\\*
+{\ttfamily \#include $<$stdlib.\-h$>$}\\*
+{\ttfamily \#include $<$sstream$>$}\\*
+{\ttfamily \#include \char`\"{}../graphiccommon/screen.\-h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}opengame.\-h\char`\"{}}\\*
+{\ttfamily \#include \char`\"{}../t5.\-h\char`\"{}}\\*
+{\ttfamily \#include $<$cstring$>$}\\*
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{opengame_8cpp_aeacc0d08c525daeacc2b2ae854096922}{C\-O\-N\-F\-I\-G\-M\-G\-R\-\_\-\-I\-N\-T\-E\-R\-N\-A\-L}
+\item 
+\#define \hyperlink{opengame_8cpp_a8d6eeb8a5e599f740e04f680be444f1a}{S\-T\-R\-D\-U\-P}~strdup
+\begin{DoxyCompactList}\small\item\em S\-T\-R\-D\-U\-P is a synonym for strdup or an equivalent or source code compatible function on the platform being used. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\hyperlink{structTS__Config}{T\-S\-\_\-\-Config} $\ast$ \hyperlink{opengame_8cpp_a1b82d72a3537ac64fa52f25808767540}{Get\-Config} (void)
+\item 
+\hyperlink{structTS__Directories}{T\-S\-\_\-\-Directories} $\ast$ \hyperlink{opengame_8cpp_abe5b1a64061dd5785428fb48f08ebc7a}{Get\-Dirs} (void)
+\begin{DoxyCompactList}\small\item\em Returns a pointer to a \hyperlink{structTS__Directories}{T\-S\-\_\-\-Directories} struct that holds the current game's directory paths. \end{DoxyCompactList}\item 
+void \hyperlink{opengame_8cpp_a7571e1b11dd26a2becf02624c030b371}{set\-Directories} (const char $\ast$basedirectory)
+\item 
+void \hyperlink{opengame_8cpp_a1979358aa2a748b15307ad94fb1aa834}{set\-Config} (const char $\ast$basedirectory)
+\item 
+void \hyperlink{opengame_8cpp_a811cea2b8ce049758c5b481364e7e11f}{open\-Game} (const char $\ast$Rfile)
+\end{DoxyCompactItemize}
+\subsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{opengame_8cpp_a274cc83c5c37e074cac61184ec7eb466}{\hyperlink{structTS__Config}{T\-S\-\_\-\-Config} {\bfseries T\-S\-\_\-confmain}}\label{opengame_8cpp_a274cc83c5c37e074cac61184ec7eb466}
+
+\item 
+\hypertarget{opengame_8cpp_a498bc8d714e52570699c5aaabb2d21d4}{\hyperlink{structTS__Directories}{T\-S\-\_\-\-Directories} {\bfseries T\-S\-\_\-dirsmain}}\label{opengame_8cpp_a498bc8d714e52570699c5aaabb2d21d4}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Contains functions for opening a game's configuration and metadata. Functions are related to a games configuration, directory set, system files, main script name and the name of the game function in Java\-Script and game.\-sgm file. Contains the structures \hyperlink{structTS__Config}{T\-S\-\_\-\-Config} and \hyperlink{structTS__Directories}{T\-S\-\_\-\-Directories}, which are used by plugins to get configuration, system file, and directory information for the current game. 
+
+\subsection{Macro Definition Documentation}
+\hypertarget{opengame_8cpp_aeacc0d08c525daeacc2b2ae854096922}{\index{opengame.\-cpp@{opengame.\-cpp}!C\-O\-N\-F\-I\-G\-M\-G\-R\-\_\-\-I\-N\-T\-E\-R\-N\-A\-L@{C\-O\-N\-F\-I\-G\-M\-G\-R\-\_\-\-I\-N\-T\-E\-R\-N\-A\-L}}
+\index{C\-O\-N\-F\-I\-G\-M\-G\-R\-\_\-\-I\-N\-T\-E\-R\-N\-A\-L@{C\-O\-N\-F\-I\-G\-M\-G\-R\-\_\-\-I\-N\-T\-E\-R\-N\-A\-L}!opengame.cpp@{opengame.\-cpp}}
+\subsubsection[{C\-O\-N\-F\-I\-G\-M\-G\-R\-\_\-\-I\-N\-T\-E\-R\-N\-A\-L}]{\setlength{\rightskip}{0pt plus 5cm}\#define C\-O\-N\-F\-I\-G\-M\-G\-R\-\_\-\-I\-N\-T\-E\-R\-N\-A\-L}}\label{opengame_8cpp_aeacc0d08c525daeacc2b2ae854096922}
+Indicates that the the header files \hyperlink{opengame_8h}{opengame.\-h} and \hyperlink{openscript_8h_source}{openscript.\-h} are being processed from the compilation of configmanager. \hypertarget{opengame_8cpp_a8d6eeb8a5e599f740e04f680be444f1a}{\index{opengame.\-cpp@{opengame.\-cpp}!S\-T\-R\-D\-U\-P@{S\-T\-R\-D\-U\-P}}
+\index{S\-T\-R\-D\-U\-P@{S\-T\-R\-D\-U\-P}!opengame.cpp@{opengame.\-cpp}}
+\subsubsection[{S\-T\-R\-D\-U\-P}]{\setlength{\rightskip}{0pt plus 5cm}\#define S\-T\-R\-D\-U\-P~strdup}}\label{opengame_8cpp_a8d6eeb8a5e599f740e04f680be444f1a}
+
+
+S\-T\-R\-D\-U\-P is a synonym for strdup or an equivalent or source code compatible function on the platform being used. 
+
+Redirects to strdup on Linux+\-G\-C\-C and \-\_\-strdup on M\-S\-V\-C. 
+
+\subsection{Function Documentation}
+\hypertarget{opengame_8cpp_a1b82d72a3537ac64fa52f25808767540}{\index{opengame.\-cpp@{opengame.\-cpp}!Get\-Config@{Get\-Config}}
+\index{Get\-Config@{Get\-Config}!opengame.cpp@{opengame.\-cpp}}
+\subsubsection[{Get\-Config}]{\setlength{\rightskip}{0pt plus 5cm}{\bf T\-S\-\_\-\-Config}$\ast$ Get\-Config (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)}}\label{opengame_8cpp_a1b82d72a3537ac64fa52f25808767540}
+Returns a pointer to a \hyperlink{structTS__Config}{T\-S\-\_\-\-Config} struct that holds the current game's configuration. \hypertarget{opengame_8cpp_abe5b1a64061dd5785428fb48f08ebc7a}{\index{opengame.\-cpp@{opengame.\-cpp}!Get\-Dirs@{Get\-Dirs}}
+\index{Get\-Dirs@{Get\-Dirs}!opengame.cpp@{opengame.\-cpp}}
+\subsubsection[{Get\-Dirs}]{\setlength{\rightskip}{0pt plus 5cm}Get\-Dirs (
+\begin{DoxyParamCaption}
+\item[{void}]{}
+\end{DoxyParamCaption}
+)}}\label{opengame_8cpp_abe5b1a64061dd5785428fb48f08ebc7a}
+
+
+Returns a pointer to a \hyperlink{structTS__Directories}{T\-S\-\_\-\-Directories} struct that holds the current game's directory paths. 
+
+The structure returned is modified by values in the engine.\-ini file. \hypertarget{opengame_8cpp_a811cea2b8ce049758c5b481364e7e11f}{\index{opengame.\-cpp@{opengame.\-cpp}!open\-Game@{open\-Game}}
+\index{open\-Game@{open\-Game}!opengame.cpp@{opengame.\-cpp}}
+\subsubsection[{open\-Game}]{\setlength{\rightskip}{0pt plus 5cm}void open\-Game (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{rfile}
+\end{DoxyParamCaption}
+)}}\label{opengame_8cpp_a811cea2b8ce049758c5b481364e7e11f}
+Reads data from a specified game.\-sgm file and sets the current configuration based on those values. 
+\begin{DoxyParams}{Parameters}
+{\em Rfile} & The name or path of the sgm file to read into the current \hyperlink{structTS__Config}{T\-S\-\_\-\-Config} structure as given by \hyperlink{opengame_8h_aa5a069bc55745ce9346da260973f03fd}{Get\-Config}. Path is relative to the root directory in the current \hyperlink{structTS__Directories}{T\-S\-\_\-\-Directories} as given by \hyperlink{opengame_8h_a1e7ada8dd9edff44100a60ab2b82d267}{Get\-Dirs}. \\
+\hline
+\end{DoxyParams}
+\hypertarget{opengame_8cpp_a1979358aa2a748b15307ad94fb1aa834}{\index{opengame.\-cpp@{opengame.\-cpp}!set\-Config@{set\-Config}}
+\index{set\-Config@{set\-Config}!opengame.cpp@{opengame.\-cpp}}
+\subsubsection[{set\-Config}]{\setlength{\rightskip}{0pt plus 5cm}void set\-Config (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{basedir}
+\end{DoxyParamCaption}
+)}}\label{opengame_8cpp_a1979358aa2a748b15307ad94fb1aa834}
+Sets the current game's configuration to the one specified by the config file in the given game root directory. 
+\begin{DoxyParams}{Parameters}
+{\em basedir} & The directory containing the game.\-sgm and system.\-ini files to read. \\
+\hline
+\end{DoxyParams}
+\hypertarget{opengame_8cpp_a7571e1b11dd26a2becf02624c030b371}{\index{opengame.\-cpp@{opengame.\-cpp}!set\-Directories@{set\-Directories}}
+\index{set\-Directories@{set\-Directories}!opengame.cpp@{opengame.\-cpp}}
+\subsubsection[{set\-Directories}]{\setlength{\rightskip}{0pt plus 5cm}void set\-Directories (
+\begin{DoxyParamCaption}
+\item[{const char $\ast$}]{basedir}
+\end{DoxyParamCaption}
+)}}\label{opengame_8cpp_a7571e1b11dd26a2becf02624c030b371}
+Sets the current game's directory paths to the default paths using a given game root directory. 
+\begin{DoxyParams}{Parameters}
+{\em basedir} & The directory to use as the base for the other directories in the configuration. \\
+\hline
+\end{DoxyParams}

@@ -1,9 +1,11 @@
-#include "map.h"
-#include "tileset.h"
-#include "person.h"
+
 #include "mapengine.h"
+#include "tileset.h"
+#include "map.h"
+#include "person.h"
 #include <cstring>
 #include <assert.h>
+#include "../../common/dlopenwrap.h"
 
 #ifdef _WIN32
 #define STRDUP _strdup
@@ -11,8 +13,62 @@
 #define STRDUP strdup
 #endif
 
+static fhandle SDLGLhandle;
+
+void (*FlipScreenDL)(void);
+
+TS_MapEngineInstance *TS_GetGlobalMapEngineInstance(){
+    static TS_MapEngineInstance *globalInstance = (TS_MapEngineInstance*)calloc(sizeof(TS_MapEngineInstance), 1);
+    return globalInstance;
+}
+
 static TS_Map *nextMap = NULL;
 static bool doneWithCurrentMap = false;
+
+void InitMapMain(void){
+
+    #ifdef _WIN32
+		DWORD error;
+	    SDLGLhandle = LoadLibrary("./plugin/SDL_GL_threaded.dll");
+	    if(SDLGLhandle==NULL){
+            SDLGLhandle = LoadLibrary("./plugin/SDL_GL.dll");
+	    }
+        if(SDLGLhandle!=NULL) {
+            #warning Not implemented yet.
+        }
+        else{
+
+        }
+    #else
+
+        char *error;
+        SDLGLhandle = dlopen("./plugin/libSDL_GL_threaded.so", RTLD_GLOBAL|RTLD_NOW);
+        if(SDLGLhandle==NULL)
+            SDLGLhandle = dlopen("./plugin/libSDL_GL.so", RTLD_GLOBAL|RTLD_NOW);
+
+        if(SDLGLhandle==NULL) {
+            fprintf(stderr, "[" PLUGINNAME "] InitMap error: Could not open any known graphics plugins.\n");
+            exit(0xFD);
+        }
+        else{
+            //DLOPENFUNCTION(v8::Local<v8::Object>(*)(int, int, void *), TS_SDL_GL_MakeV8SurfaceHandleFromPixels, handle, "TS_SDL_GL_MakeV8SurfaceHandleFromPixels", "[" PLUGINNAME "] InitSpriteSet error: Could not load TS_SDL_GL_MakeV8SurfaceHandleFromPixels from any plugin.\n", error, exit(0xFE));
+            printf("The address is %p\n.", dlsym(SDLGLhandle, "TS_SDL_GL_MakeV8SurfaceHandleFromPixels"));
+            FlipScreenDL = (void (*)(void))dlsym(SDLGLhandle, "FlipScreen");
+            if (((error = dlerror()) != NULL)||(FlipScreenDL==NULL))  {
+                fprintf (stderr, "[" PLUGINNAME "] InitMap error: Could not load FlipScreen from any plugin.\n\tReported error is: %s", error);
+                exit(0xFE);
+            }
+        }
+    #endif
+}
+
+void CloseMapMain(void){
+    #ifdef _WIN32
+
+    #else
+        dlclose(SDLGLhandle);
+    #endif
+}
 
 bool *IsMapEngineRunning(){
     static bool isRunning = false;
@@ -37,31 +93,16 @@ void DeactivateMepEngine(){
     *(IsMapEngineRunning()) = false;
 }
 
-/*
-class TS_GlobalMapData{
-public:
-    TS_GlobalMapData(void);
-    v8::Handle<v8::Script> updateScript;
-    v8::Handle<v8::Script> renderScript;
-
-    v8::Handle<v8::Script> enterMapScript;
-    v8::Handle<v8::Script> leaveMapScript;
-    v8::Handle<v8::Script> leaveMapNorthScript;
-    v8::Handle<v8::Script> leaveMapEastScript;
-    v8::Handle<v8::Script> leaveMapSouthScript;
-    v8::Handle<v8::Script> leaveMapWestScript;
-};
-
-*/
 TS_GlobalMapData::TS_GlobalMapData(){
-
+    currentMap = NULL;
+    nextMap = NULL;
 }
 
 TS_GlobalMapData *GetGlobalMapData(){
     static TS_GlobalMapData data;
     return &data;
 }
-
+/*
 TS_MapDrawInstruction::TS_MapDrawInstruction(int _x, int _y, int _w, int _h, int _htile, int _vtile, int tw, int th, const TS_Color *_color, TS_Texture tex){
     texture = tex;
     x = _x;
@@ -105,10 +146,10 @@ TS_MapDrawInstruction::~TS_MapDrawInstruction(){
     free(colorDataFixed);
     free(texcoordDataFixed);
 }
-
+*/
 TS_Map::~TS_Map(){
 }
-
+/*
 void TS_MapDrawInstruction::DrawAsArray(TS_Camera camera){
     const GLint   vertexData[]   = {(x*tileWidth)-camera.x, (y*tileHeight)-camera.y,
         ((x+htile)*tileWidth)-camera.x, (y*tileHeight)-camera.y,
@@ -143,7 +184,7 @@ void TS_MapDrawInstruction::BaseDraw(){
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 }
 
-/*
+
 Global event scripts:
 SCRIPT_ON_ENTER_MAP
 SCRIPT_ON_LEAVE_MAP
@@ -179,11 +220,15 @@ TS_MapLayer::TS_MapLayer(char * n, unsigned short w, unsigned short h){
 }
 
 TS_MapLayer::~TS_MapLayer(){
-    for(size_t i = 0; i<DrawingInstructions.size(); i++){
-        delete DrawingInstructions[i];
-    }
+    //for(size_t i = 0; i<DrawingInstructions.size(); i++){
+    //    delete DrawingInstructions[i];
+    //}
     tiles.resize(0);
     free((void *)name);
+}
+
+void TS_MapLayer::Draw(void){
+
 }
 
 TS_MapZone::TS_MapZone(short _x, short _y, short _w, short _h, short lay, short steps, const char * func, const char * mapname){
@@ -296,7 +341,7 @@ TS_Map::TS_Map(const char *filename){
         printf("[" PLUGINNAME "] Warning: Internal floating point size mismatch. Undefined behaviour may occur.\n");
     }
 
-    unsigned short tilenum[1];
+    //unsigned short tilenum[1];
     unsigned short width[1];
     unsigned short height[1];
     unsigned short flags[1];
@@ -331,7 +376,7 @@ TS_Map::TS_Map(const char *filename){
                 layer.tiles.push_back(*temptile);
             }
         }
-        for(int e = 0; e<*numsegments; e++){
+        for(uint32_t e = 0; e<*numsegments; e++){
             TS_Segment obstruction;
             uint32_t obs[4];
             SDL_RWread(mapfile, obs, 4, 4);
@@ -396,7 +441,7 @@ TS_Map::TS_Map(const char *filename){
         tileset = new TS_TileSet(mapfile, true);
     }
 }
-
+/*
 void TS_Map::Calculate(){
     const TS_Color *fullmask = new TS_Color(0xFF, 0xFF, 0xFF, 0xFF);
     for(size_t l = 0; l<layers.size(); l++){
@@ -418,15 +463,18 @@ void TS_Map::Calculate(){
         }
     }
 }
-
+*/
 void TS_Map::Update(TS_Camera camera){
     SDL_PumpEvents();
 }
 
 void TS_Map::Render(TS_Camera camera){
-    static bool first = true;
+    //static bool first = true;
     glPushMatrix();
     glTranslatef((float)camera.x, float(camera.y), 0);
+    Draw();
+
+    /*
     for(size_t l = 0; l<layers.size(); l++){
         if(first){
             printf("Layer %i had %i instructions.\t", l, layers[l].DrawingInstructions.size());
@@ -444,13 +492,14 @@ void TS_Map::Render(TS_Camera camera){
     if(first){
         first = false;
         printf("\n");
-    }
+    }*/
     glPopMatrix();
 }
 
-void TS_Map::unoptDraw(TS_Camera camera){
+void TS_Map::Draw(void){
 //assume NOTHING!
 
+//    int np = GetNumPersonsOnLayer(l);
     const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
     const GLuint  colorData[]    = {
         0xFFFFFFFF,
@@ -461,30 +510,36 @@ void TS_Map::unoptDraw(TS_Camera camera){
     glTexCoordPointer(2, GL_INT, 0, texcoordData);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
     glEnable(GL_TEXTURE_2D);
-
+                glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+                glEnableClientState(GL_VERTEX_ARRAY);
+                glEnableClientState(GL_COLOR_ARRAY);
     for(size_t l = 0; l<layers.size(); l++){
         for(int y = 0; y<layers[l].height; y++){
             for(int x = 0; x<layers[l].width; x++){
                 int tilenum = layers[l].tiles[x+(layers[l].width*y)];
-                const GLint   vertexData[]   = {(x*tileset->tileWidth)-camera.x, (y*tileset->tileHeight)-camera.y,
-                                                ((x+1)*tileset->tileWidth)-camera.x, (y*tileset->tileHeight)-camera.y,
-                                                ((x+1)*tileset->tileWidth)-camera.x, ((y+1)*tileset->tileHeight)-camera.y,
-                                                (x*tileset->tileWidth)-camera.x, ((y+1)*tileset->tileHeight)-camera.y};
+                const GLint   vertexData[]   = {(x*tileset->tileWidth), (y*tileset->tileHeight),
+                                                ((x+1)*tileset->tileWidth), (y*tileset->tileHeight),
+                                                ((x+1)*tileset->tileWidth), ((y+1)*tileset->tileHeight),
+                                                (x*tileset->tileWidth), ((y+1)*tileset->tileHeight)};
 
                 glVertexPointer(2, GL_INT, 0, vertexData);
                 glBindTexture(GL_TEXTURE_2D, tileset->tiles[tilenum]->texture);
-                glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-                glEnableClientState(GL_VERTEX_ARRAY);
-                glEnableClientState(GL_COLOR_ARRAY);
-                glDrawArrays(GL_QUADS, 0, 4);
-                glDisableClientState(GL_COLOR_ARRAY);
-                glDisableClientState(GL_VERTEX_ARRAY);
-                glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+                glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
             }
         }
-    }
+        //draw Persons.
+        for(int i = 0; i<personList.size(); i++){
+            if(personList[i]->layer==l){
+                personList[i]->BaseDraw();
+            }
+        }
 
+    }
+                glDisableClientState(GL_COLOR_ARRAY);
+                glDisableClientState(GL_VERTEX_ARRAY);
+                glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisable(GL_TEXTURE_2D);
 }
 
@@ -520,8 +575,8 @@ v8Function ChangeMap(V8ARGS){
 
     const char *cstr = *str;
 
-    int screenwidth = GetScreenWidth();
-    int screenheight = GetScreenHeight();
+//    int screenwidth = GetScreenWidth();
+//    int screenheight = GetScreenHeight();
 
     TS_Map *map = new TS_Map((std::string(TS_dirs->map)+std::string(cstr)).c_str());
 
@@ -545,26 +600,38 @@ void ResetMapEngine(){
 }
 
 void TS_MapEngine(TS_Map *map){
-    TS_Camera camera = TS_Camera(0, 0);
-    doneWithCurrentMap = false;
-    TS_Map *currentMap = map;
+
+    TS_MapEngineInstance *TS_MEGlobal = TS_GetGlobalMapEngineInstance();
+
+    TS_MapEngineInstance MEInstance;
+    MEInstance.camera = TS_Camera(0, 0);
+    MEInstance.doneWithCurrentMap = false;
+    MEInstance.currentMap = map;
+
+    MEInstance.inputPerson = TS_MEGlobal->inputPerson;
+    MEInstance.cameraPerson = TS_MEGlobal->cameraPerson;
+
     do{
-        currentMap->Calculate();
+        //currentMap->Calculate();
         nextMap = NULL;
         printf("Beginning Rendering loop.\n");
         while(!doneWithCurrentMap){
-            currentMap->Update(camera);
+            MEInstance.currentMap->Update(TS_MEGlobal->camera);
             if(!GetGlobalMapData()->updateScript.IsEmpty()){
                 GetGlobalMapData()->updateScript->Run();
             }
-            currentMap->Render(camera);
-            currentMap->unoptDraw(camera);
+            MEInstance.currentMap->Render(TS_MEGlobal->camera);
+            FlipScreenDL();
+            //TODO: To make my computer not melt:
+            //SDL_Delay(10);
+
+            //currentMap->unoptDraw(camera);
             //SDL_GL_SwapBuffers();
         }
 
         TS_ClearTemporaryPersons();
-        delete currentMap;
-        currentMap = nextMap;
+        //delete currentMap;
+        MEInstance.currentMap = TS_MEGlobal->nextMap;
     }while(nextMap!=NULL);
 
 }

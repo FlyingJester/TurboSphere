@@ -22,7 +22,23 @@
 #define STRDUP strdup
 #endif
 
+
+#define CHECK_FOR_PROCESS(NAME){\
+        if(SDL_GL_GetProcAddress(NAME)==NULL){\
+        printf("[" PLUGINNAME "] Init Error: " NAME " is not present in OpenGL library.\n");\
+        exit(1);\
+    }\
+    else\
+    printf("[" PLUGINNAME "] Init Info: " NAME " is present in OpenGL library.\n");\
+}
+
+#define GET_GL_FUNCTION(NAME, TYPING)\
+CHECK_FOR_PROCESS( #NAME );\
+NAME = TYPING SDL_GL_GetProcAddress( #NAME )
+
 using namespace std;
+
+void (APIENTRY * glGenFramebuffersEXT)(GLsizei, GLuint*);
 
 DECLARE_OBJECT_TEMPLATES(BMPFont);
 
@@ -42,6 +58,8 @@ void GLColor(TS_Color *color){
     glColor4ub(color->red, color->green, color->blue, color->alpha);
 }
 
+bool HAS_FRAMEBUFFERS = (strstr((char *)glGetString(GL_EXTENSIONS),"GL_EXT_framebuffer_object"));
+
 int numerate(bool reset) {
     static int i = 0;
     if(reset) {
@@ -52,8 +70,16 @@ int numerate(bool reset) {
     return i-1;
 }
 
+static GLuint *cachedTextLines;
+
 initFunction Init(void) {
+    if(false&&HAS_FRAMEBUFFERS){
+        GET_GL_FUNCTION(glGenFramebuffersEXT, (void (APIENTRY *)(GLsizei, GLuint*)));
+        cachedTextLines = (GLuint*)calloc(MAX_CACHED_TEXTLINES, sizeof(GLuint));
+        glGenFramebuffersEXT(MAX_CACHED_TEXTLINES, cachedTextLines);
+    }
     INIT_OBJECT_TEMPLATES(BMPFont);
+
     SET_CLASS_NAME(BMPFont, "Font");
     ADD_TO_PROTO(BMPFont, "drawText",        TS_BMPdrawText);
     ADD_TO_PROTO(BMPFont, "drawZoomedText",  TS_BMPdrawZoomedText);
@@ -63,6 +89,7 @@ initFunction Init(void) {
     ADD_TO_PROTO(BMPFont, "drawTextBox",     TS_BMPdrawTextBox);
     ADD_TO_PROTO(BMPFont, "wordWrapString",  TS_BMPwordWrapString);
     ADD_TO_PROTO(BMPFont, "setColorMask",    TS_BMPsetColorMask);
+
 	return (char *)PLUGINNAME;
 }
 
@@ -113,13 +140,13 @@ void TS_BMPFontFinalizer(V8FINALIZERARGS) {
     object->Dispose();
 }
 
-
+/*
 TS_BMPGlyph::TS_BMPGlyph(TS_Texture tex, int w, int h){
     texture = tex;
     width = w;
     height = h;
 }
-
+*/
 TS_BMPGlyph::TS_BMPGlyph(uint32_t *pixels, int w, int h){
 
     width = w;
@@ -128,6 +155,8 @@ TS_BMPGlyph::TS_BMPGlyph(uint32_t *pixels, int w, int h){
     dheight = (double)h;
 
     glGenTextures(1, &texture);
+    surface = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, DEPTH, CHANNEL_MASKS);
+    memcpy(surface->pixels, pixels, w*h*sizeof(uint32_t));
 
     glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -146,11 +175,8 @@ TS_BMPFont::TS_BMPFont(){
     fontname = NULL;
 }
 
-#define TS_BMPERROR_HEADER  0x1
-#define TS_BMPERROR_SIG     0x2
-#define TS_BMPERROR_GLYPH   0x3
-#define TS_BMPERROR_ENDDATA 0x3
 int TS_BMPFont::Load(const char* file) {
+    glGenTextures(1, &textureAtlas);
     mask = new TS_Color(0xFF, 0xFF, 0xFF, 0xFF);
     SDL_RWops *fontfile;
 	inheight = 0;
@@ -183,6 +209,9 @@ int TS_BMPFont::Load(const char* file) {
 
 	SDL_RWseek(fontfile, 256, SEEK_SET);
     glyphs.reserve(numchars[0]);
+
+    unsigned short totalwidth = 0;
+
 	if(fontfile->size(fontfile)<(long long)256+(4*(*numchars))){
 	    //Benefit of the doubt--an rfn could possibly contain a bunch of empty characters.
         printf("[" PLUGINNAME "] Error: File %s is not a valid .rfn file: no glyph data.\n", file);
@@ -215,13 +244,32 @@ int TS_BMPFont::Load(const char* file) {
                 SDL_RWseek(fontfile, 28, SEEK_CUR);
 
                 current_pos += 28+(sizeof(uint32_t)*SDL_RWread(fontfile, pixels, sizeof(uint32_t),(*width)*(*height)));
-
+                totalwidth+=*width;
                 glyphs.push_back(new TS_BMPGlyph(pixels, *width, *height));
             }
         }
-        if(current_pos!=fontfile->size(fontfile)){
-            printf("[" PLUGINNAME "] Warning: .rfn %s is abnormal: %i bytes of unused data at end of file.", file, (int)(fontfile->size(fontfile)-current_pos));
+
+        surfaceAtlas = SDL_CreateRGBSurface(SDL_SWSURFACE, totalwidth, inheight, DEPTH, CHANNEL_MASKS);
+        SDL_SetSurfaceBlendMode(surfaceAtlas, SDL_BLENDMODE_NONE);
+        widths = (unsigned short *)malloc((sizeof(unsigned short)*glyphs.size())+1);
+        SDL_Rect dest = {0, 0, 0, 0};
+        for(size_t i = 0; i<glyphs.size(); i++){
+            dest.w = glyphs[i]->surface->w;
+            widths[i] = dest.x;
+            dest.h = glyphs[i]->surface->h;
+                for(int e = 0; e<glyphs[i]->surface->h; e++){
+                    memcpy((dest.x*sizeof(uint32_t))+surfaceAtlas->pixels+(e*surfaceAtlas->pitch), glyphs[i]->surface->pixels+(e*glyphs[i]->surface->pitch), glyphs[i]->surface->pitch);
+                }
+            dest.x+=dest.w;
         }
+        widths[glyphs.size()] = totalwidth;
+
+        glBindTexture(GL_TEXTURE_2D, textureAtlas);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, totalwidth, inheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, surfaceAtlas->pixels);
+
         SDL_RWclose(fontfile);
         free(pixels);
     }
@@ -229,7 +277,6 @@ int TS_BMPFont::Load(const char* file) {
     return TS_BMPERROR_NOERROR;
 
 }
-
 
 TS_BMPFont::~TS_BMPFont(){
     for(unsigned int i = 0; i<glyphs.size(); i++){
@@ -330,30 +377,29 @@ void TS_BMPFont::setColorMask(TS_Color *c){
 void TS_BMPFont::drawText(int x, int y, const char *t) {
     int curWidth = 0;
     int glyphnum = 0;
-    std::string text = t;
     glEnable(GL_TEXTURE_2D);
-    const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
-
-    const GLuint  colorData[]    = {
-        mask->toInt(),
-        mask->toInt(),
-        mask->toInt(),
-        mask->toInt()
-    };
 
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
-    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
-    glTexCoordPointer(2, GL_INT, 0, texcoordData);
 
+    size_t i = 0;
 
+    while(t[i]!=0){
 
+        glyphnum = int(t[i]);
+        const int width = glyphs[glyphnum]->width;
+        float x0 = (float)(widths[glyphnum])/(float)widths[glyphs.size()];
+        float x1 = (float)(widths[glyphnum+1])/float(widths[glyphs.size()]);
+        const GLfloat texcoordData[] = {x0, 0.0f, x1, 0.0f, x1, 1.0f, x0, 1.0f};
+        const GLint vertexData[] = {x+curWidth, y, x+curWidth+width, y, x+curWidth+width, y+inheight, x+curWidth, y+inheight};
+        glTexCoordPointer(2, GL_FLOAT, 0, texcoordData);
+        glVertexPointer(2, GL_INT, 0, vertexData);
+        glBindTexture(GL_TEXTURE_2D, textureAtlas);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
-    for (size_t i=0; i < text.length(); i++){
-        glyphnum = int(text.at(i));
-        glyphs[glyphnum]->blit(x+curWidth, y, mask);
+        //glyphs[glyphnum]->blit(x+curWidth, y, mask);
         curWidth+=glyphs[glyphnum]->width;
+        i++;
     }
 
 
@@ -444,13 +490,23 @@ inline const char ** TS_BMPFont::addline(const char **textlines, int * __restric
 
 const char **TS_BMPFont::wordWrapString(const char *t, int w, int* __restrict__ num) {
 
+    static TS_BMPWordWrapResult *strings = (TS_BMPWordWrapResult *)calloc(sizeof(TS_BMPWordWrapResult), MAX_CACHED_WORDWRAPS);
+    static int stringLoc = 0;
+    for(int i = 0; i<MAX_CACHED_WORDWRAPS; i++){
+        if(strings[i].str==NULL)
+            continue;
+        if(strcmp(t, strings[i].str)==0){
+            (*num) = strings[i].numlines;
+            return strings[i].lines;
+        }
+    }
+
     intptr_t startOfWord    = (intptr_t)t; //NUMBER OF CHARACTERS
     const char **textlines  = NULL;// (const char **)calloc(0, sizeof(const char *));
     int readylines          = 0;
     int lineWidth           = 0; //PIXEL WIDTH!
     int tlength             = strlen(t);
     char *linebuffer        = (char *)calloc(1, sizeof(char));
-    //*linebuffer = '\0';
 
     for(int i = 0; i<tlength+1; i++){
         if((t[i]==' ')||(t[i]=='\n')||(i==tlength)){
@@ -482,6 +538,24 @@ const char **TS_BMPFont::wordWrapString(const char *t, int w, int* __restrict__ 
     textlines[(readylines)-1] = STRDUP(linebuffer+(((linebuffer[0]==' ')||(linebuffer[0]=='\n'))?1:0));
     free(linebuffer);
     (*num) = readylines;
+
+    //Free up the location for the result to be cached, if necessary.
+    if(strings[stringLoc].str!=NULL)
+        free((void *)strings[stringLoc].str);
+
+    if(strings[stringLoc].lines!=NULL){
+        for(int i = 0; i<strings[stringLoc].numlines; i++){
+            free((void*)strings[stringLoc].lines[i]);
+        }
+        free((void *)strings[stringLoc].lines);
+    }
+    //Cache the result.
+
+    strings[stringLoc].numlines = *num;
+    strings[stringLoc].str = STRDUP(t);
+    strings[stringLoc].lines = textlines;
+    (stringLoc+=1)%=MAX_CACHED_WORDWRAPS;
+    printf("[" PLUGINNAME "] TS_wordWrapString Info: String %s cached to slot %i.\n", t, stringLoc);
     return textlines;
 }
 
@@ -527,12 +601,9 @@ v8Function TS_BMPdrawTextBox(V8ARGS) {
     while(i<numlines){
         if((y_offset+((i+1)*inheight))<=h)
             font->drawText(x, y+y_offset+(i*inheight), lines[i]);
-
-        free((void*)lines[i]);
         i++;
     }
 
-    free(lines);
     return v8::Undefined();
 }
 

@@ -49,6 +49,8 @@ public:
     TS_Color *getMask(void);
     void setMask(TS_Color c);
 
+    GLuint buffer;
+
 private:
     bool hasInternalMask;
 };

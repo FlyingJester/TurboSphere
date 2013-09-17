@@ -34,14 +34,15 @@ return c;
 }
 
 
-uint32_t concatRGBA(int r, int g, int b, int a){
+inline uint32_t concatRGBA(int r, int g, int b, int a){
 	//printf("concatenating RGBA\n");
+	/*
 	uint32_t rc=((r>255)?255:r);
 	uint32_t gc=((r>255)?255:g);
 	uint32_t bc=((r>255)?255:b);
 	uint32_t ac=((r>255)?255:a);
-
+    */
 //	return ac | (bc<<8) | (gc<<16) | (rc<<24);
-	return rc | (gc<<8) | (bc<<16) | (ac<<24);
+	return r | (g<<8) | (b<<16) | (a<<24);
 
 }

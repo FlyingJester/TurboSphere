@@ -28,10 +28,10 @@
     #include "../../SDL/SDL_thread.h"
 
 #else
-    #include <SDL2/SDL.h>
-    #include <SDL2/SDL_ttf.h>
-    #include <SDL2/SDL_image.h>
-    #include <SDL2/SDL_thread.h>
+    #include "../../SDL2/SDL.h"
+    #include "../../SDL2/SDL_ttf.h"
+    #include "../../SDL2/SDL_image.h"
+    #include "../../SDL2/SDL_thread.h"
 #endif
 
 #define MINMEMALIGN MEMALIGN(MIN_V8_ALIGN)

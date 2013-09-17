@@ -238,8 +238,8 @@ void grabFuncsFromLibrary(HINSTANCE handle){
     int     (*dlGetNumVars)(void);
     VariableArray   (*dlGetVars)(void);
     const char**    (*dlGetVarNames)(void);
-    DLOPENFUNCTION(char *(*)(void), dlInit, handle, "Init", error, return);
-    DLOPENFUNCTION(void(*)(void), dlClose, handle, "Close", error, return);
+    DLOPENFUNCTONPRESET(char *(*)(void), dlInit, handle, "Init", error, return);
+    DLOPENFUNCTONPRESET(void(*)(void), dlClose, handle, "Close", error, return);
     const char * repname = dlInit();
     //DEBUG_VERBOSE
     if(repname==NULL){
@@ -251,13 +251,13 @@ void grabFuncsFromLibrary(HINSTANCE handle){
 
     //printf("Loaded plugin %s.\n", repname);
 
-    DLOPENFUNCTION(int(*)(void), dlGetNumFuncs, handle, "GetNumFunctions", error, return);
-    DLOPENFUNCTION(void **(*)(void), dlGetFuncs, handle, "GetFunctions", error, return);
-    DLOPENFUNCTION(const char **(*)(void), dlGetFuncNames, handle, "GetFunctionNames", error, return);
+    DLOPENFUNCTONPRESET(int(*)(void), dlGetNumFuncs, handle, "GetNumFunctions", error, return);
+    DLOPENFUNCTONPRESET(void **(*)(void), dlGetFuncs, handle, "GetFunctions", error, return);
+    DLOPENFUNCTONPRESET(const char **(*)(void), dlGetFuncNames, handle, "GetFunctionNames", error, return);
 
-    DLOPENFUNCTION(int(*)(void), dlGetNumVars, handle, "GetNumVariables", error, return);
-    DLOPENFUNCTION(VariableArray (*)(void), dlGetVars, handle, "GetVariables", error, return);
-    DLOPENFUNCTION(const char **(*)(void), dlGetVarNames, handle, "GetVariableNames", error, return);
+    DLOPENFUNCTONPRESET(int(*)(void), dlGetNumVars, handle, "GetNumVariables", error, return);
+    DLOPENFUNCTONPRESET(VariableArray (*)(void), dlGetVars, handle, "GetVariables", error, return);
+    DLOPENFUNCTONPRESETs(const char **(*)(void), dlGetVarNames, handle, "GetVariableNames", error, return);
 
     int numFuncs = dlGetNumFuncs();
     FunctionArray Funcs = (FunctionArray) calloc (numFuncs, sizeof(void *));
@@ -305,8 +305,8 @@ void grabFuncsFromLibrary(void *handle){
     int     (*dlGetNumVars)(void);
     VariableArray   (*dlGetVars)(void);
     const char**    (*dlGetVarNames)(void);
-    DLOPENFUNCTION(char *(*)(void), dlInit, handle, "Init", error, return);
-    DLOPENFUNCTION(void(*)(void), dlClose, handle, "Close", error, return);
+    DLOPENFUNCTONPRESET(char *(*)(void), dlInit, handle, "Init", error, return);
+    DLOPENFUNCTONPRESET(void(*)(void), dlClose, handle, "Close", error, return);
     const char * repname = dlInit();
     //DEBUG_VERBOSE
     if(repname==NULL){
@@ -318,13 +318,13 @@ void grabFuncsFromLibrary(void *handle){
 
     //printf("Loaded plugin %s.\n", repname);
 
-    DLOPENFUNCTION(int(*)(void), dlGetNumFuncs, handle, "GetNumFunctions", error, return);
-    DLOPENFUNCTION(void **(*)(void), dlGetFuncs, handle, "GetFunctions", error, return);
-    DLOPENFUNCTION(const char **(*)(void), dlGetFuncNames, handle, "GetFunctionNames", error, return);
+    DLOPENFUNCTONPRESET(int(*)(void), dlGetNumFuncs, handle, "GetNumFunctions", error, return);
+    DLOPENFUNCTONPRESET(void **(*)(void), dlGetFuncs, handle, "GetFunctions", error, return);
+    DLOPENFUNCTONPRESET(const char **(*)(void), dlGetFuncNames, handle, "GetFunctionNames", error, return);
 
-    DLOPENFUNCTION(int(*)(void), dlGetNumVars, handle, "GetNumVariables", error, return);
-    DLOPENFUNCTION(VariableArray (*)(void), dlGetVars, handle, "GetVariables", error, return);
-    DLOPENFUNCTION(const char **(*)(void), dlGetVarNames, handle, "GetVariableNames", error, return);
+    DLOPENFUNCTONPRESET(int(*)(void), dlGetNumVars, handle, "GetNumVariables", error, return);
+    DLOPENFUNCTONPRESET(VariableArray (*)(void), dlGetVars, handle, "GetVariables", error, return);
+    DLOPENFUNCTONPRESET(const char **(*)(void), dlGetVarNames, handle, "GetVariableNames", error, return);
 
     int numFuncs = dlGetNumFuncs();
     FunctionArray Funcs = (FunctionArray) calloc (numFuncs, sizeof(void *));

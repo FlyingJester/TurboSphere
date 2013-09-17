@@ -395,3 +395,23 @@ int TS_Filter(void * _unused, SDL_Event *event){
     }
     return 1;
 }
+
+void * TS_SDL_GL_MakeV8SurfaceHandleFromPixels(int w, int h, void *pixels){
+    v8::HandleScope temporary_scope;
+    
+    SDL_Surface * surface = SDL_CreateRGBSurface(SDL_SWSURFACE|SDL_SRCALPHA, w, h, DEPTH, CHANNEL_MASKS);
+    
+    for(int i = 0; i<w*h; i++){
+	(uint32_t *)(surface->pixels)[i] = (uint32_t *)(pixels)[i];
+    }
+    
+    SurfaceInsttempl->SetInternalFieldCount(1);
+    v8::Handle<v8::Function> Surfacector = Surfacetempl->GetFunction();
+	v8::Handle<v8::Object> Surfaceobj = Surfacector->NewInstance();
+    v8::Persistent<v8::Object> PSurfaceobj = v8::Persistent<v8::Object>::New(v8::Isolate::GetCurrent(), Surfaceobj);
+    PSurfaceobj.MakeWeak((void *)surface, TS_SurfaceFinalizer);
+    PSurfaceobj->SetAlignedPointerInInternalField(0, (void *)surface);
+    PSurfaceobj->GetConstructorName()=v8::String::New( "Surface" );
+    return (void *)temporary_scope.Close(PSurfaceobj);
+  
+}

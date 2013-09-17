@@ -7,14 +7,16 @@
 #define PLUGINNAME "ttffontGL"
 #define BRACKNAME "[" PLUGINNAME "]"
 #include "ttffont.h"
-#define NUMFUNCS 1
+#define NUMFUNCS 2
 #define NUMVARS 0
 #define NUMCATS 3
 
 using namespace std;
 
 v8Function LoadTTFFont(V8ARGS);
+v8Function LoadSystemTTFFont(V8ARGS);
 void * LoadTTFFontPointer          = V8FUNCPOINTER(LoadTTFFont);
+void * LoadSystemTTFFontPointer          = V8FUNCPOINTER(LoadSystemTTFFont);
 
 DECLARE_OBJECT_TEMPLATES(TTFFont);
 
@@ -51,13 +53,15 @@ int GetNumFunctions(){
 
 functionArray GetFunctions(void){
 	functionArray funcs = (functionArray)calloc(NUMFUNCS, sizeof(v8Function));
-	*funcs = LoadTTFFontPointer;
+	funcs[0] = LoadTTFFontPointer;
+	funcs[1] = LoadSystemTTFFontPointer;
 	return funcs;
 }
 nameArray GetFunctionNames(void){
-	nameArray vars = (nameArray)calloc(NUMFUNCS, sizeof(const char *));
-	*vars = (const char *)"TTFFont";
-	return vars;
+	nameArray names = (nameArray)calloc(NUMFUNCS, sizeof(const char *));
+	names[0] = (const char *)"TTFFont";
+	names[1] = (const char *)"GetSystemTTFFont";
+	return names;
 }
 
 
@@ -134,7 +138,7 @@ void TS_TTFFont::drawText(int x, int y, const char *text){
             glEnableClientState(GL_TEXTURE_COORD_ARRAY);
             glEnableClientState(GL_VERTEX_ARRAY);
             glEnableClientState(GL_COLOR_ARRAY);
-            glDrawArrays(GL_QUADS, 0, 4);
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
             glDisableClientState(GL_COLOR_ARRAY);
             glDisableClientState(GL_VERTEX_ARRAY);
             glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -181,7 +185,7 @@ void TS_TTFFont::drawText(int x, int y, const char *text){
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
-    glDrawArrays(GL_QUADS, 0, 4);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glDisableClientState(GL_COLOR_ARRAY);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -195,43 +199,57 @@ void TS_TTFFont::drawZoomedText(int x, int y, float s, const char *text){
 }
 
 int TS_TTFFont::getStringWidth(const char *text){
- return 0;
+
+    int oldest = 0;
+    int age    = cacheattribs[0].age;
+
+    for(int i = 0; i<MAX_CACHED_STRINGS; i++){
+        cacheattribs[i].age++;
+        if(cacheattribs[i].age>age){
+            age = cacheattribs[i].age;
+            oldest = i;
+        }
+        if(strings[i]==NULL) continue;
+
+        if(strcmp(text, strings[i])==0){
+	    //If the string was already cached, DO consider this an access. And someday
+	    //make that behaviour configurable.
+            if(cacheattribs[i].age>0) cacheattribs[i].age--;
+	    return cacheattribs[i].width;
+        }
+    }
+    
+    //We didn't find the string requested. Since this is just an informational function,
+    //we will NOT bind the string to the cache. This behaviour will someday be configurable.
+    
+    SDL_Color color={0xFF,0xFF,0xFF};
+    SDL_Surface *surface = TTF_RenderUTF8_Blended(font, text, color);
+    
+    int w = surface->w;
+    SDL_FreeSurface(surface);
+    return w;
 }
 
-TS_TTFFont::TS_TTFFont(const char *f, int s){
-	printf("%s\n", f);
-	//const char *f2 = "DejaVuSans.ttf";
-	//f = f2;
-	fontname = f;
-    SDL_RWops *fontfile = SDL_RWFromFile(f, "r");
-    if(!fontfile){
-        printf("\nerror opening file %s\n", f);
-        printf("%s\n", SDL_GetError());
+TS_TTFFont::TS_TTFFont(){
+    cache        = (GLuint*)calloc(MAX_CACHED_STRINGS, sizeof(GLuint));
+    cacheattribs = (TS_GlyphAttribs*)calloc(MAX_CACHED_STRINGS, sizeof(TS_GlyphAttribs));
+    strings      = (const char **)calloc(MAX_CACHED_STRINGS, sizeof(const char*));
+    
+    tsmask = new TS_Color(0xFF, 0xFF, 0xFF, 0xFF);
+}
+
+int TS_TTFFont::Load(const char *f, int s){
+    fontname = f;
+    if(s<=0){
+	return 2;
     }
-    font=TTF_OpenFont(f, 10);
+    font=TTF_OpenFont(f, s);
     if(!font) {
-        printf("TTF_OpenFontRW: %s\n", TTF_GetError());
+	printf("TTF_OpenFontRW: %s\n", TTF_GetError());
+	return 1;
     }
     size = s;
-    tsmask = new TS_Color(0xFF, 0xFF, 0xFF, 0xFF);
-
-    cache        = (GLuint*)calloc(MAX_CACHED_STRINGS, sizeof(GLuint));
-    cacheattribs = (TS_GlyphAttribs*)calloc(MAX_CACHED_STRINGS, sizeof(TS_GlyphAttribs));
-    strings      = (const char **)calloc(MAX_CACHED_STRINGS, sizeof(const char*));
-}
-
-TS_TTFFont::TS_TTFFont(const char *f){
-	TS_Directories *TS_dirs = GetDirs();
-    printf(f);
-    fontname = f;
-    font = TTF_OpenFont(string(TS_dirs->font).append(f).c_str(), 10);
-    size = 10;
-
-    tsmask = new TS_Color(0xFF, 0xFF, 0xFF, 0xFF);
-
-    cache        = (GLuint*)calloc(MAX_CACHED_STRINGS, sizeof(GLuint));
-    cacheattribs = (TS_GlyphAttribs*)calloc(MAX_CACHED_STRINGS, sizeof(TS_GlyphAttribs));
-    strings      = (const char **)calloc(MAX_CACHED_STRINGS, sizeof(const char*));
+    return 0;
 }
 
 v8Function LoadTTFFont(V8ARGS){
@@ -240,7 +258,7 @@ v8Function LoadTTFFont(V8ARGS){
     }
     CHECK_ARG_STR(0);
 
-    int size = 10;
+    int size = DEFAULT_FONT_SIZE;
 
     if(args.Length()>1){
 		CHECK_ARG_INT(1);
@@ -251,32 +269,52 @@ v8Function LoadTTFFont(V8ARGS){
     TS_TTFFont *font = NULL;
     v8::String::AsciiValue str(args[0]);
     const char *fontname = *str;
-    font = new TS_TTFFont(string(TS_dirs->font).append(fontname).c_str(), size);
+    font = new TS_TTFFont();
+    int error = font->Load(string(TS_dirs->font).append(fontname).c_str(), size);
 
-    if(!font){
+    if(error){
+      if(error==1)
         THROWERROR(string(BRACKNAME "LoadTTFFont Error: Could not open font ").append(fontname).c_str());
+      if(error==2) //TODO: make this print the size requested. Unfortunately, I don't recall how sprintf works right now...and have no internet.
+	THROWERROR_RANGE(" Error: Invalid size.");
     }
 
     END_OBJECT_WRAP_CODE(TTFFont, font);
 
 }
 
+v8Function LoadSystemTTFFont(V8ARGS){
+    TS_Directories *TS_dirs = GetDirs();
+    TS_Config *TS_conf = GetConfig();
+    
+    BEGIN_OBJECT_WRAP_CODE;
+    TS_TTFFont *font = NULL;
+    font = new TS_TTFFont();
+    int error = font->Load(string(TS_dirs->system).append(TS_conf->systemttffont).c_str(), DEFAULT_SYSTEM_FONT_SIZE);
 
+    if(error){
+      printf(BRACKNAME " LoadSystemTTFFont Error: error loading system font, error number %i\n", error);
+	THROWERROR(string(BRACKNAME "LoadTTFFont Error: Could not open font ").append(string(TS_dirs->system).append(TS_conf->systemttffont).c_str()).c_str());	
+    }
 
+    END_OBJECT_WRAP_CODE(TTFFont, font);
+
+}
+
+    
 TS_TTFFont::~TS_TTFFont(){
     TTF_CloseFont(font);
-	free(cacheattribs);
-	for(int i = 0; i<MAX_CACHED_STRINGS; i++){
-        if(cacheattribs[i].real){
+    for(int i = 0; i<MAX_CACHED_STRINGS; i++){
+	if(cacheattribs[i].real){
             glDeleteTextures(1, &(cache[i]));
-        }
-        if(strings[i]!=NULL){
-            free((void*)strings[i]);
-        }
 	}
-	free(cache);
-	free(cacheattribs);
-	free(strings);
+	if(strings[i]!=NULL){
+	    free((void*)strings[i]);
+	}
+    }
+    free(cache);
+    free(cacheattribs);
+    free(strings);
 }
 
 
@@ -359,7 +397,6 @@ v8::Handle<v8::Value> TS_TTFgetStringWidth(const v8::Arguments& args)
 	return v8::Number::New(GET_SELF(TS_TTFFont*)->getStringWidth((const char*)(*str)));
 
 }
-
 
 v8::Handle<v8::Value> TS_TTFdrawZoomedText(const v8::Arguments& args)
 {

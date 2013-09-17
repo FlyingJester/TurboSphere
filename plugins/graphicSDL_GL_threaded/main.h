@@ -1,17 +1,31 @@
 #ifndef SDL_GL_MAIN_HEAD
 #define SDL_GL_MAIN_HEAD
 
+
+#define BPP 4
+#define DEPTH 32
+
+//TODO: BIG UGLY HACK FOR SDL2 MIGRATION:
+#define SDL_SRCALPHA 0
+
+    #define Frmask 0x000000ff
+	#define Fgmask 0x0000ff00
+	#define Fbmask 0x00ff0000
+	#define Famask 0xff000000
+
+#define CHANNEL_MASKS Frmask, Fgmask, Fbmask, Famask
+
+#ifndef SDL_GL_EXTERNAL
+
 #ifndef APIENTRY
 #define APIENTRY
 #endif
 
 #define PLUGINNAME "SDL_GL"
 #include "../common/plugin.h"
-#ifdef _WIN32
-#include "../../SDL/SDL_opengl.h"
-#else
-#include <SDL/SDL_opengl.h>
-#endif
+
+#include "../../SDL2/SDL_opengl.h"
+
 #include "../common/graphic_algorithm.h"
 #include "../common/graphic_common.h"
 #include "../../configmanager/opengame.h"
@@ -31,18 +45,6 @@
 #define NUMFUNCS 20
 #define NUMVARS  0
 
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-//this is not possible on proper platforms
-//Except MIPS?
-//You got this running on MIPS, I wanna know.
-#else
-
-    #define Frmask 0x000000ff
-	#define Fgmask 0x0000ff00
-	#define Fbmask 0x00ff0000
-	#define Famask 0xff000000
-#endif
-
 #define IMG_FLAGS (IMG_INIT_JPG|IMG_INIT_PNG|IMG_INIT_TIF)
 
 #define SDL2_VIDEO_FLAGS SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS
@@ -50,14 +52,6 @@
 //Deprecated.
 #define SDL_VIDEO_FLAGS SDL_HWSURFACE|SDL_GL_DOUBLEBUFFER|SDL_OPENGL
 
-#define BPP 4
-#define DEPTH 32
-
-//TODO: BIG UGLY HACK FOR SDL2 MIGRATION:
-#define SDL_SRCALPHA 0
-
-
-#define CHANNEL_MASKS Frmask, Fgmask, Fbmask, Famask
 
 typedef const char * shaderSource;
 typedef GLenum shaderHandle;
@@ -114,10 +108,15 @@ SDL_GL_EXPORT nameArray       CCALL GetFunctionNames(void);
 SDL_GL_EXPORT int             CCALL GetNumVariables(void);
 SDL_GL_EXPORT v8FunctionArray CCALL GetVariables(void);
 SDL_GL_EXPORT nameArray       CCALL GetVariableNames(void);
+SDL_GL_EXPORT void            CCALL FlipScreen(void);
+
+SDL_GL_EXPORT v8::Local<v8::Object> CCALL TS_SDL_GL_MakeV8SurfaceHandleFromPixels(int w, int h, void *pixels);
+SDL_GL_EXPORT v8::Local<v8::Object> CCALL TS_SDL_GL_MakeV8ImageHandleFromGLTexture(int w, int h, GLuint tex);
 
 #ifdef _WIN32
 	}
 #endif
 
+#endif
 
 #endif

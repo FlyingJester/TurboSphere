@@ -1,6 +1,7 @@
 #ifndef SDL_GL_PRIMITIVES_HEAD
 #define SDL_GL_PRIMITIVES_HEAD
 #include "main.h"
+#include "../../common/dlopenwrap.h"
 
 v8Function Rectangle(V8ARGS);
 v8Function Line(V8ARGS);

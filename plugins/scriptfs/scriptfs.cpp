@@ -2,6 +2,8 @@
 #define PLUGINNAME "scriptfs"
 #include "../common/plugin.h"
 #include "scriptfs.h"
+#include "bytearray.h"
+#include "rawfile.h"
 #include "../../t5.h"
 #include <stdio.h>
 #include <fstream>
@@ -9,6 +11,7 @@
 #include <cstdio>
 #include <cstring>
 #include <assert.h>
+#include "md5.h"
 
 #ifdef _WIN32
 #include <fcntl.h>
@@ -32,8 +35,22 @@ int numerate(bool reset){
     return i-1;
 }
 
-#define NUMFUNCS 5
+#define NUMFUNCS 8
 #define NUMVARS 0
+
+const char *ScriptFSDescribeError(int err){
+    switch (err){
+        case SCRIPTFS_ERROR_NONE:
+            return "No Error";
+        case SCRIPTFS_ERROR_RNG:
+            return "Seeking out of range";
+        case SCRIPTFS_ERROR_FMT:
+            return NULL; //This can't happen yet!
+        case SCRIPTFS_ERROR_NOFILE:
+            return "Cannot open file";
+    }
+    return NULL;
+}
 
 v8Function TS_fileRead(V8ARGS);
 v8Function TS_fileWrite(V8ARGS);
@@ -45,32 +62,32 @@ v8Function TS_RemoveFile(V8ARGS);
 v8Function TS_GetFileList(V8ARGS);
 v8Function TS_DoesFileExist(V8ARGS);
 
+void * CreateStringFromByteArrayPointer   = V8FUNCPOINTER(CreateStringFromByteArray);
+void * CreateByteArrayFromStringPointer   = V8FUNCPOINTER(CreateByteArrayFromString);
+
+void * TS_CreateByteArrayPointer   = V8FUNCPOINTER(TS_CreateByteArray);
 void * TS_OpenFilePointer          = V8FUNCPOINTER(TS_OpenFile);
-void * TS_OpenRawFilePointer          = V8FUNCPOINTER(TS_OpenRawFile);
+void * TS_OpenRawFilePointer       = V8FUNCPOINTER(OpenRawfile);
 void * TS_RemoveFilePointer        = V8FUNCPOINTER(TS_RemoveFile);
 void * TS_GetFileListPointer       = V8FUNCPOINTER(TS_GetFileList);
 void * TS_DoesFileExistPointer     = V8FUNCPOINTER(TS_DoesFileExist);
 
 DECLARE_OBJECT_TEMPLATES(ScriptFile);
-DECLARE_OBJECT_TEMPLATES(RawFile);
 
 
 void Close(){
 }
 initFunction Init(){
 	T5_init(1, GetDirs()->save);
+	RawfileInit();
     INIT_OBJECT_TEMPLATES(ScriptFile);
     SET_CLASS_NAME(ScriptFile, "File");
-    INIT_OBJECT_TEMPLATES(RawFile);
-    SET_CLASS_NAME(RawFile, "RawFile");
 
     ADD_TO_PROTO(ScriptFile, "read", TS_fileRead);
     ADD_TO_PROTO(ScriptFile, "write", TS_fileWrite);
     ADD_TO_PROTO(ScriptFile, "flush", TS_fileFlush);
     ADD_TO_PROTO(ScriptFile, "close", TS_fileClose);
-//    ADD_TO_PROTO(ScriptFile, "getNumKeys", TS_WSdrawWindow);
-//    ADD_TO_PROTO(ScriptFile, "getKey", TS_WSdrawWindow);
-	return (initFunction)"scriptfsT5";
+	return (initFunction)PLUGINNAME;
 }
 
 int GetNumFunctions(){
@@ -83,6 +100,10 @@ functionArray GetFunctions(){
 	funcs[numerate(false)] = TS_RemoveFilePointer;
 	funcs[numerate(false)] = TS_GetFileListPointer;
 	funcs[numerate(false)] = TS_DoesFileExistPointer;
+	funcs[numerate(false)] = TS_OpenRawFilePointer;
+	funcs[numerate(false)] = TS_CreateByteArrayPointer;
+	funcs[numerate(false)] = CreateStringFromByteArrayPointer;
+	funcs[numerate(false)] = CreateByteArrayFromStringPointer;
 	return funcs;
 }
 
@@ -90,10 +111,13 @@ const char ** GetFunctionNames(){
 	numerate(true);
 	nameArray funcs = (nameArray)calloc(NUMFUNCS, sizeof(TS_name));
 	funcs[numerate(false)] = (TS_name)"File";
-	funcs[numerate(false)] = (TS_name)"RawFile";
 	funcs[numerate(false)] = (TS_name)"RemoveFile";
 	funcs[numerate(false)] = (TS_name)"GetFileList";
 	funcs[numerate(false)] = (TS_name)"DoesFileExist";
+	funcs[numerate(false)] = (TS_name)"RawFile";
+	funcs[numerate(false)] = (TS_name)"ByteArray";
+	funcs[numerate(false)] = (TS_name)"CreateStringFromByteArray";
+	funcs[numerate(false)] = (TS_name)"CreateByteArrayFromString";
 	return funcs;
 }
 
@@ -209,11 +233,6 @@ v8Function TS_GetFileList(V8ARGS){
 		}//dir!=INVALID_HANDLE_VALUE
 		free((void*)fulldirlist);
 	}//attribs!=INVALID_FILE_ATTRIBUTES
-#if DEBUG
-	else{
-		printf("[scriptfs] GetFileList Info: Directory does not exist.\n");
-	}
-#endif
 #else
         }
         closedir(dir);
@@ -312,63 +331,3 @@ v8Function TS_fileClose(V8ARGS)
 	return v8::Undefined();
 }
 
-v8Function TS_OpenRawFile(V8ARGS){
-    return v8::Undefined();
-}
-/*
-RawData TS_DeflateRawData(RawData data){
-    RawData out;
-    out.size = 0;
-    out.compressed = 0;
-    out.data = NULL;
-    int flush = Z_NULL;
-    z_stream strm;
-
-    unsigned int leftToRead = 0;
-    unsigned int alreadyRead = 0;
-
-    strm.zalloc = Z_NULL;
-    strm.zfree = Z_NULL;
-    strm.opaque = Z_NULL;
-    if(deflateInit(&strm, (data.size<=CHUNK)?Z_BEST_SPEED:Z_BEST_COMPRESSION)!=Z_OK){
-        return out;
-    }
-
-    leftToRead = data.size;
-
-    while(flush!=Z_FINISH){
-
-        assert(leftToRead==data.size-alreadyRead);
-
-        strm.avail_in = ((unsigned int)data.size)-alreadyRead;
-
-        flush = (alreadyRead>=data.size)?Z_FINISH:Z_NO_FLUSH;
-
-        strm.next_in = (unsigned char*)((intptr_t)data.data+(intptr_t)alreadyRead);
-
-        do{
-            strm.avail_out = CHUNK;
-
-            out.data = realloc((void *)out.data, alreadyRead+CHUNK);
-
-            strm.next_out = (unsigned char *)out.data;
-
-            deflate(&strm, flush);
-
-            alreadyRead = CHUNK - strm.avail_out;
-            leftToRead = data.size - alreadyRead;
-
-        }while(strm.avail_out==0);
-    }
-    deflateEnd(&strm);
-    assert(leftToRead==0);
-    out.data = realloc((void *)out.data, data.size);
-    return out;
-}
-
-RawData TS_InflateRawData(RawData data){
-
-return RawData();
-}
-
-*/

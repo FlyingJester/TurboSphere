@@ -1,0 +1,117 @@
+#ifndef BMPFONT_HEAD
+#define BMPFONT_HEAD
+
+#include"../common/plugin.h"
+#ifdef _WIN32
+#include "../../SDL/SDL_opengl.h"
+#else
+#include <SDL/SDL_opengl.h>
+#endif
+#include "../../configmanager/opengame.h"
+#include "../common/graphic_common.h"
+#include "../common/graphic_algorithm.h"
+#include "../common/font.h"
+
+#ifdef _WIN32
+    #ifdef BMPFONT_INTERNAL
+	#define BMPFONT_EXPORT __declspec(dllexport)
+	#else
+	#define BMPFONT_EXPORT __declspec(dllimport)
+	#endif
+
+    #define CCALL __cdecl
+
+#else
+#define CCALL
+#define BMPFONT_EXPORT extern "C"
+#endif
+class TS_BMPGlyph;
+
+class MINMEMALIGN TS_BMPFont{
+public:
+	TS_BMPFont();
+	~TS_BMPFont();
+	int Load(const char *);
+		const char *fontname;
+		TS_Color *mask;
+		std::vector<TS_BMPGlyph*> glyphs;
+
+    TS_Texture atlas;
+
+	void drawText(int, int, const char*);
+	void drawZoomedText(int, int, double, const char*);
+	int getStringWidth(const char*) const;
+	int getStringHeight(const char*);
+	int getCharWidth(char) const;
+	int getCharHeight(char);
+	int getHeight(void);
+	void setColorMask(TS_Color *c);
+	const char **wordWrapString(const char *, int, int * __restrict__ );
+private:
+    int inheight;
+    inline const char ** addline(const char **tl, int * __restrict__ nl, char **lb) const;
+};
+
+class TS_BMPGlyph{
+public:
+    friend class TS_BMPFont;
+    TS_BMPGlyph(TS_Texture texture, int width, int height);
+    TS_BMPGlyph(uint32_t *pixels, int width, int height);
+    ~TS_BMPGlyph();
+    TS_Texture texture;
+    int width;
+    int height;
+    double dwidth;
+    double dheight;
+    int SetImage(TS_Texture texture, int width, int height);
+    int SetImage(SDL_Surface*);
+    float glx;
+    float gly;
+    float glw;
+    float glh;
+    int atlasx;
+    int atlasy;
+    int atlasw;
+    int atlash;
+    SDL_Surface *upsurface;
+private:
+    void blit(int x, int y, TS_Color *mask);
+    int  zoomBlit(int x, int y, double factor, TS_Color *mask);
+};
+
+#define TS_BMPERROR_NOERROR 0x0
+#define TS_BMPERROR_HEADER  0x1
+#define TS_BMPERROR_SIG     0x2
+#define TS_BMPERROR_GLYPH   0x3
+#define TS_BMPERROR_ENDDATA 0x3
+#define TS_BMPERROR_BADFILE 0x4
+#define TS_BMPERROR_UNKOWN  0xFF
+
+    void BMPFontInit();
+    void BMPFontClose();
+
+    v8::Handle<v8::Value> TS_BMPdrawText(const v8::Arguments& args);
+    v8Function TS_BMPdrawZoomedText(V8ARGS);
+	v8::Handle<v8::Value> LoadSystemTTFFont(const v8::Arguments& args);
+	v8::Handle<v8::Value> LoadBMPFont(const v8::Arguments& args);
+	v8::Handle<v8::Value> LoadSystemBMPFont(const v8::Arguments& args);
+	v8::Handle<v8::Value> TS_BMPgetStringWidth(const v8::Arguments& args);
+    v8Function TS_BMPsetColorMask(V8ARGS);
+
+#ifdef BMPFONT_INTERNAL
+#ifdef _WIN32
+	extern "C" {
+#endif
+BMPFONT_EXPORT void          CCALL Close(void);
+BMPFONT_EXPORT initFunction  CCALL Init(void);
+BMPFONT_EXPORT int           CCALL GetNumFunctions(void);
+BMPFONT_EXPORT functionArray CCALL GetFunctions(void);
+BMPFONT_EXPORT nameArray     CCALL GetFunctionNames(void);
+BMPFONT_EXPORT int           CCALL GetNumVariables(void);
+BMPFONT_EXPORT void **       CCALL GetVariables(void);
+BMPFONT_EXPORT nameArray     CCALL GetVariableNames(void);
+#ifdef _WIN32
+	}
+#endif
+#endif
+#endif

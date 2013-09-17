@@ -4,9 +4,26 @@
 #include <sstream>
 
 #include "../graphiccommon/screen.h"
+/*! \def CONFIGMGR_INTERNAL
+Indicates that the the header files opengame.h and openscript.h are being processed from the compilation of configmanager.
+*/
 #define CONFIGMGR_INTERNAL
 #include "opengame.h"
 #include "../t5.h"
+
+
+/*! \file opengame.cpp
+   \brief Contains functions for opening a game's configuration and metadata.
+
+Functions are related to a games configuration, directory set, system files, main script name and the name of the game function in JavaScript and game.sgm file.
+Contains the structures TS_Config and TS_Directories, which are used by plugins to get configuration, system file, and directory information for the current game.
+*/
+
+/*! \def STRDUP
+   \brief STRDUP is a synonym for strdup or an equivalent or source code compatible function on the platform being used.
+
+Redirects to strdup on Linux+GCC and _strdup on MSVC.
+*/
 
 #ifdef _MSC_VER
 #define STRDUP _strdup
@@ -19,6 +36,8 @@ using namespace std;
 
 TS_Config::TS_Config(void){
 	gamename = "";
+	gamefunc = "";
+	sgmname = "";
     mainscript = "";
     screenwidth = 240;
     screenheight = 320;
@@ -73,7 +92,7 @@ TS_Directories *GetDirs(void){
 	return &TS_dirsmain;
 }
 
-void setDirectories(string basedirectory){
+void setDirectories(const char * basedirectory){
 	TS_Directories *TS_dirs = GetDirs();
 	    TS_dirs->image       = STRDUP(string(TS_dirs->root).append("images/").c_str());
         TS_dirs->font        = STRDUP(string(TS_dirs->root).append("fonts/").c_str());
@@ -91,12 +110,14 @@ void setDirectories(string basedirectory){
         T5_init(2, "", TS_dirs->root);
 }
 
-void setConfig(string basedirectory){
+void setConfig(const char * basedirectory){
     TS_Config *TS_conf = GetConfig();
     TS_Directories *TS_dirs = GetDirs();
 	T5_file *enginefile = T5_OpenFile("engine.ini");
     TS_conf->fullscreen = (atoi(enginefile->getValueFromSection("fullscreen", "Video"))>0)?true:false;
     TS_conf->scale      = atoi(enginefile->getValueFromSection("scale", "Video"));
+    TS_conf->gamefunc   = enginefile->getValueFromSection("gamefunc", "Engine");
+    TS_conf->sgmname    = enginefile->getValueFromSection("sgmname", "Engine");
 
 
     //Negative scale may take on a meaning. Technically I shouldn't even cleanse these values here.

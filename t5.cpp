@@ -1,6 +1,30 @@
 #define T5_INTERNAL
 #include "t5.h"
 
+#ifdef PREFER_STAT
+
+    #ifdef HAS_STAT
+        #include <stat.h>
+    #elif defined HAS_STAT_SYS
+        #include <sys/stat.h>
+    #elif defined HAS_UNISTD
+        #include <unistd.h>
+    #elif defined HAS_UNISTD_SYS
+        #include <sys/unistd.h>
+    #endif
+#else //PREFER_STAT
+
+    #ifdef HAS_UNISTD
+        #include <unistd.h>
+    #elif defined HAS_UNISTD_SYS
+        #include <sys/unistd.h>
+    #elif defined HAS_STAT
+        #include <stat.h>
+    #elif defined HAS_STAT_SYS
+        #include <sys/stat.h>
+    #endif
+#endif //else to PREFER_STAT
+
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -11,12 +35,42 @@
 #include <stdlib.h>
 
 #ifdef _WIN32
-#define STRDUP _strdup
+    #define STRDUP _strdup
 #else
-#define STRDUP strdup
+    #define STRDUP strdup
+    #include <errno.h> //
 #endif
 
 static std::vector<const char*> T5_Directories(0);
+
+
+#if defined USE_UNISTD && ((!defined PREFER_STAT)||((!defined HAS_STAT)&&!defined HAS_STAT_SYS))
+
+//TODO: Fix these shambles.
+bool T5CALL T5_IsFile(const char *path){
+
+    int info = access(path, F_OK);
+    if (info==0)
+        return true;
+    else
+        return false;
+}
+
+#elif defined USE_STAT
+
+bool T5CALL T5_IsFile(const char *path){
+    struct stat buf;
+    stat(path, &buf);
+    return S_ISREG(buf.st_mode);
+}
+
+bool T5CALL T5_IsDir(const char *path){
+    struct stat buf;
+    stat(path, &buf);
+    return S_ISDIR(buf.st_mode);
+}
+
+#endif
 
 T5_FileText T5CALL T5_LoadFileAsText(const char *file){ //Open a text file and return the contents as a c string.
     std::fstream stream;

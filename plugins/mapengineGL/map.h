@@ -1,10 +1,17 @@
 #ifndef MAPENGINE_MP_HEAD
 #define MAPENGINE_MP_HEAD
+
+#include "typedef.h"
+
 #include "mapengine.h"
 #include "tileset.h"
 #include "person.h"
 #include <vector>
 
+void InitMapMain(void);
+void CloseMapMain(void);
+
+/*
 struct TS_MapDrawInstruction {
     TS_MapDrawInstruction(int x, int y, int w, int h, int htile, int vtile, int tw, int th, const TS_Color *color, TS_Texture tex);
     ~TS_MapDrawInstruction();
@@ -29,7 +36,7 @@ struct TS_MapDrawInstruction {
     void DrawAsArray(TS_Camera camera);
     void BaseDraw(void);
 };
-/*
+
 Global event scripts:
 SCRIPT_ON_ENTER_MAP
 SCRIPT_ON_LEAVE_MAP
@@ -38,33 +45,19 @@ SCRIPT_ON_LEAVE_MAP_EAST
 SCRIPT_ON_LEAVE_MAP_SOUTH
 SCRIPT_ON_LEAVE_MAP_WEST
 */
-class TS_GlobalMapData{
-public:
-    TS_GlobalMapData(void);
-    v8::Handle<v8::Script> updateScript;
-    v8::Handle<v8::Script> renderScript;
 
-    v8::Handle<v8::Script> enterMapScript;
-    v8::Handle<v8::Script> leaveMapScript;
-    v8::Handle<v8::Script> leaveMapNorthScript;
-    v8::Handle<v8::Script> leaveMapEastScript;
-    v8::Handle<v8::Script> leaveMapSouthScript;
-    v8::Handle<v8::Script> leaveMapWestScript;
-};
-
-TS_GlobalMapData *GetGlobalMapData(void);
-void InitGlobalMapScripts(void);
 
 class TS_MapLayer{
 public:
     ~TS_MapLayer();
     TS_MapLayer(char *, unsigned short, unsigned short);
     std::vector<unsigned short> tiles;
-    std::vector<unsigned short> RLEdata;
-    std::vector<TS_MapDrawInstruction *> DrawingInstructions;
+    //std::vector<unsigned short> RLEdata;
+    //std::vector<TS_MapDrawInstruction *> DrawingInstructions;
 
     std::vector<TS_Segment> obstructions;
-
+    void Draw();
+    void Update();
     bool NeedsUpdate;
 
     int width;
@@ -104,13 +97,9 @@ public:
     std::vector<TS_MapZone> zones;
     //TS_TileSet *embeddedTileSet;
     char **strings;
-    void Calculate(void);
-    void unoptDraw(TS_Camera cam);
-    void ArrayDraw(TS_Camera cam);
-    void BufferDraw(TS_Camera cam);
     void Update(TS_Camera cam);
     void Render(TS_Camera cam);
-    void postRender(void);
+    void Draw(void);
 };
 
 TS_Map *GetCurrentMap(void);
@@ -121,10 +110,30 @@ void TS_MapFinalizer(V8FINALIZERARGS);
 
 void TS_MapEngine(TS_Map* map);
 
+
+class TS_GlobalMapData{
+public:
+    TS_GlobalMapData(void);
+    TS_Map *currentMap;
+    TS_Map *nextMap;
+    v8::Handle<v8::Script> updateScript;
+    v8::Handle<v8::Script> renderScript;
+
+    v8::Handle<v8::Script> enterMapScript;
+    v8::Handle<v8::Script> leaveMapScript;
+    v8::Handle<v8::Script> leaveMapNorthScript;
+    v8::Handle<v8::Script> leaveMapEastScript;
+    v8::Handle<v8::Script> leaveMapSouthScript;
+    v8::Handle<v8::Script> leaveMapWestScript;
+};
+TS_GlobalMapData *GetGlobalMapData(void);
+void InitGlobalMapScripts(void);
+
 v8Function IsMapEngineRunning(V8ARGS);
 v8Function SetRenderScript(V8ARGS);
 v8Function SetUpdateScript(V8ARGS);
 v8Function ChangeMap(V8ARGS);
 v8Function ExitMapEngine(V8ARGS);
+v8Function MapEngine(V8ARGS);
 
 #endif

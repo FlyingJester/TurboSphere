@@ -1,15 +1,21 @@
 #ifndef MAPENGINE_ME_HEAD
 #define MAPENGINE_ME_HEAD
-#define PLUGINNAME "mapengineGL"
-#define BRACKNAME "[mapengineGL]"
+
+#include "typedef.h"
+
 #include"../common/plugin.h"
 #ifdef _WIN32
 #include "../../SDL/SDL_opengl.h"
 #else
-#include <SDL/SDL_opengl.h>
+#include "../../SDL2/SDL_opengl.h"
 #endif
+
 #include "../common/graphic_common.h"
 #include "../common/graphic_algorithm.h"
+
+#include "spriteset.h"
+#include "person.h"
+#include "map.h"
 
 #ifndef APIENTRY
 #define APIENTRY
@@ -49,9 +55,18 @@ extern void (APIENTRY * glEnableVertexAttribArray)(GLint);
 extern void (APIENTRY * glDisableVertexAttribArray)(GLint);
 extern void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*);
 
+struct TS_MapEngineInstance{
+    TS_Person *cameraPerson;
+    TS_Person *inputPerson;
+    TS_Camera camera;
+    TS_Map *currentMap;
+    TS_Map *nextMap;
+    bool doneWithCurrentMap;
+};
+
 #ifdef MAPENGINE_INTERNAL
 
-#define NUMFUNCS 8
+#define NUMFUNCS 9
 #define NUMVARS  0
 
 #ifdef _WIN32

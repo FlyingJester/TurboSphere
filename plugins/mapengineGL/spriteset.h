@@ -1,11 +1,16 @@
 #ifndef MAPENGINE_SS_HEAD
 #define MAPENGINE_SS_HEAD
-#include "mapengine.h"
+
+#include "typedef.h"
+
 #include <vector>
+
+#include "mapengine.h"
 
 EXTERN_OBJECT_TEMPLATES(SpriteSet);
 
 void InitSpriteSet(void);
+void CloseSpriteSet(void);
 void TS_SpriteSetFinalizer(V8FINALIZERARGS);
 
 v8Function LoadSpriteSet(V8ARGS);

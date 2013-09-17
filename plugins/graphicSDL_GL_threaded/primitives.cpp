@@ -6,15 +6,113 @@
 #include "surface.h"
 #include <sstream>
 #include <assert.h>
-#include <SDL2/SDL_opengl.h>
+#include "../../SDL2/SDL_opengl.h"
 
 #define XPROP v8::String::New("x")
 #define YPROP v8::String::New("y")
 
+#ifdef USE_AMDLIBM
+    #ifdef _WIN32
+        #warning AMD LibM cannot be used for TurboSphere on Windows.
+        #error If you really want to try, go ahead and remove this error. But I warned you.
+    #endif
+#endif
+
+#ifdef USE_AMDLIBM
+
+
+    double    (*sin_override)(double);
+    double    (*cos_override)(double);
+    double    (*floor_override)(double);
+    double    (*ceil_override)(double);
+    double    (*max_override)(double, double);
+    double    (*min_override)(double, double);
+    double    (*sqrt_override)(double);
+    double tempmin(double a, double b){
+        return min(a, b);
+    }
+    double tempmax(double a, double b){
+        return max(a, b);
+    }
+
+
+#endif
 
 void PrimitivesInit(void){
+    #ifdef USE_AMDLIBM
+        #ifdef _WIN32
+		DWORD error;
+	    HINSTANCE handle = LoadLibrary("libamdlibm.so");
+        if(handle!=NULL) {
+            #warning this will cause problems.
+        }
+        else{
+            sin_override = sin;
+            cos_override = cos;
+        }
+        #else
+
+        char *error;
+        void * handle = dlopen("./libamdlibm.so", RTLD_GLOBAL|RTLD_NOW);
+        if(handle==NULL) {
+            sin_override = sin;
+            cos_override = cos;
+            floor_override= floor;
+            ceil_override = ceil;
+        }
+        else{
+            sin_override = (double(*)(double))dlsym(handle, "amd_sin");
+            if ((error = dlerror()) != NULL)  {
+                fprintf (stderr, "[" PLUGINNAME "] PrimitivesInit error: Could not load amd_sin from AMD libm.\n\tReverting to normal libm sin function.\n\tReported error is: %s", error);
+                sin_override = sin;
+            }
+            cos_override = (double(*)(double))dlsym(handle, "amd_cos");
+            if ((error = dlerror()) != NULL)  {
+                fprintf (stderr, "[" PLUGINNAME "] PrimitivesInit error: Could not load amd_cos from AMD libm.\n\tReverting to normal libm cos function.\n\tReported error is: %s", error);
+                cos_override = cos;
+            }
+            floor_override = (double(*)(double))dlsym(handle, "amd_floor");
+            if ((error = dlerror()) != NULL)  {
+                fprintf (stderr, "[" PLUGINNAME "] PrimitivesInit error: Could not load amd_floor from AMD libm.\n\tReverting to normal libm floor function.\n\tReported error is: %s", error);
+                floor_override = floor;
+            }
+            ceil_override = (double(*)(double))dlsym(handle, "amd_ceil");
+            if ((error = dlerror()) != NULL)  {
+                fprintf (stderr, "[" PLUGINNAME "] PrimitivesInit error: Could not load amd_ceil from AMD libm.\n\tReverting to normal libm ceil function.\n\tReported error is: %s", error);
+                ceil_override = ceil;
+            }
+            min_override = (double(*)(double, double))dlsym(handle, "amd_fmin");
+            if ((error = dlerror()) != NULL)  {
+                fprintf (stderr, "[" PLUGINNAME "] PrimitivesInit error: Could not load amd_fmin from AMD libm.\n\tReverting to normal libm min function.\n\tReported error is: %s", error);
+                min_override = tempmin;
+            }
+            max_override = (double(*)(double, double))dlsym(handle, "amd_fmax");
+            if ((error = dlerror()) != NULL)  {
+                fprintf (stderr, "[" PLUGINNAME "] PrimitivesInit error: Could not load amd_fmax from AMD libm.\n\tReverting to normal libm max function.\n\tReported error is: %s", error);
+                max_override = tempmax;
+            }
+            sqrt_override = (double(*)(double))dlsym(handle, "amd_sqrt");
+            if ((error = dlerror()) != NULL)  {
+                fprintf (stderr, "[" PLUGINNAME "] PrimitivesInit error: Could not load amd_sqrt from AMD libm.\n\tReverting to normal libm sqrt function.\n\tReported error is: %s", error);
+                sqrt_override = sqrt;
+            }
+        }
+        #endif
+    #endif
 
 }
+
+
+#ifdef USE_AMDLIBM
+
+    #define sin sin_override
+    #define cos cos_override
+    #define floor floor_override
+    #define ceil  ceil_override
+    #define min min_override
+    #define max max_override
+    #define sqrt sqrt_override
+#endif
 
 v8Function Rectangle(V8ARGS)
 {
@@ -876,17 +974,17 @@ void TS_SoftRectangle(int x, int y, int w, int h, TS_Color *c, SDL_Surface *dest
 #define CIRCLE_POINT_Y(array, num) array[(num*2)+1]
 
 inline void TS_CalcCirclePoints(int r, int numSegments, GLint *points){
-    const float pi2 = 2.0f*3.14159265358979323846f;
+    const double pi2 = 2.0f*3.14159265358979323846f;
 
     assert(numSegments);
 
     //points[(numSegments*2)] = 'j';
     //printf("Poked.\n");
-
+    double ns = numSegments;
     for(int i = 0; i<numSegments; i++){
-        float theta=float(((float)i)/((float)numSegments))*pi2;
-            CIRCLE_POINT_X(points, i) = (int)round(((float)r)*cos(theta));
-            CIRCLE_POINT_Y(points, i) = (int)round(((float)r)*sin(theta));
+        double theta=double(((double)i)/ns)*pi2;
+            CIRCLE_POINT_X(points, i) = (int)round(((double)r)*cos(theta));
+            CIRCLE_POINT_Y(points, i) = (int)round(((double)r)*sin(theta));
     }
 }
 
@@ -895,7 +993,7 @@ inline void TS_CalcCirclePoints(int r, int numSegments, GLint *points){
 
 void TS_OutlinedCircle(int x, int y, int r, TS_Color *c, bool AA){
 
-    const float localPi = 3.14159265358979323846f;
+    const double localPi = 3.14159265358979323846f;
 
     if(r==0){
         return;
@@ -915,6 +1013,8 @@ void TS_OutlinedCircle(int x, int y, int r, TS_Color *c, bool AA){
     #endif
 
     glTranslatef((float)x, (float)y, 0.0f);
+
+
 
     int numSegments = (int)ceil(localPi*r*2.0f);
     if(numSegments<4){
@@ -960,7 +1060,7 @@ void TS_FilledCircle(int x, int y, int r, TS_Color *c, bool AA){
 
 void TS_GradientCircle(int x, int y, int r, TS_Color *c1, TS_Color *c2, bool AA){
 
-    const float localPi = 3.14159265358979323846f;
+    const double localPi = 3.14159265358979323846f;
 
     if(r==0){
         return;
@@ -989,11 +1089,13 @@ void TS_GradientCircle(int x, int y, int r, TS_Color *c1, TS_Color *c2, bool AA)
 
     GLint *points = (GLint*)calloc(numSegments, sizeof(GLint)*2);
     TS_CalcCirclePoints(r, numSegments, points);
+    //points = (GLint*)calloc(numSegments+1, sizeof(GLint)*2);
+    points[(numSegments*2)-2] = points[2];
+    points[(numSegments*2)-1] = points[3];
     points[0] = 0;
     points[1] = 0;
-    points[2] = r;
-    points[3] = 0;
-    points[(numSegments*2)-1] = r;
+    //points[2] = r;
+    //points[3] = 0;
 
     GLuint *colorData = (GLuint*)calloc(numSegments, sizeof(GLuint));
     for(int i = 1; i<numSegments; i++){

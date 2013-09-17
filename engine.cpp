@@ -6,6 +6,7 @@
 #include "functionload.h"
 #include "variableregister.h"
 #include "loadplugins.h"
+#include "common/noreturn.h"
 
 #ifdef _WIN32
 #define STRDUP _strdup
@@ -40,12 +41,31 @@ void TS_CallFunc(const char *name, v8::Persistent<v8::Context> context){
         gameFunc->Call(context->Global(), 0, NULL);
 }
 
+
 v8::Handle<v8::Value> GetVersionNumber(const v8::Arguments& args){
     return v8::Number::New(2.0);
 }
 
 v8::Handle<v8::Value> GetVersionString(const v8::Arguments& args){
     return v8::String::New(VERSION);
+}
+
+v8::Handle<v8::Value> GarbageCollect(const v8::Arguments& args){
+    v8::V8::LowMemoryNotification();
+    return v8::Undefined();
+}
+
+TS_NORETURN v8::Handle<v8::Value> ExitGame(const v8::Arguments& args){
+    exit(0);
+}
+
+TS_NORETURN v8::Handle<v8::Value> AbortGame(const v8::Arguments& args){
+    if(args.Length()<1){
+        ExitGame(args);
+    }
+    v8::String::AsciiValue str(args[0]);
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, GetConfig()->gamename, *str, NULL);
+    ExitGame(args);
 }
 
 v8::Handle<v8::Value> RequireScript(const v8::Arguments& args){
@@ -92,21 +112,63 @@ void notationCallback(v8::GCType type, v8::GCCallbackFlags flags){
     printf("[Engine] GC was performed.\n");
 }
 
-void runGame(const char * dir){
+void runGame(const char * path){
 
-    v8::HandleScope mainscope(v8::Isolate::GetCurrent());
+    char * dir;
+
+    const char *gameSGMfile;
+
     TS_Config *TS_conf = GetConfig();
     TS_Directories *TS_dirs = GetDirs();
-    if(strnlen(dir, 2)>0){
+
+    dir = STRDUP(path);
+    size_t path_size_chr = strlen(dir);
+
+    if(T5_IsDir(path)){
+
+        if(dir[path_size_chr-1]=='/'){
+            TS_dirs->root = STRDUP(dir);
+            setDirectories(TS_dirs->root);
+            setConfig(TS_dirs->root);
+            printf("%s is the sgmname. We are running in / mode.\n", TS_conf->sgmname);
+            gameSGMfile = STRDUP(string(dir).append(TS_conf->sgmname).c_str());
+        }
+        else {
+            TS_dirs->root = STRDUP(string(dir).append("/").c_str());
+            setDirectories(TS_dirs->root);
+            setConfig(TS_dirs->root);
+            printf("%s is the sgmname. We are running in NO / mode.\n", TS_conf->sgmname);
+            gameSGMfile = STRDUP((string(TS_dirs->root)).append(TS_conf->sgmname).c_str());
+        }
+    }
+    else if (T5_IsFile(path)){
+
+        //If the path ends in a slash, we need to remove it so that we can use just the filename.
+
+        //This stops crashes with the QT+T5 launcher when it is set to use directories, and then
+        //that setting is overridden by check in the open... dialog.
+        if(dir[path_size_chr]=='/'){
+            dir[path_size_chr]='\0';
+        }
+
+        //Before we splice out the the last part of the path, use it as the file.
+        gameSGMfile = STRDUP(dir);
+        //Since it is a file, we cut off the filename and turn dir into just the directory.
+        memset(strrchr((char *)dir, '/'), '\0', 1);
+
+
         TS_dirs->root = STRDUP(string(dir).append("/").c_str());
         setDirectories(TS_dirs->root);
+        setConfig(TS_dirs->root);
     }
     else{
-        TS_dirs->root = "startup/";
-        setDirectories(TS_dirs->root);
+        fprintf(stderr, "Invalid path '%s' given for the game.\n", path);
+        free((void *)dir);
+        exit(0);
     }
-    setConfig(TS_dirs->root);
-    const char *gameSGMfile = STRDUP(string(TS_dirs->root).append("game.sgm").c_str());
+
+    v8::HandleScope mainscope(v8::Isolate::GetCurrent());
+
     opengame(gameSGMfile);
 
     free((void *)gameSGMfile);
@@ -145,9 +207,14 @@ void runGame(const char * dir){
 
 	v8::Handle<v8::FunctionTemplate> E_Delaytempl = v8::FunctionTemplate::New(Delay);
 
+	v8::Handle<v8::FunctionTemplate> E_Exittempl = v8::FunctionTemplate::New(ExitGame);
+
+	v8::Handle<v8::FunctionTemplate> E_Aborttempl = v8::FunctionTemplate::New(AbortGame);
+
+	v8::Handle<v8::FunctionTemplate> E_GarbageCollecttempl = v8::FunctionTemplate::New(GarbageCollect);
+
 
     v8::Context::Scope context_scope(context);
-
 
     registerAllFunctions(context);
     registerAllVariables(context);
@@ -165,6 +232,12 @@ void runGame(const char * dir){
 	context->Global()->Set(v8::String::New("GetTime"), E_GetTimetempl->GetFunction());
 
 	context->Global()->Set(v8::String::New("Delay"), E_Delaytempl->GetFunction());
+
+	context->Global()->Set(v8::String::New("Exit"), E_Exittempl->GetFunction());
+
+	context->Global()->Set(v8::String::New("Abort"), E_Aborttempl->GetFunction());
+
+	context->Global()->Set(v8::String::New("GarbageCollect"), E_GarbageCollecttempl->GetFunction());
 
 
     if(SDL_WasInit(SDL_INIT_EVERYTHING)==0){
@@ -190,7 +263,8 @@ int main
 #endif
   (int argc, char* argv[]) {
 
-    if(argc>1){
+    if(argc>1&&(strnlen(argv[1], 2)>0)){
+        printf("We are running in given-path mode.\n");
         runGame(argv[1]);
     }
     else{

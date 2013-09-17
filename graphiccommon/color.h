@@ -36,6 +36,6 @@ public:
     uint64_t reserved;
 };
 
-GRAPHICC_EXPORT uint32_t concatRGBA(int, int, int, int);
+GRAPHICC_EXPORT inline uint32_t concatRGBA(int, int, int, int);
 
 #endif

@@ -53,7 +53,7 @@ void TS_NeedSurface(SDL_Surface *surface){
     if(QueuePlacingPosition==QueueOperatingPosition+1){
         return;
     }
-    for(int i = QueueOperatingPosition; i!=QueuePlacingPosition; (++i)%=SurfaceQueueSize){
+    for(unsigned int i = QueueOperatingPosition; i!=QueuePlacingPosition; (++i)%=SurfaceQueueSize){
         //This would be ver strange indeed.
         //The only case it would make sense is blitting a surface onto itself--but in that case,
         //the source and destination are guaranteed to be at the same stage!
@@ -81,7 +81,7 @@ void TS_NeedSurface(SDL_Surface *surface){
 //Thread Function
 
 int SurfaceThreadFunction(void *data){
-    static bool first = true;
+    //static bool first = true;
     while(true){
         if(SDL_LockMutex(SurfaceQueueMutex)<0)
             exit(0xD);
@@ -105,7 +105,7 @@ int SurfaceThreadFunction(void *data){
         //If we don't get this mutex, we restart. This forces us to update all surfaces that need updating.
         if(SDL_TryLockMutex(SurfaceQueueIndependantMutex)==SDL_MUTEX_TIMEDOUT){
             printf("The Indie mutex was not locked!\n");
-            goto end;
+            goto endsub;
         }
 
         if(((QueueOperatingPosition+1)%SurfaceQueueSize)==QueuePlacingPosition){
@@ -132,12 +132,12 @@ int SurfaceThreadFunction(void *data){
         }
         else{
             printf("[Surface Thread] Info: Done!\n");
-            SDL_Delay(2);
+            SDL_Delay(0);
         }
     endWithIndie:
         if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
             exit(0x9);
-    end:
+    endsub:
         if(SDL_UnlockMutex(SurfaceQueueMutex)<0)
             exit(0xE);
         }
