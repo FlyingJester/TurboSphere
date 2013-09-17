@@ -1,8 +1,10 @@
 #include "save.h"
 #include <png.h>
+#include "../common/plugin.h"
 #include <cstdlib>
 #include <cstdint>
 #include <cstdio>
+#include <ctime>
 
 //These are hardcoded at compile time.
 //I support the alpha channel, always.
@@ -30,7 +32,7 @@ int save_PNG(const char * path, void *pixels, unsigned int width, unsigned int h
     png_set_IHDR(pngs, info, width, height, DEPTH, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_ADAM7, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 
     png_byte **rowlist = (png_byte **)png_malloc(pngs, height*sizeof(png_byte*));
-    for(int y = 0; y<height; y++){
+    for(unsigned int y = 0; y<height; y++){
         png_byte *row = (png_byte*)png_malloc(pngs, BPP*width);
         rowlist[y] = row;
         memcpy(row, pixels+(width*y*BPP), width*BPP);
@@ -42,7 +44,7 @@ int save_PNG(const char * path, void *pixels, unsigned int width, unsigned int h
 
     fclose(file);
 
-    for(int i = 0; i<height; i++){
+    for(unsigned int i = 0; i<height; i++){
         png_free(pngs, rowlist[i]);
     }
     png_free(pngs, rowlist);
@@ -56,36 +58,14 @@ int save_TGA(const char * path, void *pixels, unsigned int width, unsigned int h
 
     FILE *file;
 
-
-    uint8_t ID_Length = 0;
-    uint8_t ColorMapType = 0;
-    uint8_t ImageType = 10;
     uint8_t ColorMap[5] = {0, 0, 0, 0, 0};
-    uint8_t Xorigin = 0;
-    uint8_t Yorigin = height;
-    uint8_t Width = width;
-    uint8_t Height = height;
-    uint8_t PixelDepth;
 
-    switch (format){
-        case (R8G8B8):
-            PixelDepth = 24;
-            break;
-        case (R8G8B8A8):
-            PixelDepth = 32;
-            break;
-        case (R5G5B5A1):
-            PixelDepth = 16;
-            break;
-        default:
-            PixelDepth = 32;
-    }
 
     uint8_t ImageDescriptor = (0x20);
     if(flags&SDL_GL_SAVETGA_CORONACOMPAT)
         ImageDescriptor|=9;
     else
-        ImageDescriptor|=4;
+        ImageDescriptor|=9;
 
 
 
@@ -97,8 +77,10 @@ int save_TGA(const char * path, void *pixels, unsigned int width, unsigned int h
     fputc(0, file); //ColorMap Type
     if(flags&SDL_GL_SAVETGA_COMPRESS)
         fputc(10, file); //Image Type (RLE TrueColor = 10)
-    else
+    else if(flags&SDL_GL_SAVETGA_CORONACOMPAT)
         fputc(2, file); //Image Type (TrueColor = 2)
+    else
+        fputc(10, file);
 
     fwrite(ColorMap, sizeof(uint8_t), sizeof(ColorMap), file); //ColorMap
     fseek(file, 10, SEEK_SET);
@@ -109,7 +91,7 @@ int save_TGA(const char * path, void *pixels, unsigned int width, unsigned int h
     fputc(height      &0xFF, file);
     fputc((height >>8)&0xFF, file);
     fseek(file, 16, SEEK_SET);
-    fputc(PixelDepth, file); // Depth
+    fputc(BPP*DEPTH, file); // Depth
     fputc(ImageDescriptor, file); //Image Descriptor (pixel data orientation)
 
     if(flags&SDL_GL_SAVETGA_COMPRESS){
@@ -139,7 +121,7 @@ int save_TGA(const char * path, void *pixels, unsigned int width, unsigned int h
         }
     }
     else if(flags&SDL_GL_SAVETGA_CORONACOMPAT){
-        for(int i = 0; i<width*height; i++){
+        for(unsigned int i = 0; i<width*height; i++){
             fwrite((pixels+((i*BPP)+2)), 1, 1, file);
             fwrite((pixels+((i*BPP)+1)), 1, 1, file);
             fwrite((pixels+((i*BPP))),   1, 1, file);
