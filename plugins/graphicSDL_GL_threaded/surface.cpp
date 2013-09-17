@@ -352,7 +352,7 @@ v8Function SurfaceSave(V8ARGS){
     const char *filename = string(TS_dirs->image).append(*str).c_str();
 
     size_t len = strlen(filename);
-    if(strstr(filename, ".png")==filename+len-4){
+    if((strstr(filename, ".png")==filename+len-4)||(strstr(filename, ".PNG")==filename+len-4)){
         printf("\n\nSaving PNG to file %s.\n\n", filename);
         save_PNG(filename, surface->pixels, surface->w, surface->h, 0);
         if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
@@ -360,7 +360,7 @@ v8Function SurfaceSave(V8ARGS){
         return v8::Undefined();
     }
 
-    else if(strstr(filename, ".tga")==filename+len-4){
+    else if((strstr(filename, ".tga")==filename+len-4)||(strstr(filename, ".TGA")==filename+len-4)){
         printf("\n\nSaving TGA to file %s.\n\n", filename);
         save_TGA(filename, surface->pixels, surface->w, surface->h, R8G8B8A8, SDL_GL_SAVETGA_COMPRESS);
         if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
