@@ -353,12 +353,20 @@ v8Function SurfaceSave(V8ARGS){
 
     size_t len = strlen(filename);
     if(strstr(filename, ".png")==filename+len-4){
-                printf("\n\nSaving PNG to file %s.\n\n", filename);
-                save_PNG(filename, surface->pixels, surface->w, surface->h, 0);
-                if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
-                    exit(0x116);
-                return v8::Undefined();
-            }
+        printf("\n\nSaving PNG to file %s.\n\n", filename);
+        save_PNG(filename, surface->pixels, surface->w, surface->h, 0);
+        if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
+            exit(0x116);
+        return v8::Undefined();
+    }
+
+    else if(strstr(filename, ".tga")==filename+len-4){
+        printf("\n\nSaving TGA to file %s.\n\n", filename);
+        save_TGA(filename, surface->pixels, surface->w, surface->h, R8G8B8A8, SDL_GL_SAVETGA_COMPRESS);
+        if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
+            exit(0x116);
+        return v8::Undefined();
+    }
     if(SDL_SaveBMP(surface, filename)!=0){
         printf("[" PLUGINNAME "] SurfaceSave Error: Could not save image %s: %s\n", *str, SDL_GetError());
         SDL_ClearError();
