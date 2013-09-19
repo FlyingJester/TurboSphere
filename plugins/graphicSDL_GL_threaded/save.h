@@ -9,6 +9,8 @@ enum TGA_format{
 int save_PNG(const char * path, void *pixels, unsigned int width, unsigned int height, char flags);
 int save_TGA(const char * path, void *pixels, unsigned int width, unsigned int height, TGA_format format, char flags);
 
+int save_AUTO(const char * path, void * pixels, unsigned int width, unsigned int height);
+
 #define SDL_GL_SAVE_NOERROR 0
 #define SDL_GL_SAVE_OOM 1
 #define SDL_GL_SAVE_NOFILE 2

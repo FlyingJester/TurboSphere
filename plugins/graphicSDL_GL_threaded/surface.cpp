@@ -350,7 +350,7 @@ v8Function SurfaceSave(V8ARGS){
 
     v8::String::Utf8Value str(args[0]);
     const char *filename = string(TS_dirs->image).append(*str).c_str();
-
+    /*
     size_t len = strlen(filename);
     if((strstr(filename, ".png")==filename+len-4)||(strstr(filename, ".PNG")==filename+len-4)){
         printf("\n\nSaving PNG to file %s.\n\n", filename);
@@ -366,8 +366,8 @@ v8Function SurfaceSave(V8ARGS){
         if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
             exit(0x116);
         return v8::Undefined();
-    }
-    if(SDL_SaveBMP(surface, filename)!=0){
+    }*/
+    if(save_AUTO(filename, surface->pixels, surface->w, surface->h)!=SDL_GL_SAVE_NOERROR){
         printf("[" PLUGINNAME "] SurfaceSave Error: Could not save image %s: %s\n", *str, SDL_GetError());
         SDL_ClearError();
 

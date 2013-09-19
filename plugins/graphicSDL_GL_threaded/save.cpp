@@ -5,12 +5,40 @@
 #include <cstdint>
 #include <cstdio>
 #include <ctime>
+#include <cctype>
+
+#include "main.h"
 
 //These are hardcoded at compile time.
 //I support the alpha channel, always.
-#define BPP 4
-#define DEPTH 8
+//#define BPP 4
+//#define DEPTH 8
 
+int save_AUTO(const char * path, void * pixels, unsigned int width, unsigned int height){
+
+    size_t len = strlen(path);
+    char * lowerPath = (char *)(((intptr_t)path)+len-4);
+    lowerPath[1] = tolower(lowerPath[1]);
+    lowerPath[2] = tolower(lowerPath[2]);
+    lowerPath[3] = tolower(lowerPath[3]);
+
+    if(strcmp(lowerPath, ".png")==0){
+        return save_PNG(path, pixels, width, height, 0);
+
+    }
+
+    else if(strcmp(lowerPath, ".tga")==0){
+        return save_TGA(path, pixels, width, height, R8G8B8A8, SDL_GL_SAVETGA_COMPRESS);
+    }
+    else {
+        SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(pixels, width, height, DEPTH, BPP*width, CHANNEL_MASKS);
+        int err = SDL_SaveBMP(surface, path);
+        SDL_FreeSurface(surface);
+        if(err!=0)
+            return SDL_GL_SAVE_UNKNOWN;
+    }
+    return SDL_GL_SAVE_NOERROR;
+}
 
 int save_PNG(const char * path, void *pixels, unsigned int width, unsigned int height, char flags){
     FILE * file;
@@ -91,16 +119,22 @@ int save_TGA(const char * path, void *pixels, unsigned int width, unsigned int h
     fputc(height      &0xFF, file);
     fputc((height >>8)&0xFF, file);
     fseek(file, 16, SEEK_SET);
-    fputc(BPP*DEPTH, file); // Depth
+    fputc(DEPTH, file); // Depth
     fputc(ImageDescriptor, file); //Image Descriptor (pixel data orientation)
 
     if(flags&SDL_GL_SAVETGA_COMPRESS){
+
+    //NOTE:
+    //For simplicity, we only chunk same-data chunks. Every time a dissimilar pixel is found, we start a new chunk.
 
         char chunk[5];
         size_t pixelNum = 0;
         while(pixelNum<width*height){
             size_t i = pixelNum+1;
-            while((i<width*height)&&(i-pixelNum<0x0F)&&(i-pixelNum%width)&&(memcmp(pixels+(pixelNum*BPP), pixels+(i*BPP), BPP)==0)){
+            if(pixelNum+0x7F>=width*height)
+                break;
+
+            while((i<width*height)&&(i-pixelNum<0x7F)&&(i-pixelNum%width)&&(memcmp(pixels+(pixelNum*BPP), pixels+(i*BPP), BPP)==0)){
                 i++;
             }
 
@@ -117,8 +151,25 @@ int save_TGA(const char * path, void *pixels, unsigned int width, unsigned int h
             fwrite(chunk, 1, sizeof(chunk), file);
 
             pixelNum=i;
-
         }
+
+        //Slight screw up with the previous.
+        //TODO: Fix this so the last chunk of the file is RLE'd as well, and the previous loop does NOT increment pixelNum one too many times.
+        pixelNum--;
+        //fflush(file);
+        //Finish the writing.
+
+        for (chunk[0]=0; pixelNum<width*height; pixelNum++){
+
+            memcpy(chunk+1, (pixels+((pixelNum*BPP)+2)), 1);
+            memcpy(chunk+2, (pixels+((pixelNum*BPP)+1)), 1);
+            memcpy(chunk+3, (pixels+((pixelNum*BPP)+0)), 1);
+            memcpy(chunk+4, (pixels+((pixelNum*BPP)+3)), 1);
+
+            fwrite(chunk, 1, sizeof(chunk), file);
+        }
+        fflush(file);
+        printf("Drawing done. %i is where we ended, %i is the total size.\n", pixelNum, width*height);
     }
     else if(flags&SDL_GL_SAVETGA_CORONACOMPAT){
         for(unsigned int i = 0; i<width*height; i++){
