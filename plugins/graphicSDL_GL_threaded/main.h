@@ -99,6 +99,7 @@ extern SDL_Window *screen;
 #ifdef _WIN32
 	extern "C" {
 #endif
+SDL_GL_EXPORT void            CCALL GetPluginInfo(TS_PluginInfo *info);
 
 SDL_GL_EXPORT void            CCALL Close(void);
 SDL_GL_EXPORT initFunction    CCALL Init(void);
@@ -109,6 +110,8 @@ SDL_GL_EXPORT int             CCALL GetNumVariables(void);
 SDL_GL_EXPORT v8FunctionArray CCALL GetVariables(void);
 SDL_GL_EXPORT nameArray       CCALL GetVariableNames(void);
 SDL_GL_EXPORT void            CCALL FlipScreen(void);
+
+SDL_GL_EXPORT void CCALL FlagForScreenshot(void);
 
 SDL_GL_EXPORT v8::Local<v8::Object> CCALL TS_SDL_GL_MakeV8SurfaceHandleFromPixels(int w, int h, void *pixels);
 SDL_GL_EXPORT v8::Local<v8::Object> CCALL TS_SDL_GL_MakeV8ImageHandleFromGLTexture(int w, int h, GLuint tex);

@@ -14,7 +14,7 @@
 //#define BPP 4
 //#define DEPTH 8
 
-int save_AUTO(const char * path, void * pixels, unsigned int width, unsigned int height){
+int save_AUTO(const char * path, const void * pixels, unsigned int width, unsigned int height){
 
     size_t len = strlen(path);
     char * lowerPath = (char *)(((intptr_t)path)+len-4);
@@ -28,10 +28,10 @@ int save_AUTO(const char * path, void * pixels, unsigned int width, unsigned int
     }
 
     else if(strcmp(lowerPath, ".tga")==0){
-        return save_TGA(path, pixels, width, height, R8G8B8A8, SDL_GL_SAVETGA_COMPRESS);
+        return save_TGA(path, pixels, width, height, R8G8B8A8, SDL_GL_SAVETGA_COMPRESS|SDL_GL_SAVETGA_RGBA);
     }
     else {
-        SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(pixels, width, height, DEPTH, BPP*width, CHANNEL_MASKS);
+        SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(const_cast<void *>(pixels), width, height, DEPTH, BPP*width, CHANNEL_MASKS);
         int err = SDL_SaveBMP(surface, path);
         SDL_FreeSurface(surface);
         if(err!=0)
@@ -40,7 +40,7 @@ int save_AUTO(const char * path, void * pixels, unsigned int width, unsigned int
     return SDL_GL_SAVE_NOERROR;
 }
 
-int save_PNG(const char * path, void *pixels, unsigned int width, unsigned int height, char flags){
+int save_PNG(const char * path, const void *pixels, unsigned int width, unsigned int height, char flags){
     FILE * file;
     png_structp pngs  = NULL;
     png_infop   info = NULL;
@@ -82,7 +82,7 @@ int save_PNG(const char * path, void *pixels, unsigned int width, unsigned int h
     return SDL_GL_SAVE_NOERROR;
 }
 
-int save_TGA(const char * path, void *pixels, unsigned int width, unsigned int height, TGA_format format, char flags){
+int save_TGA(const char * path, const void *pixels, unsigned int width, unsigned int height, TGA_format format, char flags){
 
     FILE *file;
 
@@ -93,9 +93,7 @@ int save_TGA(const char * path, void *pixels, unsigned int width, unsigned int h
     if(flags&SDL_GL_SAVETGA_CORONACOMPAT)
         ImageDescriptor|=9;
     else
-        ImageDescriptor|=9;
-
-
+        ImageDescriptor|=3;
 
     file = fopen(path, "wb");
     if(!file)
@@ -111,9 +109,17 @@ int save_TGA(const char * path, void *pixels, unsigned int width, unsigned int h
         fputc(10, file);
 
     fwrite(ColorMap, sizeof(uint8_t), sizeof(ColorMap), file); //ColorMap
-    fseek(file, 10, SEEK_SET);
-    fputc(height      &0xFF, file);
-    fputc((height >>8)&0xFF, file);
+    if(!(flags&SDL_GL_SAVETGA_GLNATIVE)){
+        fseek(file, 10, SEEK_SET);
+        fputc(height      &0xFF, file);
+        fputc((height >>8)&0xFF, file);
+    }
+    else{
+        fseek(file, 8, SEEK_SET);
+        fputc(width       &0xFF, file);
+        fputc((width  >>8)&0xFF, file);
+        fseek(file, 2, SEEK_CUR);
+    }
     fputc(width       &0xFF, file);
     fputc((width  >>8)&0xFF, file);
     fputc(height      &0xFF, file);
@@ -134,8 +140,22 @@ int save_TGA(const char * path, void *pixels, unsigned int width, unsigned int h
             if(pixelNum+0x7F>=width*height)
                 break;
 
-            while((i<width*height)&&(i-pixelNum<0x7F)&&(i-pixelNum%width)&&(memcmp(pixels+(pixelNum*BPP), pixels+(i*BPP), BPP)==0)){
-                i++;
+            int newPix = pixelNum/width; //Current row number.
+            newPix-=height;
+            newPix*=-1;
+            newPix*=width;
+            newPix+=(pixelNum%width);
+
+            if(flags&SDL_GL_SAVETGA_GLNATIVE){
+                //i = newPix+1;
+                while((i<width*height)&&(i-newPix<0x7F)&&(i%width!=0)&&(memcmp(pixels+(newPix*BPP), pixels+(i*BPP), BPP)==0)){
+                    i++;
+                }
+            }
+            else{
+                while((i<width*height)&&(i-pixelNum<0x7F)&&(i%width!=0)&&(memcmp(pixels+(pixelNum*BPP), pixels+(i*BPP), BPP)==0)){
+                    i++;
+                }
             }
 
             if(i!=pixelNum+1)
@@ -143,11 +163,29 @@ int save_TGA(const char * path, void *pixels, unsigned int width, unsigned int h
             else
                 chunk[0]=0;
 
-            memcpy(chunk+1, (pixels+((pixelNum*BPP)+2)), 1);
-            memcpy(chunk+2, (pixels+((pixelNum*BPP)+1)), 1);
-            memcpy(chunk+3, (pixels+((pixelNum*BPP)+0)), 1);
-            memcpy(chunk+4, (pixels+((pixelNum*BPP)+3)), 1);
+            if(flags&SDL_GL_SAVETGA_GLNATIVE){
 
+                if(flags&SDL_GL_SAVETGA_RGBA){
+                    memcpy(chunk+1, (pixels+((newPix*BPP)+2)), 1);
+                    memcpy(chunk+2, (pixels+((newPix*BPP)+1)), 1);
+                    memcpy(chunk+3, (pixels+((newPix*BPP)+0)), 1);
+                    memcpy(chunk+4, (pixels+((newPix*BPP)+3)), 1);
+                }
+                else if(flags&SDL_GL_SAVETGA_BGRA){
+                    memcpy(chunk+1, pixels+(newPix*BPP), 4);
+                }
+            }
+            else{
+                if(flags&SDL_GL_SAVETGA_RGBA){
+                    memcpy(chunk+1, (pixels+((pixelNum*BPP)+2)), 1);
+                    memcpy(chunk+2, (pixels+((pixelNum*BPP)+1)), 1);
+                    memcpy(chunk+3, (pixels+((pixelNum*BPP)+0)), 1);
+                    memcpy(chunk+4, (pixels+((pixelNum*BPP)+3)), 1);
+                }
+                else if(flags&SDL_GL_SAVETGA_BGRA){
+                    memcpy(chunk+1, pixels+(pixelNum*BPP), 4);
+                }
+            }
             fwrite(chunk, 1, sizeof(chunk), file);
 
             pixelNum=i;
@@ -169,7 +207,6 @@ int save_TGA(const char * path, void *pixels, unsigned int width, unsigned int h
             fwrite(chunk, 1, sizeof(chunk), file);
         }
         fflush(file);
-        printf("Drawing done. %i is where we ended, %i is the total size.\n", pixelNum, width*height);
     }
     else if(flags&SDL_GL_SAVETGA_CORONACOMPAT){
         for(unsigned int i = 0; i<width*height; i++){

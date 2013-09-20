@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include "main.h"
+#include "screen.h"
 
 #ifndef _WIN32
 //#include <GL/glext.h>
@@ -23,6 +24,16 @@
 #define GET_GL_FUNCTION(NAME, TYPING)\
 CHECK_FOR_PROCESS( #NAME );\
 NAME = TYPING SDL_GL_GetProcAddress( #NAME )
+
+void GetPluginInfo(TS_PluginInfo *info){
+
+    info->name      = "SDL_GL_threaded";
+    info->version   = "v0.3";
+    info->author    = "Martin McDonough";
+    info->date      = __DATE__;
+    info->description = "GL based graphics plugin. SDL2 for window management. Threaded surface drawing and blitting. Exports TS_SDL_GL_MakeV8SurfaceHandleFromPixels and TS_SDL_GL_MakeV8ImageHandleFromGLTexture.";
+}
+
 
 SDL_GLContext glcontext;
 
@@ -257,6 +268,7 @@ initFunction Init(void){
     ImageInit();
     SurfaceInit();
     PrimitivesInit();
+    ScreenInit();
 
     printf("[" PLUGINNAME "] Info: Using OpenGL version %s\n", glGetString(GL_VERSION));
     if (IMG_Init(IMG_FLAGS) <=0) {
@@ -300,6 +312,7 @@ void Close(){
     ColorClose();
     ImageClose();
     SurfaceClose();
+    ScreenClose();
 
     SDL_GL_DeleteContext(glcontext);
     SDL_DestroyWindow(screen);
@@ -390,8 +403,20 @@ nameArray GetVariableNames(void){return NULL;}
 
 int TS_Filter(void * _unused, SDL_Event *event){
 	if(event->type==SDL_QUIT){
-        //QuitAll();
         exit(0);
+    }
+
+    if(event->type==SDL_KEYDOWN){
+        printf("[SDL_GL] Info: Keydown Event.\n");
+        int key = event->key.keysym.sym;
+        if(!key) {
+            return 1;
+        }
+        if(key==0x40000105){
+            printf("[SDL_GL] Info: Flagging for screenshot.\n");
+            FlagForScreenshot();
+            return 0;
+        }
     }
     return 1;
 }
