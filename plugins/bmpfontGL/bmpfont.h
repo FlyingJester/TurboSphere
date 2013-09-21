@@ -64,6 +64,7 @@ public:
 	int getCharHeight(char);
 	int getHeight(void);
 	void setColorMask(TS_Color *c);
+	TS_Color *getColorMask(void);
 	const char **wordWrapString(const char *, int, int * __restrict__ );
 private:
     unsigned short *widths;
@@ -110,11 +111,15 @@ private:
 	v8::Handle<v8::Value> LoadSystemBMPFont(const v8::Arguments& args);
 	v8::Handle<v8::Value> TS_BMPgetStringWidth(const v8::Arguments& args);
     v8Function TS_BMPsetColorMask(V8ARGS);
+    v8Function TS_BMPgetColorMask(V8ARGS);
 
 #ifdef BMPFONT_INTERNAL
 #ifdef _WIN32
 	extern "C" {
 #endif
+
+BMPFONT_EXPORT void          CCALL GetPluginInfo(TS_PluginInfo *info);
+
 BMPFONT_EXPORT void          CCALL Close(void);
 BMPFONT_EXPORT initFunction  CCALL Init(void);
 BMPFONT_EXPORT int           CCALL GetNumFunctions(void);

@@ -115,6 +115,7 @@ SDL_GL_EXPORT void CCALL FlagForScreenshot(void);
 
 SDL_GL_EXPORT v8::Local<v8::Object> CCALL TS_SDL_GL_MakeV8SurfaceHandleFromPixels(int w, int h, void *pixels);
 SDL_GL_EXPORT v8::Local<v8::Object> CCALL TS_SDL_GL_MakeV8ImageHandleFromGLTexture(int w, int h, GLuint tex);
+SDL_GL_EXPORT v8::Local<v8::Object> CCALL TS_SDL_GL_WrapTS_Color(TS_Color *c);
 
 #ifdef _WIN32
 	}

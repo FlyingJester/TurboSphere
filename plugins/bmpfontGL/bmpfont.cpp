@@ -36,6 +36,20 @@
 CHECK_FOR_PROCESS( #NAME );\
 NAME = TYPING SDL_GL_GetProcAddress( #NAME )
 
+#include "../../common/dlopenwrap.h"
+
+v8::Local<v8::Object> (*TS_SDL_GL_WrapTS_ColorDL)(TS_Color*);
+
+static fhandle SDLGLhandle;
+
+void GetPluginInfo(TS_PluginInfo *info){
+    info->name      = "bmpfontGL";
+    info->version   = "v0.3";
+    info->author    = "Martin McDonough";
+    info->date      = __DATE__;
+    info->description = ".rfn Sphere font reading, saving, and drawing plugin.";
+}
+
 using namespace std;
 
 void (APIENTRY * glGenFramebuffersEXT)(GLsizei, GLuint*);
@@ -72,6 +86,7 @@ int numerate(bool reset) {
 
 static GLuint *cachedTextLines;
 
+
 initFunction Init(void) {
     if(false&&HAS_FRAMEBUFFERS){
         GET_GL_FUNCTION(glGenFramebuffersEXT, (void (APIENTRY *)(GLsizei, GLuint*)));
@@ -89,6 +104,42 @@ initFunction Init(void) {
     ADD_TO_PROTO(BMPFont, "drawTextBox",     TS_BMPdrawTextBox);
     ADD_TO_PROTO(BMPFont, "wordWrapString",  TS_BMPwordWrapString);
     ADD_TO_PROTO(BMPFont, "setColorMask",    TS_BMPsetColorMask);
+    ADD_TO_PROTO(BMPFont, "getColorMask",    TS_BMPgetColorMask);
+
+
+    #ifdef _WIN32
+		DWORD error;
+	    SDLGLhandle = LoadLibrary("./plugin/SDL_GL_threaded.dll");
+	    if(SDLGLhandle==NULL){
+            SDLGLhandle = LoadLibrary("./plugin/SDL_GL.dll");
+	    }
+        if(SDLGLhandle!=NULL) {
+            #warning Not implemented yet.
+        }
+        else{
+
+        }
+    #else
+
+        char *error;
+        SDLGLhandle = dlopen("./plugin/libSDL_GL_threaded.so", RTLD_LOCAL|RTLD_NOW);
+        if(SDLGLhandle==NULL)
+            SDLGLhandle = dlopen("./plugin/libSDL_GL.so", RTLD_LOCAL|RTLD_NOW);
+
+        if(SDLGLhandle==NULL) {
+            fprintf(stderr, "[" PLUGINNAME "] InitSpriteSet error: Could not open any known graphics plugins.\n");
+            exit(0xFD);
+        }
+        else{
+            printf("The address is %p\n.", dlsym(SDLGLhandle, "TS_SDL_GL_WrapTS_Color"));
+            TS_SDL_GL_WrapTS_ColorDL = (v8::Local<v8::Object>(*)(TS_Color*))dlsym(SDLGLhandle, "TS_SDL_GL_WrapTS_Color");
+            if (((error = dlerror()) != NULL)||(TS_SDL_GL_WrapTS_ColorDL==NULL))  {
+                fprintf (stderr, "[" PLUGINNAME "] InitSpriteSet error: Could not load TS_SDL_GL_WrapTS_Color from any plugin.\n\tReported error is: %s", error);
+                exit(0xFE);
+            }
+
+        }
+    #endif
 
 	return (char *)PLUGINNAME;
 }
@@ -352,6 +403,15 @@ v8Function TS_BMPsetColorMask(V8ARGS){
     return v8::Undefined();
 }
 
+v8Function TS_BMPgetColorMask(V8ARGS){
+
+    TS_Color* c = GET_SELF(TS_BMPFont*)->getColorMask();
+
+    //Make the returned color the mask in value only, not actually point to the mask's address.
+    TS_Color*c2 = new TS_Color(c->red, c->green, c->blue, c->alpha);
+    return TS_SDL_GL_WrapTS_ColorDL(c2);
+}
+
 void TS_BMPGlyph::blit(int x, int y, TS_Color *mask){
     const GLint vertexData[] = {x, y, x+width, y, x+width, y+height, x, y+height};
     glVertexPointer(2, GL_INT, 0, vertexData);
@@ -371,7 +431,12 @@ int TS_BMPGlyph::zoomBlit(int x, int y, double factor, TS_Color *mask){
 }
 
 void TS_BMPFont::setColorMask(TS_Color *c){
+    delete mask;
     mask = new TS_Color(c->red, c->green, c->blue, c->alpha);
+}
+
+TS_Color *TS_BMPFont::getColorMask(void){
+    return mask;
 }
 
 void TS_BMPFont::drawText(int x, int y, const char *t) {
