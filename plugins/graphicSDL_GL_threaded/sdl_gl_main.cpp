@@ -149,6 +149,8 @@ int TS_Filter(void * _unused, SDL_Event *event);
 void * FlipScreenPointer            = V8FUNCPOINTER(FlipScreen);
 void * GetScreenWidthPointer        = V8FUNCPOINTER(V8GetScreenHeight);
 void * GetScreenHeightPointer       = V8FUNCPOINTER(V8GetScreenWidth);
+void * GetClippingRectanglePointer  = V8FUNCPOINTER(GetClippingRectangle);
+void * SetClippingRectanglePointer  = V8FUNCPOINTER(SetClippingRectangle);
 void * CreateColorPointer           = V8FUNCPOINTER(CreateColor);
 
 void * RectanglePointer             = V8FUNCPOINTER(Rectangle);
@@ -243,10 +245,10 @@ initFunction Init(void){
     glDisable(GL_LIGHTING);
     glDisable(GL_CULL_FACE);
 
-    glEnable(GL_SCISSOR_TEST);
+    //glEnable(GL_SCISSOR_TEST);
 
     glViewport(0, 0, GetScreenWidth()*scaleSize, GetScreenHeight()*scaleSize);
-    glScissor(0, 0, GetScreenWidth()*scaleSize, GetScreenHeight()*scaleSize);
+    //glScissor(0, 0, GetScreenWidth()*scaleSize, GetScreenHeight()*scaleSize);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -330,6 +332,8 @@ functionArray GetFunctions(){
     funcs[numerate(false)] = FlipScreenPointer;
     funcs[numerate(false)] = GetScreenWidthPointer;
     funcs[numerate(false)] = GetScreenHeightPointer;
+    funcs[numerate(false)] = GetClippingRectanglePointer;
+    funcs[numerate(false)] = SetClippingRectanglePointer;
     funcs[numerate(false)] = CreateColorPointer;
 
     funcs[numerate(false)] = RectanglePointer;
@@ -366,29 +370,30 @@ nameArray GetFunctionNames(){
     names[numerate(false)] = (functionName)"FlipScreen";        //1
     names[numerate(false)] = (functionName)"GetScreenHeight";   //2
     names[numerate(false)] = (functionName)"GetScreenWidth";    //3
-    names[numerate(false)] = (functionName)"Color";             //4
+    names[numerate(false)] = (functionName)"GetClippingRectangle";//4
+    names[numerate(false)] = (functionName)"SetClippingRectangle";//5
+    names[numerate(false)] = (functionName)"Color";             //6
 
-    names[numerate(false)] = (functionName)"Rectangle";         //5
-    names[numerate(false)] = (functionName)"Line";              //6
-    names[numerate(false)] = (functionName)"Point";             //7
-    names[numerate(false)] = (functionName)"Triangle";          //8
-    names[numerate(false)] = (functionName)"Polygon";           //9
+    names[numerate(false)] = (functionName)"Rectangle";         //7
+    names[numerate(false)] = (functionName)"Line";              //8
+    names[numerate(false)] = (functionName)"Point";             //9
+    names[numerate(false)] = (functionName)"Triangle";          //10
+    names[numerate(false)] = (functionName)"Polygon";           //11
 
-    names[numerate(false)] = (functionName)"GradientRectangle"; //10
-    names[numerate(false)] = (functionName)"GradientLine";      //11
-    names[numerate(false)] = (functionName)"GradientTriangle";  //12
+    names[numerate(false)] = (functionName)"GradientRectangle"; //12
+    names[numerate(false)] = (functionName)"GradientLine";      //13
+    names[numerate(false)] = (functionName)"GradientTriangle";  //14
 
-    names[numerate(false)] = (functionName)"OutlinedRectangle"; //13
+    names[numerate(false)] = (functionName)"OutlinedRectangle"; //15
+    names[numerate(false)] = (functionName)"OutlinedCircle";    //16
+    names[numerate(false)] = (functionName)"FilledCircle";      //17
+    names[numerate(false)] = (functionName)"GradientCircle";    //18
 
-    names[numerate(false)] = (functionName)"OutlinedCircle";    //14
-    names[numerate(false)] = (functionName)"FilledCircle";      //15
-    names[numerate(false)] = (functionName)"GradientCircle";    //16
+    names[numerate(false)] = (functionName)"Image";             //19
+    names[numerate(false)] = (functionName)"GrabImage";         //20
 
-    names[numerate(false)] = (functionName)"Image";             //17
-    names[numerate(false)] = (functionName)"GrabImage";         //18
-
-    names[numerate(false)] = (functionName)"Surface";           //19
-    names[numerate(false)] = (functionName)"GrabSurface";       //20
+    names[numerate(false)] = (functionName)"Surface";           //21
+    names[numerate(false)] = (functionName)"GrabSurface";       //22
 
     assert(numerate(false)==NUMFUNCS);
 

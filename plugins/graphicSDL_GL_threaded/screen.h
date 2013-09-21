@@ -19,6 +19,12 @@ void FlipScreen(void);
 void ScreenInit(void);
 void ScreenClose(void);
 
+
+TS_Segment TS_GetCLippingRectangle(void);
+void TS_SetClippingRectangle(TS_Segment *segment);
+v8Function SetClippingRectangle(V8ARGS);
+v8Function GetClippingRectangle(V8ARGS);
+
 v8Function V8GetScreenWidth(V8ARGS);
 v8Function V8GetScreenHeight(V8ARGS);
 

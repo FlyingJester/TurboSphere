@@ -4,6 +4,64 @@
 
 static GLuint screenshottex;
 
+void TS_SetClippingRectangle(TS_Segment *segment){
+    if((segment->x1<=0)&&(segment->y1<=0)&&(segment->x2>=(int)GetScreenWidth())&&(segment->x2>=(int)GetScreenWidth())){
+        glDisable(GL_SCISSOR_TEST);
+        return;
+    }
+
+	static const int scaleSize = GetConfig()->scale;
+
+    glEnable(GL_SCISSOR_TEST);
+
+    glScissor(segment->x1, segment->y1, segment->x2*scaleSize, segment->y2*scaleSize);
+
+}
+
+TS_Segment TS_GetCLippingRectangle(void){
+    if(!glIsEnabled(GL_SCISSOR_TEST)){
+        return TS_Segment(0, 0, (int)GetScreenWidth(), (int)GetScreenHeight());
+    }
+    GLint params[4];
+    glGetIntegerv(GL_SCISSOR_BOX, params);
+    return TS_Segment(params[0], params[1], params[2], params[3]);
+}
+
+v8Function SetClippingRectangle(V8ARGS){
+    if(args.Length()<4){
+        THROWERROR(" Error: Called with fewer than 4 arguments.");
+    }
+    CHECK_ARG_INT(0);
+    CHECK_ARG_INT(1);
+    CHECK_ARG_INT(2);
+    CHECK_ARG_INT(3);
+
+    TS_Segment segment;
+
+    segment.x1 = args[0]->Int32Value();
+    segment.y1 = args[0]->Int32Value();
+    segment.x2 = args[0]->Int32Value();
+    segment.y2 = args[0]->Int32Value();
+
+    TS_SetClippingRectangle(&segment);
+
+    return v8::Undefined();
+}
+
+v8Function GetClippingRectangle(V8ARGS){
+
+    v8::Local<v8::Object> cliprect = v8::Object::New();
+
+    TS_Segment segment = TS_GetCLippingRectangle();
+
+    cliprect->Set(v8::String::New("x"), v8::Integer::New(segment.x1));
+    cliprect->Set(v8::String::New("y"), v8::Integer::New(segment.y1));
+    cliprect->Set(v8::String::New("w"), v8::Integer::New(segment.x2));
+    cliprect->Set(v8::String::New("h"), v8::Integer::New(segment.y2));
+
+    return cliprect;
+}
+
 void FlagForScreenshot(void){
     *(GetScreenShotFlag())=true;
 }

@@ -42,7 +42,7 @@
 #define SDL_GL_EXPORT extern "C"
 #endif
 
-#define NUMFUNCS 20
+#define NUMFUNCS 22
 #define NUMVARS  0
 
 #define IMG_FLAGS (IMG_INIT_JPG|IMG_INIT_PNG|IMG_INIT_TIF)

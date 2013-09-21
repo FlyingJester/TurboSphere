@@ -253,7 +253,7 @@ v8Function SurfaceClone(V8ARGS){
 v8Function SurfaceCloneSection(V8ARGS){
 
     if(args.Length()<4){
-        THROWERROR("[" PLUGINNAME "] SurfaceCloneSection Error: Called with fewer than 4 arguments.");
+        THROWERROR(" Error: Called with fewer than 4 arguments.");
     }
 
     CHECK_ARG_INT(0);
