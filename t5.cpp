@@ -25,6 +25,9 @@
     #endif
 #endif //else to PREFER_STAT
 
+
+#include <utility>
+#include <streambuf>
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -33,12 +36,33 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <cctype>
 
 #ifdef _WIN32
     #define STRDUP _strdup
 #else
     #define STRDUP strdup
     #include <errno.h> //
+#endif
+
+#ifdef _WIN32
+    #include <windows.h>
+
+typedef HANDLE filehandle;
+	typedef WIN32_FIND_DATA filedata;
+	#define FILENAME(NAME) NAME.cFileName
+	#define ISDIRECTORY(NAME) (NAME.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY)
+
+#else
+
+    #include <dirent.h>
+
+	typedef DIR * filehandle;
+	typedef struct dirent * filedata;
+	#define FILENAME(NAME) NAME->d_name
+	#define ISDIRECTORY(NAME) (NAME->d_type==DT_DIR)
+
+    #include <cstring>
 #endif
 
 static std::vector<const char*> T5_Directories(0);
@@ -71,6 +95,177 @@ bool T5CALL T5_IsDir(const char *path){
 }
 
 #endif
+
+int T5CALL T5_GetNumDirectoriesInDirectory(const char *directory){
+    if(!T5_IsDir(directory))
+        return 0;
+
+	filehandle dir;
+    filedata data;
+
+	int i = 0;
+#ifdef _WIN32
+	const char *fulldirlist = STRDUP((string(directory)+"*.*").c_str());
+	DWORD attribs = ::GetFileAttributesA(directory);
+	if ((attribs != INVALID_FILE_ATTRIBUTES) && (attribs & FILE_ATTRIBUTE_DIRECTORY)) {
+		dir = FindFirstFile(directory, &data);
+
+		if (dir!=INVALID_HANDLE_VALUE){
+			do{
+#else
+	    if ((dir=opendir(directory))!=NULL){
+	        while((data=readdir(dir))!=NULL){
+#endif
+				if((ISDIRECTORY(data))&&(FILENAME(data)[0]!='.')){
+					i++;
+				}
+#ifdef _WIN32
+		    } while(FindNextFile(dir, &data));
+		    FindClose(dir);
+		}//dir!=INVALID_HANDLE_VALUE
+	}//attribs!=INVALID_FILE_ATTRIBUTES
+#else
+        }
+        closedir(dir);
+	}
+#endif
+
+    return i;
+}
+
+int T5CALL T5_GetNumFilesInDirectory(const char *directory){
+    if(!T5_IsDir(directory))
+        return 0;
+
+	filehandle dir;
+    filedata data;
+
+	int i = 0;
+#ifdef _WIN32
+	const char *fulldirlist = STRDUP((string(directory)+"*.*").c_str());
+	DWORD attribs = ::GetFileAttributesA(directory);
+	if ((attribs != INVALID_FILE_ATTRIBUTES) && (attribs & FILE_ATTRIBUTE_DIRECTORY)) {
+		dir = FindFirstFile(directory, &data);
+
+		if (dir!=INVALID_HANDLE_VALUE){
+			do{
+#else
+	    if ((dir=opendir(directory))!=NULL){
+	        while((data=readdir(dir))!=NULL){
+#endif
+				if((!ISDIRECTORY(data))&&(FILENAME(data)[0]!='.')){
+					i++;
+				}
+#ifdef _WIN32
+		    } while(FindNextFile(dir, &data));
+		    FindClose(dir);
+		}//dir!=INVALID_HANDLE_VALUE
+	}//attribs!=INVALID_FILE_ATTRIBUTES
+#else
+        }
+        closedir(dir);
+	}
+#endif
+
+    return i;
+}
+
+const char ** T5CALL T5_GetFileList(const char *directory, const char **filenames){
+
+    if(!T5_IsDir(directory))
+        return NULL;
+
+    if(filenames==NULL){
+        filenames = (const char **)calloc(T5_GetNumFilesInDirectory(directory), sizeof(const char *));
+    }
+
+	filehandle dir;
+    filedata data;
+
+	int i = 0;
+	#ifdef _WIN32
+
+	const char *fulldirlist = STRDUP((string(directory)+"*.*").c_str());
+	DWORD attribs = ::GetFileAttributesA(directory);
+	if ((attribs != INVALID_FILE_ATTRIBUTES) && (attribs & FILE_ATTRIBUTE_DIRECTORY)) {
+		dir = FindFirstFile(directory, &data);
+
+		if (dir!=INVALID_HANDLE_VALUE){
+			do{
+#else
+	    if ((dir=opendir(directory))!=NULL){
+	        while((data=readdir(dir))!=NULL){
+#endif
+				if((!ISDIRECTORY(data))&&(FILENAME(data)[0]!='.')){
+					filenames[i] = STRDUP(FILENAME(data));
+					i++;
+				}
+#ifdef _WIN32
+		    } while(FindNextFile(dir, &data));
+		    FindClose(dir);
+		}//dir!=INVALID_HANDLE_VALUE
+	}//attribs!=INVALID_FILE_ATTRIBUTES
+#else
+        }
+        closedir(dir);
+	}
+#endif
+    return filenames;
+}
+
+const char ** T5CALL T5_GetDirectoryList(const char *directory, const char **filenames){
+
+    if(!T5_IsDir(directory))
+        return NULL;
+
+    if(filenames==NULL){
+        filenames = (const char **)calloc(T5_GetNumDirectoriesInDirectory(directory), sizeof(const char *));
+    }
+
+	filehandle dir;
+    filedata data;
+
+	int i = 0;
+	#ifdef _WIN32
+
+	const char *fulldirlist = STRDUP((string(directory)+"*.*").c_str());
+	DWORD attribs = ::GetFileAttributesA(directory);
+	if ((attribs != INVALID_FILE_ATTRIBUTES) && (attribs & FILE_ATTRIBUTE_DIRECTORY)) {
+		dir = FindFirstFile(directory, &data);
+
+		if (dir!=INVALID_HANDLE_VALUE){
+			do{
+#else
+	    if ((dir=opendir(directory))!=NULL){
+	        while((data=readdir(dir))!=NULL){
+#endif
+				if((ISDIRECTORY(data))&&(FILENAME(data)[0]!='.')){
+					filenames[i] = STRDUP(FILENAME(data));
+					i++;
+				}
+#ifdef _WIN32
+		    } while(FindNextFile(dir, &data));
+		    FindClose(dir);
+		}//dir!=INVALID_HANDLE_VALUE
+	}//attribs!=INVALID_FILE_ATTRIBUTES
+#else
+        }
+        closedir(dir);
+	}
+#endif
+    return filenames;
+}
+
+void T5CALL T5_FreeFileName(const char *name){
+    free((void *)name);
+}
+
+void T5CALL T5_FreeFileNames(const char **names, size_t num){
+    for(size_t i = 0; i<num; i++)
+        free((void *)names[i]);
+
+    free(names);
+}
 
 T5_FileText T5CALL T5_LoadFileAsText(const char *file){ //Open a text file and return the contents as a c string.
     std::fstream stream;
@@ -111,8 +306,8 @@ void T5_AddDir(const char *dir){
 T5_file *T5_OpenFile(const char* file){ //Make T5_ifile from filename
     for(unsigned int i = 0; i<T5_Directories.size(); i++){
     std::fstream testfile(std::string(T5_Directories[i]).append(file).c_str());
-        if (testfile)
-        {
+        if (testfile){
+            testfile.close();
             return new T5_file(std::string(T5_Directories[i]).append(file).c_str());
         }
     }
@@ -121,7 +316,8 @@ T5_file *T5_OpenFile(const char* file){ //Make T5_ifile from filename
 
 T5_file::T5_file(const char*file){
     values.resize(0);
-    stream.open(file, std::fstream::in|std::fstream::out|std::fstream::app);
+    //stream.open(file, std::fstream::in|std::fstream::out|std::fstream::app);
+    stream.open(file, std::fstream::in|std::fstream::out);
     std::string buffer;
     std::string val = "";
     std::string key = "";
@@ -183,6 +379,7 @@ T5_file::T5_file(const char*file){
         values.push_back(new INIvalue(STRDUP(key.c_str()), STRDUP(val.c_str()), STRDUP(sec.c_str())));
         }
     }
+    stream.clear();
 }
 
 T5_file::T5_file(){
@@ -190,6 +387,7 @@ T5_file::T5_file(){
 }
 
 T5_file::~T5_file(){
+    stream.clear();
     stream.flush();
     stream.close();
 //    while(!values.empty()) delete values.back(), values.pop_back();
@@ -231,12 +429,101 @@ const char* T5_file::getValueFromSection(const char* key, const char *sec){
     return NULL;
 }
 
-void T5_file::writeValue(const char *value, const char *key){
-    stream.seekg(std::ios::beg);
-    stream<<key;
-    stream<<"=";
-    stream<<value;
-    stream<<"\n";
+void T5_file::writeValue(const char *_value, const char *_key){
+   /*
+    for(size_t i = 0; i<values.size(); i++){
+        if(strcmp(values[i]->key, _key)==0){
+            if(strcmp(values[i]->val, _value)==0){
+                return;
+            }
+            values[i]->val = STRDUP(_value);
+        }
+    }*/
+    std::stringstream ss;
+    std::string buffer;
+    std::string val = "";
+    std::string key = "";
+    std::string sec = "";
+    bool isSec   = false;
+    bool isKey   = true;
+    bool foundKey= false;
+    if(stream.bad())
+        exit(77);
+    stream.clear();
+    stream.seekg(0, std::ios::beg);
+
+
+
+    while(stream.good()){
+        getline(stream, buffer);
+		if(buffer.empty()){
+            continue;
+        }
+
+        key     = "";
+        val     = "";
+        bool isKey = true;
+        bool isVal = false;
+
+        for (size_t i=0; i < buffer.length(); i++){
+            if(isKey){
+                if(buffer.at(i)=='['){
+                    ss << buffer;
+                    ss << "\n";
+                    break;
+                }
+                if(buffer.at(i)=='='){
+                    isKey=false;
+                    isVal=true;
+                    continue;
+                }
+                key+=buffer.at(i);
+
+            }
+            if(isVal){
+                if(strcmp(key.c_str(), _key)==0){
+                    val = _value;
+                    foundKey = true;
+                    break;
+                }
+                //if(isspace(buffer.at(i)))
+                //    break;
+
+                val+=buffer.at(i);
+
+            }
+        }
+        if(isKey)
+            continue;
+        ss<<key;
+        ss<<"=";
+        ss<<val;
+        ss<<"\n";
+    }
+
+    if(!foundKey){
+        ss<<_key;
+        ss<<"=";
+        ss<<_value;
+        ss<<"\n";
+        //values.push_back(new INIvalue(STRDUP(_key), STRDUP(_value), ""));
+    }
+    stream.clear();
+    stream.seekg(0, std::ios::beg);
+    std::streambuf *s1 = stream.rdbuf();
+    std::streambuf *s2 = ss.rdbuf();
+
+    //stream.seekp(0);
+    //ss.seekp(0);
+    stream << ss.rdbuf();
+    //swap(s1, s2);
+//    swap(stream.rdbuf(), ss.rdbuf());
+  //  stream.clear();
+ //  stream << ss;
+//    stream<<_key;
+//    stream<<"=";
+//    stream<<_value;
+//    stream<<"\n";
 
     stream.flush();
 }
@@ -251,6 +538,7 @@ void T5_file::writeValueToSection(const char *value, const char *_key, const cha
     bool isSec  = false;
     bool isKey  = true;
     bool secDone= false;
+    stream.clear();
 
     while(stream.good()){
         getline(stream, buffer);

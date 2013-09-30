@@ -54,6 +54,14 @@ private:
 #endif
 };
 
+
+T5_EXPORT void T5CALL T5_FreeFileName(const char *name);
+T5_EXPORT void T5CALL T5_FreeFileNames(const char **names, size_t num);
+
+T5_EXPORT const char ** T5CALL T5_GetFileList(const char *directory, const char **filenames);
+T5_EXPORT const char ** T5CALL T5_GetDirectoryList(const char *directory, const char **filenames);
+T5_EXPORT int  T5CALL T5_GetNumFilesInDirectory(const char *directory);
+T5_EXPORT int  T5CALL T5_GetNumDirectoriesInDirectory(const char *directory);
 T5_EXPORT bool T5CALL T5_IsFile(const char *path);
 T5_EXPORT bool T5CALL T5_IsDir(const char *path);
 
