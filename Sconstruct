@@ -15,10 +15,10 @@ linux64env	= linuxenv.Clone()
 
 macintoshenv	= defaultenv.Clone()
 
-print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-print 'I apologize for the build system being held together with bailing wire and duct tape.'
-print 'As root, run `scons libinstall --build_libs=y`. Then as a normal use run `scons  --build_plugins=all buildplugins`.'
-print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+print '!!  I apologize for the build system being held together with bailing wire and duct tape.                                !!'
+print '!!  As root, run `scons libinstall --build_libs=y`. Then as a normal use run `scons  --build_plugins=all buildplugins`.  !!'
+print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 
 AddOption('--install_libs',
                   dest='install_libs',
