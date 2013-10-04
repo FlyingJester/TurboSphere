@@ -110,6 +110,53 @@ void setDirectories(const char * basedirectory){
         T5_init(2, "", TS_dirs->root);
 }
 
+void setLocalConfig(TS_Config *c){
+
+    TS_Directories *TS_dirs = GetDirs();
+	T5_file *enginefile = T5_OpenFile("engine.ini");
+    c->fullscreen = (atoi(enginefile->getValueFromSection("fullscreen", "Video"))>0)?true:false;
+    c->scale      = atoi(enginefile->getValueFromSection("scale", "Video"));
+    c->gamefunc   = enginefile->getValueFromSection("gamefunc", "Engine");
+    c->sgmname    = enginefile->getValueFromSection("sgmname", "Engine");
+
+
+    //Negative scale may take on a meaning. Technically I shouldn't even cleanse these values here.
+    //But I do want all graphics plugins to be able to both give and recieve something at least slightly standardized.
+    if(c->scale<0){
+        c->scale*=-1;
+    }
+
+    if(c->scale>16){
+        c->scale = 16;
+    }
+
+    printf("[ConfigManager] Info: Fixed plugins: %s\n", enginefile->getValue("fixedplugins"));
+    c->fixedplugins        = atoi(enginefile->getValue("fixedplugins"));
+    printf("[ConfigManager] Info: Fixed plugins as recorded: %i\n", c->fixedplugins);
+    T5_file *systemfile = T5_OpenFile(string(TS_dirs->system).append("system.ini").c_str());
+
+    c->systemfont          = systemfile->getValue("Font");
+    c->systemttffont       = systemfile->getValue("TTFFont");
+    c->systemwindowstyle   = systemfile->getValue("WindowStyle");
+    c->systemarrow         = systemfile->getValue("Arrow");
+    c->systemuparrow       = systemfile->getValue("UpArrow");
+    c->systemdownarrow     = systemfile->getValue("DownArrow");
+    c->systemsoundfont     = systemfile->getValue("SoundFont");
+
+    c->plugins             = (const char **)calloc(c->fixedplugins, sizeof(const char *));
+
+    for(int i = 0; i<c->fixedplugins; i++){
+
+        std::stringstream s;
+        s << "plugin";
+		s << i;
+        c->plugins[i]=enginefile->getValue(s.str().c_str());
+    }
+
+    T5_close(enginefile);
+    T5_close(systemfile);
+}
+
 void setConfig(const char * basedirectory){
     TS_Config *TS_conf = GetConfig();
     TS_Directories *TS_dirs = GetDirs();
@@ -158,42 +205,48 @@ void setConfig(const char * basedirectory){
 
 }
 
-void opengame(const char *Rfile)
-{
-	TS_Config *TS_conf = GetConfig();
-	TS_Directories *TS_dirs = GetDirs();
-    TS_conf->soundchannels = 32;
+int opengameLocal(const char *Rfile, TS_Config *localConf, TS_Directories *localDirs){
+
+    localConf->soundchannels = 32;
 	printf("[ConfigManager] Info: Opening SGM file %s\n", Rfile);
-	//printf("base dir: %s\n", TS_dirs->root);
-    string txt;
-    std::ifstream file(Rfile, std::ios_base::in);
-    if (file.is_open())
-		while (file.good()){
-            getline(file, txt);
-			if(!txt.empty()){
-				size_t nameloc=txt.find("name");
-				size_t scriloc=txt.find("script");
-				size_t scwiloc=txt.find("screen_width");
-				size_t scheloc=txt.find("screen_height");
+	T5_file *file = T5_OpenFile(Rfile);
 
-				if(nameloc!=string::npos&&int(nameloc)<2){
-					TS_conf->gamename = STRDUP(txt.substr(nameloc+5, 128).c_str());
-				}
-				else if(scriloc!=string::npos&&int(scriloc)<2){
-					TS_conf->mainscript = STRDUP(string(TS_dirs->script).append(txt.substr(scriloc+7, 128)).c_str());
-				}
-				else if(scwiloc!=string::npos&&int(scwiloc)<2){
-					SetScreenWidth(atoi(txt.substr(scwiloc+13, 128).c_str()));
-				}
-				else if(scheloc!=string::npos&&int(scheloc)<2){
-					SetScreenHeight(atoi(txt.substr(scheloc+14, 128).c_str()));
-				}
-
-			}
-		}
-	else {
-	    printf("[ConfigManager] Error: game.sgm is not readable");
+    if(file==NULL){
+        return 1;
     }
 
-    file.close();
+	localConf->gamename     = file->getValue("name");
+
+	const char *scriptname  = file->getValue("script");
+	char * mainscriptname =  strcat((char *)calloc(strlen(localDirs->script)+strlen(scriptname)+1, 1), localDirs->script);
+
+	mainscriptname =  strcat(mainscriptname, scriptname);
+
+    localConf->mainscript   = (char *)calloc(strlen(localDirs->script)+strlen(scriptname)+1, 1);
+
+    memcpy((void *)localConf->mainscript, mainscriptname, strlen(localDirs->script)+strlen(scriptname)+1);
+
+    free((void *)mainscriptname);
+
+	localConf->screenwidth  = atoi(file->getValue("screen_width"));
+	localConf->screenheight = atoi(file->getValue("screen_height"));
+	localConf->author       = file->getValue("author");
+	localConf->decription   = file->getValue("description");
+
+    return 0;
+
+}
+
+void opengame(const char *Rfile){
+
+    int err = opengameLocal(Rfile, GetConfig(), GetDirs());
+    if(err){
+	    printf("[ConfigManager] Error: game.sgm is not readable");
+        return;
+    }
+
+    SetScreenHeight(GetConfig()->screenheight);
+    SetScreenWidth(GetConfig()->screenwidth);
+
+    return;
 }
