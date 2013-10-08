@@ -10,10 +10,10 @@
 #include "t5.h"
 #if defined _WIN32
     #include "v8.h"
-    #include "SDL/SDL.h"
-    #include "SDL/SDL_ttf.h"
-    #include "SDL/SDL_image.h"
-    #include "SDL/SDL_thread.h"
+    #include "SDL2/SDL.h"
+    #include "SDL2/SDL_ttf.h"
+    #include "SDL2/SDL_image.h"
+    #include "SDL2/SDL_thread.h"
 
 
     //File handling generalization.

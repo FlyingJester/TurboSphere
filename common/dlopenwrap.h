@@ -11,7 +11,7 @@ typedef void* fhandle;
 
 #ifdef _WIN32
 #include <windows.h>
-#define DLOPENFUNCTION(_type, _dlfunc, _handle, _name, _error, action)\
+#define DLOPENFUNCTION(_type, _dlfunc, _handle, _name, _errormsg, _error, action)\
     _dlfunc = (_type)GetProcAddress(_handle, _name);\
     if ((_dlfunc) == NULL)  {\
         printf("Error loading plugin : No function \"%s\".\n", _name);\

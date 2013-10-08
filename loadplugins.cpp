@@ -257,7 +257,7 @@ void grabFuncsFromLibrary(HINSTANCE handle){
 
     DLOPENFUNCTONPRESET(int(*)(void), dlGetNumVars, handle, "GetNumVariables", error, return);
     DLOPENFUNCTONPRESET(VariableArray (*)(void), dlGetVars, handle, "GetVariables", error, return);
-    DLOPENFUNCTONPRESETs(const char **(*)(void), dlGetVarNames, handle, "GetVariableNames", error, return);
+    DLOPENFUNCTONPRESET(const char **(*)(void), dlGetVarNames, handle, "GetVariableNames", error, return);
 
     int numFuncs = dlGetNumFuncs();
     FunctionArray Funcs = (FunctionArray) calloc (numFuncs, sizeof(void *));

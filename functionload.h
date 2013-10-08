@@ -4,6 +4,7 @@
 #include "v8.h"
 
 #include "common/dlopenwrap.h"
+
 #define DLOPENFUNCTONPRESET(_type, _dlfunc, _handle, _name, _error, action) DLOPENFUNCTION(_type, _dlfunc, _handle, _name, "Error loading plugin : No function \"%s\".\n", _error, action)
 
 typedef void** FunctionArray;

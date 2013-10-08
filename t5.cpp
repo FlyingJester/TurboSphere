@@ -67,8 +67,9 @@ typedef HANDLE filehandle;
 
 static std::vector<const char*> T5_Directories(0);
 
+#ifdef _MSC_VER
 
-#if defined USE_UNISTD && ((!defined PREFER_STAT)||((!defined HAS_STAT)&&!defined HAS_STAT_SYS))
+#elif defined USE_UNISTD && ((!defined PREFER_STAT)||((!defined HAS_STAT)&&!defined HAS_STAT_SYS))
 
 //TODO: Fix these shambles.
 bool T5CALL T5_IsFile(const char *path){
@@ -105,7 +106,7 @@ int T5CALL T5_GetNumDirectoriesInDirectory(const char *directory){
 
 	int i = 0;
 #ifdef _WIN32
-	const char *fulldirlist = STRDUP((string(directory)+"*.*").c_str());
+	const char *fulldirlist = STRDUP((std::string(directory)+"*.*").c_str());
 	DWORD attribs = ::GetFileAttributesA(directory);
 	if ((attribs != INVALID_FILE_ATTRIBUTES) && (attribs & FILE_ATTRIBUTE_DIRECTORY)) {
 		dir = FindFirstFile(directory, &data);
@@ -142,7 +143,7 @@ int T5CALL T5_GetNumFilesInDirectory(const char *directory){
 
 	int i = 0;
 #ifdef _WIN32
-	const char *fulldirlist = STRDUP((string(directory)+"*.*").c_str());
+	const char *fulldirlist = STRDUP((std::string(directory)+"*.*").c_str());
 	DWORD attribs = ::GetFileAttributesA(directory);
 	if ((attribs != INVALID_FILE_ATTRIBUTES) && (attribs & FILE_ATTRIBUTE_DIRECTORY)) {
 		dir = FindFirstFile(directory, &data);
@@ -185,7 +186,7 @@ const char ** T5CALL T5_GetFileList(const char *directory, const char **filename
 	int i = 0;
 	#ifdef _WIN32
 
-	const char *fulldirlist = STRDUP((string(directory)+"*.*").c_str());
+	const char *fulldirlist = STRDUP((std::string(directory)+"*.*").c_str());
 	DWORD attribs = ::GetFileAttributesA(directory);
 	if ((attribs != INVALID_FILE_ATTRIBUTES) && (attribs & FILE_ATTRIBUTE_DIRECTORY)) {
 		dir = FindFirstFile(directory, &data);
@@ -228,7 +229,7 @@ const char ** T5CALL T5_GetDirectoryList(const char *directory, const char **fil
 	int i = 0;
 	#ifdef _WIN32
 
-	const char *fulldirlist = STRDUP((string(directory)+"*.*").c_str());
+	const char *fulldirlist = STRDUP((std::string(directory)+"*.*").c_str());
 	DWORD attribs = ::GetFileAttributesA(directory);
 	if ((attribs != INVALID_FILE_ATTRIBUTES) && (attribs & FILE_ATTRIBUTE_DIRECTORY)) {
 		dir = FindFirstFile(directory, &data);

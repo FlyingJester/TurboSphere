@@ -1,12 +1,12 @@
 #ifndef COLOR_HEAD
 #define COLOR_HEAD
-#ifdef MSC_VER
+#ifdef _MSC_VER
 #include <stdint.h>
 #else
 #include <inttypes.h>
 #endif
 
-#ifdef MSC_VER
+#ifdef _MSC_VER
 
     #define MEMALIGN(X) _declspec(align(X))
 	#ifdef GRAPHICC_INTERNAL

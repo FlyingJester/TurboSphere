@@ -15,7 +15,7 @@ Defines exported functions' calling convention on the platform.
 */
 
 #include <string>
-#ifdef _WIN32
+#ifdef _MSC_VER
 	#ifdef CONFIGMGR_INTERNAL
 		#define CONFIGMGR_EXPORT __declspec(dllexport)
 	#else
@@ -105,7 +105,7 @@ public:
     const char ** plugins; //!< For private use by the engine.
     void *reserved; //!< For private use by the engine.
 #ifdef _MSC_VER
-} TS_Config;
+};
 #else
 };
 #endif
