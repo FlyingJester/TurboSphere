@@ -69,6 +69,24 @@ static std::vector<const char*> T5_Directories(0);
 
 #ifdef _MSC_VER
 
+#define DOESNTEXIST(attrs) attrs==INVALID_FILE_ATTRIBUTES
+
+bool T5CALL T5_IsFile(const char *path){
+	DWORD attrs =  GetFileAttributesA(path);
+	if(DOESNTEXIST(attrs)){
+		return false;
+	}
+	return (attrs&FILE_ATTRIBUTE_DIRECTORY)?false:true;
+}
+
+bool T5CALL T5_IsDir(const char *path){
+	DWORD attrs =  GetFileAttributesA(path);
+	if(DOESNTEXIST(attrs)){
+		return false;
+	}
+	return (attrs&FILE_ATTRIBUTE_DIRECTORY)?true:false;
+}
+
 #elif defined USE_UNISTD && ((!defined PREFER_STAT)||((!defined HAS_STAT)&&!defined HAS_STAT_SYS))
 
 //TODO: Fix these shambles.
