@@ -3,11 +3,12 @@
 #include "configmanager/openscript.h"
 #include "configmanager/opengame.h"
 #include <cstring>
+#include <cstdlib>
 #include "functionload.h"
 #include "variableregister.h"
 #include "loadplugins.h"
 #include "common/noreturn.h"
-
+#include "v8-debug.h"
 #ifdef _WIN32
 #define STRDUP _strdup
 #else
@@ -25,6 +26,8 @@ static int numUniqueScriptsLoaded = 0;
 void exitContext(v8::Persistent<v8::Context> context){
     context->v8::Context::Exit();
 }
+
+
 
 void TS_CallFunc(const char *name, v8::Persistent<v8::Context> context){
         v8::Handle<v8::Value> gameValue = context->Global()->Get(v8::String::New(name));
@@ -80,7 +83,7 @@ v8::Handle<v8::Value> RequireScript(const v8::Arguments& args){
 
     for(int i = 0; i< numUniqueScriptsLoaded; i++){
         if(strcmp(scriptname, loadedScripts[i])==0){
-            printf("[Engine] RequireScript Info: Did not load script %s, same as script number %i.\n", scriptname, i);
+            fprintf(stderr, "[Engine] RequireScript Info: Did not load script %s, same as script number %i.\n", scriptname, i);
 
             return v8::Undefined();
         }
@@ -112,6 +115,63 @@ void notationCallback(v8::GCType type, v8::GCCallbackFlags flags){
     printf("[Engine] GC was performed.\n");
 }
 
+//typedef void (*FatalErrorCallback)(const char* location, const char* message);
+
+inline char * destructiveTrim(char * c){
+
+    while(*c!='\0'){
+        if((!isprint(*c))||(isblank(*c))){
+            c++;
+        }
+        else{
+            break;
+        }
+    }
+
+    return c;
+}
+
+#define LINE_NUM_CHAR_SIZE 6
+#define LINE_NUM_FILL 32, 32, 32, 32, 32, 32, 0
+void TS_MessageCallback(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data){
+    char LineNumCharl[LINE_NUM_CHAR_SIZE+1] = {LINE_NUM_FILL};
+    char *LineNumChar = LineNumCharl;
+    fprintf(stderr, "Fatal Error\n");
+
+    //auto CurrentTrace =  v8::StackTrace::CurrentStackTrace(0x0FFFFFFF);
+    //auto CurrentFrame = CurrentTrace->GetFrame(CurrentTrace->GetFrameCount()-1);
+    //v8::String::Utf8Value FuncName(CurrentFrame->GetFunctionName());
+    //v8::String::Utf8Value ScriptName(CurrentFrame->GetScriptName());
+    v8::String::Utf8Value LineContents(message->GetSourceLine());
+
+    v8::String::Utf8Value Reason(message->Get());
+
+    int LineNum = message->GetLineNumber();
+
+    v8::String::Utf8Value ScriptName(message->GetScriptResourceName());
+    const char * Name = "TurboSphere encountered a fatal exception in script.";
+    std::string str;
+
+    str+= *Reason;
+    str+= "\n";
+
+    str+= "Error occured in script ";
+    str+= *ScriptName;
+    str+= " at line ";
+    snprintf(LineNumCharl, LINE_NUM_CHAR_SIZE, "%6i", LineNum);
+    char *LineContentsl = destructiveTrim(*LineContents);
+    LineNumChar = destructiveTrim(LineNumChar);
+
+    str+= LineNumChar;
+    str+= ":\n";
+    str+= LineContentsl;
+
+    fprintf(stderr, str.c_str());
+    fprintf(stderr, "\n");
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, Name, str.c_str(), NULL);
+
+}
+
 void runGame(const char * path){
 
     char * dir;
@@ -131,14 +191,14 @@ void runGame(const char * path){
             setDirectories(TS_dirs->root);
             setConfig(TS_dirs->root);
             printf("%s is the sgmname. We are running in / mode.\n", TS_conf->sgmname);
-            gameSGMfile = STRDUP(string(dir).append(TS_conf->sgmname).c_str());
+            gameSGMfile = STRDUP(std::string(dir).append(TS_conf->sgmname).c_str());
         }
         else {
-            TS_dirs->root = STRDUP(string(dir).append("/").c_str());
+            TS_dirs->root = STRDUP(std::string(dir).append("/").c_str());
             setDirectories(TS_dirs->root);
             setConfig(TS_dirs->root);
             printf("%s is the sgmname. We are running in NO / mode.\n", TS_conf->sgmname);
-            gameSGMfile = STRDUP((string(TS_dirs->root)).append(TS_conf->sgmname).c_str());
+            gameSGMfile = STRDUP((std::string(TS_dirs->root)).append(TS_conf->sgmname).c_str());
         }
     }
     else if (T5_IsFile(path)){
@@ -157,7 +217,7 @@ void runGame(const char * path){
         memset(strrchr((char *)dir, '/'), '\0', 1);
 
 
-        TS_dirs->root = STRDUP(string(dir).append("/").c_str());
+        TS_dirs->root = STRDUP(std::string(dir).append("/").c_str());
         setDirectories(TS_dirs->root);
         setConfig(TS_dirs->root);
     }
@@ -177,7 +237,7 @@ void runGame(const char * path){
 
 	std::string ScriptFileText = openfile(TS_conf->mainscript);
 
-	const char *script_name = TS_conf->gamename;
+	const char *script_name = TS_conf->mainscript;
 
     v8::Persistent<v8::Context> context(v8::Isolate::GetCurrent(), v8::Context::New(v8::Isolate::GetCurrent()));
 
@@ -248,11 +308,14 @@ void runGame(const char * path){
         SDL_InitSubSystem(SDL_INIT_TIMER);
     }
 
+    v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
+
+    v8::V8::AddMessageListener(TS_MessageCallback);
+
 	ExecuteString(v8::String::New(ScriptFileText.c_str()), v8::String::New(script_name), true);
 
     TS_CallFunc("game", context);
 
-    v8::V8::LowMemoryNotification();
     exitContext(context);
 }
 
@@ -264,7 +327,11 @@ int main
   (int argc, char* argv[]) {
 
     if(argc>1&&(strnlen(argv[1], 2)>0)){
-        printf("We are running in given-path mode.\n");
+
+        for(int i = 2; i<argc; i++){
+
+
+        }
         runGame(argv[1]);
     }
     else{
