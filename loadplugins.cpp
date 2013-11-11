@@ -357,8 +357,9 @@ void grabFuncsFromLibrary(HINSTANCE handle){
 //void grabFuncsFromLibrary(void *handle, const char *name = "Unkown"){
 void grabFuncsFromLibrary(void *handle){
     //printf("We'll try.\n");
+    static int PluginNum = 0;
     char *error;
-    char   *(*dlInit)(void);
+    char   *(*dlInit)(int);
     void    (*dlClose)(void);
     int     (*dlGetNumFuncs)(void);
     FunctionArray   (*dlGetFuncs)(void);
@@ -366,9 +367,9 @@ void grabFuncsFromLibrary(void *handle){
     int     (*dlGetNumVars)(void);
     VariableArray   (*dlGetVars)(void);
     const char**    (*dlGetVarNames)(void);
-    DLOPENFUNCTONPRESET(char *(*)(void), dlInit, handle, "Init", error, return);
+    DLOPENFUNCTONPRESET(char *(*)(int), dlInit, handle, "Init", error, return);
     DLOPENFUNCTONPRESET(void(*)(void), dlClose, handle, "Close", error, return);
-    const char * repname = dlInit();
+    const char * repname = dlInit(PluginNum);
     //DEBUG_VERBOSE
     if(repname==NULL){
         printf("Problem Loading Plugin: %s\n", error);
