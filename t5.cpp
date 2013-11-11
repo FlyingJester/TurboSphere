@@ -67,7 +67,9 @@ typedef HANDLE filehandle;
 
 static std::vector<const char*> T5_Directories(0);
 
-#ifdef _MSC_VER
+#ifdef _WIN32
+
+//I would use PathFileExists from Shlwapi, but that introduces another dependency.
 
 #define DOESNTEXIST(attrs) attrs==INVALID_FILE_ATTRIBUTES
 

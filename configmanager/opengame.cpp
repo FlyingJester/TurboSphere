@@ -231,7 +231,7 @@ int opengameLocal(const char *Rfile, TS_Config *localConf, TS_Directories *local
 	localConf->screenwidth  = atoi(file->getValue("screen_width"));
 	localConf->screenheight = atoi(file->getValue("screen_height"));
 	localConf->author       = file->getValue("author");
-	localConf->decription   = file->getValue("description");
+	localConf->description   = file->getValue("description");
 
     return 0;
 

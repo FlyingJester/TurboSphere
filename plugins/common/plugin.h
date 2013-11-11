@@ -8,7 +8,7 @@
 
 #define MIN_V8_ALIGN 2
 
-#ifdef MSC_VER
+#ifdef _MSC_VER
 
     #define __func__ __FUNCTION__
 
@@ -18,14 +18,15 @@
     #define MEMALIGN(X) __attribute__((aligned(X)))
 #endif
 
+
 #ifdef _WIN32
 
     //TODO: Fix these includes for SDL2.
-#error Fix these includes for SDL2!
-    #include "../../SDL/SDL.h"
-    #include "../../SDL/SDL_ttf.h"
-    #include "../../SDL/SDL_image.h"
-    #include "../../SDL/SDL_thread.h"
+//#error Fix these includes for SDL2!
+    #include "../../SDL2/SDL.h"
+    #include "../../SDL2/SDL_ttf.h"
+    #include "../../SDL2/SDL_image.h"
+    #include "../../SDL2/SDL_thread.h"
 
 #else
     #include "../../SDL2/SDL.h"
@@ -33,9 +34,9 @@
     #include "../../SDL2/SDL_image.h"
     #include "../../SDL2/SDL_thread.h"
 #endif
-
+#ifndef MINMEMALIGN
 #define MINMEMALIGN MEMALIGN(MIN_V8_ALIGN)
-
+#endif
 typedef const char* cstring;
 typedef v8::Handle<v8::Value> v8Function;
 typedef void** functionArray;
@@ -45,6 +46,14 @@ typedef const char* variableName;
 typedef const char* TS_name;
 typedef TS_name*	nameArray;
 typedef const char* initFunction;
+
+struct TS_PluginInfo {
+	const char * name;
+	const char * author;
+	const char * description;
+	const char * date;
+	const char * version;
+};
 
 #define CATEGORY_REQUIRES	(TS_name)"REQ"
 #define CATEGORY_IS			(TS_name)"IS"

@@ -112,7 +112,7 @@ SDL_Surface *TS_Image::CreateSurface(){
     return surface;
 }
 
-v8::Local<v8::Object> TS_SDL_GL_MakeV8ImageHandleFromGLTexture(int w, int h, GLuint tex){
+v8Function TS_SDL_GL_MakeV8ImageHandleFromGLTexture(int w, int h, GLuint tex){
 
     BEGIN_OBJECT_WRAP_CODE;
 
@@ -370,7 +370,7 @@ void TS_Image::rotateBlit(int x, int y, double angle){
 
 
     glTranslatef((float)(x), (float)(y), 0.0f);
-    glRotated(-angle*localPi*4.0d, 0, 0, angle);
+    glRotated(-angle*localPi*4.0, 0.0, 0.0, angle);
 
     /*
     int xmod1 = (int)ceil(cos(angle)*diaglength);

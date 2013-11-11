@@ -27,10 +27,11 @@ void InitSpriteSet(void){
             SDLGLhandle = LoadLibrary("./plugin/SDL_GL.dll");
 	    }
         if(SDLGLhandle!=NULL) {
-            #warning Not implemented yet.
+				DLOPENFUNCTION(v8::Local<v8::Object>(*)(int, int, void *), TS_SDL_GL_MakeV8SurfaceHandleFromPixelsDL, SDLGLhandle, "TS_SDL_GL_MakeV8SurfaceHandleFromPixels", 0, 0, exit(0xDD));
+				DLOPENFUNCTION(v8::Local<v8::Object>(*)(int, int, GLuint), TS_SDL_GL_MakeV8ImageHandleFromGLTextureDL, SDLGLhandle, "TS_SDL_GL_MakeV8ImageHandleFromGLTexture", 0, 0, exit(0xDD));
         }
         else{
-
+			exit(0xD9);
         }
     #else
 

@@ -2,11 +2,7 @@
 #define BMPFONT_HEAD
 
 #include"../common/plugin.h"
-#ifdef _WIN32
-#include "../../SDL/SDL_opengl.h"
-#else
 #include "../../SDL2/SDL_opengl.h"
-#endif
 
 #include "../../configmanager/opengame.h"
 #include "../common/graphic_common.h"
@@ -65,13 +61,13 @@ public:
 	int getHeight(void);
 	void setColorMask(TS_Color *c);
 	TS_Color *getColorMask(void);
-	const char **wordWrapString(const char *, int, int * __restrict__ );
+	const char **wordWrapString(const char * __restrict , int, int * __restrict);
 private:
     unsigned short *widths;
     SDL_Surface *surfaceAtlas;
     TS_Texture textureAtlas;
     int inheight;
-    inline const char ** addline(const char **tl, int * __restrict__ nl, char **lb) const;
+    inline const char ** addline(const char ** __restrict tl, int * __restrict nl, char ** __restrict lb) const;
 };
 
 class TS_BMPGlyph{

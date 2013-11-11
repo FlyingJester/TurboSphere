@@ -11,7 +11,11 @@ void ByteArrayInit(void);
 
 struct MINMEMALIGN TS_ByteArray {
     size_t length;
-    char * MINMEMALIGN data;
+    char *
+#ifndef _MSC_VER
+		MINMEMALIGN 
+#endif
+		data;
 };
 
 const char *ByteArrayToString(TS_ByteArray);

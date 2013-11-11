@@ -82,7 +82,14 @@ void TS_NeedSurface(SDL_Surface *surface){
 
 int SurfaceThreadFunction(void *data){
     //static bool first = true;
+	int die = 1;
     while(true){
+		die = SDL_AtomicGet(&SurfaceThreadNearDeath);
+		//printf("%i\t", die);
+		if(die==2){
+            printf("[Surface Thread] Info: Dying as ordered.\n");
+			return 0;
+		}
         if(SDL_LockMutex(SurfaceQueueMutex)<0)
             exit(0xD);
 
@@ -104,10 +111,8 @@ int SurfaceThreadFunction(void *data){
 
         //If we don't get this mutex, we restart. This forces us to update all surfaces that need updating.
         if(SDL_TryLockMutex(SurfaceQueueIndependantMutex)==SDL_MUTEX_TIMEDOUT){
-            printf("The Indie mutex was not locked!\n");
             goto endsub;
         }
-
         if(((QueueOperatingPosition+1)%SurfaceQueueSize)==QueuePlacingPosition){
             goto endWithIndie; //No comments on using goto!
         }
@@ -140,5 +145,5 @@ int SurfaceThreadFunction(void *data){
     endsub:
         if(SDL_UnlockMutex(SurfaceQueueMutex)<0)
             exit(0xE);
-        }
+	}
 }

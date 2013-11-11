@@ -19,6 +19,61 @@
 
 using namespace std;
 
+typedef void(*PluginCloseFunction)(void);
+
+int *GetNumPluginsToClose(){
+	static int Plugins = 0;
+	return &Plugins;
+}
+
+int IncNumPluginsToClose(){
+	int *Plugins = GetNumPluginsToClose();
+	(*Plugins)++;
+	printf("Plugins:\t%i\n", *Plugins); 
+	return *Plugins;
+}
+
+int DecNumPluginsToClose(){
+	int *Plugins = GetNumPluginsToClose();
+	(*Plugins)--;
+	return *Plugins;
+}
+
+void ClrNumPluginsToClose(){
+	int *Plugins = GetNumPluginsToClose();
+	(*Plugins)= 0;
+}
+
+PluginCloseFunction *RegisterPluginCloseFunction(void(*close)(void)){
+	
+	static PluginCloseFunction* CloseFuncs = NULL;
+	
+	if(close!=NULL){
+
+		int numplugs = IncNumPluginsToClose();
+		CloseFuncs = (PluginCloseFunction*)realloc(CloseFuncs, numplugs*sizeof(PluginCloseFunction));
+		CloseFuncs[numplugs-1] = close;
+	printf("Plugins:\t%i\n", numplugs); 
+
+	}
+	return CloseFuncs;
+
+}
+
+int CloseAllPlugins(){
+	PluginCloseFunction *funcs = RegisterPluginCloseFunction(NULL);
+	int numplugs = *(GetNumPluginsToClose());
+	int i = 0;
+	printf("Plugins:\t%i\n", numplugs); 
+	while(i<numplugs){
+		printf("Plugin Closed:\t%i\n", i); 
+		((PluginCloseFunction)(funcs[i]))();
+		i++;
+	}
+	printf("All Plugins Closed.\n");
+	return i;
+}
+
 #ifdef _WIN32
 #define STRDUP _strdup
 #else
@@ -36,6 +91,9 @@ int getNumPlugins(){
     dir = FindFirstFile("plugin/*.*", &data);
 	if (dir!=INVALID_HANDLE_VALUE){
         do{
+			const char *lowername = data.cFileName+(strlen(data.cFileName)-3);
+			if(strcmp(lowername, "dll")!=0)
+					continue;
             num++;
         } while(FindNextFile(dir, &data));
         FindClose(dir);
@@ -64,6 +122,9 @@ const char ** getPluginNames(){
 	if (dir!=INVALID_HANDLE_VALUE){
 		int i = 0;
         do{
+			const char *lowername = data.cFileName+(strlen(data.cFileName)-3);
+			if(strcmp(lowername, "dll")!=0)
+				continue;
             pluginnames[i] = STRDUP(data.cFileName);
             i++;
         } while(FindNextFile(dir, &data));
@@ -247,7 +308,7 @@ void grabFuncsFromLibrary(HINSTANCE handle){
         return;
     }
 	void(*dlClosep)(void) = dlClose;
-    atexit(dlClosep);
+    RegisterPluginCloseFunction(dlClosep);
 
     //printf("Loaded plugin %s.\n", repname);
 
@@ -314,7 +375,7 @@ void grabFuncsFromLibrary(void *handle){
         return;
     }
 
-    atexit(dlClose);
+    RegisterPluginCloseFunction(dlClose);
 
     //printf("Loaded plugin %s.\n", repname);
 

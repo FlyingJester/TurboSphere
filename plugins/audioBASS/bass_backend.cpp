@@ -3,6 +3,9 @@
 #include "bass_backend.h"
 #include <cmath>
 #include <cassert>
+#include <cstdint>
+#include "../../common/literaltype.h"
+
 //TODO: Add seperate error for OS X.
 #ifdef _WIN32
 static const char *TS_MSG_DXError = "DirectX is not installed.\n";
@@ -340,17 +343,17 @@ void TS_AudioStream::Pause(){
 long long TS_AudioStream::GetPosition() const{
         long long pos = BASS_ChannelGetPosition(stream, BASS_POS_BYTE);
         double dlength = BASS_ChannelBytes2Seconds(stream, pos);
-        return (long long)(dlength*1000.0d);
+        return (long long)(dlength*DOUBLE(1000.0));
 }
 
 void TS_AudioStream::SetPosition(long long position){
-    BASS_ChannelSetPosition(stream, BASS_ChannelSeconds2Bytes(stream, (double)(position)/1000.0d), BASS_POS_BYTE);
+    BASS_ChannelSetPosition(stream, BASS_ChannelSeconds2Bytes(stream, (double)(position)/DOUBLE_LITERAL(1000.0)), BASS_POS_BYTE);
 }
 
 long long TS_AudioStream::GetLength() const{
         long long end = BASS_ChannelGetLength(stream, BASS_POS_BYTE);
         double dlength = BASS_ChannelBytes2Seconds(stream, end);
-        return (long long)(dlength*1000.0d);
+        return (long long)(dlength*DOUBLE(1000.0));
 }
 
 bool TS_AudioStream::IsPlaying() const{
@@ -384,7 +387,7 @@ long long TS_AudioSample::GetLength() const{
     HCHANNEL channel = BASS_SampleGetChannel(sample, 0);
     long long end = BASS_ChannelGetLength(channel, BASS_POS_BYTE);
     double dlength = BASS_ChannelBytes2Seconds(channel, end);
-    return (long long)(dlength*1000.0d);
+    return (long long)(dlength*DOUBLE_LITERAL(1000.0));
 }
 
 TS_AudioSample::~TS_AudioSample(){
@@ -421,9 +424,12 @@ struct TS_ChannelWrap{
     TS_Sound *ptr;
 };
 */
-
-void ChannelCallback(HSYNC handle, DWORD channel, DWORD data, void *wrapv){
-    TS_ChannelWrap *wrap = (TS_ChannelWrap *)wrapv;
+void
+#ifdef _MSC_VER
+__stdcall 
+#endif
+	ChannelCallback(HSYNC handle, DWORD channel, DWORD data, void *wrapv){
+	TS_ChannelWrap *wrap = (TS_ChannelWrap *)wrapv;
     TS_AudioSampleMultiple *sound = (TS_AudioSampleMultiple *)(wrap->ptr);
     printf("A channel has finished. Channel number is %i.\n", channel);
 
@@ -513,7 +519,7 @@ void TS_AudioSampleMultiple::SetPosition(long long p){
         }
     }
 
-    BASS_ChannelSetPosition(channels[highestIndex].handle, BASS_ChannelSeconds2Bytes(channels[highestIndex].handle, (double)(p)/1000.0d), BASS_POS_BYTE);
+    BASS_ChannelSetPosition(channels[highestIndex].handle, BASS_ChannelSeconds2Bytes(channels[highestIndex].handle, (double)(p)/DOUBLE_LITERAL(1000.0)), BASS_POS_BYTE);
 }
 
 bool TS_AudioSampleMultiple::IsPlaying(void) const{
@@ -592,7 +598,7 @@ long long TS_AudioSampleSingle::GetPosition(void) const{
     if(IsPlaying()){
         long long pos = BASS_ChannelGetPosition(channel, BASS_POS_BYTE);
         double dlength = BASS_ChannelBytes2Seconds(channel, pos);
-        return (long long)(dlength*1000.0d);
+        return (long long)(dlength*DOUBLE_LITERAL(1000.0));
     }
     return 0;
 }
@@ -601,11 +607,11 @@ long long TS_AudioSampleSingle::GetPosition(void) const{
 long long TS_AudioSampleSingle::GetLength() const{
     long long end = BASS_ChannelGetLength(channel, BASS_POS_BYTE);
     double dlength = BASS_ChannelBytes2Seconds(channel, end);
-    return (long long)(dlength*1000.0d);
+    return (long long)(dlength*DOUBLE_LITERAL(1000.0));
 }
 
 void TS_AudioSampleSingle::SetPosition(long long position){
-    BASS_ChannelSetPosition(channel, BASS_ChannelSeconds2Bytes(channel, (double)(position)/1000.0d), BASS_POS_BYTE);
+    BASS_ChannelSetPosition(channel, BASS_ChannelSeconds2Bytes(channel, (double)(position)/DOUBLE_LITERAL(1000.0)), BASS_POS_BYTE);
 }
 
 void TS_AudioSampleSingle::Pause(void){

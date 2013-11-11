@@ -1,6 +1,8 @@
 #include "main.h"
 #include "screen.h"
 #include "save.h"
+#include <ctime>
+
 
 static GLuint screenshottex;
 

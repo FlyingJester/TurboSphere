@@ -34,10 +34,10 @@ void InitMapMain(void){
             SDLGLhandle = LoadLibrary("./plugin/SDL_GL.dll");
 	    }
         if(SDLGLhandle!=NULL) {
-            #warning Not implemented yet.
+				DLOPENFUNCTION(void(*)(void), FlipScreenDL, SDLGLhandle, "FlipScreen", 0, 0, exit(0xDD));
         }
         else{
-
+			exit(0xD9);
         }
     #else
 

@@ -113,11 +113,13 @@ initFunction Init(void) {
 	    if(SDLGLhandle==NULL){
             SDLGLhandle = LoadLibrary("./plugin/SDL_GL.dll");
 	    }
-        if(SDLGLhandle!=NULL) {
-            #warning Not implemented yet.
+
+        if(SDLGLhandle==NULL) {
+            fprintf(stderr, "[" PLUGINNAME "] InitSpriteSet error: Could not open any known graphics plugins.\n");
+            exit(0xFD);
         }
         else{
-
+			DLOPENFUNCTION(v8::Local<v8::Object>(*)(TS_Color*), TS_SDL_GL_WrapTS_ColorDL, SDLGLhandle, "TS_SDL_GL_WrapTS_Color", 0, 0, exit(0xDD));
         }
     #else
 
@@ -309,7 +311,7 @@ int TS_BMPFont::Load(const char* file) {
             widths[i] = dest.x;
             dest.h = glyphs[i]->surface->h;
                 for(int e = 0; e<glyphs[i]->surface->h; e++){
-                    memcpy((dest.x*sizeof(uint32_t))+surfaceAtlas->pixels+(e*surfaceAtlas->pitch), glyphs[i]->surface->pixels+(e*glyphs[i]->surface->pitch), glyphs[i]->surface->pitch);
+                    memcpy((dest.x*sizeof(uint32_t))+(char *)(surfaceAtlas->pixels)+(e*surfaceAtlas->pitch), (char *)(glyphs[i]->surface->pixels)+(e*glyphs[i]->surface->pitch), glyphs[i]->surface->pitch);
                 }
             dest.x+=dest.w;
         }
@@ -544,7 +546,7 @@ int TS_BMPFont::getHeight() {
     return inheight;
 }
 
-inline const char ** TS_BMPFont::addline(const char **textlines, int * __restrict__ readylines, char **linebuffer) const{
+inline const char ** TS_BMPFont::addline(const char ** __restrict textlines, int * __restrict readylines, char ** __restrict linebuffer) const{
     (*readylines)++;
     textlines = (const char **)realloc(textlines, (*readylines)*sizeof(const char *));
     textlines[(*readylines)-1] = STRDUP((char *)((*linebuffer)+((((*linebuffer)[0]==' ')||((*linebuffer)[0]=='\n'))?1:0)));
@@ -553,7 +555,7 @@ inline const char ** TS_BMPFont::addline(const char **textlines, int * __restric
     return textlines;
 }
 
-const char **TS_BMPFont::wordWrapString(const char *t, int w, int* __restrict__ num) {
+const char **TS_BMPFont::wordWrapString(const char * __restrict t, int w, int* __restrict num) {
 
     static TS_BMPWordWrapResult *strings = (TS_BMPWordWrapResult *)calloc(sizeof(TS_BMPWordWrapResult), MAX_CACHED_WORDWRAPS);
     static int stringLoc = 0;

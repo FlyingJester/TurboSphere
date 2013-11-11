@@ -3,7 +3,7 @@
 typedef const char * pluginName;
 
 int loadAllPlugins();
+int CloseAllPlugins();
 
 void grabFuncsFromLibrary(fhandle handle);
-
 #endif

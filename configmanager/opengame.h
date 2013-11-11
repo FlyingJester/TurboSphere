@@ -101,7 +101,9 @@ public:
     const char *systemuparrow;  //!< The filename of the default system up-arrow image. This can be a path, and is relative to the system directory held in the TS_Directories given by GetDirs.
     const char *systemdownarrow;  //!< The filename of the default system down-arrow image. This can be a path, and is relative to the system directory held in the TS_Directories given by GetDirs.
     const char *systemsoundfont;  //!< The filename of the default system sf2 soundfont. This can be a path, and is relative to the system directory held in the TS_Directories given by GetDirs.
-    int fixedplugins; //!< Deprecated
+    const char *author;
+	const char *description;
+	int fixedplugins; //!< Deprecated
     const char ** plugins; //!< For private use by the engine.
     void *reserved; //!< For private use by the engine.
 #ifdef _MSC_VER

@@ -5,6 +5,15 @@
 #include "save.h"
 #include <functional>
 #include <assert.h>
+#include <cstring>
+
+SDL_atomic_t SurfaceThreadNearDeath;
+
+#ifdef _MSC_VER
+#define STRDUP _strdup
+#else
+#define STRDUP strdup
+#endif
 
     SDL_mutex *SurfaceQueueMutex            = NULL;
     SDL_mutex *SurfaceQueueNeedMutex        = NULL;
@@ -21,16 +30,41 @@ v8Function SurfaceGradientRectangle (V8ARGS);
 
 DECLARE_OBJECT_TEMPLATES(Surface);
 
-void SurfaceInit(void){
+SDL_Thread *thread;
 
+void CreateSurfaceThread(){
     SurfaceQueueMutex     = SDL_CreateMutex();
     SurfaceQueueNeedMutex = SDL_CreateMutex();
     SurfaceQueueIndependantMutex = SDL_CreateMutex();
 
     SurfaceQueue = (TS_GenericSurfaceFunction**)calloc(sizeof(TS_GenericSurfaceFunction*), 0xFFFF);
-
+	   
     QueueOperatingPosition = 0;
     QueuePlacingPosition   = 1;
+	thread = SDL_CreateThread(SurfaceThreadFunction, "TS_SurfaceRenderer", NULL);
+}
+
+void KillSurfaceThread(){
+	static int stat;
+	if(SDL_AtomicGet(&SurfaceThreadNearDeath)!=1)
+		return;
+	if(thread==NULL){
+		return;
+	}
+	printf("\nClosing threads.\n\n");
+	SDL_AtomicSet(&SurfaceThreadNearDeath, 2);
+	SDL_WaitThread(thread, &stat);
+	SDL_DestroyMutex(SurfaceQueueMutex);
+	SDL_DestroyMutex(SurfaceQueueNeedMutex);
+	SDL_DestroyMutex(SurfaceQueueIndependantMutex);
+	printf("Surface Thread Closed and Mutexes Destroyed.\n");
+
+
+}
+
+void SurfaceInit(void){
+	CreateSurfaceThread();
+
 
     INIT_OBJECT_TEMPLATES(Surface);
     SET_CLASS_NAME(Surface, "Surface");
@@ -57,13 +91,15 @@ void SurfaceInit(void){
 
     SET_CLASS_ACCESSOR(Surface, "width",    SurfaceGetWidth,    SurfaceSetWidth);
     SET_CLASS_ACCESSOR(Surface, "height",   SurfaceGetHeight,   SurfaceSetHeight);
+	printf("[" PLUGINNAME "] Info: STND was %i. Now it is %i.\n", SDL_AtomicSet(&SurfaceThreadNearDeath, 1), SDL_AtomicGet(&SurfaceThreadNearDeath));
+    printf("[" PLUGINNAME "] Info: STND was %i. Now it is %i.\n", SDL_AtomicSet(&SurfaceThreadNearDeath, 1), SDL_AtomicGet(&SurfaceThreadNearDeath));
 
-    SDL_CreateThread(SurfaceThreadFunction, "TS_SurfaceRenderer", NULL);
-
+	//atexit(KillSurfaceThread);
 }
 
 void SurfaceClose(void){
-
+	KillSurfaceThread();
+	printf("SurfaceClose Closing.\n");
 }
 
 v8Function SurfaceGetWidth(V8GETTERARGS) {
@@ -349,7 +385,7 @@ v8Function SurfaceSave(V8ARGS){
     READY_SURFACE(surface);
 
     v8::String::Utf8Value str(args[0]);
-    const char *filename = string(TS_dirs->image).append(*str).c_str();
+    const char *filename = STRDUP(string(TS_dirs->image).append(*str).c_str());
     /*
     size_t len = strlen(filename);
     if((strstr(filename, ".png")==filename+len-4)||(strstr(filename, ".PNG")==filename+len-4)){
@@ -367,16 +403,18 @@ v8Function SurfaceSave(V8ARGS){
             exit(0x116);
         return v8::Undefined();
     }*/
-    if(save_AUTO(filename, surface->pixels, surface->w, surface->h)!=SDL_GL_SAVE_NOERROR){
-        printf("[" PLUGINNAME "] SurfaceSave Error: Could not save image %s: %s\n", *str, SDL_GetError());
+	int err = save_AUTO(filename, surface->pixels, surface->w, surface->h);
+    if(err!=SDL_GL_SAVE_NOERROR){
+        printf("[" PLUGINNAME "] SurfaceSave Error: Could not save image %s: %s\n\tError was %i\n", filename, SDL_GetError(), err);
         SDL_ClearError();
-
+		free((void *)filename);
         if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
             exit(0x116);
 
         THROWERROR("[" PLUGINNAME "] SurfaceSave Error: Could not save image.");
     }
-
+	
+	free((void *)filename);
     if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
         exit(0x116);
     return v8::Undefined();

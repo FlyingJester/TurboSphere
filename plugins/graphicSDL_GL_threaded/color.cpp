@@ -68,7 +68,7 @@ v8Function CreateColor(V8ARGS) {
     END_OBJECT_WRAP_CODE(Color, color);
 }
 
-v8::Local<v8::Object> TS_SDL_GL_WrapTS_Color(TS_Color *c){
+v8Function TS_SDL_GL_WrapTS_Color(TS_Color *c){
     assert(c!=NULL);
     BEGIN_OBJECT_WRAP_CODE;
     END_OBJECT_WRAP_CODE(Color, c);

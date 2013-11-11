@@ -51,9 +51,6 @@ void (APIENTRY * glGenVertexArrays)(GLsizei, GLuint*) = NULL;
 void (APIENTRY * glBindBuffer)(GLenum,  GLuint) = NULL;
 void (APIENTRY * glBindVertexArray)(GLuint) = NULL;
 void (APIENTRY * glBufferData)(GLenum, GLsizeiptr, const GLvoid *, GLenum) = NULL;
-void (APIENTRY * glEnableVertexAttribArray)(GLint) = NULL;
-void (APIENTRY * glDisableVertexAttribArray)(GLint) = NULL;
-void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*) = NULL;
 GLenum (APIENTRY * glCreateShader)(GLenum) = NULL;
 void (APIENTRY * glDeleteShader)(GLenum) = NULL;
 void (APIENTRY * glShaderSource)(GLenum, GLint, const GLchar **, const GLint *) = NULL;
@@ -69,49 +66,12 @@ GLenum shader_vert = 0;
 GLenum shader_frag = 0;
 GLenum shader_prog = 0;
 
-shaderSource vertexShaders[1] = {
-//pass-through vertex shader:
-"#version 330 core\n\
-layout(location = 0) in ivec2 coordinates;\n\
-\n\
-void main(){\n\
-    gl_Position.xy = coordinates;\n\
-    gl_Position.z = 1.0;\n\
-    gl_Position.w = 1.0;\n\
-}\n\
-"
-};
-
-shaderSource fragmentShaders[2] = {
-//textured shader:
-"#version 330 core\n\
-out vec3 color;\n\
-\n\
-void main(){\n\
-    color = vec3(1,0,0);//This is but a test!\n\
-}\n\
-",
-//color shader:
-"#version 330 core\n\
-out vec3 color;\n\
-\n\
-void main(){\n\
-    color = vec3(1,0,0);//This is but a test!\n\
-}\n\
-"
-};
-
 void LoadGLFunctions(){
 
     GET_GL_FUNCTION(glGenBuffers,               (void (APIENTRY *)(GLsizei, GLuint*)));
     GET_GL_FUNCTION(glDeleteBuffers,            (void (APIENTRY *)(GLsizei, GLuint*)));
-    GET_GL_FUNCTION(glGenVertexArrays,          (void (APIENTRY *)(GLsizei, GLuint*)));
     GET_GL_FUNCTION(glBindBuffer,               (void (APIENTRY *)(GLenum, GLuint)));
-    GET_GL_FUNCTION(glBindVertexArray,          (void (APIENTRY *)(GLuint)));
     GET_GL_FUNCTION(glBufferData,               (void (APIENTRY *)(GLenum, GLsizeiptr, const GLvoid *, GLenum)));
-    GET_GL_FUNCTION(glEnableVertexAttribArray,  (void (APIENTRY *)(GLint)));
-    GET_GL_FUNCTION(glDisableVertexAttribArray, (void (APIENTRY *)(GLint)));
-    GET_GL_FUNCTION(glVertexAttribPointer,      (void (APIENTRY *)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid *)));
     GET_GL_FUNCTION(glCreateShader,           (GLenum (APIENTRY *)(GLenum)));
     GET_GL_FUNCTION(glDeleteShader,             (void (APIENTRY *)(GLenum)));
     GET_GL_FUNCTION(glShaderSource,             (void (APIENTRY *)(GLuint, GLsizei, const GLchar **, const GLint *)));
@@ -133,16 +93,6 @@ int numerate(bool reset){
     }
     i++;
     return i-1;
-}
-
-int BuildDefaultShaders(){
-    TS_Directories *TS_Dirs = GetDirs();
-    const char *VertexShaderSource      = T5_LoadFileAsText((string(TS_Dirs->system)+string("vertex.glsl")).c_str());
-    const char *FragmentShaderSource    = T5_LoadFileAsText((string(TS_Dirs->system)+string("fragment.glsl")).c_str());
-
-    T5_FreeFileText(VertexShaderSource);
-    T5_FreeFileText(FragmentShaderSource);
-    return 1;
 }
 
 int TS_Filter(void * _unused, SDL_Event *event);
@@ -201,9 +151,9 @@ initFunction Init(void){
         scaleSize = 1;
     }
 
-    if(SDL_WasInit(SDL_INIT_EVERYTHING)==0){
+    if(SDL_WasInit(0)==0){
         SDL_Init(SDL_INIT_VIDEO);
-        atexit(SDL_Quit);
+        //atexit(SDL_Quit);
     }
     else if(SDL_WasInit(SDL_INIT_VIDEO)==0){
         SDL_InitSubSystem(SDL_INIT_VIDEO);
@@ -427,7 +377,7 @@ int TS_Filter(void * _unused, SDL_Event *event){
 }
 
 
-v8::Local<v8::Object> TS_SDL_GL_MakeV8SurfaceHandleFromPixels(int w, int h, void *pixels){
+extern "C" v8Function CCALL TS_SDL_GL_MakeV8SurfaceHandleFromPixels(int w, int h, void *pixels){
 
     SDL_Surface * surface = SDL_CreateRGBSurfaceFrom(pixels, w, h, DEPTH, w, CHANNEL_MASKS);
 
@@ -435,3 +385,4 @@ v8::Local<v8::Object> TS_SDL_GL_MakeV8SurfaceHandleFromPixels(int w, int h, void
     END_OBJECT_WRAP_CODE(Surface, surface);
 
 }
+

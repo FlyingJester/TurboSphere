@@ -3,6 +3,8 @@
 #include "main.h"
 #include "image.h"
 
+extern SDL_atomic_t SurfaceThreadNearDeath;
+
 #define READY_SURFACE(_surface){\
     if(SDL_LockMutex(SurfaceQueueNeedMutex)<0)\
         exit(0x10B);\

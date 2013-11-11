@@ -34,7 +34,7 @@
 #ifdef _WIN32
 	#define SDL_GL_EXPORT __declspec(dllexport)
 
-    #define CCALL __cdecl
+    #define CCALL _cdecl
 
 #endif
 #ifndef _WIN32
@@ -78,14 +78,10 @@ TS_GLVideoData *GetGLVideoData(void);
 
 extern void (APIENTRY * glGenBuffers)(GLsizei, GLuint*);
 extern void (APIENTRY * glDeleteBuffers)(GLsizei, GLuint*);
-extern void (APIENTRY * glGenVertexArrays)(GLsizei, GLuint*);
 extern void (APIENTRY * glBindBuffer)(GLenum,  GLuint);
-extern void (APIENTRY * glBindVertexArray)(GLuint);
 extern void (APIENTRY * glBufferData)(GLenum, GLsizeiptr, const GLvoid *, GLenum);
-extern void (APIENTRY * glEnableVertexAttribArray)(GLint);
-extern void (APIENTRY * glDisableVertexAttribArray)(GLint);
-extern void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*);
-extern void (APIENTRY * glVertexAttribIPointer)(GLuint, GLint, GLenum, GLsizei, const GLvoid*);
+//extern void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*);
+//extern void (APIENTRY * glVertexAttribIPointer)(GLuint, GLint, GLenum, GLsizei, const GLvoid*);
 //extern void (APIENTRY * CopyImageSubData)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei);
 //extern void (APIENTRY * CopyImageSubDataNV)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei);
 
@@ -113,13 +109,13 @@ SDL_GL_EXPORT void            CCALL FlipScreen(void);
 
 SDL_GL_EXPORT void CCALL FlagForScreenshot(void);
 
-SDL_GL_EXPORT v8::Local<v8::Object> CCALL TS_SDL_GL_MakeV8SurfaceHandleFromPixels(int w, int h, void *pixels);
-SDL_GL_EXPORT v8::Local<v8::Object> CCALL TS_SDL_GL_MakeV8ImageHandleFromGLTexture(int w, int h, GLuint tex);
-SDL_GL_EXPORT v8::Local<v8::Object> CCALL TS_SDL_GL_WrapTS_Color(TS_Color *c);
-
 #ifdef _WIN32
 	}
 #endif
+
+extern "C" SDL_GL_EXPORT v8Function CCALL TS_SDL_GL_MakeV8SurfaceHandleFromPixels(int w, int h, void *pixels);
+extern "C" SDL_GL_EXPORT v8Function CCALL TS_SDL_GL_MakeV8ImageHandleFromGLTexture(int w, int h, GLuint tex);
+extern "C" SDL_GL_EXPORT v8Function CCALL TS_SDL_GL_WrapTS_Color(TS_Color *c);
 
 #endif
 

@@ -16,7 +16,7 @@ void TS_SpriteSetFinalizer(V8FINALIZERARGS);
 v8Function LoadSpriteSet(V8ARGS);
 
 
-#ifdef MSC_VER
+#ifdef _MSC_VER
 
     #define MEMALIGN(X) _declspec(align(X))
 

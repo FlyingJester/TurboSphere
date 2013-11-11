@@ -38,9 +38,9 @@ void * IsJoystickButtonPressedPointer = V8FUNCPOINTER(IsJoystickButtonPressed);
 void * GetJoystickAxisPointer         = V8FUNCPOINTER(GetJoystickAxis);
 
 initFunction Init(void){
-	if(SDL_WasInit(SDL_INIT_EVERYTHING)==0){
+	if(SDL_WasInit(0)==0){
         SDL_Init(SDL_INIT_JOYSTICK);
-        atexit(SDL_Quit);
+        //atexit(SDL_Quit);
     }
     else if(SDL_WasInit(SDL_INIT_JOYSTICK)==0){
         SDL_InitSubSystem(SDL_INIT_JOYSTICK);

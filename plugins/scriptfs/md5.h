@@ -31,13 +31,34 @@
 
 #ifndef __MD5_H__
 #define __MD5_H__
+
+#include <cstdint>
+
+typedef uint8_t md5_byte_t;
+typedef uint16_t md5_word_t;
+typedef uint8_t md5_byte_t;
+
+#	ifdef _WIN32
+#		ifdef LIBMD5_INTERNAL
+#			define EXTERN  extern "C" __declspec(dllexport)
+#		else
+#			define EXTERN __declspec(dllimport) extern "C"
+#		endif
+#	else
+#		ifdef __cplusplus
+#			define EXTERN extern "C"
+#		else
+#			define EXTERN
+#		endif
+#	endif
+
 #ifdef __cplusplus
 
-#define EXTERN extern "C"
+//#define EXTERN extern "C"
 
 extern "C" {
 #else
-#define EXTERN
+//#define EXTERN
 #endif
 /*
  * Size of a standard MD5 signature in bytes.  This definition is for

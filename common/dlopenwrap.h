@@ -14,7 +14,7 @@ typedef void* fhandle;
 #define DLOPENFUNCTION(_type, _dlfunc, _handle, _name, _errormsg, _error, action)\
     _dlfunc = (_type)GetProcAddress(_handle, _name);\
     if ((_dlfunc) == NULL)  {\
-        printf("Error loading plugin : No function \"%s\".\n", _name);\
+        printf("Error loading library : No function \"%s\".\n", _name);\
         action;\
     }
 

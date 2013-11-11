@@ -8,6 +8,16 @@
 #include <assert.h>
 #include "../../SDL2/SDL_opengl.h"
 
+#ifdef _MSC_VER //Good job, Microsoft.
+
+#include <cmath>
+
+double round(double in){
+	return floor(in+0.5);
+}
+
+#endif
+
 #define XPROP v8::String::New("x")
 #define YPROP v8::String::New("y")
 

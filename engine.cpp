@@ -3,6 +3,7 @@
 #include "configmanager/openscript.h"
 #include "configmanager/opengame.h"
 #include <cstring>
+#include <cctype>
 #include "functionload.h"
 #include "variableregister.h"
 #include "loadplugins.h"
@@ -10,6 +11,11 @@
 
 #ifdef _WIN32
 #define STRDUP _strdup
+#define snprintf _snprintf
+#if _MSC_VER <= 1600
+	#define isblank(x) ((x==0x9)||(x==0x20))
+	#define isprint(x) ((x>=0x20)&&(x<0x7F))
+#endif
 #else
 #define STRDUP strdup
 #endif
@@ -17,7 +23,7 @@
 //////////////////////////////////////////////////////////////
 //Always update!
 //////////////////////////////////////////////////////////////
-#define VERSION "0.3.1"
+#define VERSION "0.3.5"
 
 static char ** loadedScripts = NULL;
 static int numUniqueScriptsLoaded = 0;
@@ -112,6 +118,62 @@ void notationCallback(v8::GCType type, v8::GCCallbackFlags flags){
     printf("[Engine] GC was performed.\n");
 }
 
+inline char * destructiveTrim(char * c){
+
+    while(*c!='\0'){
+        if((!isprint(*c))||(isblank(*c))){
+            c++;
+        }
+        else{
+            break;
+        }
+    }
+
+    return c;
+}
+
+#define LINE_NUM_CHAR_SIZE 6
+#define LINE_NUM_FILL 32, 32, 32, 32, 32, 32, 0
+
+void TS_MessageCallback(v8::Handle<v8::Message> message, v8::Handle<v8::Value> data){
+    char LineNumCharl[LINE_NUM_CHAR_SIZE+1] = {LINE_NUM_FILL};
+    char *LineNumChar = LineNumCharl;
+    fprintf(stderr, "Fatal Error\n");
+
+    //auto CurrentTrace =  v8::StackTrace::CurrentStackTrace(0x0FFFFFFF);
+    //auto CurrentFrame = CurrentTrace->GetFrame(CurrentTrace->GetFrameCount()-1);
+    //v8::String::Utf8Value FuncName(CurrentFrame->GetFunctionName());
+    //v8::String::Utf8Value ScriptName(CurrentFrame->GetScriptName());
+    v8::String::Utf8Value LineContents(message->GetSourceLine());
+
+    v8::String::Utf8Value Reason(message->Get());
+
+    int LineNum = message->GetLineNumber();
+
+    v8::String::Utf8Value ScriptName(message->GetScriptResourceName());
+    const char * Name = "TurboSphere encountered a fatal exception in script.";
+    std::string str;
+
+    str+= *Reason;
+    str+= "\n";
+
+    str+= "Error occured in script ";
+    str+= *ScriptName;
+    str+= " at line ";
+    snprintf(LineNumCharl, LINE_NUM_CHAR_SIZE, "%6i", LineNum);
+    char *LineContentsl = destructiveTrim(*LineContents);
+    LineNumChar = destructiveTrim(LineNumChar);
+
+    str+= LineNumChar;
+    str+= ":\n";
+    str+= LineContentsl;
+
+    fprintf(stderr, str.c_str());
+    fprintf(stderr, "\n");
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, Name, str.c_str(), NULL);
+
+}
+
 void runGame(const char * path){
 
     char * dir;
@@ -177,7 +239,7 @@ void runGame(const char * path){
 
 	std::string ScriptFileText = openfile(TS_conf->mainscript);
 
-	const char *script_name = TS_conf->gamename;
+	const char *script_name = TS_conf->mainscript;
 
     v8::Persistent<v8::Context> context(v8::Isolate::GetCurrent(), v8::Context::New(v8::Isolate::GetCurrent()));
 
@@ -185,7 +247,7 @@ void runGame(const char * path){
     context->v8::Context::Enter();
 
 
-	v8::HandleScope handle_scope2;
+	//v8::HandleScope handle_scope2;
 
     //atexit(QuitAll);
 
@@ -240,20 +302,34 @@ void runGame(const char * path){
 	context->Global()->Set(v8::String::New("GarbageCollect"), E_GarbageCollecttempl->GetFunction());
 
 
-    if(SDL_WasInit(SDL_INIT_EVERYTHING)==0){
+    if(SDL_WasInit(0)==0){
+		printf("Nothing SDL related was initialized.\n");
         SDL_Init(SDL_INIT_TIMER);
-        atexit(SDL_Quit);
+        //atexit(SDL_Quit);
     }
     else if(SDL_WasInit(SDL_INIT_TIMER)==0){
         SDL_InitSubSystem(SDL_INIT_TIMER);
     }
+	
+    v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
+
+    v8::V8::AddMessageListener(TS_MessageCallback);
 
 	ExecuteString(v8::String::New(ScriptFileText.c_str()), v8::String::New(script_name), true);
+	
+	printf("\nRunning Script.\n\n");
 
     TS_CallFunc("game", context);
 
+	printf("\nGame function done running.\n\n");
+
     v8::V8::LowMemoryNotification();
+	//mainscope.Close();
     exitContext(context);
+	v8::V8::TerminateExecution();
+	printf("\nContext exited.\n\n");
+	CloseAllPlugins();
+	exit(0);
 }
 
 #ifdef _WIN32
@@ -270,5 +346,4 @@ int main
     else{
         runGame("startup/");
     }
-    return 0;
 }

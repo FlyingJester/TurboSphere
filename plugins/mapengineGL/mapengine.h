@@ -4,11 +4,8 @@
 #include "typedef.h"
 
 #include"../common/plugin.h"
-#ifdef _WIN32
-#include "../../SDL/SDL_opengl.h"
-#else
 #include "../../SDL2/SDL_opengl.h"
-#endif
+
 
 #include "../common/graphic_common.h"
 #include "../common/graphic_algorithm.h"

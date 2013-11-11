@@ -63,7 +63,7 @@ public:
 struct TS_ChannelWrap{
     DWORD handle;
     bool repeat;
-    uint64_t ID;
+    long long ID;
     TS_Sound *ptr;
 };
 
@@ -121,8 +121,11 @@ private:
 
 class TS_AudioSampleMultiple : public TS_AudioSample{
 public:
-friend void ChannelCallback(HSYNC handle, DWORD channel, DWORD data, void *wrapv);
-
+	friend void
+#ifdef _MSC_VER
+	__stdcall
+#endif
+	ChannelCallback(HSYNC handle, DWORD channel, DWORD data, void *wrapv);
     TS_AudioSampleMultiple(const char*);
     ~TS_AudioSampleMultiple(void);
 
@@ -177,7 +180,11 @@ private:
 //Loading and playing sounds
 
 //Controlling playback
-void ChannelCallback(HSYNC handle, DWORD channel, DWORD data, void *user);
+void 
+#ifdef _MSC_VER
+	__stdcall
+#endif
+	ChannelCallback(HSYNC handle, DWORD channel, DWORD data, void *user);
 void TS_SetGlobalVolume(float volume);
 void TS_ResetGlobalVolume(void);
 

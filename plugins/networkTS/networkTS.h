@@ -14,7 +14,13 @@ inline int TS_FreeHostName(const char *);
     #define CCALL __cdecl
 
 #endif
-#ifndef _WIN32
+#ifdef _WIN32
+#include <cstdlib>
+inline int TS_FreeHostName(const char * name){
+    free((void *)name);
+    return 0;
+}
+#else
 
 
 #include <cstdlib>
