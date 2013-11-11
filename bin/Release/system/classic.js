@@ -11,7 +11,7 @@ function ApplyColorMask(color){
 }
 
 function LoadSurface(name){
-  return new Image(name);
+  return new Surface(name);
 }
 
 function LoadImage(name){
@@ -21,11 +21,6 @@ function LoadImage(name){
 function CreateSurface(w, h, c){
   return new Surface(w, h, c);
 }
-
-function LoadSound(){
-  return {play: function(){}, stop: function(){}, pause: function(){}, setRepeat: function(){}}
-}
-
 
 function CreateColor(r, g, b, a){
 return new Color(r, g, b, a); 

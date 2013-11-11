@@ -92,6 +92,7 @@ function game(){
 		}
 
 		if(IsKeyPressed(KEY_R)){
+			var qwerty = NotAnObject;
 			Rad1 = 18;
 			Rad2 = 16;
 		}
@@ -178,7 +179,7 @@ function game(){
 		firstDraw = false;
 	}
 	sfMJ.createSurface().save("LOL.png");
-	CreatePerson("Jester", "test.rss", false);
-	MapEngine("test.rmp");	
+	//CreatePerson("Jester", "test.rss", false);
+	//MapEngine("test.rmp");	
 
 }
