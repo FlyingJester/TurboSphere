@@ -11,6 +11,8 @@
 static const char *TS_MSG_DXError = "DirectX is not installed.\n";
 #define fabs TS_FABS
 #else
+#define DOUBLE(x) x
+#define DOUBLE_LITERAL(x) x
 static const char *TS_MSG_DXError = "ALSA is not installed.";
 #endif
 
@@ -426,7 +428,7 @@ struct TS_ChannelWrap{
 */
 void
 #ifdef _MSC_VER
-__stdcall 
+__stdcall
 #endif
 	ChannelCallback(HSYNC handle, DWORD channel, DWORD data, void *wrapv){
 	TS_ChannelWrap *wrap = (TS_ChannelWrap *)wrapv;
