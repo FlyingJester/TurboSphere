@@ -69,8 +69,13 @@ void PrimitivesInit(void){
             cos_override = cos;
             floor_override= floor;
             ceil_override = ceil;
+            sqrt_override = sqrt;
+            min_override = tempmin;
+            max_override = tempmax;
+            printf("Could not open AMD libm. Using system libm.\n");
         }
         else{
+            printf("Using AMD libm.\n");
             sin_override = (double(*)(double))dlsym(handle, "amd_sin");
             if ((error = dlerror()) != NULL)  {
                 fprintf (stderr, "[" PLUGINNAME "] PrimitivesInit error: Could not load amd_sin from AMD libm.\n\tReverting to normal libm sin function.\n\tReported error is: %s", error);
