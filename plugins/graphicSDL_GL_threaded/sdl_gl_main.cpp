@@ -25,6 +25,8 @@
 CHECK_FOR_PROCESS( #NAME );\
 NAME = TYPING SDL_GL_GetProcAddress( #NAME )
 
+int PluginID;
+
 void GetPluginInfo(TS_PluginInfo *info){
 
     info->name      = "SDL_GL_threaded";
@@ -127,7 +129,9 @@ void * NewSurfacePointer            = V8FUNCPOINTER(NewSurface);
 void * SurfaceGrabPointer           = V8FUNCPOINTER(SurfaceGrab);
 void * ImageGrabPointer             = V8FUNCPOINTER(ImageGrab);
 
-initFunction Init(void){
+initFunction Init(int ID){
+
+    PluginID = ID;
 
     TS_GLVideoData *data = GetGLVideoData();
 
@@ -136,8 +140,6 @@ initFunction Init(void){
     data->EXTSecondaryColor = false;
     data->NVCopyTexture     = false;
     data->NVPathRendering   = false;
-
-
 
 	TS_Config *TS_conf = GetConfig();
     int *num_shaders = (int *)malloc(4);

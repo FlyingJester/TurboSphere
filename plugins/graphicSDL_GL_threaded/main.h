@@ -42,6 +42,15 @@
 #define SDL_GL_EXPORT extern "C"
 #endif
 
+#define COLOR_ID ((PluginID<<8)|(0x01u))
+#define SURFACE_ID ((PluginID<<8)|(0x02u))
+#define IMAGE_ID ((PluginID<<8)|(0x03u))
+
+extern unsigned int ImageID;
+extern unsigned int SurfaceID;
+extern unsigned int ColorID;
+
+
 #define NUMFUNCS 22
 #define NUMVARS  0
 
@@ -85,7 +94,7 @@ extern void (APIENTRY * glBufferData)(GLenum, GLsizeiptr, const GLvoid *, GLenum
 //extern void (APIENTRY * CopyImageSubData)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei);
 //extern void (APIENTRY * CopyImageSubDataNV)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei);
 
-
+extern int PluginID;
 
 extern const GLubyte primitiveInd[];
 
@@ -98,7 +107,7 @@ extern SDL_Window *screen;
 SDL_GL_EXPORT void            CCALL GetPluginInfo(TS_PluginInfo *info);
 
 SDL_GL_EXPORT void            CCALL Close(void);
-SDL_GL_EXPORT initFunction    CCALL Init(void);
+SDL_GL_EXPORT initFunction    CCALL Init(int);
 SDL_GL_EXPORT int             CCALL GetNumFunctions(void);
 SDL_GL_EXPORT functionArray   CCALL GetFunctions(void);
 SDL_GL_EXPORT nameArray       CCALL GetFunctionNames(void);

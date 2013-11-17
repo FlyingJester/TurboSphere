@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <math.h>
 
+unsigned int ImageID;
 
 //pixel buffer object constants
 #define PIXEL_PACK_BUFFER_EXT           0x88EB
@@ -24,6 +25,9 @@ GLint *texcoord;
 //void glGenBuffers(GLsizei n, GLuint *ids);
 
 void ImageInit(void){
+
+    ImageID = IMAGE_ID;
+
     fullmask = new TS_Color(0xFF, 0xFF, 0xFF, 0xFF);
 
     texcoord = (GLint*)calloc(8, sizeof(GLint));

@@ -9,6 +9,8 @@
 
 SDL_atomic_t SurfaceThreadNearDeath;
 
+unsigned int SurfaceID;
+
 #ifdef _MSC_VER
 #define STRDUP _strdup
 #else
@@ -17,7 +19,7 @@ SDL_atomic_t SurfaceThreadNearDeath;
 
     SDL_mutex *SurfaceQueueMutex            = NULL;
     SDL_mutex *SurfaceQueueNeedMutex        = NULL;
-    SDL_mutex *SurfaceQueueIndependantMutex = NULL;
+    SDL_atomic_t SurfaceQueueIndependantFlag;
 
     size_t QueueOperatingPosition = 0;
     size_t QueuePlacingPosition   = 1;
@@ -35,13 +37,14 @@ SDL_Thread *thread;
 void CreateSurfaceThread(){
     SurfaceQueueMutex     = SDL_CreateMutex();
     SurfaceQueueNeedMutex = SDL_CreateMutex();
-    SurfaceQueueIndependantMutex = SDL_CreateMutex();
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 0);
 
     SurfaceQueue = (TS_GenericSurfaceFunction**)calloc(sizeof(TS_GenericSurfaceFunction*), 0xFFFF);
-	   
+
     QueueOperatingPosition = 0;
     QueuePlacingPosition   = 1;
 	thread = SDL_CreateThread(SurfaceThreadFunction, "TS_SurfaceRenderer", NULL);
+	printf("Starting surface thread.\n");
 }
 
 void KillSurfaceThread(){
@@ -56,7 +59,6 @@ void KillSurfaceThread(){
 	SDL_WaitThread(thread, &stat);
 	SDL_DestroyMutex(SurfaceQueueMutex);
 	SDL_DestroyMutex(SurfaceQueueNeedMutex);
-	SDL_DestroyMutex(SurfaceQueueIndependantMutex);
 	printf("Surface Thread Closed and Mutexes Destroyed.\n");
 
 
@@ -65,6 +67,7 @@ void KillSurfaceThread(){
 void SurfaceInit(void){
 	CreateSurfaceThread();
 
+    SurfaceID = SURFACE_ID;
 
     INIT_OBJECT_TEMPLATES(Surface);
     SET_CLASS_NAME(Surface, "Surface");
@@ -166,16 +169,14 @@ TS_Texture TS_SurfaceToTexture(SDL_Surface *surface){
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    if(SDL_LockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x110);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 1);
 
     READY_SURFACE(surface);
     SDL_LockSurface(surface);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->w, surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->pixels);
     SDL_UnlockSurface(surface);
 
-    if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x111);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 1);
 
     return texture;
 }
@@ -266,8 +267,7 @@ v8Function SurfaceToImage(V8ARGS){
 v8Function SurfaceClone(V8ARGS){
     BEGIN_OBJECT_WRAP_CODE;
 
-    if(SDL_LockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x116);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 1);
 
 	SDL_Surface *srcsurface = GET_SELF(SDL_Surface*);
 
@@ -277,8 +277,7 @@ v8Function SurfaceClone(V8ARGS){
 
     SDL_BlitSurface(srcsurface, NULL, surface, NULL);
 
-    if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x117);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 0);
 
     SDL_SetSurfaceRLE(surface, 1);
 
@@ -315,8 +314,7 @@ v8Function SurfaceCloneSection(V8ARGS){
 
 	SDL_Surface *srcsurface = GET_SELF(SDL_Surface*);
 
-    if(SDL_LockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x116);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 1);
 
     READY_SURFACE(srcsurface);
 
@@ -326,8 +324,7 @@ v8Function SurfaceCloneSection(V8ARGS){
 
     SDL_BlitSurface(srcsurface, &rect, surface, NULL);
 
-    if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x117);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 0);
 
     SDL_SetSurfaceRLE(surface, 1);
 
@@ -377,8 +374,8 @@ v8Function SurfaceSave(V8ARGS){
 
     TS_Directories *TS_dirs = GetDirs();
 
-    if(SDL_LockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x116);
+
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 1);
 
     SDL_Surface *surface = GET_SELF(SDL_Surface*);
 
@@ -408,15 +405,15 @@ v8Function SurfaceSave(V8ARGS){
         printf("[" PLUGINNAME "] SurfaceSave Error: Could not save image %s: %s\n\tError was %i\n", filename, SDL_GetError(), err);
         SDL_ClearError();
 		free((void *)filename);
-        if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
-            exit(0x116);
+
+        SDL_AtomicSet(&SurfaceQueueIndependantFlag, 0);
 
         THROWERROR("[" PLUGINNAME "] SurfaceSave Error: Could not save image.");
     }
-	
+
 	free((void *)filename);
-    if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x116);
+
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 0);
     return v8::Undefined();
 }
 
@@ -439,7 +436,9 @@ v8Function NewSurface(V8ARGS){
         }
         else{
             SDL_SetSurfaceRLE(surface, 1);
-            END_OBJECT_WRAP_CODE(Surface, surface);
+
+            free((void*)filename);
+            END_OBJECT_WRAP_CODE_WITH_ID(Surface, surface, SurfaceID);
         }
     }
     else if(args.Length()==3){
@@ -458,7 +457,7 @@ v8Function NewSurface(V8ARGS){
         SDL_FillRect(surface, NULL, color->toInt());
         SDL_SetSurfaceRLE(surface, 1);
 
-        END_OBJECT_WRAP_CODE(Surface, surface);
+        END_OBJECT_WRAP_CODE_WITH_ID(Surface, surface, SurfaceID);
 
     }
     else{
@@ -477,8 +476,7 @@ v8Function SurfaceSetAlpha(V8ARGS){
     if(rawalpha>255)    rawalpha = 255;
     uint8_t alpha = rawalpha;
 
-    if(SDL_LockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x116);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 1);
 
     SDL_Surface *surface = GET_SELF(SDL_Surface*);
 
@@ -487,12 +485,12 @@ v8Function SurfaceSetAlpha(V8ARGS){
     if(SDL_SetSurfaceAlphaMod(surface, alpha)!=0){
         printf("[" PLUGINNAME "] SurfaceSetAlpha Error: Could not set alpha on surface: %s", SDL_GetError());
         SDL_ClearError();
-        if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
-            exit(0x116);
+
+        SDL_AtomicSet(&SurfaceQueueIndependantFlag, 0);
         THROWERROR("[" PLUGINNAME "] SurfaceSetAlpha Error: Could not set alpha.");
     }
-    if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x116);
+
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 0);
     return v8::Undefined();
 
 }
@@ -522,8 +520,7 @@ v8Function SurfaceSetClippingRectangle(V8ARGS){
 
     //TODO: This doesn't NEED to be immediate, make this queueable for the surface drawing thread.
 
-    if(SDL_LockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x116);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 1);
 
     SDL_Surface *surface = GET_SELF(SDL_Surface*);
 
@@ -533,8 +530,7 @@ v8Function SurfaceSetClippingRectangle(V8ARGS){
 
     SDL_SetClipRect(surface, &rect);
 
-    if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x116);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 0);
 
 	return v8::Undefined();
 }
@@ -570,8 +566,7 @@ v8Function SurfaceGetPixel(V8ARGS){
     int x = args[0]->Int32Value();
     int y = args[1]->Int32Value();
 
-    if(SDL_LockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x146);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 1);
 
     SDL_Surface *surface = GET_SELF(SDL_Surface*);
 
@@ -583,8 +578,7 @@ v8Function SurfaceGetPixel(V8ARGS){
     int color   = pixels[x+((surface->w)*y)];
     SDL_UnlockSurface(surface);
 
-    if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x147);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 0);
 
     TS_Color *colorobj = new TS_Color((color&(Frmask)), (color&(Fgmask))>>8, (color&(Fbmask))>>16, (color&(Famask))>>24);
 
@@ -599,13 +593,18 @@ v8Function SurfaceSetPixel(V8ARGS){
     CHECK_ARG_INT(1);
     CHECK_ARG_OBJ(2);
 
+    v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[2]);
+
+    if(colorobj->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 2 is not a color.");
+    }
+
     int x = args[0]->Int32Value();
     int y = args[1]->Int32Value();
 
     //TODO: This doesn't NEED to be immediate, make this queueable for the surface drawing thread.
 
-    if(SDL_LockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x176);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 1);
 
     SDL_Surface *surface = GET_SELF(SDL_Surface*);
 
@@ -613,15 +612,13 @@ v8Function SurfaceSetPixel(V8ARGS){
 
     int *pixels = static_cast<int*>(GET_SELF(SDL_Surface*)->pixels);
 
-    v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[2]);
     TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
 
     SDL_LockSurface(surface);
     pixels[x+((surface->w)*y)] = color->toInt();
     SDL_UnlockSurface(surface);
 
-    if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x177);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 0);
 
     return v8::Undefined();
 
@@ -636,6 +633,12 @@ v8Function SurfaceRectangle(V8ARGS){
     CHECK_ARG_INT(2);
     CHECK_ARG_INT(3);
     CHECK_ARG_OBJ(4);
+
+    v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[4]);
+
+    if(colorobj->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 4 is not a color.");
+    }
 
 	int x = args[0]->Int32Value();
 	int y = args[1]->Int32Value();
@@ -655,15 +658,13 @@ v8Function SurfaceRectangle(V8ARGS){
         h=-h;
     }
 
-    v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[4]);
     TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
 
     SDL_Rect rect = {(short int)x, (short int)y, (unsigned short int)w, (unsigned short int)h};
 
     //TODO: This doesn't NEED to be immediate, make this queueable for the surface drawing thread.
 
-    if(SDL_LockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x178);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 1);
 
     SDL_Surface *surface = GET_SELF(SDL_Surface*);
 
@@ -671,16 +672,15 @@ v8Function SurfaceRectangle(V8ARGS){
 
     if(SDL_FillRect(surface, &rect, color->toInt())!=0){
 
-        if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
-            exit(0x179);
+
+        SDL_AtomicSet(&SurfaceQueueIndependantFlag, 0);
 
         printf("[" PLUGINNAME "] SurfaceRectangle Error: Could not set alpha on surface: %s", SDL_GetError());
         SDL_ClearError();
         THROWERROR("[" PLUGINNAME "] SurfaceRectangle Error: Could not draw rectangle.");
     }
 
-    if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
-        exit(0x179);
+    SDL_AtomicSet(&SurfaceQueueIndependantFlag, 0);
 	return v8::Undefined();
 }
 
@@ -703,6 +703,9 @@ v8Function SurfaceLine(V8ARGS){
 	int y2 = args[3]->Int32Value();
 
     v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[4]);
+    if(colorobj->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 4 is not a color.");
+    }
     TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
 
     SDL_Surface *surface = GET_SELF(SDL_Surface*);
@@ -762,15 +765,27 @@ v8Function SurfaceGradientRectangle(V8ARGS){
     }
 
     v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[4]);
+    if(colorobj->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 4 is not a color.");
+    }
     TS_Color *color1 = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
 
     colorobj = v8::Local<v8::Object>::Cast(args[5]);
+    if(colorobj->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 5 is not a color.");
+    }
     TS_Color *color2 = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
 
     colorobj = v8::Local<v8::Object>::Cast(args[6]);
+    if(colorobj->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 6 is not a color.");
+    }
     TS_Color *color3 = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
 
     colorobj = v8::Local<v8::Object>::Cast(args[7]);
+    if(colorobj->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 7 is not a color.");
+    }
     TS_Color *color4 = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
 
     SDL_Surface *surface = GET_SELF(SDL_Surface*);
@@ -805,6 +820,9 @@ v8Function SurfaceOutlinedCircle(V8ARGS){
     }
 
     v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[3]);
+    if(colorobj->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 3 is not a color.");
+    }
     TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
 
     SDL_Surface *surface = GET_SELF(SDL_Surface*);
@@ -835,6 +853,9 @@ v8Function SurfaceFilledCircle(V8ARGS){
     }
 
     v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[3]);
+    if(colorobj->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 3 is not a color.");
+    }
     TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
 
     SDL_Surface *surface = GET_SELF(SDL_Surface*);
@@ -862,11 +883,16 @@ v8Function SurfaceBlitSurface(V8ARGS){
     CHECK_ARG_INT(1);
     CHECK_ARG_INT(2);
 
+    v8::Local<v8::Object> surfobj = v8::Local<v8::Object>::Cast(args[0]);
+
+    if(surfobj->GetInternalField(1)->Uint32Value()!=SURFACE_ID){
+        THROWERROR_TYPE(" Error: Arg 0 is not a Surface.");
+    }
+
+    SDL_Surface *surf = (SDL_Surface*)surfobj->GetAlignedPointerFromInternalField(0);
+
 	int x = args[1]->Int32Value();
 	int y = args[2]->Int32Value();
-
-    v8::Local<v8::Object> surfobj = v8::Local<v8::Object>::Cast(args[0]);
-    SDL_Surface *surf = (SDL_Surface*)surfobj->GetAlignedPointerFromInternalField(0);
 
 	SDL_Surface *surface = GET_SELF(SDL_Surface*);
 

@@ -139,12 +139,16 @@ v8Function Rectangle(V8ARGS)
     CHECK_ARG_INT(2);
     CHECK_ARG_INT(3);
     CHECK_ARG_OBJ(4);
+
+	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[4]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 4 is not a color.");
+    }
+
 	int x = args[0]->v8::Value::Int32Value();
 	int y = args[1]->v8::Value::Int32Value();
 	int w = args[2]->v8::Value::Int32Value();
 	int h = args[3]->v8::Value::Int32Value();
-
-	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[4]);
 
     TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
@@ -165,12 +169,15 @@ v8Function Line(V8ARGS){
     CHECK_ARG_INT(3);
     CHECK_ARG_OBJ(4);
 
+	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[4]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 4 is not a color.");
+    }
+
 	int x1 = args[0]->v8::Value::Int32Value();
 	int y1 = args[1]->v8::Value::Int32Value();
 	int x2 = args[2]->v8::Value::Int32Value();
 	int y2 = args[3]->v8::Value::Int32Value();
-
-	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[4]);
 
     TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
@@ -189,10 +196,13 @@ v8Function Point(V8ARGS){
     CHECK_ARG_INT(1);
     CHECK_ARG_OBJ(2);
 
+	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[2]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 2 is not a color.");
+    }
+
 	int x = args[0]->v8::Value::Int32Value();
 	int y = args[1]->v8::Value::Int32Value();
-
-	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[2]);
 
     TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
@@ -215,14 +225,17 @@ v8Function Triangle(V8ARGS){
     CHECK_ARG_INT(5);
     CHECK_ARG_OBJ(6);
 
+	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[6]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 6 is not a color.");
+    }
+
 	int x1 = args[0]->v8::Value::Int32Value();
 	int y1 = args[1]->v8::Value::Int32Value();
 	int x2 = args[2]->v8::Value::Int32Value();
 	int y2 = args[3]->v8::Value::Int32Value();
 	int x3 = args[4]->v8::Value::Int32Value();
 	int y3 = args[5]->v8::Value::Int32Value();
-
-	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[6]);
 
     TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
@@ -239,8 +252,12 @@ v8Function Polygon(V8ARGS){
     CHECK_ARG_ARRAY(0);
     CHECK_ARG_OBJ(1);
 
-    uint32_t numpoints = 0;
 	v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[1]);
+    if(colorobj->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 1 is not a color.");
+    }
+
+    uint32_t numpoints = 0;
     TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
 
     v8::Handle<v8::Array> pointarray = v8::Handle<v8::Array>::Cast(args[0]);
@@ -347,18 +364,30 @@ v8Function GradientRectangle(V8ARGS)
 	int h = args[3]->v8::Value::Int32Value();
 
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[4]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 4 is not a color.");
+    }
 
     TS_Color* c1 = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
     color = v8::Local<v8::Object>::Cast(args[5]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 5 is not a color.");
+    }
 
     TS_Color* c2 = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
     color = v8::Local<v8::Object>::Cast(args[6]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 6 is not a color.");
+    }
 
     TS_Color* c3 = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
     color = v8::Local<v8::Object>::Cast(args[7]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 7 is not a color.");
+    }
 
     TS_Color* c4 = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
@@ -387,10 +416,16 @@ v8Function GradientLine(V8ARGS){
 	int y2 = args[3]->v8::Value::Int32Value();
 
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[4]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 4 is not a color.");
+    }
 
     TS_Color* c1 = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
 	color = v8::Local<v8::Object>::Cast(args[5]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 5 is not a color.");
+    }
 
     TS_Color* c2 = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
@@ -422,14 +457,24 @@ v8Function GradientTriangle(V8ARGS){
 	int y3 = args[5]->v8::Value::Int32Value();
 
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[6]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 6 is not a color.");
+    }
 
     TS_Color* c1 = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
     color = v8::Local<v8::Object>::Cast(args[7]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 7 is not a color.");
+    }
 
     TS_Color* c2 = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
     color = v8::Local<v8::Object>::Cast(args[8]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 8 is not a color.");
+    }
+
 
     TS_Color* c3 = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
@@ -460,6 +505,10 @@ v8Function OutlinedRectangle(V8ARGS){
     }
 
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[4]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 4 is not a color.");
+    }
+
 
     TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
@@ -489,6 +538,10 @@ v8Function OutlinedCircle(V8ARGS){
     }
 
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[3]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 3 is not a color.");
+    }
+
 
     TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
@@ -517,6 +570,10 @@ v8Function FilledCircle(V8ARGS){
     }
 
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[3]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 3 is not a color.");
+    }
+
 
     TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
@@ -546,9 +603,17 @@ v8Function GradientCircle(V8ARGS){
     }
 
 	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(args[3]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 3 is not a color.");
+    }
+
 
     TS_Color* c1 = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
     color = v8::Local<v8::Object>::Cast(args[4]);
+    if(color->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 4 is not a color.");
+    }
+
     TS_Color* c2 = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
 
     TS_GradientCircle(x, y, r, c1, c2, AA);
@@ -567,6 +632,10 @@ v8Function OutlinedPolygon(V8ARGS){
 
     uint32_t numpoints = 0;
 	v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[1]);
+    if(colorobj->GetInternalField(1)->Uint32Value()!=ColorID){
+        THROWERROR_TYPE(" Error: Argument 1 is not a color.");
+    }
+
     TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
 
     v8::Handle<v8::Array> pointarray = v8::Handle<v8::Array>::Cast(args[0]);

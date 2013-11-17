@@ -45,6 +45,10 @@ inline intptr_t get_addr_diff(size_t *sizes, int index){
 #define CGF_ARG(n) *(args+get_addr_diff(args_sizes, n))
 
 int CallGenericFunction(void (*func)(void *), void *arg){
+
+    if(func==NULL){
+        exit(11);
+    }
     func(arg);
     return 0;
 }
@@ -110,11 +114,11 @@ int SurfaceThreadFunction(void *data){
             exit(0xC);
 
         //If we don't get this mutex, we restart. This forces us to update all surfaces that need updating.
-        if(SDL_TryLockMutex(SurfaceQueueIndependantMutex)==SDL_MUTEX_TIMEDOUT){
+        if(SDL_AtomicGet(&SurfaceQueueIndependantFlag)){
             goto endsub;
         }
         if(((QueueOperatingPosition+1)%SurfaceQueueSize)==QueuePlacingPosition){
-            goto endWithIndie; //No comments on using goto!
+            goto endsub; //No comments on using goto!
         }
         //Process the next surface operation.
         while(SurfaceQueue[QueueOperatingPosition]==NULL){
@@ -139,9 +143,6 @@ int SurfaceThreadFunction(void *data){
             printf("[Surface Thread] Info: Done!\n");
             SDL_Delay(0);
         }
-    endWithIndie:
-        if(SDL_UnlockMutex(SurfaceQueueIndependantMutex)<0)
-            exit(0x9);
     endsub:
         if(SDL_UnlockMutex(SurfaceQueueMutex)<0)
             exit(0xE);

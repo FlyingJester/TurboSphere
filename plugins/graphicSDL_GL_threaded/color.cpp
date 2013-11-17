@@ -5,6 +5,8 @@
 
 DECLARE_OBJECT_TEMPLATES(Color);
 
+unsigned int ColorID;
+
 const uint64_t ColorGLMagic = 0x0707464C; //Bell, Bell, G, L.
 
 void GLColor(TS_Color *color){
@@ -12,17 +14,16 @@ void GLColor(TS_Color *color){
 }
 
 inline unsigned char CleanseColorComponent(int val){
-    int ret = val;
-    if(ret<0)
-        ret=0;
-    else if(ret>UCHAR_MAX)
-        ret=UCHAR_MAX;
+    if(val<0)
+        val=0;
+    else if(val>UCHAR_MAX)
+        val=UCHAR_MAX;
 
-    return ret;
+    return val;
 }
 
 void ColorInit(void){
-
+    ColorID = COLOR_ID;
     INIT_OBJECT_TEMPLATES(Color);
     SET_CLASS_NAME(Color, "Color");
 
@@ -65,7 +66,7 @@ v8Function CreateColor(V8ARGS) {
 
     color->reserved = (ColorGLMagic<<32);
 
-    END_OBJECT_WRAP_CODE(Color, color);
+    END_OBJECT_WRAP_CODE_WITH_ID(Color, color, COLOR_ID);
 }
 
 v8Function TS_SDL_GL_WrapTS_Color(TS_Color *c){

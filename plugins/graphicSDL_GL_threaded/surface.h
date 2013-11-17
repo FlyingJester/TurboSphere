@@ -88,9 +88,10 @@ extern SDL_mutex *SurfaceQueueNeedMutex;
 //This mutex stops the surface drawing thread from continuing through the Queue independantly.
 //The surface thread will still update surfaces that are referenced by the SurfaceNeeded variable.
 
-//This mutex is used in conjunction with the SurfaceNeeded mutex so that you can request a surface
+//This flag is used in conjunction with the SurfaceNeeded mutex so that you can request a surface
 //be fully updated, and then access it.
-extern SDL_mutex *SurfaceQueueIndependantMutex;
+//A value of 1 is locked (no independant operation), 0 is unlocked.
+extern SDL_atomic_t SurfaceQueueIndependantFlag;
 
 //The legendary SurfaceQueue, fabled in song and story.
 extern TS_GenericSurfaceFunction** SurfaceQueue;
@@ -106,6 +107,7 @@ void SurfaceClose(void);
 //This struct must be passed to the primitives object file.
 //Soft Line Argument structure
 typedef struct {SDL_Surface *surface; TS_Color *color; int x1; int y1; int x2; int y2; } SoftLineArgs;
+
 
 v8Function NewSurface(V8ARGS);
 

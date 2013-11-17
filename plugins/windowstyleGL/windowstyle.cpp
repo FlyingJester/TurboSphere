@@ -338,7 +338,16 @@ TS_WindowStyle::~TS_WindowStyle(){
 	free((void *)name);
 }
 
+const GLuint fullmaskInt = fullmask->toInt();
+
 void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
+    const GLuint  colorData[]    = {
+        fullmaskInt,
+        fullmaskInt,
+        fullmaskInt,
+        fullmaskInt
+    };
+
     for(int i = 0; i<8; i++){
     glEnable(GL_TEXTURE_2D);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -352,12 +361,7 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
         int ty = 0;
         TS_Texture texture = this->textures[i];
         glBindTexture(GL_TEXTURE_2D, texture);
-        const GLuint  colorData[]    = {
-            fullmask->toInt(),
-            fullmask->toInt(),
-            fullmask->toInt(),
-            fullmask->toInt()
-        };
+
 
         if(i%2==0){//is a corner.
             if(i==0||i==6){
@@ -401,7 +405,7 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
                 glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
                 glEnable(GL_TEXTURE_2D);
                 glBindTexture(GL_TEXTURE_2D, texture);
-                glDrawArrays(GL_QUADS, 0, 4);
+                glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
                 /*
                 glTexCoord2f(0.0f,  0.0f);
                 glVertex2i(x,       ty);
@@ -432,7 +436,7 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
                 glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
                 glEnable(GL_TEXTURE_2D);
                 glBindTexture(GL_TEXTURE_2D, texture);
-                glDrawArrays(GL_QUADS, 0, 4);
+                glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
             }
         }
         }
@@ -446,7 +450,7 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
     float wtile = 0.0f;
     float htile = 0.0f;
 
-    GLuint  colorData[]    = {
+    GLuint  colorDataBkg[]    = {
             fullmask->toInt(),
             fullmask->toInt(),
             fullmask->toInt(),
@@ -471,16 +475,16 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
 
             glTexCoordPointer(2, GL_FLOAT, 0, texcoordData1);
             glVertexPointer(2, GL_INT, 0, vertexData1);
-            glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
-            glDrawArrays(GL_QUADS, 0, 4);
+            glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorDataBkg);
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 			break;
 		case WS_STRETCHED:
 		case WS_STRETCHED_GRADIENT:
             glTexCoordPointer(2, GL_FLOAT, 0, texcoordData1);
             glVertexPointer(2, GL_INT, 0, vertexData1);
-            glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
-            glDrawArrays(GL_QUADS, 0, 4);
+            glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorDataBkg);
+            glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 			break;
         case WS_GRADIENT:
             break;
@@ -489,11 +493,11 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
 	glDisable(GL_TEXTURE_2D);
 
     if(background.type>=2){ //If the background is a gradient.
-        colorData[0] = cornerColors[0].toInt();
-        colorData[1] = cornerColors[1].toInt();
-        colorData[2] = cornerColors[2].toInt();
-        colorData[3] = cornerColors[3].toInt();
-        glDrawArrays(GL_QUADS, 0, 4);
+        colorDataBkg[0] = cornerColors[0].toInt();
+        colorDataBkg[1] = cornerColors[1].toInt();
+        colorDataBkg[2] = cornerColors[2].toInt();
+        colorDataBkg[3] = cornerColors[3].toInt();
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     }
 
 	glDisableClientState(GL_COLOR_ARRAY);
