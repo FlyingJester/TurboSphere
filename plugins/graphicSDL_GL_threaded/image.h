@@ -35,18 +35,18 @@ public:
     TS_TextureBuffer pixelBuffer;
     GLuint texCoordBuffer;
 
-    SDL_Surface *CreateSurface(void);
-    TS_Image *Clone(void);
+    SDL_Surface *CreateSurface(void) const;
+    TS_Image *Clone(void) const;
 
     void resetMask(void);
 
-    void blit(int, int);
-    void stretchBlit(int x, int y, double wfactor, double hfactor);
-    void zoomBlit(int x, int y, double factor);
-    void rotateBlit(int x, int y, double angle);
-    void transformBlit(int x[4], int y[4]);
+    void blit(int, int) const;
+    void stretchBlit(int x, int y, double wfactor, double hfactor) const;
+    void zoomBlit(int x, int y, double factor) const;
+    void rotateBlit(int x, int y, double angle) const;
+    void transformBlit(const int x[4], const int y[4]) const;
 
-    TS_Color *getMask(void);
+    TS_Color *getMask(void) const;
     void setMask(TS_Color c);
 
     GLuint buffer;

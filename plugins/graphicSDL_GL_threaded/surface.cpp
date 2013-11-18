@@ -35,6 +35,7 @@ DECLARE_OBJECT_TEMPLATES(Surface);
 SDL_Thread *thread;
 
 void CreateSurfaceThread(){
+    SDL_AtomicSet(&NeedSurface, 0);
     SurfaceQueueMutex     = SDL_CreateMutex();
     SurfaceQueueNeedMutex = SDL_CreateMutex();
     SDL_AtomicSet(&SurfaceQueueIndependantFlag, 0);

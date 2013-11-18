@@ -10,7 +10,7 @@ extern SDL_atomic_t SurfaceThreadNearDeath;
         exit(0x10B);\
 \
 \
-    while(NeedSurface){\
+    while(SDL_AtomicGet(&NeedSurface)){\
         if(SDL_UnlockMutex(SurfaceQueueNeedMutex)<0)\
             exit(0x10C);\
 \
@@ -22,7 +22,7 @@ extern SDL_atomic_t SurfaceThreadNearDeath;
             exit(0x10B);\
     }\
 \
-    NeedSurface = true;\
+    SDL_AtomicSet(&NeedSurface, 1);\
     SurfaceNeeded = _surface;\
 \
     do{\
@@ -35,7 +35,7 @@ extern SDL_atomic_t SurfaceThreadNearDeath;
 \
         if(SDL_LockMutex(SurfaceQueueNeedMutex)<0)\
             exit(0x10E);\
-    }while(NeedSurface);\
+    }while(SDL_AtomicGet(&NeedSurface));\
 \
 \
     if(SDL_UnlockMutex(SurfaceQueueNeedMutex)<0)\
@@ -82,7 +82,7 @@ extern size_t QueuePlacingPosition;
 //This mutex must be held in order to use the SurfaceQueue or change the position variables.
 extern SDL_mutex *SurfaceQueueMutex;
 
-//This mutex must be held in order to change the needed surface variables.
+//This flag must be held in order to change the needed surface variables.
 extern SDL_mutex *SurfaceQueueNeedMutex;
 
 //This mutex stops the surface drawing thread from continuing through the Queue independantly.
@@ -96,7 +96,7 @@ extern SDL_atomic_t SurfaceQueueIndependantFlag;
 //The legendary SurfaceQueue, fabled in song and story.
 extern TS_GenericSurfaceFunction** SurfaceQueue;
 
-extern bool NeedSurface;
+extern SDL_atomic_t NeedSurface;
 extern SDL_Surface* SurfaceNeeded;
 
 EXTERN_OBJECT_TEMPLATES(Surface);

@@ -1087,8 +1087,8 @@ void TS_OutlinedCircle(int x, int y, int r, TS_Color *c, bool AA){
     }
 
 
-    glPushMatrix();
-
+    //glPushMatrix();
+    const uint32_t color = c->toInt();
     #ifndef __ANDROID__
     if(AA){
         glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
@@ -1114,7 +1114,7 @@ void TS_OutlinedCircle(int x, int y, int r, TS_Color *c, bool AA){
 
     GLuint *colorData = (GLuint*)calloc(numSegments, 4);
     for(int i = 0; i<numSegments; i++){
-        colorData[i] = c->toInt();
+        colorData[i] = color;
     }
 
     glVertexPointer(2, GL_INT, 0, points);
@@ -1128,7 +1128,8 @@ void TS_OutlinedCircle(int x, int y, int r, TS_Color *c, bool AA){
     if(AA)
         glDisable(GL_LINE_SMOOTH);
 
-    glPopMatrix();
+    glTranslatef(-(float)x, -(float)y, 0.0f);
+    //glPopMatrix();
 
     free(points);
     free(colorData);

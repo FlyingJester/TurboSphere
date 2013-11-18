@@ -24,7 +24,7 @@ TS_GenericSurfaceFunction::~TS_GenericSurfaceFunction(){
 const size_t SurfaceQueueSize    = 0xFFFF;
 TS_GenericSurfaceFunction** SurfaceQueue = NULL;
 
-bool NeedSurface = false;
+SDL_atomic_t NeedSurface;
 SDL_Surface* SurfaceNeeded = NULL;
 
 //Generic Function Calling
@@ -101,13 +101,13 @@ int SurfaceThreadFunction(void *data){
         if(SDL_LockMutex(SurfaceQueueNeedMutex)<0)
             exit(0xB);
 
-            if(NeedSurface){
+            if(SDL_AtomicGet(&NeedSurface)){
                 if(SurfaceNeeded==NULL)
                     exit(0xF);
 
                 TS_NeedSurface(SurfaceNeeded);
                 SurfaceNeeded = NULL;
-                NeedSurface = false;
+                SDL_AtomicSet(&NeedSurface, 0);
             }
 
         if(SDL_UnlockMutex(SurfaceQueueNeedMutex)<0)
@@ -143,6 +143,7 @@ int SurfaceThreadFunction(void *data){
             printf("[Surface Thread] Info: Done!\n");
             SDL_Delay(0);
         }
+        SDL_Delay(0);
     endsub:
         if(SDL_UnlockMutex(SurfaceQueueMutex)<0)
             exit(0xE);

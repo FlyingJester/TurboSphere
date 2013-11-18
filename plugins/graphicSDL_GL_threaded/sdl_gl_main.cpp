@@ -188,7 +188,7 @@ initFunction Init(int ID){
     glClearColor(0, 0, 0, 255);
     glClearDepth(1.0f);
     glEnable(GL_BLEND);
-    glEnable(GL_SCISSOR_TEST);
+    //glEnable(GL_SCISSOR_TEST);
     //glEnable(GL_PROGRAM_POINT_SIZE);
     //glPointSize();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

@@ -98,7 +98,7 @@ TS_Image::TS_Image(TS_Texture tex, int w, int h){
 
 }
 
-TS_Color *TS_Image::getMask(void){
+TS_Color *TS_Image::getMask(void) const{
     return mask;
 }
 
@@ -107,7 +107,7 @@ void TS_Image::setMask(TS_Color c){
     mask = new TS_Color(c.red, c.blue, c.green, c.alpha);
 }
 
-SDL_Surface *TS_Image::CreateSurface(){
+SDL_Surface *TS_Image::CreateSurface() const{
 
     MINMEMALIGN SDL_Surface *surface = SDL_CreateRGBSurface(0, width, height, DEPTH, CHANNEL_MASKS);
 
@@ -251,7 +251,7 @@ TS_Image *TS_LoadTexture(const char *filename){
     return image;
 }
 
-void TS_Image::blit(int x, int y){
+void TS_Image::blit(int x, int y) const{
 
     const GLint   vertexData[]   = {x, y, x+width, y, x+width, y+height, x, y+height};
     const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
@@ -278,7 +278,7 @@ void TS_Image::blit(int x, int y){
 
 }
 
-TS_Image *TS_Image::Clone(void){
+TS_Image *TS_Image::Clone(void) const{
 
     TS_Texture newtexture;
     glGenTextures(1, &newtexture);
@@ -302,7 +302,7 @@ TS_Image *TS_Image::Clone(void){
 
 }
 
-void TS_Image::zoomBlit(int x, int y, double factor){
+void TS_Image::zoomBlit(int x, int y, double factor) const{
 
     double scaleWidth   = factor*dwidth;
     double scaleHeight  = factor*dheight;
@@ -330,7 +330,7 @@ void TS_Image::zoomBlit(int x, int y, double factor){
     glDisable(GL_TEXTURE_2D);
 }
 
-void TS_Image::stretchBlit(int x, int y, double wfactor, double hfactor){
+void TS_Image::stretchBlit(int x, int y, double wfactor, double hfactor) const{
 
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -361,7 +361,7 @@ void TS_Image::stretchBlit(int x, int y, double wfactor, double hfactor){
 
 }
 
-void TS_Image::rotateBlit(int x, int y, double angle){
+void TS_Image::rotateBlit(int x, int y, double angle) const{
 
     const float localPi = 3.14159265358979323846f;
     //TODO: Use glRotate and glTranslate instead of these shambles.
@@ -414,10 +414,12 @@ void TS_Image::rotateBlit(int x, int y, double angle){
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisable(GL_TEXTURE_2D);
 
+    //glRotated(angle*localPi*4.0, 0.0, 0.0, angle);
+    //glTranslatef(-(float)(x), -(float)(y), 0.0f);
     glPopMatrix();
 }
 
-void TS_Image::transformBlit(int x[4], int y[4]){
+void TS_Image::transformBlit(const int x[4], const int y[4]) const{
 
     const GLint   vertexData[]   = {x[0], y[0], x[1], y[1], x[2], y[2], x[3], y[3]};
     const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
