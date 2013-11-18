@@ -90,6 +90,7 @@ public:
     virtual bool IsPlaying(void) const;
 
 private:
+    long long length;
     HSTREAM stream;
     DWORD flags;
     bool loop;
@@ -114,6 +115,7 @@ public:
     virtual long long GetLength(void) const;
 
 private:
+    long long length;
     HSAMPLE sample;   //BASS-side handle (stream, sample).
     DWORD flags;
 
@@ -142,6 +144,7 @@ public:
     virtual bool IsPlaying(void) const;
 
 private:
+    long long length;
 
     std::vector<TS_ChannelWrap> channels;
     HSAMPLE sample;   //BASS-side handle (stream, sample).
@@ -171,6 +174,7 @@ public:
 
 private:
 
+    long long length;
     HCHANNEL channel;
     HSAMPLE sample;   //BASS-side handle (stream, sample).
     DWORD flags;
@@ -180,7 +184,7 @@ private:
 //Loading and playing sounds
 
 //Controlling playback
-void 
+void
 #ifdef _MSC_VER
 	__stdcall
 #endif

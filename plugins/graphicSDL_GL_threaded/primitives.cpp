@@ -1154,7 +1154,7 @@ void TS_GradientCircle(int x, int y, int r, TS_Color *c1, TS_Color *c2, bool AA)
         r*=-1;
     }
 
-    glPushMatrix();
+    //glPushMatrix();
 
     #ifndef __ANDROID__
     if(AA){
@@ -1211,7 +1211,8 @@ void TS_GradientCircle(int x, int y, int r, TS_Color *c1, TS_Color *c2, bool AA)
         glDisable(GL_LINE_SMOOTH);
     }
 
-    glPopMatrix();
+    glTranslatef(-(float)x, -(float)y, 0.0f);
+    //glPopMatrix();
 
     free(points);
     free(colorData);

@@ -12,11 +12,11 @@ static const char *TS_MSG_DXError = "DirectX is not installed.\n";
 #define fabs TS_FABS
 #else
 #define DOUBLE(x) x
-#define DOUBLE_LITERAL(x) x
+//#define DOUBLE_LITERAL(x) x
 static const char *TS_MSG_DXError = "ALSA is not installed.";
 #endif
 
-static DWORD *defaultSoundFont;
+DWORD defaultSoundFont;
 
 //TODO: Perhaps having a T5 file (and even localizations) would be a good idea?
 static const char *TS_MSG_WillReopen    = "\tTurboSphere will attempt to close and reopen the device.";
@@ -104,15 +104,15 @@ int TS_InitBassMidi(){
     else{
         printf("[" PLUGINNAME "] Info: Initialized BASSmidi as bass plugin %i.\n", bassmidi);
     }
-    defaultSoundFont = (DWORD *)malloc(sizeof(DWORD));
+    defaultSoundFont;
 
-    *defaultSoundFont = BASS_MIDI_FontInit(string(TS_Dirs->system).append(TS_Conf->systemsoundfont).c_str(), 0);
+    defaultSoundFont = BASS_MIDI_FontInit(string(TS_Dirs->system).append(TS_Conf->systemsoundfont).c_str(), BASS_MIDI_FONT_MMAP);
 
     BASS_MIDI_FONT defaultFont;
 
     BASS_MIDI_StreamGetFonts(0, &defaultFont, 1);
 
-    defaultFont.font   = *defaultSoundFont;
+    defaultFont.font   = defaultSoundFont;
     defaultFont.preset = -1;
     defaultFont.bank   = 0;
 
@@ -143,12 +143,14 @@ int TS_InitBassMidi(){
         printf("\n");
     }
 
-    BASS_SetConfig(BASS_CONFIG_MIDI_VOICES, 200);
+    //BASS_SetConfig(BASS_CONFIG_MIDI_VOICES, 100);
 
     return 0;
 }
 
 int TS_InitBass(){
+
+    BASS_INFO info;
 
     DWORD version = BASS_GetVersion();
 
@@ -157,7 +159,7 @@ int TS_InitBass(){
     }
 
     TS_InitBassMidi();
-	if (!BASS_Init(-1,44100,BASS_DEVICE_FREQ,NULL,NULL)) {
+	if (!BASS_Init(1,44100,BASS_DEVICE_FREQ,NULL,NULL)) {
 	    int error = BASS_ErrorGetCode();
         TS_ExplainBassErrorCode(error, true, false);
 
@@ -165,7 +167,7 @@ int TS_InitBass(){
 
         if((error==BASS_ERROR_ALREADY)||(error==BASS_ERROR_ALREADY)){
             BASS_Free();
-            couldstart = BASS_Init(-1, 44100, BASS_DEVICE_FREQ, NULL, NULL);
+            couldstart = BASS_Init(-1, 44800, BASS_DEVICE_FREQ, NULL, NULL);
             error = BASS_ErrorGetCode();
             if(error==BASS_ERROR_FORMAT){
                 BASS_Free();
@@ -188,6 +190,8 @@ int TS_InitBass(){
 	else{
         printf("[" PLUGINNAME "] Info: loaded and initialized BASS.\n");
 	}
+	//BASS_SetConfig(BASS_CONFIG_UPDATEPERIOD, 100);
+
     BASS_Start();
     return 0;
 }
@@ -313,10 +317,15 @@ private:
 
 TS_AudioStream::TS_AudioStream(const char *f){
 
-    stream =  BASS_MIDI_StreamCreateFile(0, f, 0, 0, BASS_MIDI_DECAYEND|BASS_MIDI_NOCROP|BASS_MIDI_SINCINTER, 0);
+    stream =  BASS_MIDI_StreamCreateFile(0, f, 0, 0, BASS_MIDI_DECAYEND|BASS_MIDI_NOCROP, 1);
     int error = BASS_ErrorGetCode();
     if(error)
-        stream = BASS_StreamCreateFile(0, f, 0, 0, BASS_STREAM_PRESCAN);
+        stream = BASS_StreamCreateFile(0, f, 0, 0, BASS_ASYNCFILE|BASS_STREAM_PRESCAN|BASS_SAMPLE_MONO);
+
+    long long end = BASS_ChannelGetLength(stream, BASS_POS_BYTE);
+    double dlength = BASS_ChannelBytes2Seconds(stream, end);
+
+    length = (long long)(dlength*DOUBLE(1000.0));
 }
 
 TS_AudioStream::~TS_AudioStream(){
@@ -353,9 +362,7 @@ void TS_AudioStream::SetPosition(long long position){
 }
 
 long long TS_AudioStream::GetLength() const{
-        long long end = BASS_ChannelGetLength(stream, BASS_POS_BYTE);
-        double dlength = BASS_ChannelBytes2Seconds(stream, end);
-        return (long long)(dlength*DOUBLE(1000.0));
+    return length;
 }
 
 bool TS_AudioStream::IsPlaying() const{
@@ -386,10 +393,7 @@ public:
 */
 
 long long TS_AudioSample::GetLength() const{
-    HCHANNEL channel = BASS_SampleGetChannel(sample, 0);
-    long long end = BASS_ChannelGetLength(channel, BASS_POS_BYTE);
-    double dlength = BASS_ChannelBytes2Seconds(channel, end);
-    return (long long)(dlength*DOUBLE_LITERAL(1000.0));
+    return length;
 }
 
 TS_AudioSample::~TS_AudioSample(){
@@ -555,6 +559,11 @@ private:
 TS_AudioSampleSingle::TS_AudioSampleSingle(const char *f){
     sample = BASS_SampleLoad(0, f, 0, 0, 1, 0);
     channel = BASS_SampleGetChannel(sample, 0);
+
+    long long end = BASS_ChannelGetLength(channel, BASS_POS_BYTE);
+    double dlength = BASS_ChannelBytes2Seconds(channel, end);
+    length = (long long)(dlength*DOUBLE_LITERAL(1000.0));
+
 }
 
 TS_AudioSampleSingle::~TS_AudioSampleSingle(void){
@@ -607,9 +616,7 @@ long long TS_AudioSampleSingle::GetPosition(void) const{
 
 
 long long TS_AudioSampleSingle::GetLength() const{
-    long long end = BASS_ChannelGetLength(channel, BASS_POS_BYTE);
-    double dlength = BASS_ChannelBytes2Seconds(channel, end);
-    return (long long)(dlength*DOUBLE_LITERAL(1000.0));
+    return length;
 }
 
 void TS_AudioSampleSingle::SetPosition(long long position){

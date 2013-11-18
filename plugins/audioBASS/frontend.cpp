@@ -66,7 +66,7 @@ initFunction Init(){
 }
 
 void Close(){
-    BASS_Pause();
+    //BASS_Pause();
     BASS_Stop();
     BASS_PluginFree(0);
     BASS_Free();
