@@ -3,7 +3,7 @@ import sys
 
 defaultenv	= Environment(ENV = os.environ)
 
-linuxenv	= defaultenv.Clone(tools = ['default', 'textfile'], CCFLAGS = "-Werror=return-type -Wno-unused-local-typedefs -Wall -Wno-pointer-arith -mtune=native -mfpmath=both -flto -O2 -funroll-loops -std=c++11 -Wcast-align -pg -g", LINKFLAGS = "-I./")
+linuxenv	= defaultenv.Clone(tools = ['default', 'textfile'], CCFLAGS = " -Werror=return-type -Wno-unused-local-typedefs -Wall -Wno-pointer-arith -mtune=native -msse2 -flto -O2 -funroll-loops -std=c++11 -Wcast-align ", LINKFLAGS = "-I./")
 
 windowsenv 	= defaultenv.Clone(CCFLAGS = "/O2 /EHsc")
 
@@ -257,21 +257,34 @@ scriptfs_files = ['plugins/scriptfs/scriptfs.cpp', 'plugins/scriptfs/bytearray.c
 getkeystring_files = ['getkeystring.cpp']
 SDL_GL_path 	 = ['plugins/graphicSDL_GL_threaded']
 SDL_GL_files	 = ['plugins/graphicSDL_GL_threaded/sdl_gl_main.cpp', 'plugins/graphicSDL_GL_threaded/save.cpp', 'plugins/graphicSDL_GL_threaded/image.cpp', 'plugins/graphicSDL_GL_threaded/surface.cpp', 'plugins/graphicSDL_GL_threaded/surface_thread.cpp', 'plugins/graphicSDL_GL_threaded/color.cpp', 'plugins/graphicSDL_GL_threaded/primitives.cpp', 'plugins/graphicSDL_GL_threaded/screen.cpp']
+
+SDLGLenv = currentenv.Clone()
+sconf = Configure(SDLGLenv)
+sconf.env.Append()
+SDLGLenv = sconf.Finish()
+
 mapengineGL_files= ['plugins/mapengineGL/map.cpp', 'plugins/mapengineGL/mapengine.cpp', 'plugins/mapengineGL/tileset.cpp', 'plugins/mapengineGL/spriteset.cpp', 'plugins/mapengineGL/person.cpp']
 audioBASS_files	 = ['plugins/audioBASS/frontend.cpp', 'plugins/audioBASS/bass_backend.cpp', 'plugins/audioBASS/script.cpp']
 audioBASS_libs	 = ['bass', 'bassmidi']
+
+spritebatcher_files = ['plugins/spritebatcherGL/frontend.cpp', 'plugins/spritebatcherGL/batcher.cpp']
 
 build_plugins = GetOption('build_plugins')
 if build_plugins != "n":
 	if build_plugins == "y" or build_plugins == "all":
 		#v8_build()
 		if sys.platform == 'darwin':
-			SDL_GL = currentenv.SharedLibrary('./bin/Release/plugin/SDL_GL', SDL_GL_files , LIBS = [plugin_libs, 'SDL2_image', 'png', 'libSDLmain', 'GL'], LIBPATH = lib_path)
+			SDL_GL = 		SDLGLenv.SharedLibrary('./bin/Release/plugin/SDL_GL', SDL_GL_files , LIBS = [plugin_libs, 'SDL2_image', 'png', 'libSDLmain', 'GL'], LIBPATH = lib_path)
+			spritebatcherGL = 	SDLGLenv.SharedLibrary('./bin/Release/plugin/spritebatcherGL', spritebatcher_files , LIBS = [plugin_libs, 'GL'], LIBPATH = lib_path)
 		elif sys.platform == 'win32' or sys.platform == 'win64':
-			SDL_GL = currentenv.SharedLibrary('./bin/Release/plugin/SDL_GL', SDL_GL_files , LIBS = [plugin_libs, 'SDL2_image', 'png', 'GL'], LIBPATH = lib_path)
+			SDL_GL = 		SDLGLenv.SharedLibrary('./bin/Release/plugin/SDL_GL', SDL_GL_files , LIBS = [plugin_libs, 'SDL2_image', 'png', 'GL'], LIBPATH = lib_path)
+			spritebatcherGL = 	SDLGLenv.SharedLibrary('./bin/Release/plugin/spritebatcherGL', spritebatcher_files , LIBS = [plugin_libs, 'GL'], LIBPATH = lib_path)
 		else:
-			SDL_GL = currentenv.SharedLibrary('./bin/Release/plugin/SDL_GL_threaded', SDL_GL_files , LIBS = [plugin_libs, 'SDL2_image', 'GL', 'png', 'GLU', 'X11'], LIBPATH = ['/usr/local/lib', lib_path])
+			SDL_GL = 		SDLGLenv.SharedLibrary('./bin/Release/plugin/SDL_GL_threaded', SDL_GL_files , LIBS = [plugin_libs, 'SDL2_image', 'GL', 'png', 'GLU', 'X11'], LIBPATH = ['/usr/local/lib', lib_path])
+			spritebatcherGL = 	SDLGLenv.SharedLibrary('./bin/Release/plugin/spritebatcherGL', spritebatcher_files , LIBS = [plugin_libs, 'GL', 'X11'], LIBPATH = ['/usr/local/lib', lib_path])
+		
 		Depends(SDL_GL, base_libs)
+		
 		bmpfontGL     = currentenv.SharedLibrary('./bin/Release/plugin/bmpfontGL', ['plugins/bmpfontGL/bmpfont.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
 		Depends(bmpfontGL, base_libs)
 		ttffontGL     = currentenv.SharedLibrary('./bin/Release/plugin/ttffontGL', ['plugins/ttffontGL/ttffont.cpp'], LIBS = [plugin_libs, 'SDL2_ttf'], LIBPATH = lib_path)
