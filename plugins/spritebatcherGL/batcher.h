@@ -17,8 +17,10 @@
 
 extern void (APIENTRY * glFramebufferParameteri)(GLenum target, GLenum pname, GLint param);
 
-#define DEFAULT_WIDTH  2048
-#define DEFAULT_HEIGHT 2048
+void InitBatcher(void);
+
+#define DEFAULT_WIDTH  512
+#define DEFAULT_HEIGHT 512
 
 typedef GLuint TS_Texture;
 
@@ -50,6 +52,8 @@ public:
 
     int width, height, curwidth, curheight, rowheight;
 
+    void *getPixels();
+
     std::vector<TS_SpriteTextureCoord> coords;
     TS_Texture texture;
     GLuint framebuffer;
@@ -58,6 +62,8 @@ public:
 
 private:
     TS_Texture fbotex;
+    float heightf;
+    float widthf;
 
 };
 

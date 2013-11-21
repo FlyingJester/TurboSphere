@@ -18,6 +18,8 @@ initFunction Init(int ID){
 
     GET_GL_FUNCTION(glFramebufferParameteri, (void (APIENTRY *)(GLenum target, GLenum pname, GLint param)));
 
+    InitBatcher();
+
     return PLUGINNAME;
 }
 
