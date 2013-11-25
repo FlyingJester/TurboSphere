@@ -497,7 +497,7 @@ v8Function LoadImage(V8ARGS){
         THROWERROR((string(" Error: Could not open image file '").append(*str)+string("'.")).c_str());
     }
 
-    END_OBJECT_WRAP_CODE(Image, im);
+    END_OBJECT_WRAP_CODE_WITH_ID(Image, im, ImageID);
 }
 
 v8Function ImageBlit(V8ARGS){
