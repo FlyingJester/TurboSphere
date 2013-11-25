@@ -2,6 +2,7 @@
 #define SPRITEBATCHER_BATCHER_HEAD
 
 #include <vector>
+#include "frontend.h"
 
 #define GL_GLEXT_PROTOTYPES 1
 #include "../../SDL2/SDL_opengl.h"
@@ -17,16 +18,30 @@
 
 extern void (APIENTRY * glFramebufferParameteri)(GLenum target, GLenum pname, GLint param);
 
+EXTERN_OBJECT_TEMPLATES(SpriteBatch);
+
 void InitBatcher(void);
 
 #define DEFAULT_WIDTH  512
 #define DEFAULT_HEIGHT 512
 
+v8Function NewSpriteBatcher(V8ARGS);
+v8Function spritebatcherDebug(V8ARGS);
+v8Function spritebatcherAddImage(V8ARGS);
+v8Function spritebatcherBlitBuffer(V8ARGS);
+
 typedef GLuint TS_Texture;
 
-enum TS_SpriteBatchError {NOERROR = 0,
+enum TS_SpriteBatchError {
+    NOERROR = 0,
     NOROOM, //The batch's spritesheet is too full.
     TOOBIG  //The batch's spritesheet is not big enough in the first place.
+};
+
+enum TS_SpriteBatchTextureType {
+    INVALID = 0,
+    SDL_SURFACE,
+    TS_IMAGE
 };
 
 class TS_SpriteTextureCoord{
@@ -49,7 +64,6 @@ public:
 
     TS_SpriteBatchError AddImage(int w, int h, void *pixels, bool RGBA = true);
     TS_SpriteBatchError AddImage(int w, int h, TS_Texture tex);
-
     int width, height, curwidth, curheight, rowheight;
 
     void *getPixels();
@@ -59,6 +73,7 @@ public:
     GLuint framebuffer;
 
     void blit(int x, int y);
+    void blitDebug(int x, int y);
 
 private:
     TS_Texture fbotex;

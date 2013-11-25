@@ -29,7 +29,7 @@ int *GetNumPluginsToClose(){
 int IncNumPluginsToClose(){
 	int *Plugins = GetNumPluginsToClose();
 	(*Plugins)++;
-	printf("Plugins:\t%i\n", *Plugins); 
+	printf("Plugins:\t%i\n", *Plugins);
 	return *Plugins;
 }
 
@@ -45,15 +45,15 @@ void ClrNumPluginsToClose(){
 }
 
 PluginCloseFunction *RegisterPluginCloseFunction(void(*close)(void)){
-	
+
 	static PluginCloseFunction* CloseFuncs = NULL;
-	
+
 	if(close!=NULL){
 
 		int numplugs = IncNumPluginsToClose();
 		CloseFuncs = (PluginCloseFunction*)realloc(CloseFuncs, numplugs*sizeof(PluginCloseFunction));
 		CloseFuncs[numplugs-1] = close;
-	printf("Plugins:\t%i\n", numplugs); 
+	printf("Plugins:\t%i\n", numplugs);
 
 	}
 	return CloseFuncs;
@@ -64,9 +64,9 @@ int CloseAllPlugins(){
 	PluginCloseFunction *funcs = RegisterPluginCloseFunction(NULL);
 	int numplugs = *(GetNumPluginsToClose());
 	int i = 0;
-	printf("Plugins:\t%i\n", numplugs); 
+	printf("Plugins:\t%i\n", numplugs);
 	while(i<numplugs){
-		printf("Plugin Closed:\t%i\n", i); 
+		printf("Plugin Closed:\t%i\n", i);
 		((PluginCloseFunction)(funcs[i]))();
 		i++;
 	}
@@ -357,7 +357,7 @@ void grabFuncsFromLibrary(HINSTANCE handle){
 //void grabFuncsFromLibrary(void *handle, const char *name = "Unkown"){
 void grabFuncsFromLibrary(void *handle){
     //printf("We'll try.\n");
-    static int PluginNum = 0;
+    static int PluginNum = 1;
     char *error;
     char   *(*dlInit)(int);
     void    (*dlClose)(void);

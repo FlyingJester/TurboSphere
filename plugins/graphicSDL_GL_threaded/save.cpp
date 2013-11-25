@@ -53,7 +53,7 @@ int save_PNG(const char * path, const void *pixels, unsigned int width, unsigned
 	if((width|height)==0){
 		return SDL_GL_SAVE_NOERROR;
 	}
-	
+
 	setjmp(png_jmpbuf(pngs));
     pngs = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     info = png_create_info_struct(pngs);
@@ -61,7 +61,7 @@ int save_PNG(const char * path, const void *pixels, unsigned int width, unsigned
         fclose(file);
         return SDL_GL_SAVE_PNGERROR;
     }
-	
+
 	setjmp(png_jmpbuf(pngs));
     png_set_IHDR(pngs, info, width, height, DEPTH, PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 
@@ -102,7 +102,7 @@ int save_TGA(const char * path, const void *pixels, unsigned int width, unsigned
         ImageDescriptor|=9;
     else
         ImageDescriptor|=9;
-
+    printf("Saving a TGA:\t%s", path);
     file = fopen(path, "wb");
     if(!file)
         return SDL_GL_SAVE_NOFILE;

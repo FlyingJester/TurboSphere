@@ -1,142 +1,186 @@
 #include "batcher.h"
 #include <cstdlib>
-/*
-class TS_SpriteBatch {
-public:
 
-    TS_SpriteBatch();
-    ~TS_SpriteBatch();
-
-    TS_SpriteBatchError AddImage(int w, int h, void *pixels, bool RGBA = true);
-
-    int w, h, curwidth, curheight, rowheight;
-
-    std::vector<TS_SpriteTextureCoord> coords;
-    TS_Texture texture;
-
-    void blit(int x, int y);
-
-
-
-};
-*/
 #include <cstdio>
 
+uint32_t *(*TS_SDL_GL_GetSurfaceIDDL)(void);
+uint32_t *(*TS_SDL_GL_GetImageIDDL)(void);
+TS_Texture(*TS_SDL_GL_GetTextureFromImageDL)(void *);
+
+#include "../../common/dlopenwrap.h"
+
+static fhandle SDLGLhandle;
+
+DECLARE_OBJECT_TEMPLATES(SpriteBatch);
+TS_SpriteBatch *batch = NULL;
 
 void InitBatcher(void){
     printf("Limit on size are %i.\n", GL_MAX_TEXTURE_SIZE);
-    TS_SpriteBatch *batch = new TS_SpriteBatch();
 
-    uint32_t pixels[] = {
-    0xFFFFFFFF,
-    0xFFFFFFFF,
-    0xFFFFFFFF,
-    0xFFFFFFFF,
+    INIT_OBJECT_TEMPLATES(SpriteBatch);
+    SET_CLASS_NAME(SpriteBatch, "SpriteBatch");
+    ADD_TO_PROTO(SpriteBatch, "addTexture", spritebatcherAddImage);
+    ADD_TO_PROTO(SpriteBatch, "blitBuffer", spritebatcherBlitBuffer);
 
-    0xFF00FFFF,
-    0xFF00FFFF,
-    0xFF00FFFF,
-    0xFF00FFFF,
 
-    0xFF0000FF,
-    0xFF0000FF,
-    0xFF0000FF,
-    0xFF0000FF,
+    #ifdef _WIN32
+		DWORD error;
+	    SDLGLhandle = LoadLibrary("./plugin/SDL_GL_threaded.dll");
+	    if(SDLGLhandle==NULL){
+            SDLGLhandle = LoadLibrary("./plugin/SDL_GL.dll");
+	    }
+        if(SDLGLhandle!=NULL) {
+				DLOPENFUNCTION(uint32_t *(*)(void), TS_SDL_GL_GetSurfaceIDDL, SDLGLhandle, "TS_SDL_GL_GetSurfaceID", 0, 0, exit(0xDD));
+        }
+        else{
+			exit(0xD9);
+        }
+    #else
 
-    0x0000FFFF,
-    0x0000FFFF,
-    0x0000FFFF,
-    0x0000FFFF
-    };
+        char *error;
+        SDLGLhandle = dlopen("./plugin/libSDL_GL_threaded.so", RTLD_GLOBAL|RTLD_NOW);
+        if(SDLGLhandle==NULL)
+            SDLGLhandle = dlopen("./plugin/libSDL_GL.so", RTLD_GLOBAL|RTLD_NOW);
 
-    batch->AddImage(4, 4, pixels);
+        if(SDLGLhandle==NULL) {
+            fprintf(stderr, "[" PLUGINNAME "] %s Error: Could not open any known graphics plugins.\n", __func__);
+            exit(0xFD);
+        }
+        else{
+            TS_SDL_GL_GetSurfaceIDDL = (uint32_t *(*)(void))dlsym(SDLGLhandle, "TS_SDL_GL_GetSurfaceID");
+            if (((error = dlerror()) != NULL)||(TS_SDL_GL_GetSurfaceIDDL==NULL))  {
+                fprintf (stderr, "[" PLUGINNAME "] %s error: Could not load TS_SDL_GL_GetSurfaceID from any plugin.\n\tReported error is: %s", __func__, error);
+                exit(0xDD);
+            }
+            TS_SDL_GL_GetImageIDDL = (uint32_t *(*)(void))dlsym(SDLGLhandle, "TS_SDL_GL_GetImageID");
+            if (((error = dlerror()) != NULL)||(TS_SDL_GL_GetImageIDDL==NULL))  {
+                fprintf (stderr, "[" PLUGINNAME "] %s error: Could not load TS_SDL_GL_GetImageID from any plugin.\n\tReported error is: %s", __func__, error);
+                exit(0xDD);
+            }
+            TS_SDL_GL_GetTextureFromImageDL = (TS_Texture(*)(void *))dlsym(SDLGLhandle, "TS_SDL_GL_GetTextureFromImage");
+            if (((error = dlerror()) != NULL)||(TS_SDL_GL_GetTextureFromImageDL==NULL))  {
+                fprintf (stderr, "[" PLUGINNAME "] %s error: Could not load TS_SDL_GL_GetTextureFromImage from any plugin.\n\tReported error is: %s", __func__, error);
+                TS_SDL_GL_GetTextureFromImageDL=NULL;
+            }
+
+        }
+    #endif
+
+}
+
+v8Function spritebatcherDebug(V8ARGS){
+    if(args.Length()<2){
+        THROWERROR(" Error: Called with fewer than 2 arguments.");
+    }
+    CHECK_ARG_INT(0);
+    CHECK_ARG_INT(1);
+
+    batch->blitDebug(args[0]->Int32Value(), args[1]->Int32Value());
+
+    return v8::Undefined();
+
+}
+
+v8Function spritebatcherAddImage(V8ARGS){
+    if(args.Length()==0){
+        THROWERROR(" Error: Called with fewer than one argument.");
+    }
+
+    TS_SpriteBatchTextureType type = TS_SpriteBatchTextureType::INVALID;
+
+    SDL_Surface *surf = NULL;
+    TS_Texture tex = 0;
+
+    v8::Local<v8::Object> textureObj = v8::Local<v8::Object>::Cast(args[0]);
+
+    if(textureObj->InternalFieldCount()<2){
+        fprintf(stderr, "[" PLUGINNAME "] %s Error: Invalid object for argument 0. Using wrong graphics plugin?\n", __func__);
+        THROWERROR(" Error: Argument 0 is not an Image or Surface.");
+    }
+
+    if(textureObj->GetInternalField(1)->Uint32Value()==*(TS_SDL_GL_GetSurfaceIDDL())){
+        type = TS_SpriteBatchTextureType::SDL_SURFACE;
+        surf = (SDL_Surface*)textureObj->GetAlignedPointerFromInternalField(0);
+    }
+    else if(textureObj->GetInternalField(1)->Uint32Value()==*(TS_SDL_GL_GetImageIDDL())){
+        if(TS_SDL_GL_GetTextureFromImageDL==NULL){
+            fprintf(stderr, " %s Error: Adding SpriteBatch images from Images is not supported without a compatible graphics plugin.", __func__);
+            THROWERROR(" Error: Adding SpriteBatch images from Images is not supported without a compatible graphics plugin.");
+        }
+        type = TS_SpriteBatchTextureType::TS_IMAGE;
+        tex = TS_SDL_GL_GetTextureFromImageDL(textureObj->GetAlignedPointerFromInternalField(0));
+    }
+    else{
+        fprintf(stderr, "ID was %i. Expected %i or %i.\n", textureObj->GetInternalField(1)->Uint32Value(), *TS_SDL_GL_GetSurfaceIDDL(), *TS_SDL_GL_GetImageIDDL());
+        THROWERROR(" Error: Argument 0 is not an Image or Surface.");
+    }
+
+    if(type==TS_SpriteBatchTextureType::SDL_SURFACE){
+        GET_SELF(TS_SpriteBatch *)->AddImage(surf->w, surf->h, surf->pixels, true);
+    }
+    else{
+        fprintf(stderr, "WARNING: Adding TS_Images as to TS_SpriteBatches is not fully implemented yet.\n");
+        GET_SELF(TS_SpriteBatch *)->AddImage(1, 1, tex);
+    }
+
+
+    return v8::Undefined();
+}
+
+v8Function spritebatcherBlitBuffer(V8ARGS){
+    if(args.Length()<2){
+        THROWERROR(" Error: Called with fewer than 2 arguments.");
+    }
+    CHECK_ARG_INT(0);
+    CHECK_ARG_INT(1);
+
+    GET_SELF(TS_SpriteBatch *)->blitDebug(args[0]->Int32Value(), args[1]->Int32Value());
+
+    return v8::Undefined();
 
 }
 
 TS_SpriteBatch::TS_SpriteBatch(){
 
-    printf("Error codes are:\n\t%i\tGL_INVALID_ENUM\n\t%i\tGL_INVALID_VALUE\n\t%i\tGL_INVALID_OPERATION\n\t%i\tGL_INVALID_FRAMEBUFFER_OPERATION\n\t%i\tGL_OUT_OF_MEMORY\n\t%i\tGL_STACK_UNDERFLOW\n\t%i\tGL_STACK_OVERFLOW\n\n",
-                                    GL_INVALID_ENUM,       GL_INVALID_VALUE,       GL_INVALID_OPERATION,       GL_INVALID_FRAMEBUFFER_OPERATION,       GL_OUT_OF_MEMORY,       GL_STACK_UNDERFLOW,       GL_STACK_OVERFLOW);
+    curwidth = 0;
+    curheight = 0;
+    rowheight = 0;
 
-    //glFrameBufferParameteri
     width = DEFAULT_WIDTH;
     height = DEFAULT_HEIGHT;
     widthf = DEFAULT_WIDTH;
     heightf = DEFAULT_HEIGHT;
+    glEnable(GL_TEXTURE_2D);
 
-    const void *pixels = calloc(DEFAULT_WIDTH*DEFAULT_HEIGHT, 4);
     coords = std::vector<TS_SpriteTextureCoord>();
     glGenFramebuffers(1, &framebuffer);
     glGenTextures(1, &texture);
-    GLenum err = glGetError();
-
-    if(err)
-        printf("1. We had an error %i.\n", err);
-
 
     //Set up the color buffer of framebuffer.
     glGenTextures(1, &fbotex);
-    err = glGetError();
-
-    if(err)
-        printf("2. We had an error %i.\n", err);
 
     glBindTexture(GL_TEXTURE_2D, fbotex);
-    err = glGetError();
 
-    if(err)
-        printf("3. We had an error %i.\n", err);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    err = glGetError();
 
-    if(err)
-        printf("4. We had an error %i.\n", err);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    err = glGetError();
-
-    if(err)
-        printf("5. We had an error %i.\n", err);
     //Reserve the graphics memory for it.
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    err = glGetError();
-
-    if(err)
-        printf("6. We had an error %i.\n", err);
-
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-    err = glGetError();
 
-    if(err)
-        printf("7. We had an error %i.\n", err);
-    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_WIDTH,  width);
-        err = glGetError();
-
-    if(err)
-        printf("8. We had an error %i.\n", err);
-    glFramebufferParameteri(GL_FRAMEBUFFER, GL_FRAMEBUFFER_DEFAULT_HEIGHT, height);
-    err = glGetError();
-
-    if(err)
-        printf("9. We had an error %i.\n", err);
-    //Bind the color buffer to the framebuffer.
-
-    err = glGetError();
-
-    if(err)
-        printf("A. We had an error %i.\n", err);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, fbotex, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
 
-    err = glGetError();
-
-    if(err)
-        printf("B. We had an error %i.\n", err);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDisable(GL_TEXTURE_2D);
+    //glPopAttrib();
 
 }
 
 TS_SpriteBatch::~TS_SpriteBatch(){
     glDeleteFramebuffers(1, &framebuffer);
     glDeleteTextures(1, &texture);
+    glDeleteTextures(1, &fbotex);
 }
 
 TS_SpriteBatchError TS_SpriteBatch::AddImage(int w, int h, void *pixels, bool RGBA){
@@ -155,10 +199,13 @@ TS_SpriteBatchError TS_SpriteBatch::AddImage(int w, int h, void *pixels, bool RG
         return TS_SpriteBatchError::NOROOM;
     }
 
+    if(h>rowheight)
+        rowheight=h;
+
     //TODO: The floats are dummy values.
     coords.push_back({curwidth, curheight, (uint32_t)w, (uint32_t)h, ((float)curwidth)/((float)width), ((float)curheight)/((float)height), ((float)(curwidth+w))/((float)width), ((float)(curheight+w))/((float)height)});
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
     TS_Texture tex;
 
@@ -178,7 +225,7 @@ TS_SpriteBatchError TS_SpriteBatch::AddImage(int w, int h, void *pixels, bool RG
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
 
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    //glBindTexture(GL_TEXTURE_2D, texture);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
@@ -190,30 +237,46 @@ TS_SpriteBatchError TS_SpriteBatch::AddImage(int w, int h, void *pixels, bool RG
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glDisable(GL_TEXTURE_2D);
 
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     curwidth+=w;
-
-    if(rowheight<h)
-        rowheight=h;
+    glDeleteTextures(1, &tex);
 
     return TS_SpriteBatchError::NOERROR;
 }
 
-/*
-class TS_SpriteTextureCoord{
-public:
-    int32_t  x;
-    int32_t  y;
-    uint32_t w;
-    uint32_t h;
-    float    x1ord;
-    float    y1ord;
-    float    x2ord;
-    float    y2ord;
-};
-*/
 
+void TS_SpriteBatch::blit(int x, int y){
+
+}
+
+void TS_SpriteBatch::blitDebug(int x, int y){
+
+    glBindTexture(GL_TEXTURE_2D, fbotex);
+
+    const GLint   vertexData[]   = {x, y, x+width, y, x+width, y+height, x, y+height};
+    const GLint   texcoordData[] = {1, 1, 0, 1, 0, 0, 1, 0};
+    const GLuint  colorData[]    = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
+
+    glTexCoordPointer(2, GL_INT, 0, texcoordData);
+    glVertexPointer(2, GL_INT, 0, vertexData);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+
+    glEnable(GL_TEXTURE_2D);
+//    glBindTexture(GL_TEXTURE_2D, texture);
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDisable(GL_TEXTURE_2D);
+
+
+}
 
 TS_SpriteBatchError TS_SpriteBatch::AddImage(int w, int h, TS_Texture tex){
 
@@ -229,8 +292,22 @@ TS_SpriteBatchError TS_SpriteBatch::AddImage(int w, int h, TS_Texture tex){
 
 void *TS_SpriteBatch::getPixels(){
     void *pixels = malloc(4*width*height);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
-    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     return pixels;
+}
+
+void TS_SpriteBatchFinalizer(V8FINALIZERARGS) {
+
+    TS_SpriteBatch* sb = (TS_SpriteBatch*)parameter;
+    delete sb;
+    object->Dispose();
+}
+
+v8Function NewSpriteBatcher(V8ARGS){
+
+    BEGIN_OBJECT_WRAP_CODE;
+
+    TS_SpriteBatch *sb = new TS_SpriteBatch();
+
+    END_OBJECT_WRAP_CODE(SpriteBatch, sb)
+
 }

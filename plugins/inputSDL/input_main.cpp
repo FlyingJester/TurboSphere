@@ -115,11 +115,6 @@ v8FunctionArray GetVariables(void){
     numerate(true);
     v8FunctionArray vars = (v8FunctionArray)calloc(NUMVARS, sizeof(v8Function));
 
-    if((vars==NULL)&&(NUMVARS>0)){
-        printf("Out of memory.\n");
-        exit(1);
-    }
-
     vars[numerate(false)]=v8::Number::New(SDLK_RETURN);
 
 	vars[numerate(false)]=v8::Number::New(SDLK_a);

@@ -101,6 +101,10 @@ void SurfaceInit(void){
 	//atexit(KillSurfaceThread);
 }
 
+uint32_t *TS_SDL_GL_GetSurfaceID(void){
+    return &SurfaceID;
+}
+
 void SurfaceClose(void){
 	KillSurfaceThread();
 	printf("SurfaceClose Closing.\n");
@@ -167,7 +171,7 @@ TS_Texture TS_SurfaceToTexture(SDL_Surface *surface){
 
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     SDL_AtomicSet(&SurfaceQueueIndependantFlag, 1);
@@ -282,7 +286,7 @@ v8Function SurfaceClone(V8ARGS){
 
     SDL_SetSurfaceRLE(surface, 1);
 
-    END_OBJECT_WRAP_CODE(Surface, surface)
+    END_OBJECT_WRAP_CODE_WITH_ID(Surface, surface, SurfaceID);
 
 }
 
@@ -329,7 +333,7 @@ v8Function SurfaceCloneSection(V8ARGS){
 
     SDL_SetSurfaceRLE(surface, 1);
 
-    END_OBJECT_WRAP_CODE(Surface, surface)
+    END_OBJECT_WRAP_CODE_WITH_ID(Surface, surface, SurfaceID);
 
 }
 
@@ -363,7 +367,7 @@ v8Function SurfaceGrab(V8ARGS){
     SDL_SetSurfaceRLE(surface, 1);
     delete image;
 
-    END_OBJECT_WRAP_CODE(Surface, surface);
+    END_OBJECT_WRAP_CODE_WITH_ID(Surface, surface, SurfaceID);
 }
 
 v8Function SurfaceSave(V8ARGS){

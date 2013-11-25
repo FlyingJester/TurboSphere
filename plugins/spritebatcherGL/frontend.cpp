@@ -12,6 +12,11 @@
 CHECK_FOR_PROCESS( #NAME );\
 NAME = TYPING SDL_GL_GetProcAddress( #NAME )
 
+
+void * spritebatcherDebugPointer            = V8FUNCPOINTER(spritebatcherDebug);
+void * NewSpriteBatcherPointer              = V8FUNCPOINTER(NewSpriteBatcher);
+void * spritebatcherAddImagePointer              = V8FUNCPOINTER(spritebatcherAddImage);
+
 void (APIENTRY * glFramebufferParameteri)(GLenum target, GLenum pname, GLint param) = NULL;
 
 initFunction Init(int ID){
@@ -28,25 +33,44 @@ void Close(void){
 }
 
 int             GetNumFunctions(void){
-    return 0;
+    return 1;
 }
 
 functionArray   GetFunctions(void){
-    return NULL;
+    functionArray funcs = (functionArray)calloc(2, sizeof(void*));
+    funcs[0] = NewSpriteBatcherPointer;
+    return funcs;
 }
 
 nameArray       GetFunctionNames(void){
-    return NULL;
+    nameArray names = (nameArray)calloc(2, sizeof(functionName));
+    names[0] = (functionName)"SpriteBatch";
+    return names;
 }
 
 int             GetNumVariables(void){
-    return 0;
+    return 4;
 }
 
 v8FunctionArray GetVariables(void){
-    return NULL;
+
+    v8FunctionArray vars = (v8FunctionArray)calloc(4, sizeof(v8Function));
+
+    vars[0]=v8::Number::New(0);
+    vars[1]=v8::Number::New(1);
+    vars[2]=v8::Number::New(2);
+    vars[3]=v8::Number::New(3);
+
+    return vars;
 }
 
 nameArray       GetVariableNames(void){
-    return NULL;
+
+    nameArray names = (nameArray)calloc(4, sizeof(functionName));
+    names[0]=(functionName)"LINE";
+    names[1]=(functionName)"TRIANGLE";
+    names[2]=(functionName)"RECTANGLE";
+    names[3]=(functionName)"CIRCLE";
+
+    return names;
 }

@@ -81,7 +81,6 @@ void ScreenClose(void){
 
 bool * const GetScreenShotFlag(void){
     static bool * const s = (bool*)malloc(1);
-
     return s;
 }
 
@@ -100,6 +99,7 @@ void FlipScreen(void){
     //SDL_GL_SwapBuffers();
     SDL_GL_SwapWindow(screen);
     if(*scr==true){
+        printf("Performing screenshot.\n");
         *scr=false;
         glReadBuffer(GL_FRONT);
         int w = GetScreenWidth();
@@ -120,12 +120,12 @@ void FlipScreen(void){
 
         char *timestr = (char *)malloc(15+18+7+1);
 
-         sprintf(timestr, "%s/%04i_%02i_%02i_%02i_%02i_%02i_%04i%s", SCREENSHOT_FOLDER, times.tm_year, times.tm_mon+1, times.tm_mday, times.tm_hour, times.tm_min, times.tm_sec, SDL_GetTicks()%1000, DEFAULT_IMAGE_EXT);
+        sprintf(timestr, "%s/%04i_%02i_%02i_%02i_%02i_%02i_%04i%s", SCREENSHOT_FOLDER, times.tm_year, times.tm_mon+1, times.tm_mday, times.tm_hour, times.tm_min, times.tm_sec, SDL_GetTicks()%1000, DEFAULT_IMAGE_EXT);
 
         save_TGA(timestr, screenCopy, w, h, R8G8B8A8, SDL_GL_SAVETGA_GLNATIVE|SDL_GL_SAVETGA_COMPRESS|SDL_GL_SAVETGA_BGRA);
 
         free(screenCopy);
 
     }
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT);
 }

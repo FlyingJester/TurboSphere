@@ -192,11 +192,10 @@ initFunction Init(int ID){
     //glEnable(GL_PROGRAM_POINT_SIZE);
     //glPointSize();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_LIGHTING);
-    glDisable(GL_CULL_FACE);
-
+    //glDisable(GL_CULL_FACE);
+    //glEnable(GL_CULL_FACE);
     //glEnable(GL_SCISSOR_TEST);
 
     glViewport(0, 0, GetScreenWidth()*scaleSize, GetScreenHeight()*scaleSize);
@@ -207,13 +206,14 @@ initFunction Init(int ID){
 
 
     glOrtho(0, GetScreenWidth(), GetScreenHeight(), 0, 1, -1);
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
     //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
 
-    if(scaleSize!=1){
+    if(((int)scaleSize)!=1){
         glPointSize(scaleSize);
         glLineWidth(scaleSize);
     }

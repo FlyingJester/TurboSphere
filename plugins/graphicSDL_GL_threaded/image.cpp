@@ -14,6 +14,14 @@ unsigned int ImageID;
 #define PIXEL_UNPACK_BUFFER_BINDING_EXT 0x88EF
 
 
+uint32_t *TS_SDL_GL_GetImageID(void){
+    return &ImageID;
+}
+
+TS_Texture TS_SDL_GL_GetTextureFromImage(TS_Image *im){
+    return im->texture;
+}
+
 DECLARE_OBJECT_TEMPLATES(Image);
 
 TS_Color *fullmask;
@@ -239,7 +247,6 @@ TS_Image *TS_LoadTexture(const char *filename){
     glGenTextures(1, &texture);
 
     glBindTexture(GL_TEXTURE_2D, texture);
-
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, surface->w, surface->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, surface->pixels);
@@ -253,6 +260,28 @@ TS_Image *TS_LoadTexture(const char *filename){
 
 void TS_Image::blit(int x, int y) const{
 
+#ifdef __GNUC__
+    const GLint   vertexData[]   __attribute__ ((aligned (16)))  = {x, y, x+width, y, x+width, y+height, x, y+height};
+    const GLint   texcoordData[] __attribute__ ((aligned (16)))  = {0, 0, 1, 0, 1, 1, 0, 1};
+    const GLuint  colorData[]   __attribute__ ((aligned (16)))   = {
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt()
+    };
+
+#elif defined _MSC_VER
+
+    const GLint   vertexData[]   __declspec (align(16))  = {x, y, x+width, y, x+width, y+height, x, y+height};
+    const GLint   texcoordData[] __declspec (align(16))  = {0, 0, 1, 0, 1, 1, 0, 1};
+    const GLuint  colorData[]    __declspec (align(16))  = {
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt(),
+        mask->toInt()
+    };
+
+#else
     const GLint   vertexData[]   = {x, y, x+width, y, x+width, y+height, x, y+height};
     const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
     const GLuint  colorData[]    = {
@@ -262,6 +291,8 @@ void TS_Image::blit(int x, int y) const{
         mask->toInt()
     };
 
+
+#endif
     glTexCoordPointer(2, GL_INT, 0, texcoordData);
     glVertexPointer(2, GL_INT, 0, vertexData);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);

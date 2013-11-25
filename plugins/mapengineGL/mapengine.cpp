@@ -19,9 +19,6 @@ void (APIENTRY * glGenVertexArrays)(GLsizei, GLuint*) = NULL;
 void (APIENTRY * glBindBuffer)(GLenum,  GLuint) = NULL;
 void (APIENTRY * glBindVertexArray)(GLuint) = NULL;
 void (APIENTRY * glBufferData)(GLenum, GLsizeiptr, const GLvoid *, GLenum) = NULL;
-void (APIENTRY * glEnableVertexAttribArray)(GLint) = NULL;
-void (APIENTRY * glDisableVertexAttribArray)(GLint) = NULL;
-void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*) = NULL;
 GLuint (APIENTRY * glCreateShader)(GLenum) = NULL;
 void (APIENTRY * glDeleteShader)(GLenum) = NULL;
 void (APIENTRY * glShaderSource)(GLuint, GLint, const GLchar **, const GLvoid *) = NULL;
@@ -55,15 +52,6 @@ void LoadGLFunctions(){
 
     CHECK_FOR_PROCESS("glBufferData");
     glBufferData                = (void (APIENTRY *)(GLenum, GLsizeiptr, const GLvoid *, GLenum))   SDL_GL_GetProcAddress("glBufferData");
-
-    CHECK_FOR_PROCESS("glEnableVertexAttribArray");
-    glEnableVertexAttribArray   = (void (APIENTRY *)(GLint))   SDL_GL_GetProcAddress("glEnableVertexAttribArray");
-
-    CHECK_FOR_PROCESS("glDisableVertexAttribArray");
-    glDisableVertexAttribArray  = (void (APIENTRY *)(GLint))   SDL_GL_GetProcAddress("glDisableVertexAttribArray");
-
-    CHECK_FOR_PROCESS("glVertexAttribPointer");
-    glVertexAttribPointer       = (void (APIENTRY *)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*))   SDL_GL_GetProcAddress("glVertexAttribPointer");
 
     CHECK_FOR_PROCESS("glCreateShader");
     glCreateShader  = (GLuint (APIENTRY *)(GLenum))   SDL_GL_GetProcAddress("glCreateShader");

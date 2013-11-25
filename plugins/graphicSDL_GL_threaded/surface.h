@@ -15,7 +15,7 @@ extern SDL_atomic_t SurfaceThreadNearDeath;
             exit(0x10C);\
 \
 \
-\
+SDL_Delay(0);\
 \
 \
         if(SDL_LockMutex(SurfaceQueueNeedMutex)<0)\
@@ -30,7 +30,7 @@ extern SDL_atomic_t SurfaceThreadNearDeath;
             exit(0x10D);\
 \
 \
-\
+SDL_Delay(0);\
 \
 \
         if(SDL_LockMutex(SurfaceQueueNeedMutex)<0)\

@@ -3,7 +3,7 @@ import sys
 
 defaultenv	= Environment(ENV = os.environ)
 
-linuxenv	= defaultenv.Clone(tools = ['default', 'textfile'], CCFLAGS = " -Werror=return-type -Wno-unused-local-typedefs -Wall -Wno-pointer-arith -mtune=native -msse2 -flto -O2 -funroll-loops -std=c++11 -Wcast-align -g -pg", LINKFLAGS = "-I./")
+linuxenv        = defaultenv.Clone(tools = ['default', 'textfile'], CCFLAGS = " -Werror=return-type -Wno-unused-local-typedefs -Wall -Wno-pointer-arith -mtune=native -msse2 -flto -O2 -funroll-loops -std=c++11 -Wcast-align -g -pg", LINKFLAGS = "-I./")
 
 windowsenv 	= defaultenv.Clone(CCFLAGS = "/O2 /EHsc")
 

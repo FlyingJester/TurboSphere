@@ -125,6 +125,10 @@ SDL_GL_EXPORT void CCALL FlagForScreenshot(void);
 extern "C" SDL_GL_EXPORT v8Function CCALL TS_SDL_GL_MakeV8SurfaceHandleFromPixels(int w, int h, void *pixels);
 extern "C" SDL_GL_EXPORT v8Function CCALL TS_SDL_GL_MakeV8ImageHandleFromGLTexture(int w, int h, GLuint tex);
 extern "C" SDL_GL_EXPORT v8Function CCALL TS_SDL_GL_WrapTS_Color(TS_Color *c);
+extern "C" SDL_GL_EXPORT uint32_t * CCALL TS_SDL_GL_GetSurfaceID(void);
+extern "C" SDL_GL_EXPORT uint32_t * CCALL TS_SDL_GL_GetImageID(void);
+class TS_Image;
+extern "C" SDL_GL_EXPORT unsigned int CCALL TS_SDL_GL_GetTextureFromImage(TS_Image *im);
 
 #endif
 
