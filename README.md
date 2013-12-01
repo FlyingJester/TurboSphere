@@ -6,8 +6,9 @@ TurboSphere uses plugins for all its functionality.
 
 TurboSphere uses [SDL2](http://www.libsdl.org/) and [Google's V8](http://code.google.com/p/v8/). This combination allows for simple or complex games to be created easily using JavaScript.
 
-TurboSphere also uses the T5 kay/value file reading library, and can optionally use AMD's libm instead of the system libm.
+TurboSphere also uses the T5 key/value file reading library, and can optionally use AMD's libm instead of the system libm.
 
 Want to ask a question? TurboSphere is supported on the [Sphere forums](http://forums.spheredev.org/). Be sure to mention you are using TurboSphere, as the original Sphere is also supported there.
 
-For building instructions, see the docs/INTSALL files.
+For building instructions, see the docs/INSTALL files. The Linux file includes instructions for getting and building the 
+right version of V8. Scons is the only current build system used for TurboSphere.
