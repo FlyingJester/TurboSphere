@@ -24,6 +24,15 @@ If you have a binary distribution for Windows, just decompress the archive and r
 
 If you want to use TurboSphere on another platform, skip down to the Compiling section. TurboSphere is tested to compile and run on Linux, and has in the past been compiled and run on OS X. If you have any issues with installation, compilation, or anything else, see the Getting Help section.
 
+Compiling
+---------
+
+*TODO
+
+For basic info, see the install files in the docs directory. the Linux file explains how to get and build V8, and the Scons file gives basic info on using scons. 
+
+On Windows, always append `--useamdlibm=n` to `scons`.
+
 Getting Help
 ------------
 
