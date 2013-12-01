@@ -38,7 +38,7 @@ Related Projects
 
 TurboSphere is a reimplementation of the Sphere RPG Engine. There is another reimplementation of Sphere under development, called Sphere-sfml. It can be found on the Spherical Forums.
 
-Sphere-sfml is written in C#. It is not feature-complete yet, but in general has somewhat more functionality than TurboSphere implemented. It lacks TurboSphere's plugin system, advanced audio support, and dynamic recompiling JavaScript engine. Sphere-sfml has much better MapEngine support than TurboSphere, which is a vital component of the original Sphere engine.
+Sphere-sfml is written in C#. It is not feature-complete yet, but in general has more functionality than TurboSphere implements. There are cases in which each has features the other lacks. It lacks TurboSphere's plugin system, advanced audio support, and dynamic recompiling JavaScript engine. Sphere-sfml has a precompiler for JS which compiles it directly to CIL and therefore benefitting from improvements made to Microsoft .NET technology. Sphere-sfml has much better MapEngine support than TurboSphere, which is a vital component of the original Sphere engine.
 
 Several projects have been compared to Sphere in the past. These include:
 
