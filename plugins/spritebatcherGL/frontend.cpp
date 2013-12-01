@@ -15,7 +15,7 @@ NAME = TYPING SDL_GL_GetProcAddress( #NAME )
 
 void * spritebatcherDebugPointer            = V8FUNCPOINTER(spritebatcherDebug);
 void * NewSpriteBatcherPointer              = V8FUNCPOINTER(NewSpriteBatcher);
-void * spritebatcherAddImagePointer              = V8FUNCPOINTER(spritebatcherAddImage);
+void * spritebatcherAddImagePointer         = V8FUNCPOINTER(spritebatcherAddImage);
 
 void (APIENTRY * glFramebufferParameteri)(GLenum target, GLenum pname, GLint param) = NULL;
 
