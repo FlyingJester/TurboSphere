@@ -42,6 +42,6 @@ Sphere-sfml is written in C#. It is not feature-complete yet, but in general has
 
 Several projects have been compared to Sphere in the past. These include:
 
-*Love2D
-*Verge
-*IKA
+-   Love2D
+-   Verge
+-   IKA
