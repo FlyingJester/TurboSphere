@@ -45,7 +45,7 @@ void CreateSurfaceThread(){
     QueueOperatingPosition = 0;
     QueuePlacingPosition   = 1;
 	thread = SDL_CreateThread(SurfaceThreadFunction, "TS_SurfaceRenderer", NULL);
-	printf("Starting surface thread.\n");
+	printf("[" PLUGINNAME "] Info: Starting surface thread.\n");
 }
 
 void KillSurfaceThread(){
@@ -55,12 +55,11 @@ void KillSurfaceThread(){
 	if(thread==NULL){
 		return;
 	}
-	printf("\nClosing threads.\n\n");
 	SDL_AtomicSet(&SurfaceThreadNearDeath, 2);
 	SDL_WaitThread(thread, &stat);
 	SDL_DestroyMutex(SurfaceQueueMutex);
 	SDL_DestroyMutex(SurfaceQueueNeedMutex);
-	printf("Surface Thread Closed and Mutexes Destroyed.\n");
+	printf("[" PLUGINNAME "] Info: Surface Thread Closed and Mutexes Destroyed.\n");
 
 
 }

@@ -52,7 +52,6 @@ void InitMapMain(void){
         }
         else{
             //DLOPENFUNCTION(v8::Local<v8::Object>(*)(int, int, void *), TS_SDL_GL_MakeV8SurfaceHandleFromPixels, handle, "TS_SDL_GL_MakeV8SurfaceHandleFromPixels", "[" PLUGINNAME "] InitSpriteSet error: Could not load TS_SDL_GL_MakeV8SurfaceHandleFromPixels from any plugin.\n", error, exit(0xFE));
-            printf("The address is %p\n.", dlsym(SDLGLhandle, "TS_SDL_GL_MakeV8SurfaceHandleFromPixels"));
             FlipScreenDL = (void (*)(void))dlsym(SDLGLhandle, "FlipScreen");
             if (((error = dlerror()) != NULL)||(FlipScreenDL==NULL))  {
                 fprintf (stderr, "[" PLUGINNAME "] InitMap error: Could not load FlipScreen from any plugin.\n\tReported error is: %s", error);

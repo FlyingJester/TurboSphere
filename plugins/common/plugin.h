@@ -234,6 +234,17 @@ extern v8::Handle<v8::ObjectTemplate> JSOBJ##proto
 }
 
 
+#define END_OBJECT_WRAP_CODE_NO_FINAL(JSOBJ, TO_WRAP){\
+    JSOBJ##Insttempl->SetInternalFieldCount(2);\
+    v8::Handle<v8::Function> JSOBJ##ctor = JSOBJ##templ->GetFunction();\
+	v8::Handle<v8::Object> JSOBJ##obj = JSOBJ##ctor->NewInstance();\
+    JSOBJ##obj->SetAlignedPointerInInternalField(0, (void *)TO_WRAP);\
+    JSOBJ##obj->SetInternalField(1, v8::Integer::NewFromUnsigned(0ULL));\
+    JSOBJ##obj->GetConstructorName()=v8::String::New( #JSOBJ );\
+    return temporary_scope.Close(JSOBJ##obj);\
+}
+
+
 #define END_OBJECT_WRAP_CODE_WITH_ID(JSOBJ, TO_WRAP, ID){\
     JSOBJ##Insttempl->SetInternalFieldCount(2);\
     v8::Handle<v8::Function> JSOBJ##ctor = JSOBJ##templ->GetFunction();\
@@ -246,6 +257,15 @@ extern v8::Handle<v8::ObjectTemplate> JSOBJ##proto
     return temporary_scope.Close(P##JSOBJ##obj);\
 }
 
+#define END_OBJECT_WRAP_CODE_WITH_ID_NO_FINAL(JSOBJ, TO_WRAP, ID){\
+    JSOBJ##Insttempl->SetInternalFieldCount(2);\
+    v8::Handle<v8::Function> JSOBJ##ctor = JSOBJ##templ->GetFunction();\
+	v8::Handle<v8::Object> JSOBJ##obj = JSOBJ##ctor->NewInstance();\
+    JSOBJ##obj->SetAlignedPointerInInternalField(0, (void *)TO_WRAP);\
+    JSOBJ##obj->SetInternalField(1, v8::Integer::NewFromUnsigned(ID));\
+    JSOBJ##obj->GetConstructorName()=v8::String::New( #JSOBJ );\
+    return temporary_scope.Close(JSOBJ##obj);\
+}
 
 #define RETURN_OBJECT_WRAP_CODE(JSOBJ, TO_WRAP)\
     JSOBJ##Insttempl->SetInternalFieldCount(1);\

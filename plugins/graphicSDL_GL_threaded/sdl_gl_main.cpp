@@ -129,6 +129,30 @@ void * NewSurfacePointer            = V8FUNCPOINTER(NewSurface);
 void * SurfaceGrabPointer           = V8FUNCPOINTER(SurfaceGrab);
 void * ImageGrabPointer             = V8FUNCPOINTER(ImageGrab);
 
+void ResetOrtho(void){
+
+    glClearColor(0, 0, 0, 255);
+	TS_Config *TS_conf = GetConfig();
+    float scaleSize = TS_conf->scale;
+
+    if(scaleSize==0){
+        //ideally just disable video altogether.
+        scaleSize = 1;
+    }
+    glViewport(0, 0, GetScreenWidth()*scaleSize, GetScreenHeight()*scaleSize);
+    //glScissor(0, 0, GetScreenWidth()*scaleSize, GetScreenHeight()*scaleSize);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+
+    glOrtho(0, GetScreenWidth(), GetScreenHeight(), 0, 1, -1);
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+}
+
 initFunction Init(int ID){
 
     PluginID = ID;
@@ -166,7 +190,11 @@ initFunction Init(int ID){
     //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,1);
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE,8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,8);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE,8);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1); //TODO: make this set in the config.
 
     if((screen = SDL_CreateWindow("TurboSphere Game Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -226,7 +254,7 @@ initFunction Init(int ID){
 
     printf("[" PLUGINNAME "] Info: Using OpenGL version %s\n", glGetString(GL_VERSION));
     if (IMG_Init(IMG_FLAGS) <=0) {
-        printf("[graphicSDL] Unable to init SDL Image: %s\n", IMG_GetError());
+        printf("[" PLUGINNAME "] Unable to init SDL Image: %s\n", IMG_GetError());
     }
 
 	SDL_ShowCursor(0);
@@ -364,7 +392,7 @@ int TS_Filter(void * _unused, SDL_Event *event){
     }
 
     if(event->type==SDL_KEYDOWN){
-        printf("[SDL_GL] Info: Keydown Event.\n");
+        //printf("[SDL_GL] Info: Keydown Event.\n");
         int key = event->key.keysym.sym;
         if(!key) {
             return 1;

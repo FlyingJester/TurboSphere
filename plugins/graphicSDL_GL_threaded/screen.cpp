@@ -41,9 +41,9 @@ v8Function SetClippingRectangle(V8ARGS){
     TS_Segment segment;
 
     segment.x1 = args[0]->Int32Value();
-    segment.y1 = args[0]->Int32Value();
-    segment.x2 = args[0]->Int32Value();
-    segment.y2 = args[0]->Int32Value();
+    segment.y1 = args[1]->Int32Value();
+    segment.x2 = args[2]->Int32Value();
+    segment.y2 = args[3]->Int32Value();
 
     TS_SetClippingRectangle(&segment);
 

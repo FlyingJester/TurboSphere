@@ -100,6 +100,7 @@ TS_Image::TS_Image(TS_Texture tex, int w, int h){
     height  = h;
     dwidth  = w;
     dheight = h;
+    useTexCoords = false;
     diaglength = (int)ceil(sqrt(double((w*w)+(h*h)))/2);
 
     this->resetMask();
@@ -130,7 +131,18 @@ v8Function TS_SDL_GL_MakeV8ImageHandleFromGLTexture(int w, int h, GLuint tex){
 
     TS_Image *im = new TS_Image(tex, w, h);
 
-    END_OBJECT_WRAP_CODE(Image, im);
+    END_OBJECT_WRAP_CODE_WITH_ID_NO_FINAL(Image, im, ImageID);
+}
+
+v8Function TS_SDL_GL_MakeV8ImageHandleFromGLTextureCoord(int w, int h, float coords[8], GLuint tex){
+
+    BEGIN_OBJECT_WRAP_CODE;
+
+    TS_Image *im = new TS_Image(tex, w, h);
+
+    memcpy(im->texCoords, coords, sizeof(float)*8);
+    im->useTexCoords = true;
+    END_OBJECT_WRAP_CODE_WITH_ID_NO_FINAL(Image, im, ImageID);
 }
 
 TS_Image *TS_ImageGrab(int x, int y, int w, int h){
@@ -260,30 +272,10 @@ TS_Image *TS_LoadTexture(const char *filename){
 
 void TS_Image::blit(int x, int y) const{
 
-#ifdef __GNUC__
-    const GLint   vertexData[]   __attribute__ ((aligned (16)))  = {x, y, x+width, y, x+width, y+height, x, y+height};
-    const GLint   texcoordData[] __attribute__ ((aligned (16)))  = {0, 0, 1, 0, 1, 1, 0, 1};
-    const GLuint  colorData[]   __attribute__ ((aligned (16)))   = {
-        mask->toInt(),
-        mask->toInt(),
-        mask->toInt(),
-        mask->toInt()
-    };
-
-#elif defined _MSC_VER
-
-    const GLint   vertexData[]   __declspec (align(16))  = {x, y, x+width, y, x+width, y+height, x, y+height};
-    const GLint   texcoordData[] __declspec (align(16))  = {0, 0, 1, 0, 1, 1, 0, 1};
-    const GLuint  colorData[]    __declspec (align(16))  = {
-        mask->toInt(),
-        mask->toInt(),
-        mask->toInt(),
-        mask->toInt()
-    };
-
-#else
     const GLint   vertexData[]   = {x, y, x+width, y, x+width, y+height, x, y+height};
+
     const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
+
     const GLuint  colorData[]    = {
         mask->toInt(),
         mask->toInt(),
@@ -291,9 +283,10 @@ void TS_Image::blit(int x, int y) const{
         mask->toInt()
     };
 
-
-#endif
-    glTexCoordPointer(2, GL_INT, 0, texcoordData);
+    if(!useTexCoords)
+        glTexCoordPointer(2, GL_INT, 0, texcoordData);
+    else
+        glTexCoordPointer(2, GL_FLOAT, 0, texCoords);
     glVertexPointer(2, GL_INT, 0, vertexData);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
     glEnable(GL_TEXTURE_2D);

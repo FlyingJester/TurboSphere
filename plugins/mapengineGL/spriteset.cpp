@@ -46,7 +46,6 @@ void InitSpriteSet(void){
         }
         else{
             //DLOPENFUNCTION(v8::Local<v8::Object>(*)(int, int, void *), TS_SDL_GL_MakeV8SurfaceHandleFromPixels, handle, "TS_SDL_GL_MakeV8SurfaceHandleFromPixels", "[" PLUGINNAME "] InitSpriteSet error: Could not load TS_SDL_GL_MakeV8SurfaceHandleFromPixels from any plugin.\n", error, exit(0xFE));
-            printf("The address is %p\n.", dlsym(SDLGLhandle, "TS_SDL_GL_MakeV8SurfaceHandleFromPixels"));
             TS_SDL_GL_MakeV8SurfaceHandleFromPixelsDL = (v8::Local<v8::Object>(*)(int, int, void *))dlsym(SDLGLhandle, "TS_SDL_GL_MakeV8SurfaceHandleFromPixels");
             if (((error = dlerror()) != NULL)||(TS_SDL_GL_MakeV8SurfaceHandleFromPixelsDL==NULL))  {
                 fprintf (stderr, "[" PLUGINNAME "] InitSpriteSet error: Could not load TS_SDL_GL_MakeV8SurfaceHandleFromPixels from any plugin.\n\tReported error is: %s", error);
@@ -187,19 +186,9 @@ v8Function SpriteSetGetImages(V8GETTERARGS) {
     v8::Local<v8::Array> imageArray = v8::Array::New(numTextures);
 
     for(int i = 0; i<numTextures; i++){
-//        textures[i], ss->textureWidth, ss->textureHeight
         imageArray->Set(i, TS_SDL_GL_MakeV8ImageHandleFromGLTextureDL(ss->textureWidth, ss->textureHeight, textures[i]));
-
     }
 
-    /*
-    for(int i = 0; i<numTextures; i++){
-        BEGIN_OBJECT_WRAP_CODE;
-        TS_Image *im = new TS_Image(textures[i], ss->textureWidth, ss->textureHeight);
-        RETURN_OBJECT_WRAP_CODE(Image, im);
-        imageArray->Set(i, GET_OBJECT_WRAP_CODE(Image));
-    }
-    */
 	return imageArray;
 }
 

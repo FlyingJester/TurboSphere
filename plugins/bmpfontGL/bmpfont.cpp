@@ -133,7 +133,6 @@ initFunction Init(void) {
             exit(0xFD);
         }
         else{
-            printf("The address is %p\n.", dlsym(SDLGLhandle, "TS_SDL_GL_WrapTS_Color"));
             TS_SDL_GL_WrapTS_ColorDL = (v8::Local<v8::Object>(*)(TS_Color*))dlsym(SDLGLhandle, "TS_SDL_GL_WrapTS_Color");
             if (((error = dlerror()) != NULL)||(TS_SDL_GL_WrapTS_ColorDL==NULL))  {
                 fprintf (stderr, "[" PLUGINNAME "] InitSpriteSet error: Could not load TS_SDL_GL_WrapTS_Color from any plugin.\n\tReported error is: %s", error);

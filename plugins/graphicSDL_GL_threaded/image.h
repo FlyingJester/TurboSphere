@@ -30,6 +30,10 @@ public:
     double dheight; //double height to avoid casts.
     int diaglength; //distance from the center to a corner of the image.
 
+    bool useTexCoords;
+    float texCoords[8];
+
+
     TS_Color *mask;
 
     TS_TextureBuffer pixelBuffer;
