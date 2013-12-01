@@ -17,7 +17,7 @@ macintoshenv	= defaultenv.Clone()
 
 print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 print '!!  I apologize for the build system being held together with bailing wire and duct tape.                                !!'
-print '!!  As root, run `scons libinstall --build_libs=y`. Then as a normal use run `scons  --build_plugins=all buildplugins`.  !!'
+print '!!  As root, run `scons --install_libs=y`. Then as a normal use run `scons  --build_plugins=all buildplugins`.           !!'
 print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 
 AddOption('--install_libs',
@@ -225,16 +225,20 @@ if sys.platform == 'darwin':
 	turbosphere = programenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
 		LIBS=['v8', 'SDL2', t5, graphicalg, graphiccommon, configmanager, 'pthread', 'dl', 'libSDLmain' ],
 		LIBPATH = lib_path)
+	Depends(turbosphere, t5)
+
 elif sys.platform =='win32' or sys.platform == 'win64':
 	turbosphere = currentenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
 		LIBS=['v8', 'SDL2', 't5', 'graphicalg', 'graphiccommon', 'configmanager'],
 		LIBPATH = lib_path)
+	Depends(turbosphere, t5)
 	networkTS_files	 = ['plugins/networkTS/win_network.cpp']
 
 else:
 	turbosphere = currentenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
 		LIBS=['v8', 'SDL2', t5, graphicalg, graphiccommon, configmanager, 'pthread', 'dl' ],
 		LIBPATH = lib_path)
+	Depends(turbosphere, t5)
 	networkTS_files	 = ['plugins/networkTS/unix_network.cpp']
 
 #add the platform independant networkTS files.
@@ -267,7 +271,7 @@ mapengineGL_files= ['plugins/mapengineGL/map.cpp', 'plugins/mapengineGL/mapengin
 audioBASS_files	 = ['plugins/audioBASS/frontend.cpp', 'plugins/audioBASS/bass_backend.cpp', 'plugins/audioBASS/script.cpp']
 audioBASS_libs	 = ['bass', 'bassmidi']
 
-spritebatcher_files = ['plugins/spritebatcherGL/frontend.cpp', 'plugins/spritebatcherGL/batcher.cpp']
+spritebatcher_files = ['plugins/spritebatcherGL/frontend.cpp', 'plugins/spritebatcherGL/batcher.cpp', 'plugins/spritebatcherGL/BatchImageOperation.cpp']
 
 build_plugins = GetOption('build_plugins')
 if build_plugins != "n":
