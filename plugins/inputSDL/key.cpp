@@ -10,30 +10,24 @@ v8Function GetKey(V8ARGS)
 	SDL_PollEvent(&keyevent1);
 	while(keyevent1.type!=SDL_KEYDOWN)
 	{
-		//SDL_WaitEvent(&keyevent1);
-        SDL_PeepEvents(&keyevent1, 1, SDL_GETEVENT, SDL_KEYDOWN, SDL_KEYDOWN);
-		SDL_PollEvent(&keyevent1);
+        SDL_PeepEvents(&keyevent1, 1, SDL_ADDEVENT, 0, 0xFFFFFFFF);
+        SDL_PollEvent(&keyevent1);
 	}
 	int key = keyevent1.key.keysym.sym;
 	if(!key) {
         printf("GetKey Recoverable Error: You are probably using an unsupported keyboard layout\nSDLKey Error: %s\n", SDL_GetError());
     }
-    printf("The key pressed was %i, also known as %i.\n", key, SDL_SCANCODE_TO_KEYCODE(key));
+    //printf("The key pressed was %i, also known as %i.\n", key, SDL_SCANCODE_TO_KEYCODE(key));
 	return v8::Number::New(key);
 }
 
 v8Function AreKeysLeft(V8ARGS){
 
-    SDL_Event keyevent1;
-    int remevents = SDL_PollEvent(&keyevent1);
-    //SDL_PumpEvents();
-    bool ret = (keyevent1.type==SDL_KEYDOWN);
-    SDL_PeepEvents(&keyevent1, 1, SDL_ADDEVENT, 0, 0xFFFF);
     SDL_PumpEvents();
-    if(remevents==0){
-        return v8::Boolean::New(false);
-    }
-    return v8::Boolean::New(ret);
+    int remevents = SDL_PollEvent(NULL);
+
+    return v8::Boolean::New((remevents>0)&&SDL_HasEvent(SDL_KEYDOWN));
+
 }
 
 v8Function IsKeyPressed(V8ARGS)
