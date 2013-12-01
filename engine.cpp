@@ -8,6 +8,7 @@
 #include "variableregister.h"
 #include "loadplugins.h"
 #include "common/noreturn.h"
+#include "t5.h"
 
 #ifdef _WIN32
 #define STRDUP _strdup
@@ -23,7 +24,7 @@
 //////////////////////////////////////////////////////////////
 //Always update!
 //////////////////////////////////////////////////////////////
-#define VERSION "0.3.5"
+#define VERSION "0.3.5e"
 
 static char ** loadedScripts = NULL;
 static int numUniqueScriptsLoaded = 0;
@@ -192,14 +193,14 @@ void runGame(const char * path){
             TS_dirs->root = STRDUP(dir);
             setDirectories(TS_dirs->root);
             setConfig(TS_dirs->root);
-            printf("%s is the sgmname. We are running in / mode.\n", TS_conf->sgmname);
+            printf("[Engine] Info: %s is the sgmname. We are running in / mode.\n", TS_conf->sgmname);
             gameSGMfile = STRDUP(string(dir).append(TS_conf->sgmname).c_str());
         }
         else {
             TS_dirs->root = STRDUP(string(dir).append("/").c_str());
             setDirectories(TS_dirs->root);
             setConfig(TS_dirs->root);
-            printf("%s is the sgmname. We are running in NO / mode.\n", TS_conf->sgmname);
+            printf("[Engine] Info: %s is the sgmname. We are running in NO / mode.\n", TS_conf->sgmname);
             gameSGMfile = STRDUP((string(TS_dirs->root)).append(TS_conf->sgmname).c_str());
         }
     }
@@ -224,7 +225,7 @@ void runGame(const char * path){
         setConfig(TS_dirs->root);
     }
     else{
-        fprintf(stderr, "Invalid path '%s' given for the game.\n", path);
+        fprintf(stderr, "[Engine] Error: Invalid path '%s' given for the game.\n", path);
         free((void *)dir);
         exit(0);
     }
@@ -235,7 +236,10 @@ void runGame(const char * path){
 
     free((void *)gameSGMfile);
 
-    printf("[Engine] The main script is %s\n", TS_conf->mainscript);
+    loadAllPlugins();
+
+    printf("[Engine] Info: All Plugins initialized.\n");
+    printf("[Engine] Info: The main script is %s\n", TS_conf->mainscript);
 
 	std::string ScriptFileText = openfile(TS_conf->mainscript);
 
@@ -245,15 +249,6 @@ void runGame(const char * path){
 
 
     context->v8::Context::Enter();
-
-
-	//v8::HandleScope handle_scope2;
-
-    //atexit(QuitAll);
-
-    //init all plugins.
-    loadAllPlugins();
-
 
 	v8::Handle<v8::FunctionTemplate> E_EvaluateScripttempl = v8::FunctionTemplate::New(TS_LoadScript);
 
@@ -303,25 +298,25 @@ void runGame(const char * path){
 
 
     if(SDL_WasInit(0)==0){
-		printf("Nothing SDL related was initialized.\n");
+		printf("[Engine] Warning: Nothing SDL2 related was initialized.\n");
         SDL_Init(SDL_INIT_TIMER);
         //atexit(SDL_Quit);
     }
     else if(SDL_WasInit(SDL_INIT_TIMER)==0){
         SDL_InitSubSystem(SDL_INIT_TIMER);
     }
-	
+
     v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
 
     v8::V8::AddMessageListener(TS_MessageCallback);
 
 	ExecuteString(v8::String::New(ScriptFileText.c_str()), v8::String::New(script_name), true);
-	
-	printf("\nRunning Script.\n\n");
+
+	printf("[Engine] Info: Running Script.\n");
 
     TS_CallFunc("game", context);
 
-	printf("\nGame function done running.\n\n");
+	printf("[Engine] Info: Game function done running.\n");
 
     v8::V8::LowMemoryNotification();
 	//mainscope.Close();
@@ -340,7 +335,7 @@ int main
   (int argc, char* argv[]) {
 
     if(argc>1&&(strnlen(argv[1], 2)>0)){
-        printf("We are running in given-path mode.\n");
+        printf("[Engine] Info: We are running in given-path mode.\n");
         runGame(argv[1]);
     }
     else{

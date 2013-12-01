@@ -29,7 +29,7 @@ int *GetNumPluginsToClose(){
 int IncNumPluginsToClose(){
 	int *Plugins = GetNumPluginsToClose();
 	(*Plugins)++;
-	printf("Plugins:\t%i\n", *Plugins);
+	//printf("Plugins:\t%i\n", *Plugins);
 	return *Plugins;
 }
 
@@ -53,7 +53,7 @@ PluginCloseFunction *RegisterPluginCloseFunction(void(*close)(void)){
 		int numplugs = IncNumPluginsToClose();
 		CloseFuncs = (PluginCloseFunction*)realloc(CloseFuncs, numplugs*sizeof(PluginCloseFunction));
 		CloseFuncs[numplugs-1] = close;
-	printf("Plugins:\t%i\n", numplugs);
+	//printf("Plugins:\t%i\n", numplugs);
 
 	}
 	return CloseFuncs;
@@ -64,9 +64,9 @@ int CloseAllPlugins(){
 	PluginCloseFunction *funcs = RegisterPluginCloseFunction(NULL);
 	int numplugs = *(GetNumPluginsToClose());
 	int i = 0;
-	printf("Plugins:\t%i\n", numplugs);
+	//printf("Plugins:\t%i\n", numplugs);
 	while(i<numplugs){
-		printf("Plugin Closed:\t%i\n", i);
+		//printf("Plugin Closed:\t%i\n", i);
 		((PluginCloseFunction)(funcs[i]))();
 		i++;
 	}
@@ -223,12 +223,12 @@ int loadAllPlugins(){
         #else
         void * handle = dlopen(string("plugin/").append(string(plugins[i])).c_str(), RTLD_GLOBAL|RTLD_NOW);
         if(handle!=NULL) {
-            printf("Plugin %s is open.\n", plugins[i]);
+            //printf("Plugin %s is open.\n", plugins[i]);
             grabFuncsFromLibrary(handle);
         }
         else{
-            printf("Plugin %s is not open.\n", plugins[i]);
-            printf("Error: %s\n", dlerror());
+            printf("[Engine] Error: Plugin %s is not open.\n", plugins[i]);
+            printf("[Engine] Error: %s\n", dlerror());
         }
         #endif
 
@@ -265,12 +265,12 @@ int loadAllPlugins(){
         #else
         void * handle = dlopen(string("plugin/").append(plugins[i]).c_str(), RTLD_GLOBAL|RTLD_NOW);
         if(handle!=NULL) {
-            printf("Plugin %s is open.\n", plugins[i]);
+            //printf("Plugin %s is open.\n", plugins[i]);
             grabFuncsFromLibrary(handle);
         }
         else{
-            printf("Plugin %s is not open.\n", plugins[i]);
-            printf("Error: %s\n", dlerror());
+            printf("[Engine] Error: Plugin %s is not open.\n", plugins[i]);
+            printf("[Engine] Error: %s\n", dlerror());
         }
         #endif
 
@@ -431,7 +431,7 @@ void grabFuncsFromLibrary(void *handle){
 
     free(FuncNames);
     free(Funcs);
-    printf("Plugin %s successfully loaded.\n", repname);
+    printf("[Engine] Info: Plugin %s successfully loaded.\n", repname);
 }
 
 
