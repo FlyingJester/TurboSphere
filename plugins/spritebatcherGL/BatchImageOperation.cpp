@@ -22,7 +22,7 @@ TS_BatchImageOperation::TS_BatchImageOperation(){
 
     coords   = (float    *)malloc(coordsSize*4);
     color    = (uint32_t *)malloc(colorSize*4);
-    vertices = (uint32_t *)malloc(vertexSize*4);
+    vertices = (int32_t *)malloc(vertexSize*4);
 
 }
 
@@ -39,7 +39,7 @@ void TS_BatchImageOperation::Set(int _x, int _y, float _coords[8], TS_Texture _t
 
     memcpy(coords, _coords,    coordsSize*4);
     memcpy(color,  _color,     colorSize*4);
-    memcpy(vetices, _vertices, vertexSize*4);
+    memcpy(vertices, _vertices, vertexSize*4);
 
     tex = _tex;
 

@@ -399,25 +399,25 @@ void TS_SpriteBatch::blit(int x, int y){
     if(l==0)
         return;
 
-    size_t colorSize  = operations[i].colorSize;
-    size_t coordsSize = operations[i].coordsSize;
-    size_t vertexSize = operations[i].vertexSize;
+    size_t colorSize  = operations[0].colorSize;
+    size_t coordsSize = operations[0].coordsSize;
+    size_t vertexSize = operations[0].vertexSize;
 
     int32_t color[8];
     float   coords[8];
     int32_t vertices[8];
 
 
-    memcpy(color,       operations[i].color, colorSize*4);
-    memcpy(coords,      operations[i].coords, coordsSize*4);
-    memcpy(vertices,    operations[i].vertices, vertexSize*4);
+    memcpy(color,       operations[0].color, colorSize*4);
+    memcpy(coords,      operations[0].coords, coordsSize*4);
+    memcpy(vertices,    operations[0].vertices, vertexSize*4);
 
     glTexCoordPointer(2, GL_FLOAT, 0,      coords);
     glVertexPointer(2, GL_INT, 0,          vertices);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, color);
 
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, operations[i].tex);
+    glBindTexture(GL_TEXTURE_2D, operations[0].tex);
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
