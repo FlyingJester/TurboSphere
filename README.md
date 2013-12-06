@@ -27,7 +27,7 @@ If you want to use TurboSphere on another platform, skip down to the Compiling s
 Compiling
 ---------
 
-====Prerequisites====
+####Prerequisites
 
 * C++ Compiler that at least mostly supports C++11. See list of [Verified Compilers].
 * Bass, V8, and SDL2. More on how to get these later.
@@ -36,7 +36,7 @@ Compiling
 * OpenGL 2.1 or greater
 * Windows DirectSound, ALSA, or Mac OS X.
 
-====Verified Compilers====
+####Verified Compilers
 
 TurboSphere is known and tested to compile using the following compilers:
 
@@ -63,7 +63,7 @@ Clang is verified to compile T5. Nothing else has been tested with it.
 TurboSphere has been compiled using GCC 4.6 on OS X in the past (ca. TS 0.2.1), but was extremely buggy.
 Android-specific and OpenGL ES-specific code exists in TurboSphere, although actually testing an Android build would require the Android Emulator and more knowledge of Java than I have. I have compiled a majority of the engine and plugin code, but was stopped when I needed to compile against OpenGL ES, and needed an Android build of Bass. Bass, V8, and SDL2 are all known to work on Android ARM and Android x86. There's theoretically nothing stopping this from working.
 
-====How To Compile TurboSphere====
+####How To Compile TurboSphere
 
 To compile TurboSphere, you will need to get three third-party libraries, along with several addon libraries for them.
 
@@ -139,12 +139,12 @@ This will install the plugins and engine to bin/Release. You will probably need 
 
 To use TurboSphere, just navigate to bin/Release and try `./turbosphere`. It ''should'' run the test script, which demonstrates some of its abilities. If it crashes be sure to let us know!
 
-====Things to Note====
+####Things to Note
 
 * On Windows, always append `--useamdlibm=n` to `scons`.
 * Remember that bassmidi goes in the same directory as TurboSphere's executable on Linux, unlike the other libraries.
 
-====Using AMD LibM====
+####Using AMD LibM
 
 Firstly, you don't need to recompile TurboSphere to use AMD's libm with it!
 
