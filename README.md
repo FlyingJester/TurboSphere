@@ -92,9 +92,10 @@ If you are on OS X, GCC is the recommended compiler. TurboSphere is most thoroug
 On OS X or Linux (or anywhere `make` is supported), you can build V8 with the following commands:
 
 `make dependencies`
+
 `make x86.release -Dlibrary=shared`
 
-If you are using an unsupported version of GCC, you try adding `-werror=no` and `-strictaliasing=no`.
+If you are using an unsupported version of GCC, you can try adding `-werror=no` and `-strictaliasing=no`.
 
 On Windows, building V8 is more difficult.
 
@@ -103,7 +104,9 @@ You will need Python 2.6 or 2.7. But you will need this to build TurboSphere any
 To build on Windows, use the following commands:
 
 `svn co http://gyp.googlecode.com/svn/trunk build/gyp`
+
 `svn co http://src.chromium.org/svn/trunk/deps/third_party/cygwin@66844 third_party/cygwin`
+
 `svn co https://src.chromium.org/chrome/trunk/deps/third_party/icu46 third_party/icu`
 
 You ABSOLUTELY need this specific copy of Cygwin. If you don't have it, the build will fail in a rather silent way.
@@ -140,7 +143,7 @@ As a normal user, run:
 
 This will install the plugins and engine to bin/Release. You will probably need to run `ldconfig` after this, since the TurboSphere core libraries are installed to sub-directory of the standard library location (to make it easier to wipe out TurboSphere if you don't want it around anymore).
 
-To use TurboSphere, just navigate to bin/Release and try `./turbosphere`. It ''should'' run the test script, which demonstrates some of its abilities. If it crashes be sure to let us know!
+To use TurboSphere, just navigate to bin/Release and try `./turbosphere`. It _should_ run the test script, which demonstrates some of its abilities. If it crashes be sure to let us know!
 
 ####Things to Note
 
@@ -153,11 +156,11 @@ Firstly, you don't need to recompile TurboSphere to use AMD's libm with it!
 
 Secondly, this only works on Linux and Windows, and only in 64-bit builds. That's just how AMD's libM is.
 
-Profiling TurboSphere has shown performance improvements of up to 6 percent on Linux 64-bit when using AMD's libm instead of the GNU libm. TurboSphere is designed to make it very simple to switch, even ''after it has been compiled''.
+Profiling TurboSphere has shown performance improvements of up to 6 percent on Linux 64-bit when using AMD's libm instead of the GNU libm. TurboSphere is designed to make it very simple to switch, even _after it has been compiled_.
 
 Just download AMDlibM from AMD (I can't link dirctly to the page for it...legal reasons), copy the shared library into the bin/Release folder, and start TurboSphere. You should get a message in the terminal saying that it is using amd libm. There you are, 1-5 percent performance improvement just by copying a file!
 
-Note that it seems to be legal to redistribute the shared library with TurboSphere, but it isn't because I am not a laywer. I can't say for certain if it is legal a copy of amdlibm to be distributed with TurboSphere. The license seems to allow all this, but I will not risk it.
+Note that it seems to be legal to redistribute the shared library with TurboSphere, but this isn't done because I am not a laywer. I can't say for certain if it is legal for a copy of amdlibm to be distributed with TurboSphere. The license seems to allow all this, but I will not risk it.
 
 You probably will want to review the license for AMD's libM before distributing it with any game made for TurboSphere.
 
