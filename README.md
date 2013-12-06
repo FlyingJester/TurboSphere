@@ -59,8 +59,11 @@ In addition, it is theoretically possible, but completely untested to work on th
 
 Notes:
 MingW is known to compile Google V8, but seems unable to compile it as a shared library. It also has some issues the plugin loading code.
+
 Clang is verified to compile T5. Nothing else has been tested with it.
+
 TurboSphere has been compiled using GCC 4.6 on OS X in the past (ca. TS 0.2.1), but was extremely buggy.
+
 Android-specific and OpenGL ES-specific code exists in TurboSphere, although actually testing an Android build would require the Android Emulator and more knowledge of Java than I have. I have compiled a majority of the engine and plugin code, but was stopped when I needed to compile against OpenGL ES, and needed an Android build of Bass. Bass, V8, and SDL2 are all known to work on Android ARM and Android x86. There's theoretically nothing stopping this from working.
 
 ####How To Compile TurboSphere
