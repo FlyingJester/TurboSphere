@@ -288,7 +288,22 @@ void T5CALL T5_FreeFileNames(const char **names, size_t num){
     free(names);
 }
 
-T5_FileText T5CALL T5_LoadFileAsText(const char *file){ //Open a text file and return the contents as a c string.
+#include <cstdio>
+
+T5_FileText T5CALL T5_LoadFileAsText(const char *path){ //Open a text file and return the contents as a c string.
+
+    FILE *file = fopen(path, "rb");
+    fseek(file, 0, SEEK_END);
+    size_t fsize = ftell(file);
+
+    fseek(file, 0, SEEK_SET);
+
+    char *text = (char *)calloc(1, fsize+1);
+
+    fread(text, fsize, 1, file);
+
+    return text;
+/*
     std::fstream stream;
     stream.open(file, std::fstream::in);
 
@@ -304,6 +319,7 @@ T5_FileText T5CALL T5_LoadFileAsText(const char *file){ //Open a text file and r
     T5_FileText text = STRDUP(buffer.c_str());
 
     return text;
+*/
 }
 
 void T5CALL T5_FreeFileText(T5_FileText text){ //free the filetext.

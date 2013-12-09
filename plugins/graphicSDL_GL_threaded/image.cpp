@@ -102,8 +102,23 @@ TS_Image::TS_Image(TS_Texture tex, int w, int h){
     dheight = h;
     useTexCoords = false;
     diaglength = (int)ceil(sqrt(double((w*w)+(h*h)))/2);
-
+    GLuint vertices[] = {0, 0, w, 0, w, h, 0, h, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0, 0, 0, 0, 0, 0, 0, 0};
+    //this->texCoords = {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f};
+    texCoords[0] = 0;
+    texCoords[1] = 0;
+    texCoords[2] = 1;
+    texCoords[3] = 0;
+    texCoords[4] = 1;
+    texCoords[5] = 1;
+    texCoords[6] = 0;
+    texCoords[7] = 1;
+    memcpy((void *)(vertices)+48, texCoords, 32);
+    glGenBuffers(1, &buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    glBufferData(GL_ARRAY_BUFFER, 80, vertices, GL_STREAM_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     this->resetMask();
+    GMmask = new TS_Color(mask->red, mask->green, mask->blue, mask->alpha);
 
 }
 
@@ -271,7 +286,7 @@ TS_Image *TS_LoadTexture(const char *filename){
 }
 
 void TS_Image::blit(int x, int y) const{
-
+/*
     const GLint   vertexData[]   = {x, y, x+width, y, x+width, y+height, x, y+height};
 
     const GLint   texcoordData[] = {0, 0, 1, 0, 1, 1, 0, 1};
@@ -289,8 +304,22 @@ void TS_Image::blit(int x, int y) const{
         glTexCoordPointer(2, GL_FLOAT, 0, texCoords);
     glVertexPointer(2, GL_INT, 0, vertexData);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
+*/
+
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    if(mask->toInt()!=GMmask->toInt()){
+        const GLuint tempmask[] = {mask->toInt(), mask->toInt(), mask->toInt(), mask->toInt()};
+        glBufferSubData(GL_ARRAY_BUFFER,  32,  16,  tempmask);
+        delete GMmask;
+        GMmask = new TS_Color(mask->red, mask->green, mask->blue, mask->alpha);
+    }
+
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texture);
+    glTranslatef(x, y, 0.0f);
+    glVertexPointer(2, GL_INT, 0, NULL);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, (void *)(32));
+    glTexCoordPointer(2, GL_FLOAT, 0, (void *)(48));
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
@@ -298,7 +327,9 @@ void TS_Image::blit(int x, int y) const{
     glDisableClientState(GL_COLOR_ARRAY);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glTranslatef(-x, -y, 0.0f);
     glDisable(GL_TEXTURE_2D);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 }
 

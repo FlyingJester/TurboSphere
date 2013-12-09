@@ -3,6 +3,7 @@
 #include <assert.h>
 #include "main.h"
 #include "screen.h"
+#include "shader.h"
 
 #ifndef _WIN32
 //#include <GL/glext.h>
@@ -47,6 +48,7 @@ TS_GLVideoData *GetGLVideoData(){
     return &data;
 }
 
+void (APIENTRY * glBufferSubData)(GLenum, GLintptr, GLsizeiptr, const GLvoid *) = NULL;
 void (APIENTRY * glGenBuffers)(GLsizei, GLuint*) = NULL;
 void (APIENTRY * glDeleteBuffers)(GLsizei, GLuint*) = NULL;
 void (APIENTRY * glGenVertexArrays)(GLsizei, GLuint*) = NULL;
@@ -63,10 +65,18 @@ void (APIENTRY * glUseProgram)(GLenum) = NULL;
 void (APIENTRY * glAttachShader)(GLenum, GLenum) = NULL;
 void (APIENTRY * glLinkProgram)(GLenum) = NULL;
 void (APIENTRY * glGetProgramiv)(GLuint, GLenum, GLint*) = NULL;
-
-GLenum shader_vert = 0;
-GLenum shader_frag = 0;
-GLenum shader_prog = 0;
+GLboolean (APIENTRY * glIsShader)(GLuint) = NULL;
+void (APIENTRY * glGetShaderInfoLog)(GLuint,  GLsizei,  GLsizei *,  GLchar *) = NULL;
+void (APIENTRY * glGetProgramInfoLog)(GLuint, GLsizei, GLsizei*, GLchar*) = NULL;
+void (APIENTRY * glDeleteProgram)(GLuint) = NULL;
+GLint (APIENTRY *glGetUniformLocation)(GLuint,  const GLchar *) = NULL;
+void (APIENTRY * glProgramUniform4fv)(GLuint,  GLint,  GLsizei,  const GLfloat *) = NULL;
+void (APIENTRY * glProgramUniform2fv)(GLuint,  GLint,  GLsizei,  const GLfloat *) = NULL;
+void (APIENTRY * glProgramUniform2iv)(GLuint,  GLint,  GLsizei,  const GLint *) = NULL;
+void (APIENTRY * glEnableVertexAttribArray)(GLuint) = NULL;
+void (APIENTRY * glDisableVertexAttribArray)(GLuint) = NULL;
+void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*) = NULL;
+void (APIENTRY * glVertexAttribIPointer)(GLuint, GLint, GLenum, GLsizei, const GLvoid*) = NULL;
 
 void LoadGLFunctions(){
 
@@ -80,10 +90,24 @@ void LoadGLFunctions(){
     GET_GL_FUNCTION(glGetShaderiv,              (void (APIENTRY *)(GLuint, GLenum, GLint *)));
     GET_GL_FUNCTION(glCompileShader,            (void (APIENTRY *)(GLenum)));
     GET_GL_FUNCTION(glCreateProgram,          (GLenum (APIENTRY *)(void)));
-    GET_GL_FUNCTION(glUseProgram,            (void (APIENTRY *)(GLenum)));
+    GET_GL_FUNCTION(glUseProgram,               (void (APIENTRY *)(GLenum)));
     GET_GL_FUNCTION(glAttachShader,             (void (APIENTRY *)(GLenum,  GLenum)));
     GET_GL_FUNCTION(glLinkProgram,              (void (APIENTRY *)(GLenum)));
     GET_GL_FUNCTION(glGetProgramiv,             (void (APIENTRY *)(GLuint, GLenum, GLint*)));
+    GET_GL_FUNCTION(glIsShader,            (GLboolean (APIENTRY *)(GLuint)));
+    GET_GL_FUNCTION(glGetShaderInfoLog,         (void (APIENTRY *)(GLuint,  GLsizei,  GLsizei *,  GLchar *)));
+    GET_GL_FUNCTION(glGetProgramInfoLog,        (void (APIENTRY *)(GLuint, GLsizei, GLsizei*, GLchar*)));
+    GET_GL_FUNCTION(glDeleteProgram,            (void (APIENTRY *)(GLuint)));
+    GET_GL_FUNCTION(glGetUniformLocation,      (GLint (APIENTRY *)(GLuint, const GLchar *)));
+    GET_GL_FUNCTION(glProgramUniform4fv,        (void (APIENTRY *)(GLuint, GLint, GLsizei, const GLfloat *)));
+    GET_GL_FUNCTION(glProgramUniform2fv,        (void (APIENTRY *)(GLuint, GLint, GLsizei, const GLfloat *)));
+    GET_GL_FUNCTION(glProgramUniform2iv,        (void (APIENTRY *)(GLuint, GLint, GLsizei, const GLint *)));
+    GET_GL_FUNCTION(glEnableVertexAttribArray,  (void (APIENTRY *)(GLuint)));
+    GET_GL_FUNCTION(glDisableVertexAttribArray, (void (APIENTRY *)(GLuint)));
+    GET_GL_FUNCTION(glVertexAttribPointer,      (void (APIENTRY *)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*)));
+    GET_GL_FUNCTION(glVertexAttribIPointer,     (void (APIENTRY *)(GLuint, GLint, GLenum, GLsizei, const GLvoid*)));
+    GET_GL_FUNCTION(glBufferSubData,            (void (APIENTRY *)(GLenum, GLintptr, GLsizeiptr, const GLvoid *)));
+
 
 }
 
@@ -286,6 +310,7 @@ initFunction Init(int ID){
 
     glUseProgram(shader_prog);
 */
+    TS_LoadSystemShader("system.shade");
     return (const char *)"SDL_GL_threaded";
 }
 

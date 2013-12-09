@@ -36,7 +36,7 @@ public:
 
     TS_Color *mask;
 
-    TS_TextureBuffer pixelBuffer;
+    //TS_TextureBuffer pixelBuffer;
     GLuint texCoordBuffer;
 
     SDL_Surface *CreateSurface(void) const;
@@ -56,6 +56,7 @@ public:
     GLuint buffer;
 
 private:
+    mutable TS_Color *GMmask;
     bool hasInternalMask;
 };
 

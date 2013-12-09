@@ -22,6 +22,7 @@
 #endif
 
 #define PLUGINNAME "SDL_GL"
+#define BRACKNAME  "[SDL_GL]"
 #include "../common/plugin.h"
 
 #include "../../SDL2/SDL_opengl.h"
@@ -74,14 +75,6 @@ struct TS_GLVideoData{
     bool ARBPointSprite;
 };
 
-struct TS_Shader{
-    programHandle program;
-    shaderHandle vert_shader;
-    shaderHandle frag_shader;
-    shaderSource vert_source;
-    shaderSource frag_source;
-};
-
 TS_GLVideoData *GetGLVideoData(void);
 
 
@@ -89,10 +82,32 @@ extern void (APIENTRY * glGenBuffers)(GLsizei, GLuint*);
 extern void (APIENTRY * glDeleteBuffers)(GLsizei, GLuint*);
 extern void (APIENTRY * glBindBuffer)(GLenum,  GLuint);
 extern void (APIENTRY * glBufferData)(GLenum, GLsizeiptr, const GLvoid *, GLenum);
+extern void (APIENTRY * glBufferSubData)(GLenum,  GLintptr, GLsizeiptr, const GLvoid *);
 //extern void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*);
 //extern void (APIENTRY * glVertexAttribIPointer)(GLuint, GLint, GLenum, GLsizei, const GLvoid*);
 //extern void (APIENTRY * CopyImageSubData)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei);
 //extern void (APIENTRY * CopyImageSubDataNV)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei);
+
+extern GLenum (APIENTRY * glCreateShader)(GLenum);
+extern void (APIENTRY * glDeleteShader)(GLenum);
+extern void (APIENTRY * glShaderSource)(GLenum, GLint, const GLchar **, const GLint *);
+extern void (APIENTRY * glGetShaderiv)(GLuint, GLenum, GLint*);
+extern void (APIENTRY * glCompileShader)(GLenum);
+extern GLenum (APIENTRY * glCreateProgram)(void);
+extern void (APIENTRY * glUseProgram)(GLenum);
+extern void (APIENTRY * glAttachShader)(GLenum, GLenum);
+extern void (APIENTRY * glLinkProgram)(GLenum);
+extern void (APIENTRY * glGetProgramiv)(GLuint, GLenum, GLint*);
+extern GLboolean (APIENTRY * glIsShader)(GLuint);
+extern void (APIENTRY * glGetShaderInfoLog)(GLuint,  GLsizei,  GLsizei *,  GLchar *);
+extern void (APIENTRY * glGetProgramInfoLog)(GLuint, GLsizei, GLsizei*, GLchar*);
+extern void (APIENTRY * glDeleteProgram)(GLuint);
+extern GLint (APIENTRY *glGetUniformLocation)(GLuint,  const GLchar *);
+extern void (APIENTRY * glProgramUniform4fv)(GLuint,  GLint,  GLsizei,  const GLfloat *);
+extern void (APIENTRY * glProgramUniform2fv)(GLuint,  GLint,  GLsizei,  const GLfloat *);
+extern void (APIENTRY * glProgramUniform2iv)(GLuint,  GLint,  GLsizei,  const GLint *);
+extern void (APIENTRY * glEnableVertexAttribArray)(GLuint);
+extern void (APIENTRY * glDisableVertexAttribArray)(GLuint);
 
 extern int PluginID;
 

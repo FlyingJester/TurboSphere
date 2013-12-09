@@ -55,8 +55,10 @@ public:
     const char * animation; //!< The path to the default animation file directory.
     const char * windowstyle; //!< The path to the default rws directory.
     const char * soundfont; //!< The path to the default sf2 soundfont directory.
+    const char * shader; //!< The path to the shader manifest folder.
     const char * system; //!< The path to the system directory.
     const char * systemscript; //!< The path to the default system script directory, used for RequireSystemScript and EvaluateSystemScript.
+    const char * systemshader; //!< The path to the default system script directory, used for RequireSystemScript and EvaluateSystemScript.
 #ifdef _MSC_VER
 } TS_Directories;
 #else

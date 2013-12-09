@@ -74,6 +74,8 @@ TS_Directories::TS_Directories(void){
     system = "";
     systemscript = "";
     soundfont = "";
+    systemshader = "";
+    shader = "";
 }
 
 
@@ -105,8 +107,10 @@ void setDirectories(const char * basedirectory){
         TS_dirs->animation   = STRDUP(string(TS_dirs->root).append("animations/").c_str());
         TS_dirs->windowstyle = STRDUP(string(TS_dirs->root).append("windowstyles/").c_str());
         TS_dirs->soundfont   = STRDUP(string(TS_dirs->root).append("soundfonts/").c_str());
+        TS_dirs->shader      = STRDUP(string(TS_dirs->root).append("shaders/").c_str());
         TS_dirs->system      = "system/";
         TS_dirs->systemscript= "system/scripts/";
+        TS_dirs->systemshader= "system/shaders/";
         T5_init(2, "", TS_dirs->root);
 }
 
