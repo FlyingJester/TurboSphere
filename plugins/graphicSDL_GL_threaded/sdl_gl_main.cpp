@@ -28,6 +28,17 @@ NAME = TYPING SDL_GL_GetProcAddress( #NAME )
 
 int PluginID;
 
+TS_Shader TS_DefaultShader = 0;
+TS_Shader TS_CurrentShader = 0;
+
+GLuint TS_SDL_GL_GetCurrentShader(void){
+    return TS_CurrentShader;
+}
+
+GLuint TS_SDL_GL_GetDefaultShader(void){
+    return TS_DefaultShader;
+}
+
 void GetPluginInfo(TS_PluginInfo *info){
 
     info->name      = "SDL_GL_threaded";
@@ -37,6 +48,7 @@ void GetPluginInfo(TS_PluginInfo *info){
     info->description = "GL based graphics plugin. SDL2 for window management. Threaded surface drawing and blitting. Exports TS_SDL_GL_MakeV8SurfaceHandleFromPixels and TS_SDL_GL_MakeV8ImageHandleFromGLTexture.";
 }
 
+TS_Texture TS_EmptyTexture = 0;
 
 SDL_GLContext glcontext;
 
@@ -77,6 +89,10 @@ void (APIENTRY * glEnableVertexAttribArray)(GLuint) = NULL;
 void (APIENTRY * glDisableVertexAttribArray)(GLuint) = NULL;
 void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*) = NULL;
 void (APIENTRY * glVertexAttribIPointer)(GLuint, GLint, GLenum, GLsizei, const GLvoid*) = NULL;
+void (APIENTRY * glGenFramebuffers)(GLsizei, GLuint*) = NULL;
+void (APIENTRY * glDeleteFramebuffers)(GLsizei, GLuint*) = NULL;
+void (APIENTRY * glBindFramebuffer)(GLenum, GLuint) = NULL;
+void (APIENTRY * glFramebufferTexture2D)(GLenum, GLenum, GLenum, GLuint, GLint) = NULL;
 
 void LoadGLFunctions(){
 
@@ -107,6 +123,10 @@ void LoadGLFunctions(){
     GET_GL_FUNCTION(glVertexAttribPointer,      (void (APIENTRY *)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*)));
     GET_GL_FUNCTION(glVertexAttribIPointer,     (void (APIENTRY *)(GLuint, GLint, GLenum, GLsizei, const GLvoid*)));
     GET_GL_FUNCTION(glBufferSubData,            (void (APIENTRY *)(GLenum, GLintptr, GLsizeiptr, const GLvoid *)));
+    GET_GL_FUNCTION(glGenFramebuffers,          (void (APIENTRY *)(GLsizei, GLuint*)));
+    GET_GL_FUNCTION(glDeleteFramebuffers,       (void (APIENTRY *)(GLsizei, GLuint*)));
+    GET_GL_FUNCTION(glBindFramebuffer,          (void (APIENTRY *)(GLenum, GLuint)));
+    GET_GL_FUNCTION(glFramebufferTexture2D,     (void (APIENTRY *)(GLenum, GLenum, GLenum, GLuint, GLint)));
 
 
 }
@@ -122,7 +142,7 @@ int numerate(bool reset){
 }
 
 int TS_Filter(void * _unused, SDL_Event *event);
-void * FlipScreenPointer            = V8FUNCPOINTER(FlipScreen);
+void * FlipScreenPointer            = V8FUNCPOINTER(V8FlipScreen);
 void * GetScreenWidthPointer        = V8FUNCPOINTER(V8GetScreenHeight);
 void * GetScreenHeightPointer       = V8FUNCPOINTER(V8GetScreenWidth);
 void * GetClippingRectanglePointer  = V8FUNCPOINTER(GetClippingRectangle);
@@ -178,6 +198,7 @@ void ResetOrtho(void){
 }
 
 initFunction Init(int ID){
+
 
     PluginID = ID;
 
@@ -245,36 +266,17 @@ initFunction Init(int ID){
     //glPointSize();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH_TEST);
-    glDisable(GL_LIGHTING);
     //glDisable(GL_CULL_FACE);
     //glEnable(GL_CULL_FACE);
     //glEnable(GL_SCISSOR_TEST);
 
-    glViewport(0, 0, GetScreenWidth()*scaleSize, GetScreenHeight()*scaleSize);
-    //glScissor(0, 0, GetScreenWidth()*scaleSize, GetScreenHeight()*scaleSize);
+    ResetOrtho();
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-
-
-    glOrtho(0, GetScreenWidth(), GetScreenHeight(), 0, 1, -1);
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
-    //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
-
-    if(((int)scaleSize)!=1){
-        glPointSize(scaleSize);
-        glLineWidth(scaleSize);
-    }
-
+    ScreenInit();
     ColorInit();
     ImageInit();
     SurfaceInit();
     PrimitivesInit();
-    ScreenInit();
 
     printf("[" PLUGINNAME "] Info: Using OpenGL version %s\n", glGetString(GL_VERSION));
     if (IMG_Init(IMG_FLAGS) <=0) {
@@ -289,28 +291,24 @@ initFunction Init(int ID){
     SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_IGNORE);
     SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
     SDL_SetEventFilter(TS_Filter, NULL);
-/*
-    shader_prog = glCreateProgram();
-    shader_vert = glCreateShader(GL_VERTEX_SHADER);
-    shader_frag = glCreateShader(GL_FRAGMENT_SHADER);
 
-    //int len = 0;
-    //len = strnlen(vertexShaders[0], 0xFFFF);
-    glShaderSource(shader_vert, 1, (const GLchar**)vertexShaders, NULL);
-    //len = strnlen(fragmentShaders[1], 0xFFFF);
-    glShaderSource(shader_frag, 1, (const GLchar**)fragmentShaders, NULL);
+    TS_CurrentShader = TS_LoadSystemShader("system.shade");
+    TS_DefaultShader = TS_CurrentShader;
 
-    glCompileShader(shader_vert);
-    glCompileShader(shader_frag);
+    printf(BRACKNAME " Info: Compiled default shader as %i.\n", TS_DefaultShader);
 
-    glAttachShader(shader_prog, shader_vert);
-    glAttachShader(shader_prog, shader_frag);
+    glUseProgram(TS_DefaultShader);
+    uint32_t white = 0xFFFFFFFF;
+    glGenTextures(1, &TS_EmptyTexture);
+    glBindTexture(GL_TEXTURE_2D, TS_EmptyTexture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &white);
 
-    glLinkProgram(shader_prog);
+    glEnable(GL_TEXTURE_2D);
 
-    glUseProgram(shader_prog);
-*/
-    TS_LoadSystemShader("system.shade");
+    printf(BRACKNAME " Info: EmptyTexture is number %i.\n", TS_EmptyTexture);
+
     return (const char *)"SDL_GL_threaded";
 }
 
@@ -333,6 +331,7 @@ int GetNumFunctions(){
 
 functionArray GetFunctions(){
     numerate(true);
+    assert(FlipScreen!=NULL);
     functionArray funcs = (functionArray)calloc(NUMFUNCS, sizeof(void*));
     funcs[numerate(false)] = FlipScreenPointer;
     funcs[numerate(false)] = GetScreenWidthPointer;

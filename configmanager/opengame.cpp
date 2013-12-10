@@ -166,6 +166,7 @@ void setConfig(const char * basedirectory){
     TS_Directories *TS_dirs = GetDirs();
 	T5_file *enginefile = T5_OpenFile("engine.ini");
     TS_conf->fullscreen = (atoi(enginefile->getValueFromSection("fullscreen", "Video"))>0)?true:false;
+    TS_conf->compositing= (atoi(enginefile->getValueFromSection("compositing", "Video"))>0)?true:false;
     TS_conf->scale      = atoi(enginefile->getValueFromSection("scale", "Video"));
     TS_conf->gamefunc   = enginefile->getValueFromSection("gamefunc", "Engine");
     TS_conf->sgmname    = enginefile->getValueFromSection("sgmname", "Engine");

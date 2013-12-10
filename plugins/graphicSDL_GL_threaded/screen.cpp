@@ -2,9 +2,16 @@
 #include "screen.h"
 #include "save.h"
 #include <ctime>
+#include <cassert>
 
+void(* FlipScreen)(void) = NULL;
 
 static GLuint screenshottex;
+
+GLuint screenFrameBuffer = 0;
+GLuint screenColorBuffer = 0;
+
+void * screenCopy;
 
 void TS_SetClippingRectangle(TS_Segment *segment){
     if((segment->x1<=0)&&(segment->y1<=0)&&(segment->x2>=(int)GetScreenWidth())&&(segment->x2>=(int)GetScreenWidth())){
@@ -68,15 +75,75 @@ void FlagForScreenshot(void){
     *(GetScreenShotFlag())=true;
 }
 
+GLuint screenVertexBuffer = 0;
+
 void ScreenInit(void){
     glGenTextures(1, &screenshottex);
     *(GetScreenShotFlag())=false;
+    TS_Config *TS_Conf = GetConfig();
+    const int w = GetScreenWidth();
+    const int h = GetScreenHeight();
+    screenCopy = calloc(w*h, BPP);
+    if(TS_Conf->compositing){
+        printf(BRACKNAME " Info: Compositing is defaults to on.\n");
+        FlipScreen = FlipScreenComposite;
+        glEnable(GL_TEXTURE_2D);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        glGenFramebuffers(1, &screenFrameBuffer);
+        glGenTextures(1, &screenColorBuffer);
+
+
+        GLuint vertices[] = {0, 0, w, 0, w, h, 0, h, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0, 1, 1, 1, 1, 0, 0, 0};
+
+        glGenBuffers(1, &screenVertexBuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, screenVertexBuffer);
+        glBufferData(GL_ARRAY_BUFFER, 80, vertices, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+
+        glBindTexture(GL_TEXTURE_2D, screenColorBuffer);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenCopy);
+
+
+        glBindFramebuffer(GL_FRAMEBUFFER, screenFrameBuffer);    glClearColor(0, 0, 0, 0);
+        ResetOrtho();
+        glClear(GL_COLOR_BUFFER_BIT);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenColorBuffer, 0);
+        //ResetOrtho();
+
+    }
+    else{
+        printf(BRACKNAME " Info: Compositing is defaults to off.\n");
+        FlipScreen = FlipScreenDirect;
+        TS_Conf->compositing = false;
+    }
+
+
+
 
 }
 
 void ScreenClose(void){
     glDeleteTextures(1, &screenshottex);
     *(GetScreenShotFlag())=false;
+
+    if(screenVertexBuffer!=0){
+        glDeleteBuffers(1, &screenVertexBuffer);
+        screenVertexBuffer = 0;
+
+    }
+    if(screenFrameBuffer!=0){
+        glDeleteFramebuffers(1, &screenFrameBuffer);
+        glDeleteTextures(1, &screenColorBuffer);
+    }
+    screenFrameBuffer=0;
+
+    free(screenCopy);
 }
 
 bool * const GetScreenShotFlag(void){
@@ -94,24 +161,53 @@ v8Function V8GetScreenHeight(V8ARGS){
 
 static bool * const scr = GetScreenShotFlag();
 
-void FlipScreen(void){
-        //Old SDL 1.2 code.
-    //SDL_GL_SwapBuffers();
+void FlipScreenComposite(void){
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //Must be initialised by ScreenInit.
+    assert(screenFrameBuffer!=0);
+
+    glBindTexture(GL_TEXTURE_2D, screenColorBuffer);
+
+    glBindBuffer(GL_ARRAY_BUFFER, screenVertexBuffer);
+    glVertexPointer(2, GL_INT, 0, NULL);
+    glColorPointer(4, GL_UNSIGNED_BYTE, 0, (void *)(32));
+    glTexCoordPointer(2, GL_INT, 0, (void *)(48));
+    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+
+    glBindTexture(GL_TEXTURE_2D, TS_EmptyTexture);
+
+    //SDL_GL_SwapWindow(screen);
+    glBindFramebuffer(GL_FRAMEBUFFER, screenFrameBuffer);
     SDL_GL_SwapWindow(screen);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void FlipScreenDirect(void){
+
+    SDL_GL_SwapWindow(screen);
+
     if(*scr==true){
         printf("Performing screenshot.\n");
         *scr=false;
         glReadBuffer(GL_FRONT);
-        int w = GetScreenWidth();
-        int h = GetScreenHeight();
         //glBindTexture(GL_TEXTURE_2D, screenshottex);
 
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
         //glCopyTexImage2D(screenshottex, 0, GL_RGBA, 0, 0, w, h, 0);
-        void * screenCopy = calloc(w*h, BPP);
         //glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, screenCopy);
+
+        const int w = GetScreenWidth();
+        const int h = GetScreenHeight();
 
         glReadPixels(0, 0, w, h, GL_BGRA, GL_UNSIGNED_BYTE, screenCopy);
 
@@ -120,12 +216,19 @@ void FlipScreen(void){
 
         char *timestr = (char *)malloc(15+18+7+1);
 
-        sprintf(timestr, "%s/%04i_%02i_%02i_%02i_%02i_%02i_%04i%s", SCREENSHOT_FOLDER, times.tm_year, times.tm_mon+1, times.tm_mday, times.tm_hour, times.tm_min, times.tm_sec, SDL_GetTicks()%1000, DEFAULT_IMAGE_EXT);
+        sprintf(timestr, "%s/%04i_%02i_%02i_%02i_%02i_%02i_%04i%s", SCREENSHOT_FOLDER, times.tm_year+1900, times.tm_mon+1, times.tm_mday, times.tm_hour, times.tm_min, times.tm_sec, SDL_GetTicks()%1000, DEFAULT_IMAGE_EXT);
 
         save_TGA(timestr, screenCopy, w, h, R8G8B8A8, SDL_GL_SAVETGA_GLNATIVE|SDL_GL_SAVETGA_COMPRESS|SDL_GL_SAVETGA_BGRA);
 
-        free(screenCopy);
+        //free(screenCopy);
 
     }
     glClear(GL_COLOR_BUFFER_BIT);
+}
+
+
+v8Function V8FlipScreen(V8ARGS){
+    assert(FlipScreen!=NULL);
+    FlipScreen();
+    return v8::Undefined();
 }

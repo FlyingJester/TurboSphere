@@ -736,13 +736,13 @@ void TS_Rectangle(int x, int y, int w, int h, TS_Color *color){
         color->toInt()
     };
 
+    glBindTexture(GL_TEXTURE_2D, TS_EmptyTexture);
     glVertexPointer(2, GL_INT, 0, vertexData);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
-    glDrawArrays(GL_QUADS, 0, 4);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glDisableClientState(GL_COLOR_ARRAY);
-    glDisableClientState(GL_VERTEX_ARRAY);
 
 }
 
@@ -753,6 +753,7 @@ void TS_Line(int x1, int y1, int x2, int y2, TS_Color *color){
         color->toInt(),
         color->toInt()
     };
+    glBindTexture(GL_TEXTURE_2D, TS_EmptyTexture);
     glVertexPointer(2, GL_INT, 0, vertexData);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -775,6 +776,7 @@ void TS_Triangle(int x1, int y1, int x2, int y2, int x3, int y3, TS_Color *color
         color->toInt(),
         color->toInt()
     };
+    glBindTexture(GL_TEXTURE_2D, TS_EmptyTexture);
     glVertexPointer(2, GL_INT, 0, vertexData);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -831,6 +833,7 @@ void TS_GradientLine(int x1, int y1, int x2, int y2, TS_Color *color1, TS_Color 
         color1->toInt(),
         color2->toInt()
     };
+    glBindTexture(GL_TEXTURE_2D, TS_EmptyTexture);
     glVertexPointer(2, GL_INT, 0, vertexData);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -1117,6 +1120,7 @@ void TS_OutlinedCircle(int x, int y, int r, TS_Color *c, bool AA){
         colorData[i] = color;
     }
 
+    glBindTexture(GL_TEXTURE_2D, TS_EmptyTexture);
     glVertexPointer(2, GL_INT, 0, points);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -1189,6 +1193,7 @@ void TS_GradientCircle(int x, int y, int r, TS_Color *c1, TS_Color *c2, bool AA)
 
     colorData[0] = c1->toInt();
 
+    glBindTexture(GL_TEXTURE_2D, TS_EmptyTexture);
     glVertexPointer(2, GL_INT, 0, points);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
     glEnableClientState(GL_VERTEX_ARRAY);

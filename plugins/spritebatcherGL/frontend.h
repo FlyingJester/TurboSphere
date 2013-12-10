@@ -30,7 +30,6 @@ SPRITEBATCHER_EXPORT nameArray       CCALL GetFunctionNames(void);
 SPRITEBATCHER_EXPORT int             CCALL GetNumVariables(void);
 SPRITEBATCHER_EXPORT v8FunctionArray CCALL GetVariables(void);
 SPRITEBATCHER_EXPORT nameArray       CCALL GetVariableNames(void);
-SPRITEBATCHER_EXPORT void            CCALL FlipScreen(void);
 
 #ifdef _WIN32
 	}

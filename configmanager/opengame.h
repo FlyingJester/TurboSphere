@@ -94,6 +94,7 @@ public:
     int screenheight; //!< The game window height, or screen height in fullscreen.
     int soundchannels; //!< The number of preloaded sound channels on startup. This value is deprecated for the audioBass sound plugin.
     bool fullscreen; //!< Whether or not to load the game in fullscreen mode. This value should be updated upon changing to or from fullscreen mode.
+    bool compositing; //!< Sets whether to use compositing or not. Compositing allows for cheap reading from the screen and the application of whole-scene shaders.
     int scale; //!< Graphical scale to be applied. This value does not have to be (but should be) a multiple of two. A value of 0 or a negative value result in undefined behaviour.
     void *filter; //!< A pointer to a filter to be applied to the video output. Not implemented yet.
     const char *systemfont; //!< The filename of the default system rfn font. This can be a path, and is relative to the system directory held in the TS_Directories given by GetDirs.

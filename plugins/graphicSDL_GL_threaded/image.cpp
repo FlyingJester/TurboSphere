@@ -328,7 +328,7 @@ void TS_Image::blit(int x, int y) const{
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     glTranslatef(-x, -y, 0.0f);
-    glDisable(GL_TEXTURE_2D);
+    //glDisable(GL_TEXTURE_2D);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 }
@@ -382,7 +382,7 @@ void TS_Image::zoomBlit(int x, int y, double factor) const{
     glDisableClientState(GL_COLOR_ARRAY);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisable(GL_TEXTURE_2D);
+    //glDisable(GL_TEXTURE_2D);
 }
 
 void TS_Image::stretchBlit(int x, int y, double wfactor, double hfactor) const{
@@ -412,7 +412,7 @@ void TS_Image::stretchBlit(int x, int y, double wfactor, double hfactor) const{
     glDisableClientState(GL_COLOR_ARRAY);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisable(GL_TEXTURE_2D);
+    //glDisable(GL_TEXTURE_2D);
 
 }
 
@@ -467,7 +467,7 @@ void TS_Image::rotateBlit(int x, int y, double angle) const{
     glDisableClientState(GL_COLOR_ARRAY);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisable(GL_TEXTURE_2D);
+    //glDisable(GL_TEXTURE_2D);
 
     //glRotated(angle*localPi*4.0, 0.0, 0.0, angle);
     //glTranslatef(-(float)(x), -(float)(y), 0.0f);
@@ -499,7 +499,7 @@ void TS_Image::transformBlit(const int x[4], const int y[4]) const{
     glDisableClientState(GL_COLOR_ARRAY);
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisable(GL_TEXTURE_2D);
+    //glDisable(GL_TEXTURE_2D);
     //free(colorData);
 
 }

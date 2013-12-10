@@ -57,7 +57,7 @@ TS_Shader TS_LoadSystemShader(const char *file){
     if(prog==0)
         fprintf(stderr, BRACKNAME "%s Error: Could not create program from %s.\n", __func__, file);
 
-    return 0;
+    return prog;
 }
 
 TS_Shader TS_LoadShader(const char *file){

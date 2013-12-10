@@ -51,6 +51,8 @@ extern unsigned int ImageID;
 extern unsigned int SurfaceID;
 extern unsigned int ColorID;
 
+extern GLuint TS_DefaultShader;
+extern GLuint TS_CurrentShader;
 
 #define NUMFUNCS 22
 #define NUMVARS  0
@@ -77,6 +79,7 @@ struct TS_GLVideoData{
 
 TS_GLVideoData *GetGLVideoData(void);
 
+extern GLuint TS_EmptyTexture;
 
 extern void (APIENTRY * glGenBuffers)(GLsizei, GLuint*);
 extern void (APIENTRY * glDeleteBuffers)(GLsizei, GLuint*);
@@ -108,6 +111,11 @@ extern void (APIENTRY * glProgramUniform2fv)(GLuint,  GLint,  GLsizei,  const GL
 extern void (APIENTRY * glProgramUniform2iv)(GLuint,  GLint,  GLsizei,  const GLint *);
 extern void (APIENTRY * glEnableVertexAttribArray)(GLuint);
 extern void (APIENTRY * glDisableVertexAttribArray)(GLuint);
+extern void (APIENTRY * glGenFramebuffers)(GLsizei, GLuint*);
+extern void (APIENTRY * glDeleteFramebuffers)(GLsizei, GLuint*);
+extern void (APIENTRY * glBindFramebuffer)(GLenum, GLuint);
+extern void (APIENTRY * glFramebufferTexture2D)(GLenum, GLenum, GLenum, GLuint, GLint);
+
 
 extern int PluginID;
 
@@ -129,7 +137,7 @@ SDL_GL_EXPORT nameArray       CCALL GetFunctionNames(void);
 SDL_GL_EXPORT int             CCALL GetNumVariables(void);
 SDL_GL_EXPORT v8FunctionArray CCALL GetVariables(void);
 SDL_GL_EXPORT nameArray       CCALL GetVariableNames(void);
-SDL_GL_EXPORT void            CCALL FlipScreen(void);
+//SDL_GL_EXPORT extern void            (* FlipScreen)(void);
 
 SDL_GL_EXPORT void CCALL FlagForScreenshot(void);
 
@@ -146,6 +154,8 @@ extern "C" SDL_GL_EXPORT uint32_t * CCALL TS_SDL_GL_GetImageID(void);
 class TS_Image;
 extern "C" SDL_GL_EXPORT unsigned int CCALL TS_SDL_GL_GetTextureFromImage(TS_Image *im);
 extern "C" SDL_GL_EXPORT void CCALL ResetOrtho(void);
+extern "C" SDL_GL_EXPORT GLuint CCALL TS_SDL_GL_GetCurrentShader(void);
+extern "C" SDL_GL_EXPORT GLuint CCALL TS_SDL_GL_GetDefaultShader(void);
 
 #endif
 
