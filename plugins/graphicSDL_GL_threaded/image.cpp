@@ -335,24 +335,19 @@ void TS_Image::blit(int x, int y) const{
 
 TS_Image *TS_Image::Clone(void) const{
 
-    TS_Texture newtexture;
+    TS_Texture newtexture = 0;
     glGenTextures(1, &newtexture);
 
     glBindTexture(GL_TEXTURE_2D, newtexture);
 
-    uint32_t *pixels = (uint32_t *)calloc(width*height, sizeof(uint32_t));
-
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-    free(pixels);
+    glCopyImageSubData(this->texture, GL_TEXTURE_2D, 0, 0, 0, 0, newtexture, GL_TEXTURE_2D, 0, 0, 0, 0, width, height, 1);
 
-    MINMEMALIGN TS_Image *image = new TS_Image(newtexture, width, height);
-
+    TS_Image *image = new TS_Image(newtexture, width, height);
     return image;
 
 }

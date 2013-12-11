@@ -18,13 +18,13 @@ var far = new TTFFont("DejaVuSans.ttf");
 	var firstDraw = true;
 	var sfMJ;
 function game(){
-		var r = new Sound("Attack.ogg", true);
-		var m = new Sound("spiders.mid", true);
+		//var r = new Sound("Attack.ogg", true);
+		//var m = new Sound("spiders.mid", true);
 		//var r = m;
 
 		//var m = new Sound("Attack.wav");
 
-		r.play();
+		//r.play();
 		//m.Play();
 		//GetKey();
 	var fn = GetSystemFont();
@@ -33,7 +33,10 @@ function game(){
 	var Red		= new Color(255, 0, 0, 255);
 	var Green	= new Color(0, 255, 0, 128);
 	var Blue	= new Color(0, 0, 255, 255);
-	var im1 = new Image("test1.png");
+	var imt = new Image("test1.png");
+	//var imtemp = im1;
+	var im1 = imt.clone();
+	imt = null;
 	var im2 = new Image("sphere.png");
 	var sf1 = new Surface("test1.png");
 	var sf2 = new Surface("sphere.png");
@@ -116,7 +119,7 @@ function game(){
 		}
 
 		far.drawText(16, GetScreenHeight()-32, "Do a barrel roll! With TTF Fonts! The mjMap's width is "+mjMap.image.width+" and its height is "+mjMap.image.height);
-		far.drawText(200, GetScreenHeight()-16, "Attack.ogg's length is "+r.getLength()+", Spider's length is "+m.getLength());
+		//far.drawText(200, GetScreenHeight()-16, "Attack.ogg's length is "+r.getLength()+", Spider's length is "+m.getLength());
 
 		Triangle(GetScreenWidth(), GetScreenHeight(), GetScreenWidth()-16, GetScreenHeight(), GetScreenWidth(), GetScreenHeight()-16, Red);
 
@@ -173,13 +176,13 @@ function game(){
 		Delay(10);
 		FlipScreen();
 	}
-	
+
 	if(firstDraw){
 		sfMJ = mjMap.image.createImage();
 		firstDraw = false;
 	}
 	sfMJ.createSurface().save("LOL.png");
 	//CreatePerson("Jester", "test.rss", false);
-	//MapEngine("test.rmp");	
+	//MapEngine("test.rmp");
 
 }

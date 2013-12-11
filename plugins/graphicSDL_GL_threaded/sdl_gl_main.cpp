@@ -64,8 +64,8 @@ void (APIENTRY * glBufferSubData)(GLenum, GLintptr, GLsizeiptr, const GLvoid *) 
 void (APIENTRY * glGenBuffers)(GLsizei, GLuint*) = NULL;
 void (APIENTRY * glDeleteBuffers)(GLsizei, GLuint*) = NULL;
 void (APIENTRY * glGenVertexArrays)(GLsizei, GLuint*) = NULL;
+void (APIENTRY * glDeleteVertexArrays)(GLsizei, GLuint*) = NULL;
 void (APIENTRY * glBindBuffer)(GLenum,  GLuint) = NULL;
-void (APIENTRY * glBindVertexArray)(GLuint) = NULL;
 void (APIENTRY * glBufferData)(GLenum, GLsizeiptr, const GLvoid *, GLenum) = NULL;
 GLenum (APIENTRY * glCreateShader)(GLenum) = NULL;
 void (APIENTRY * glDeleteShader)(GLenum) = NULL;
@@ -93,11 +93,70 @@ void (APIENTRY * glGenFramebuffers)(GLsizei, GLuint*) = NULL;
 void (APIENTRY * glDeleteFramebuffers)(GLsizei, GLuint*) = NULL;
 void (APIENTRY * glBindFramebuffer)(GLenum, GLuint) = NULL;
 void (APIENTRY * glFramebufferTexture2D)(GLenum, GLenum, GLenum, GLuint, GLint) = NULL;
+void (APIENTRY * glBindVertexArray)(GLuint) = NULL;
+void (APIENTRY * glCopyImageSubData)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei) = NULL;
+
+GLuint softTexCopy = 0;
+
+void TS_CopyImageSubData(GLuint srcName, GLenum srcTarget, GLint srcLevel,
+	    GLint srcX, GLint srcY, GLint srcZ,
+	    GLuint dstName, GLenum dstTarget, GLint dstLevel,
+	    GLint dstX, GLint dstY, GLint dstZ,
+	    GLsizei width, GLsizei height, GLsizei depth){
+
+    int srcwidth, srcheight, dstwidth, dstheight;
+    glBindTexture(GL_TEXTURE_2D, dstName);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &dstwidth);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &dstheight);
+    glBindTexture(GL_TEXTURE_2D, srcName);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &srcwidth);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &srcheight);
+
+    if(!((srcwidth==width)&&(srcheight==height)&&(srcheight==dstheight)&&(srcwidth==srcheight))){
+
+        //Make the surfaces to hold the source and destinations.
+        SDL_Surface *srcsurface = SDL_CreateRGBSurface(0, srcwidth, srcheight, DEPTH, CHANNEL_MASKS);
+
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, srcsurface->pixels);
+
+        //Fill the dst surface with the current pixels of the destination texture.
+        glBindTexture(GL_TEXTURE_2D, dstName);
+
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH,  &dstwidth);
+        glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &dstheight);
+
+        SDL_Surface *dstsurface = SDL_CreateRGBSurface(0, dstwidth, dstheight, DEPTH, CHANNEL_MASKS);
+
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, dstsurface->pixels);
+
+        //Copy the pixels needed for the new sub data.
+
+        SDL_Rect srcrect = {srcX, srcY, width, height};
+        SDL_Rect dstrect = {dstX, dstY, width, height};
+
+        SDL_BlitSurface(srcsurface, &srcrect, dstsurface, &dstrect);
+
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dstwidth, dstheight, 0, GL_RGBA, GL_UNSIGNED_BYTE, dstsurface->pixels);
+
+        SDL_FreeSurface(dstsurface);
+        SDL_FreeSurface(srcsurface);
+    }
+    else{
+        void * pixels = malloc(width*height);
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glBindTexture(GL_TEXTURE_2D, dstName);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        free(pixels);
+    }
+}
 
 void LoadGLFunctions(){
 
     GET_GL_FUNCTION(glGenBuffers,               (void (APIENTRY *)(GLsizei, GLuint*)));
     GET_GL_FUNCTION(glDeleteBuffers,            (void (APIENTRY *)(GLsizei, GLuint*)));
+    GET_GL_FUNCTION(glGenVertexArrays,          (void (APIENTRY *)(GLsizei, GLuint*)));
+    GET_GL_FUNCTION(glDeleteVertexArrays,       (void (APIENTRY *)(GLsizei, GLuint*)));
     GET_GL_FUNCTION(glBindBuffer,               (void (APIENTRY *)(GLenum, GLuint)));
     GET_GL_FUNCTION(glBufferData,               (void (APIENTRY *)(GLenum, GLsizeiptr, const GLvoid *, GLenum)));
     GET_GL_FUNCTION(glCreateShader,           (GLenum (APIENTRY *)(GLenum)));
@@ -127,7 +186,20 @@ void LoadGLFunctions(){
     GET_GL_FUNCTION(glDeleteFramebuffers,       (void (APIENTRY *)(GLsizei, GLuint*)));
     GET_GL_FUNCTION(glBindFramebuffer,          (void (APIENTRY *)(GLenum, GLuint)));
     GET_GL_FUNCTION(glFramebufferTexture2D,     (void (APIENTRY *)(GLenum, GLenum, GLenum, GLuint, GLint)));
-
+    GET_GL_FUNCTION(glBindVertexArray,          (void (APIENTRY *)(GLuint)));
+    if(SDL_GL_GetProcAddress("glCopyImageSubData")!=NULL){
+        glCopyImageSubData = (void(APIENTRY *)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei)) SDL_GL_GetProcAddress("glCopyImageSubData");
+        printf("[" PLUGINNAME "] Init Info: CopyImageSubData is present in OpenGL library.\n");
+    }
+    else
+    if(SDL_GL_GetProcAddress("glCopyImageSubDataNV")!=NULL){
+        glCopyImageSubData = (void(APIENTRY *)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei)) SDL_GL_GetProcAddress("glCopyImageSubDataNV");
+        printf("[" PLUGINNAME "] Init Info: CopyImageSubData is not present in OpenGL library. Using alternative.\n");
+    }
+    else{
+        glCopyImageSubData = TS_CopyImageSubData;
+        printf("[" PLUGINNAME "] Init Warning: Neither glCopyImageSubData or glCopyImageSubDataNV is not present in OpenGL library. Reverting to software image copying.\n");
+    }
 
 }
 

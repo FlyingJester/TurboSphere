@@ -77,6 +77,23 @@ void FlagForScreenshot(void){
 
 GLuint screenVertexBuffer = 0;
 
+#define EXPLAIN_ERROR {\
+    GLenum err = glGetError();\
+    switch(err){\
+    case GL_INVALID_ENUM:\
+        printf(BRACKNAME " %s GL Error: Bad Enum.\n", __func__);\
+        break;\
+    case GL_INVALID_VALUE:\
+        printf(BRACKNAME " %s GL Error: Bad Value.\n", __func__);\
+        break;\
+    case GL_INVALID_OPERATION:\
+        printf(BRACKNAME " %s GL Error: Bad Operation.\n", __func__);\
+        break;\
+    default:\
+        printf(BRACKNAME " %s GL Error: %x.\n", __func__, err);\
+    }\
+}\
+
 void ScreenInit(void){
     glGenTextures(1, &screenshottex);
     *(GetScreenShotFlag())=false;
@@ -124,7 +141,7 @@ void ScreenInit(void){
     }
 
 
-
+    EXPLAIN_ERROR
 
 }
 

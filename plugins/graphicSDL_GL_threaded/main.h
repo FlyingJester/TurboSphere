@@ -86,11 +86,13 @@ extern void (APIENTRY * glDeleteBuffers)(GLsizei, GLuint*);
 extern void (APIENTRY * glBindBuffer)(GLenum,  GLuint);
 extern void (APIENTRY * glBufferData)(GLenum, GLsizeiptr, const GLvoid *, GLenum);
 extern void (APIENTRY * glBufferSubData)(GLenum,  GLintptr, GLsizeiptr, const GLvoid *);
-//extern void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*);
-//extern void (APIENTRY * glVertexAttribIPointer)(GLuint, GLint, GLenum, GLsizei, const GLvoid*);
-//extern void (APIENTRY * CopyImageSubData)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei);
+extern void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*);
+extern void (APIENTRY * glVertexAttribIPointer)(GLuint, GLint, GLenum, GLsizei, const GLvoid*);
+extern void (APIENTRY * glCopyImageSubData)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei);
 //extern void (APIENTRY * CopyImageSubDataNV)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei);
 
+extern void (APIENTRY * glGenVertexArrays)(GLsizei, GLuint*);
+extern void (APIENTRY * glDeleteVertexArrays)(GLsizei, GLuint*);
 extern GLenum (APIENTRY * glCreateShader)(GLenum);
 extern void (APIENTRY * glDeleteShader)(GLenum);
 extern void (APIENTRY * glShaderSource)(GLenum, GLint, const GLchar **, const GLint *);
@@ -115,6 +117,7 @@ extern void (APIENTRY * glGenFramebuffers)(GLsizei, GLuint*);
 extern void (APIENTRY * glDeleteFramebuffers)(GLsizei, GLuint*);
 extern void (APIENTRY * glBindFramebuffer)(GLenum, GLuint);
 extern void (APIENTRY * glFramebufferTexture2D)(GLenum, GLenum, GLenum, GLuint, GLint);
+extern void (APIENTRY * glBindVertexArray)(GLuint);
 
 
 extern int PluginID;
