@@ -59,13 +59,30 @@ void TS_TerminalMessageBox(const char *title, const char *content){
     printf("\t%s\n", content);
 }
 
+void * SDLhandle = NULL;
 
 void LoadMessageBoxFunctions(void){
-    void * SDLhandle = dlopen("SDL2", RTLD_GLOBAL|RTLD_NOW);
+    SDLhandle = dlopen("libSDL2.so", RTLD_GLOBAL|RTLD_NOW);
     if(SDLhandle!=NULL){
-        TS_MessageBox = TS_SDLMessageBox;
         SDL_ShowSimpleMessageBox = (int(*)(uint32_t, const char *, const char *, void *))dlsym(SDLhandle, "SDL_ShowSimpleMessageBox");
+        TS_MessageBox = TS_SDLMessageBox;
     }
+
+    if(SDL_ShowSimpleMessageBox==NULL){
+        printf("[Engine] Warning: No suitable MessageBox backends. Defaulting to terminal output.\n");
+        TS_MessageBox = TS_TerminalMessageBox;
+    }
+
+
+}
+
+void CloseMessageBoxFunctions(void){
+    if(SDLhandle==NULL){
+        dlclose(SDLhandle);
+        SDLhandle = NULL;
+        SDL_ShowSimpleMessageBox=NULL;
+    }
+    TS_MessageBox=NULL;
 }
 
 static char ** loadedScripts = NULL;
@@ -235,7 +252,6 @@ void TS_MessageCallback(v8::Handle<v8::Message> message, v8::Handle<v8::Value> d
 }
 
 void runGame(const char * path){
-
     char * dir;
 
     const char *gameSGMfile;
@@ -288,6 +304,8 @@ void runGame(const char * path){
         free((void *)dir);
         exit(0);
     }
+
+    LoadMessageBoxFunctions();
 
     v8::HandleScope mainscope(v8::Isolate::GetCurrent());
 
@@ -384,7 +402,7 @@ void runGame(const char * path){
 	v8::V8::TerminateExecution();
 	printf("\nContext exited.\n\n");
 	CloseAllPlugins();
-	exit(0);
+	CloseMessageBoxFunctions();
 }
 
 #ifdef _WIN32
@@ -393,9 +411,6 @@ int wmain
 int main
 #endif
   (int argc, char* argv[]) {
-
-    LoadMessageBoxFunctions();
-
     if(argc>1&&(strnlen(argv[1], 2)>0)){
         printf("[Engine] Info: We are running in given-path mode.\n");
         runGame(argv[1]);
