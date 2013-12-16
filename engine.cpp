@@ -10,7 +10,21 @@
 #include "common/noreturn.h"
 #include "t5.h"
 
+#include <ctime>
+
+void (*TS_MessageBox)(const char * title, const char *content);
+int (*SDL_ShowSimpleMessageBox)(uint32_t flags, const char *title, const char *message, void *window);
 #ifdef _WIN32
+
+#include <mmsystem.h>
+
+//Get Sleep function
+#if NTDDI_VERSION == NTDDI_WIN8
+    #include <Synchapi.h>
+#else
+    #include <WinBase.h>
+#endif
+
 #define STRDUP _strdup
 #define snprintf _snprintf
 #if _MSC_VER <= 1600
@@ -18,6 +32,16 @@
 	#define isprint(x) ((x>=0x20)&&(x<0x7F))
 #endif
 #else
+
+#ifdef HAS_UNISTD_SYS
+#include <sys/unistd.h>
+    #define TS_SLEEP(x) usleep(x*1000)
+#elif defined HAS_UNISTD
+#include <unistd.h>
+    #define TS_SLEEP(x) usleep(x*1000)
+#endif
+
+#include <sys/time.h>
 #define STRDUP strdup
 #endif
 
@@ -25,6 +49,24 @@
 //Always update!
 //////////////////////////////////////////////////////////////
 #define VERSION "0.3.5e"
+
+void TS_SDLMessageBox(const char *title, const char *content){
+    SDL_ShowSimpleMessageBox(0x00000040, title, content, NULL);
+}
+
+void TS_TerminalMessageBox(const char *title, const char *content){
+    printf("[TurboSphere] Info: %s\n", title);
+    printf("\t%s\n", content);
+}
+
+
+void LoadMessageBoxFunctions(void){
+    void * SDLhandle = dlopen("SDL2", RTLD_GLOBAL|RTLD_NOW);
+    if(SDLhandle!=NULL){
+        TS_MessageBox = TS_SDLMessageBox;
+        SDL_ShowSimpleMessageBox = (int(*)(uint32_t, const char *, const char *, void *))dlsym(SDLhandle, "SDL_ShowSimpleMessageBox");
+    }
+}
 
 static char ** loadedScripts = NULL;
 static int numUniqueScriptsLoaded = 0;
@@ -71,7 +113,7 @@ TS_NORETURN v8::Handle<v8::Value> AbortGame(const v8::Arguments& args){
         ExitGame(args);
     }
     v8::String::AsciiValue str(args[0]);
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, GetConfig()->gamename, *str, NULL);
+    TS_MessageBox(GetConfig()->gamename, *str);
     ExitGame(args);
 }
 
@@ -105,13 +147,30 @@ v8::Handle<v8::Value> RequireScript(const v8::Arguments& args){
 
 v8::Handle<v8::Value> GetTime(const v8::Arguments& args)
 {
-	return  v8::Number::New(SDL_GetTicks());
+
+    #ifdef _WIN32
+
+	return  v8::Number::New(timeGetTime());
+
+    #else
+    struct timespec s;
+
+    clock_gettime(CLOCK_MONOTONIC, &s);
+
+	return  v8::Number::New((s.tv_sec*1000)+(s.tv_nsec/1000000));//>>20)); //1000000
+    #endif
 }
 
 v8::Handle<v8::Value> Delay(const v8::Arguments& args)
 {
 	unsigned int t = args[0]->Uint32Value();
-	SDL_Delay(t);
+	#ifdef _WIN32
+
+	#else
+        TS_SLEEP(t);
+	#endif  //_WIN32
+
+	//SDL_Delay(t);
 	return v8::Undefined();
 }
 
@@ -171,7 +230,7 @@ void TS_MessageCallback(v8::Handle<v8::Message> message, v8::Handle<v8::Value> d
 
     fprintf(stderr, str.c_str());
     fprintf(stderr, "\n");
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, Name, str.c_str(), NULL);
+    TS_MessageBox(Name, str.c_str());
 
 }
 
@@ -233,8 +292,9 @@ void runGame(const char * path){
     v8::HandleScope mainscope(v8::Isolate::GetCurrent());
 
     opengame(gameSGMfile);
-
     free((void *)gameSGMfile);
+
+    setDirectories(TS_dirs->root);
 
     loadAllPlugins();
 
@@ -296,7 +356,7 @@ void runGame(const char * path){
 
 	context->Global()->Set(v8::String::New("GarbageCollect"), E_GarbageCollecttempl->GetFunction());
 
-
+    /*
     if(SDL_WasInit(0)==0){
 		printf("[Engine] Warning: Nothing SDL2 related was initialized.\n");
         SDL_Init(SDL_INIT_TIMER);
@@ -305,7 +365,7 @@ void runGame(const char * path){
     else if(SDL_WasInit(SDL_INIT_TIMER)==0){
         SDL_InitSubSystem(SDL_INIT_TIMER);
     }
-
+    */
     v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
 
     v8::V8::AddMessageListener(TS_MessageCallback);
@@ -333,6 +393,8 @@ int wmain
 int main
 #endif
   (int argc, char* argv[]) {
+
+    LoadMessageBoxFunctions();
 
     if(argc>1&&(strnlen(argv[1], 2)>0)){
         printf("[Engine] Info: We are running in given-path mode.\n");

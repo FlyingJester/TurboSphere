@@ -3,6 +3,7 @@
 //extern v8::Persistent<v8::Context> context;
 
 #include <string>
+#include <string.h>
 #include <math.h>
 #define V8_ALLOW_ACCESS_TO_RAW_HANDLE_CONSTRUCTOR
 #define V8_USE_UNSAFE_HANDLES
@@ -10,11 +11,12 @@
 #include "t5.h"
 #if defined _WIN32
     #include "v8.h"
+/*
     #include "SDL2/SDL.h"
     #include "SDL2/SDL_ttf.h"
     #include "SDL2/SDL_image.h"
     #include "SDL2/SDL_thread.h"
-
+*/
 
     //File handling generalization.
     #include <windows.h>
@@ -28,11 +30,12 @@
 #ifndef _WIN32
 
 #include "v8.h"
+/*
     #include <SDL2/SDL.h>
     #include <SDL2/SDL_ttf.h>
     #include <SDL2/SDL_image.h>
     #include <SDL2/SDL_thread.h>
-
+*/
     //File handling generalization.
     #include <dirent.h>
 

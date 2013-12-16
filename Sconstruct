@@ -142,6 +142,7 @@ if not ( (useAmdLibm == "n") or (useAmdLibm == "N") ):
 setuplibs = GetOption('install_libs')
 
 t5env = currentenv.Clone()
+tsenv = currentenv.Clone()
 networkenv = currentenv.Clone()
 
 has_unistd = 0
@@ -183,6 +184,15 @@ elif unistd_n == 1:
 
 t5env = conf.Finish()
 
+tsconf = Configure(tsenv)
+
+if unistd_sys == 1:
+	tsconf.env.Append(CCFLAGS=" -DHAS_UNISTD_SYS ")
+elif unistd_n == 1:
+	tsconf.env.Append(CCFLAGS=" -DHAS_UNISTD ")
+
+tsenv = tsconf.Finish()
+
 nconf = Configure(networkenv)
 
 if unistd_sys == 1:
@@ -220,23 +230,23 @@ graphiccommon = currentenv.SharedLibrary('graphiccommon', graphiccommon_files, C
 configmanager = currentenv.SharedLibrary('configmanager', configmanager_files, CPPPATH = configmanager_path, LIBS = ['t5', 'graphiccommon', 'v8'], LIBPATH = lib_path)
 
 if sys.platform == 'darwin':
-	programenv = currentenv.Clone()
-	programenv.Append(FRAMEWORKS=['Cocoa', 'OpenGL'])
+	programenv = tsenv.Clone()
+	programenv.Append(FRAMEWORKS=['Cocoa'])
 	turbosphere = programenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
-		LIBS=['v8', 'SDL2', t5, graphicalg, graphiccommon, configmanager, 'pthread', 'dl', 'libSDLmain' ],
+		LIBS=['v8', t5, graphicalg, graphiccommon, configmanager, 'dl'],
 		LIBPATH = lib_path)
 	Depends(turbosphere, t5)
 
 elif sys.platform =='win32' or sys.platform == 'win64':
-	turbosphere = currentenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
-		LIBS=['v8', 'SDL2', 't5', 'graphicalg', 'graphiccommon', 'configmanager'],
+	turbosphere = tsenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
+		LIBS=['v8', 't5', 'graphicalg', 'graphiccommon', 'configmanager'],
 		LIBPATH = lib_path)
 	Depends(turbosphere, t5)
 	networkTS_files	 = ['plugins/networkTS/win_network.cpp']
 
 else:
-	turbosphere = currentenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
-		LIBS=['v8', 'SDL2', t5, graphicalg, graphiccommon, configmanager, 'pthread', 'dl' ],
+	turbosphere = tsenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
+		LIBS=['v8', t5, graphicalg, graphiccommon, configmanager, 'dl' ],
 		LIBPATH = lib_path)
 	Depends(turbosphere, t5)
 	networkTS_files	 = ['plugins/networkTS/unix_network.cpp']
@@ -286,9 +296,9 @@ if build_plugins != "n":
 		else:
 			SDL_GL = 		SDLGLenv.SharedLibrary('./bin/Release/plugin/SDL_GL_threaded', SDL_GL_files , LIBS = [plugin_libs, 'SDL2_image', 'GL', 'png', 'GLU', 'X11'], LIBPATH = ['/usr/local/lib', lib_path])
 			spritebatcherGL = 	SDLGLenv.SharedLibrary('./bin/Release/plugin/spritebatcherGL', spritebatcher_files , LIBS = [plugin_libs, 'GL', 'X11'], LIBPATH = ['/usr/local/lib', lib_path])
-		
+
 		Depends(SDL_GL, base_libs)
-		
+
 		bmpfontGL     = currentenv.SharedLibrary('./bin/Release/plugin/bmpfontGL', ['plugins/bmpfontGL/bmpfont.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
 		Depends(bmpfontGL, base_libs)
 		ttffontGL     = currentenv.SharedLibrary('./bin/Release/plugin/ttffontGL', ['plugins/ttffontGL/ttffont.cpp'], LIBS = [plugin_libs, 'SDL2_ttf'], LIBPATH = lib_path)
