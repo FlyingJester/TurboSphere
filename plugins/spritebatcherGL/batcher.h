@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "frontend.h"
+#include "../common/graphic_common.h"
 
 #define GL_GLEXT_PROTOTYPES 1
 #include "../../SDL2/SDL_opengl.h"
@@ -16,27 +17,42 @@
 #define GL_FRAMEBUFFER_DEFAULT_LAYERS     0x9312
 #define GL_FRAMEBUFFER_DEFAULT_SAMPLES    0x9313
 
+extern v8::Local<v8::Object> (*TS_SDL_GL_WrapTS_ColorDL)(TS_Color*);
 extern void (APIENTRY * glFramebufferParameteri)(GLenum target, GLenum pname, GLint param);
 
+EXTERN_OBJECT_TEMPLATES(SpriteBatchOp);
 EXTERN_OBJECT_TEMPLATES(SpriteBatch);
+
+typedef GLuint TS_Texture;
+
+typedef struct TS_SpriteBatchOp {
+    TS_Texture texture;     //Texture name.
+    GLfloat TexCoords[8];   //Texture mapping coordinates
+    GLuint Vertex[8];       //XY, Raster-Positional vertex locations
+    GLuint Color[4];        //Per-Vertex 0xRRGGBBAA Color Mask
+} TS_SpriteBatchOp;
+
+TS_SpriteBatchOp *TS_CreateSpriteBatchOp(void);
+void TS_FreeSpriteBatchOp(TS_SpriteBatchOp*);
 
 void InitBatcher(void);
 
 extern unsigned int DEFAULT_WIDTH;
 extern unsigned int DEFAULT_HEIGHT;
 
-v8Function NewSpriteBatcher(V8ARGS);
-v8Function spritebatcherDebug(V8ARGS);
-v8Function spritebatcherAddImage(V8ARGS);
-v8Function spritebatcherBlitBuffer(V8ARGS);
-v8Function SpriteBatchGetImages(V8ARGS);
+v8Function SpriteBatchOpGetColor(V8GETTERARGS);
+void SpriteBatchOpSetColor(V8SETTERARGS);
 
-typedef GLuint TS_Texture;
+v8Function NewSpriteBatcher(V8ARGS);
+v8Function NewSpriteBatchOp(V8ARGS);
+v8Function spritebatcherAddImage(V8ARGS);
+v8Function SpriteBatchGetImages(V8ARGS);
 
 enum TS_SpriteBatchError {
     NOERROR = 0,
-    NOROOM, //The batch's spritesheet is too full.
-    TOOBIG  //The batch's spritesheet is not big enough in the first place.
+    NOROOM,     //The batch's spritesheet is too full.
+    TOOBIG,     //The batch's spritesheet is not big enough in the first place.
+    BADTEXTURE, //An invalid texture was passed.
 };
 
 enum TS_SpriteBatchTextureType {
@@ -57,49 +73,6 @@ public:
     float    y2ord;
 };
 
-class TS_BatchOperation{
-public:
-    //virtual void blit(void) = 0;
-    //virtual void Destroy(void) = 0;
-    virtual void Set(int x, int y, float *coords, TS_Texture tex, uint32_t *color, int32_t *vertices) = 0;
-
-    TS_Texture tex;
-
-    size_t coordsSize;
-    float *coords;
-
-    int32_t x, y;
-
-    size_t colorSize;
-    uint32_t *color;
-
-    size_t vertexSize;
-    int32_t *vertices;
-
-};
-
-class TS_BatchImageOperation : public TS_BatchOperation{
-public:
-    TS_BatchImageOperation();
-    ~TS_BatchImageOperation();
-
-    virtual void Set(int x, int y, float coords[8], TS_Texture tex, uint32_t color[4], int32_t vertices[8]);
-    //virtual void blit(void);
-    //virtual void Destroy(void);
-/*
-    TS_Texture tex;
-
-    size_t coordsSize;
-    float coords[8];
-
-    int32_t x, y;
-
-    size_t colorSize;
-    uint32_t color[4];
-*/
-};
-
-
 class TS_SpriteBatch {
 public:
     friend v8Function SpriteBatchGetImages(V8ARGS);
@@ -117,10 +90,9 @@ public:
     TS_Texture texture;
     GLuint framebuffer;
 
-    void blit(int x, int y);
-    void blitDebug(int x, int y);
+    std::vector<TS_SpriteBatchOp*> operations;
 
-    std::vector<TS_BatchOperation> operations;
+    TS_SpriteBatchError PushOperation(TS_SpriteBatchOp *op);
 
 private:
     inline void SetOrtho(void);

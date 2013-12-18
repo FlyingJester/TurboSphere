@@ -16,7 +16,6 @@
 #define SPRITEBATCHER_EXPORT extern "C"
 #endif
 
-
 #ifdef _WIN32
 	extern "C" {
 #endif

@@ -1,9 +1,11 @@
 #include "batcher.h"
 #include <cstdlib>
-
+#include <cassert>
 #include <cstdio>
+#include <cstdint>
 
 void (*TS_SDL_GL_ResetOrthoDL)(void);
+v8::Local<v8::Object> (*TS_SDL_GL_WrapTS_ColorDL)(TS_Color*);
 uint32_t *(*TS_SDL_GL_GetSurfaceIDDL)(void);
 uint32_t *(*TS_SDL_GL_GetImageIDDL)(void);
 TS_Texture(*TS_SDL_GL_GetTextureFromImageDL)(void *);
@@ -14,6 +16,7 @@ v8Function (*TS_SDL_GL_MakeV8ImageHandleFromGLTextureCoordDL)(int w, int h, floa
 static fhandle SDLGLhandle;
 
 DECLARE_OBJECT_TEMPLATES(SpriteBatch);
+DECLARE_OBJECT_TEMPLATES(SpriteBatchOp);
 TS_SpriteBatch *batch = NULL;
 
 uint32_t DEFAULT_WIDTH = 1;
@@ -24,18 +27,21 @@ void InitBatcher(void){
     //Set the textures to be the closest POT size to the maximum.
     int maxTexSize;
     glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTexSize);
-    while(DEFAULT_WIDTH*4<maxTexSize)
+    while(DEFAULT_WIDTH*4<(unsigned int)maxTexSize)
         DEFAULT_WIDTH<<=1;
 
     DEFAULT_HEIGHT = DEFAULT_WIDTH;
     printf("[" PLUGINNAME "] Info: Limit on size are %i. Making textures at %i.\n", maxTexSize, DEFAULT_WIDTH);
 
 
-    //Set up the SpriteBatch script-side object.
+    //Set up the SpriteBatch script-side objects.
     INIT_OBJECT_TEMPLATES(SpriteBatch);
+    INIT_OBJECT_TEMPLATES(SpriteBatchOp);
+    SET_CLASS_ACCESSOR(SpriteBatchOp, "Color", SpriteBatchOpGetColor, SpriteBatchOpSetColor);
+
     SET_CLASS_NAME(SpriteBatch, "SpriteBatch");
+    SET_CLASS_NAME(SpriteBatchOp, "SpriteBatchOp");
     ADD_TO_PROTO(SpriteBatch, "addTexture", spritebatcherAddImage);
-    ADD_TO_PROTO(SpriteBatch, "blitBuffer", spritebatcherBlitBuffer);
     ADD_TO_PROTO(SpriteBatch, "getImages", SpriteBatchGetImages);
 
 
@@ -90,22 +96,14 @@ void InitBatcher(void){
                 fprintf (stderr, "[" PLUGINNAME "] %s error: Could not load ResetOrtho from any plugin.\n\tReported error is: %s", __func__, error);
                 exit(0xDE);
             }
+            TS_SDL_GL_WrapTS_ColorDL = (v8::Local<v8::Object>(*)(TS_Color*))dlsym(SDLGLhandle, "TS_SDL_GL_WrapTS_Color");
+            if (((error = dlerror()) != NULL)||(TS_SDL_GL_WrapTS_ColorDL==NULL))  {
+                fprintf (stderr, "[" PLUGINNAME "] InitSpriteSet error: Could not load TS_SDL_GL_WrapTS_Color from any plugin.\n\tReported error is: %s", error);
+                exit(0xFE);
+            }
 
         }
     #endif
-
-}
-
-v8Function spritebatcherDebug(V8ARGS){
-    if(args.Length()<2){
-        THROWERROR(" Error: Called with fewer than 2 arguments.");
-    }
-    CHECK_ARG_INT(0);
-    CHECK_ARG_INT(1);
-
-    batch->blitDebug(args[0]->Int32Value(), args[1]->Int32Value());
-
-    return v8::Undefined();
 
 }
 
@@ -160,19 +158,6 @@ v8Function spritebatcherAddImage(V8ARGS){
     return v8::Undefined();
 }
 
-v8Function spritebatcherBlitBuffer(V8ARGS){
-    if(args.Length()<2){
-        THROWERROR(" Error: Called with fewer than 2 arguments.");
-    }
-    CHECK_ARG_INT(0);
-    CHECK_ARG_INT(1);
-
-    GET_SELF(TS_SpriteBatch *)->blitDebug(args[0]->Int32Value(), args[1]->Int32Value());
-
-    return v8::Undefined();
-
-}
-
 TS_SpriteBatch::TS_SpriteBatch(){
 
     numImages = 0;
@@ -187,22 +172,9 @@ TS_SpriteBatch::TS_SpriteBatch(){
     glEnable(GL_TEXTURE_2D);
 
     coords = std::vector<TS_SpriteTextureCoord>();
+    operations = std::vector<TS_SpriteBatchOp*>();
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-/*
-    glViewport(0, 0, width, height);
-    //glScissor(0, 0, GetScreenWidth()*scaleSize, GetScreenHeight()*scaleSize);
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-
-
-    glOrtho(0, width, height, 0, 1, -1);
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-*/
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     //Set up the color buffer of framebuffer.
@@ -228,6 +200,17 @@ TS_SpriteBatch::TS_SpriteBatch(){
 
 }
 
+TS_SpriteBatchError TS_SpriteBatch::PushOperation(TS_SpriteBatchOp *op){
+    if(op->texture==0)
+        return TS_SpriteBatchError::BADTEXTURE;
+
+    TS_SpriteBatchOp *newop = (TS_SpriteBatchOp *)malloc(sizeof(TS_SpriteBatchOp));
+    memcpy(newop, op, sizeof(TS_SpriteBatchOp));
+
+    operations.push_back(newop);
+
+    return TS_SpriteBatchError::NOERROR;
+}
 
 inline void TS_SpriteBatch::SetOrtho(void){
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
@@ -390,85 +373,16 @@ TS_SpriteBatchError TS_SpriteBatch::AddImage(int w, int h, TS_Texture tex){
     return TS_SpriteBatchError::NOERROR;
 }
 
-void TS_SpriteBatch::blit(int x, int y){
-    glTranslatef(x, y, 0);
+TS_SpriteBatchOp *TS_CreateSpriteBatchOp(void){
 
+    TS_SpriteBatchOp *sbop =  (TS_SpriteBatchOp*)malloc(sizeof(TS_SpriteBatchOp));
 
+    sbop->texture = 0;
 
-    const size_t l = operations.size();
-    if(l==0)
-        return;
-
-    size_t colorSize  = operations[0].colorSize;
-    size_t coordsSize = operations[0].coordsSize;
-    size_t vertexSize = operations[0].vertexSize;
-
-    int32_t color[8];
-    float   coords[8];
-    int32_t vertices[8];
-
-
-    memcpy(color,       operations[0].color, colorSize*4);
-    memcpy(coords,      operations[0].coords, coordsSize*4);
-    memcpy(vertices,    operations[0].vertices, vertexSize*4);
-
-    glTexCoordPointer(2, GL_FLOAT, 0,      coords);
-    glVertexPointer(2, GL_INT, 0,          vertices);
-    glColorPointer(4, GL_UNSIGNED_BYTE, 0, color);
-
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, operations[0].tex);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
-
-
-
-
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-
-    for(size_t i = 1; i<l; i++){
-
-
-
-    }
-
-    glDisableClientState(GL_COLOR_ARRAY);
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-
-    glDisable(GL_TEXTURE_2D);
-
-    glTranslatef(-x, -y, 0);
+    return sbop;
 }
-
-void TS_SpriteBatch::blitDebug(int x, int y){
-
-    glBindTexture(GL_TEXTURE_2D, fbotex);
-
-    const GLint   vertexData[]   = {x, y, x+width, y, x+width, y+height, x, y+height};
-    const GLint   texcoordData[] = {1, 1, 0, 1, 0, 0, 1, 0};
-    const GLuint  colorData[]    = {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
-
-    glTexCoordPointer(2, GL_INT, 0, texcoordData);
-    glVertexPointer(2, GL_INT, 0, vertexData);
-    glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
-
-    glEnable(GL_TEXTURE_2D);
-//    glBindTexture(GL_TEXTURE_2D, texture);
-    glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
-
-    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-
-    glDisableClientState(GL_COLOR_ARRAY);
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    glDisable(GL_TEXTURE_2D);
-
-
+void TS_FreeSpriteBatchOp(TS_SpriteBatchOp* op){
+    assert(op);
 }
 
 void *TS_SpriteBatch::getPixels(){
@@ -483,6 +397,33 @@ void TS_SpriteBatchFinalizer(V8FINALIZERARGS) {
     object->Dispose();
 }
 
+void TS_SpriteBatchOpFinalizer(V8FINALIZERARGS) {
+
+    TS_SpriteBatchOp* sbop = (TS_SpriteBatchOp*)parameter;
+    TS_FreeSpriteBatchOp(sbop);
+    object->Dispose();
+}
+
+
+v8Function SpriteBatchOpGetColor(V8GETTERARGS) {
+    union {uint32_t i; char c[4];} color;
+    color.i = (GET_ACCESSOR_SELF(TS_SpriteBatchOp*)->Color[0]);
+    TS_Color *c = new TS_Color(color.c[0], color.c[1], color.c[2], color.c[3]);
+    return TS_SDL_GL_WrapTS_ColorDL(c);
+}
+
+void SpriteBatchOpSetColor(V8SETTERARGS) {
+    uint32_t *colors = GET_ACCESSOR_SELF(TS_SpriteBatchOp*)->Color;
+
+	v8::Local<v8::Object> color = v8::Local<v8::Object>::Cast(value);
+
+    TS_Color* c = (TS_Color*)color->GetAlignedPointerFromInternalField(0);
+
+    for(int i = 0; i<4; i++){
+        colors[i] = c->toInt();
+    }
+}
+
 v8Function NewSpriteBatcher(V8ARGS){
 
     BEGIN_OBJECT_WRAP_CODE;
@@ -491,6 +432,15 @@ v8Function NewSpriteBatcher(V8ARGS){
 
     END_OBJECT_WRAP_CODE(SpriteBatch, sb)
 
+}
+
+v8Function NewSpriteBatchOp(V8ARGS){
+
+    BEGIN_OBJECT_WRAP_CODE;
+
+    TS_SpriteBatchOp *sbop =  TS_CreateSpriteBatchOp();
+
+    END_OBJECT_WRAP_CODE(SpriteBatchOp, sbop)
 }
 
 v8Function SpriteBatchGetImages(V8ARGS){

@@ -281,7 +281,7 @@ mapengineGL_files= ['plugins/mapengineGL/map.cpp', 'plugins/mapengineGL/mapengin
 audioBASS_files	 = ['plugins/audioBASS/frontend.cpp', 'plugins/audioBASS/bass_backend.cpp', 'plugins/audioBASS/script.cpp']
 audioBASS_libs	 = ['bass', 'bassmidi']
 
-spritebatcher_files = ['plugins/spritebatcherGL/frontend.cpp', 'plugins/spritebatcherGL/batcher.cpp', 'plugins/spritebatcherGL/BatchImageOperation.cpp']
+spritebatcher_files = ['plugins/spritebatcherGL/frontend.cpp', 'plugins/spritebatcherGL/batcher.cpp']
 
 build_plugins = GetOption('build_plugins')
 if build_plugins != "n":
