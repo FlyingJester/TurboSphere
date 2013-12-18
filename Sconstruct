@@ -270,7 +270,7 @@ inputSDL_files = ['main.cpp,', 'mouse.cpp', 'key.cpp']
 scriptfs_files = ['plugins/scriptfs/scriptfs.cpp', 'plugins/scriptfs/bytearray.cpp', 'plugins/scriptfs/rawfile.cpp', 'plugins/scriptfs/bytearray_frontend.cpp', 'plugins/scriptfs/rawfile_frontend.cpp']
 getkeystring_files = ['getkeystring.cpp']
 SDL_GL_path 	 = ['plugins/graphicSDL_GL_threaded']
-SDL_GL_files	 = ['plugins/graphicSDL_GL_threaded/sdl_gl_main.cpp', 'plugins/graphicSDL_GL_threaded/shader.cpp', 'plugins/graphicSDL_GL_threaded/save.cpp', 'plugins/graphicSDL_GL_threaded/image.cpp', 'plugins/graphicSDL_GL_threaded/surface.cpp', 'plugins/graphicSDL_GL_threaded/surface_thread.cpp', 'plugins/graphicSDL_GL_threaded/color.cpp', 'plugins/graphicSDL_GL_threaded/primitives.cpp', 'plugins/graphicSDL_GL_threaded/screen.cpp']
+SDL_GL_files	 = ['plugins/graphicSDL_GL_threaded/sdl_gl_main.cpp', 'plugins/graphicSDL_GL_threaded/shader.cpp', 'plugins/graphicSDL_GL_threaded/soft_primitives.cpp', 'plugins/graphicSDL_GL_threaded/hard_primitives.cpp', 'plugins/graphicSDL_GL_threaded/save.cpp', 'plugins/graphicSDL_GL_threaded/image.cpp', 'plugins/graphicSDL_GL_threaded/surface.cpp', 'plugins/graphicSDL_GL_threaded/surface_thread.cpp', 'plugins/graphicSDL_GL_threaded/color.cpp', 'plugins/graphicSDL_GL_threaded/primitives.cpp', 'plugins/graphicSDL_GL_threaded/screen.cpp']
 
 SDLGLenv = currentenv.Clone()
 sconf = Configure(SDLGLenv)

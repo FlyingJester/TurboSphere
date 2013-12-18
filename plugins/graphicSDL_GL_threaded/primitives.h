@@ -3,6 +3,20 @@
 #include "main.h"
 #include "../../common/dlopenwrap.h"
 
+extern double    (*sin_override)(double);
+extern double    (*cos_override)(double);
+extern double    (*floor_override)(double);
+extern double    (*ceil_override)(double);
+extern double    (*max_override)(double, double);
+extern double    (*min_override)(double, double);
+extern double    (*sqrt_override)(double);
+static double tempmin(double a, double b){
+    return min(a, b);
+}
+static double tempmax(double a, double b){
+    return max(a, b);
+}
+
 v8Function Rectangle(V8ARGS);
 v8Function Line(V8ARGS);
 v8Function Point(V8ARGS);

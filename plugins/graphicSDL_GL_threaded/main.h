@@ -118,6 +118,7 @@ extern void (APIENTRY * glDeleteFramebuffers)(GLsizei, GLuint*);
 extern void (APIENTRY * glBindFramebuffer)(GLenum, GLuint);
 extern void (APIENTRY * glFramebufferTexture2D)(GLenum, GLenum, GLenum, GLuint, GLint);
 extern void (APIENTRY * glBindVertexArray)(GLuint);
+extern GLint (APIENTRY * glGetAttribLocation)(GLuint, const GLchar *);
 
 
 extern int PluginID;

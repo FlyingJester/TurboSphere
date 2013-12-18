@@ -61,7 +61,54 @@ TS_Shader TS_LoadSystemShader(const char *file){
 }
 
 TS_Shader TS_LoadShader(const char *file){
-    return 0;
+
+    assert(file!=NULL);
+
+    TS_Directories *TS_Dirs = GetDirs();
+
+    assert(TS_Dirs->systemshader!=NULL);
+    assert(strnlen(TS_Dirs->systemshader, 8)>0);
+
+    //Concatenate up the filename.
+
+    size_t len1 = strlen(TS_Dirs->systemshader);
+    size_t len2 = len1+strlen(file);
+
+    char *fullfile = (char *)malloc(len2+1);
+
+    fullfile[len2] = '\0';
+
+    memcpy(fullfile, TS_Dirs->systemshader, len1+1);
+
+    strcat(fullfile, file);
+
+    assert(T5_IsDir(TS_Dirs->systemshader));
+    assert(T5_IsFile(fullfile));
+
+    //Load the specified shader manifest
+    T5_file* shaderfile = T5_OpenFile(fullfile);
+
+    assert(shaderfile!=NULL);
+
+    const char *fragmentname = shaderfile->getValue("fragment");
+    const char *vertexname = shaderfile->getValue("vertex");
+
+    //Load the filetext of the shaders
+    T5_FileText fragment_text   = T5_LoadFileAsText(string(TS_Dirs->shader).append(fragmentname).c_str());
+    T5_FileText vertex_text     = T5_LoadFileAsText(string(TS_Dirs->shader).append(vertexname).c_str());
+
+    printf("Frag Shader:\n%s\n\nVertex Shader:\n%s\n", fragment_text, vertex_text);
+
+    //Build the program
+    TS_Shader frag = TS_CreateShader(fragment_text, GL_FRAGMENT_SHADER);
+    TS_Shader vert = TS_CreateShader(vertex_text, GL_VERTEX_SHADER);
+
+    TS_Shader prog = TS_CreateProgram(frag, vert);
+
+    if(prog==0)
+        fprintf(stderr, BRACKNAME "%s Error: Could not create program from %s.\n", __func__, file);
+
+    return prog;
 }
 
 TS_Shader TS_CreateShader(const char *text, GLenum type){
