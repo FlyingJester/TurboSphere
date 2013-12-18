@@ -117,9 +117,9 @@ TS_Image::TS_Image(TS_Texture tex, int w, int h){
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
     glBufferData(GL_ARRAY_BUFFER, 80, vertices, GL_STREAM_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    hasInternalMask = false;
     this->resetMask();
     GMmask = new TS_Color(mask->red, mask->green, mask->blue, mask->alpha);
-
 }
 
 TS_Color *TS_Image::getMask(void) const{
@@ -127,8 +127,17 @@ TS_Color *TS_Image::getMask(void) const{
 }
 
 void TS_Image::setMask(TS_Color c){
+    if(hasInternalMask)
+        delete mask;
     hasInternalMask = true;
     mask = new TS_Color(c.red, c.blue, c.green, c.alpha);
+}
+
+void TS_Image::resetMask(void){
+    if(hasInternalMask)
+        delete mask;
+    mask = fullmask;
+    hasInternalMask = false;
 }
 
 SDL_Surface *TS_Image::CreateSurface() const{
@@ -247,11 +256,6 @@ TS_Image::~TS_Image(){
     if (((mask!=fullmask)||hasInternalMask)&&(mask!=NULL)){
         delete mask;
     }
-}
-
-void TS_Image::resetMask(void){
-    mask = fullmask;
-    hasInternalMask = false;
 }
 
 void TS_ImageFinalizer(V8FINALIZERARGS) {
