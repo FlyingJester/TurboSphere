@@ -18,6 +18,8 @@ static const char *TS_MSG_DXError = "ALSA is not installed.";
 
 DWORD defaultSoundFont;
 
+bool TS_BassMidiLoaded = false;
+
 //TODO: Perhaps having a T5 file (and even localizations) would be a good idea?
 static const char *TS_MSG_WillReopen    = "\tTurboSphere will attempt to close and reopen the device.";
 static const char *TS_MSG_WillChangeFmt = "\tTurboSphere will attempt to start audio with different settings.";
@@ -93,18 +95,18 @@ int TS_InitBassMidi(){
     #else // OSX?
         bassmidi = BASS_PluginLoad("libbassmidi.dylib", 0);
     #endif
-    bool bassMidiLoaded = true;
+    TS_BassMidiLoaded = true;
     int error = BASS_ErrorGetCode();
     if(error){
         printf("[" PLUGINNAME "] Warning: Could not initialize BASSmidi.");
         printf(TS_MSG_UnkownErrorPRT, error);
         printf("\n");
-        bassMidiLoaded = false;
+        TS_BassMidiLoaded = false;
+        return false;
     }
     else{
         printf("[" PLUGINNAME "] Info: Initialized BASSmidi as bass plugin %i.\n", bassmidi);
     }
-    defaultSoundFont;
 
     defaultSoundFont = BASS_MIDI_FontInit(string(TS_Dirs->system).append(TS_Conf->systemsoundfont).c_str(), BASS_MIDI_FONT_MMAP);
 
@@ -117,14 +119,14 @@ int TS_InitBassMidi(){
     defaultFont.bank   = 0;
 
     if(!BASS_MIDI_StreamSetFonts(0, &defaultFont, 1))
-        bassMidiLoaded = false;
+        TS_BassMidiLoaded = false;
 
-    if(!bassMidiLoaded){
+    if(!TS_BassMidiLoaded){
         printf("[" PLUGINNAME "] Warning: Could not initialize MIDI support. Sound will still function, but MIDI files will not play.\n");
     }
 
     error = BASS_ErrorGetCode();
-    if((!bassMidiLoaded)||(error)){
+    if((!TS_BassMidiLoaded)||(error)){
         printf("[" PLUGINNAME "] Warning: Could not load the default sound font. ");
         switch(error){
             case BASS_ERROR_HANDLE:
@@ -145,12 +147,10 @@ int TS_InitBassMidi(){
 
     //BASS_SetConfig(BASS_CONFIG_MIDI_VOICES, 100);
 
-    return 0;
+    return TS_BassMidiLoaded;
 }
 
 int TS_InitBass(){
-
-    BASS_INFO info;
 
     DWORD version = BASS_GetVersion();
 
@@ -158,8 +158,24 @@ int TS_InitBass(){
         printf("[" PLUGINNAME "] Warning: Wrong version of BASS loaded (expected %x, version was %x). Crashes will likely follow.\n", BASSVERSION, version);
     }
 
-    TS_InitBassMidi();
-	if (!BASS_Init(1,44100,BASS_DEVICE_FREQ,NULL,NULL)) {
+    int32_t device = 2;
+
+    BASS_DEVICEINFO info;
+
+    int i = 2;
+
+    while((!info.flags|BASS_DEVICE_ENABLED)&&(i<=16)){
+        device = i;
+        BASS_GetDeviceInfo(device, &info);
+        i++;
+    }
+    if(i>16){
+        device = 0;
+    }
+
+
+    TS_BassMidiLoaded = TS_InitBassMidi();
+	if (!BASS_Init(device,44800,BASS_DEVICE_FREQ,NULL,NULL)) {
 	    int error = BASS_ErrorGetCode();
         TS_ExplainBassErrorCode(error, true, false);
 
@@ -167,7 +183,7 @@ int TS_InitBass(){
 
         if((error==BASS_ERROR_ALREADY)||(error==BASS_ERROR_ALREADY)){
             BASS_Free();
-            couldstart = BASS_Init(-1, 44800, BASS_DEVICE_FREQ, NULL, NULL);
+            couldstart = BASS_Init(-1, 44100, BASS_DEVICE_FREQ, NULL, NULL);
             error = BASS_ErrorGetCode();
             if(error==BASS_ERROR_FORMAT){
                 BASS_Free();
@@ -175,7 +191,7 @@ int TS_InitBass(){
         }
 
         if(error==BASS_ERROR_FORMAT){
-            BASS_Init(-1, 22050, FAILSAFE_BASS_INIT_FLAGS|BASS_DEVICE_FREQ, NULL, NULL);
+            BASS_Init(-1, 22050, FAILSAFE_BASS_INIT_FLAGS|BASS_DEVICE_FREQ|BASS_DEVICE_DMIX, NULL, NULL);
         }
 
         if(!couldstart){
@@ -317,10 +333,13 @@ private:
 
 TS_AudioStream::TS_AudioStream(const char *f){
 
-    stream =  BASS_MIDI_StreamCreateFile(0, f, 0, 0, BASS_MIDI_DECAYEND|BASS_MIDI_NOCROP, 1);
-    int error = BASS_ErrorGetCode();
+    int error = 0;
+    if(TS_BassMidiLoaded){
+        stream =  BASS_MIDI_StreamCreateFile(0, f, 0, 0, BASS_MIDI_DECAYEND|BASS_MIDI_NOCROP, 1);
+        error = BASS_ErrorGetCode();
+    }
     if(error)
-        stream = BASS_StreamCreateFile(0, f, 0, 0, BASS_ASYNCFILE|BASS_STREAM_PRESCAN|BASS_SAMPLE_MONO);
+        stream = BASS_StreamCreateFile(0, f, 0, 0, BASS_ASYNCFILE);
 
     long long end = BASS_ChannelGetLength(stream, BASS_POS_BYTE);
     double dlength = BASS_ChannelBytes2Seconds(stream, end);
@@ -456,7 +475,7 @@ TS_AudioSampleMultiple::~TS_AudioSampleMultiple(void){
 void TS_AudioSampleMultiple::Play(bool repeat){
 
     int highestIndex = 0;
-    uint64_t highestID = 0;
+    int64_t highestID = 0;
     bool foundPaused = false;
     for(size_t i = 1; i<channels.size(); i++){
         if((BASS_ChannelIsActive(channels[i].handle) == BASS_ACTIVE_PAUSED)&&(channels[i].ID>highestID)){
@@ -484,7 +503,7 @@ void TS_AudioSampleMultiple::Play(bool repeat){
 void TS_AudioSampleMultiple::Pause(void){
 
     int highestIndex = 0;
-    uint64_t highestID = 0;
+    int64_t highestID = 0;
     bool foundPlaying = false;
     for(size_t i = 1; i<channels.size(); i++){
         if(((BASS_ChannelIsActive(channels[i].handle) == BASS_ACTIVE_PLAYING)||(BASS_ChannelIsActive(channels[i].handle) == BASS_ACTIVE_STALLED))&&(channels[i].ID>highestID)){
@@ -517,7 +536,7 @@ void TS_AudioSampleMultiple::SetPosition(long long p){
     }
 
     int highestIndex = 0;
-    uint64_t highestID = channels[0].ID;
+    int64_t highestID = channels[0].ID;
     for(size_t i = 1; i<channels.size(); i++){
         if(channels[i].ID>highestID){
             highestID = channels[i].ID;

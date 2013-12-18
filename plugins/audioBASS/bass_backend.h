@@ -18,6 +18,8 @@
 #define VOLUME_RESOLUTION 0.003f
 #define PAN_RESOLUTION 0.01f
 
+extern bool TS_BassMidiLoaded;
+
 enum TS_AudioDataFormat {TS_RENDERED, TS_MIDI, TS_MODULAR, TS_SAMPLED};
 enum TS_AudioSimul {TS_SINGLE, TS_MULTIPLE};
 
