@@ -133,7 +133,8 @@ turbosphere_files = Split("""
 	./engine.cpp
 	./loadplugins.cpp
 	./functionload.cpp
-	./variableregister.cpp""")
+	./variableregister.cpp
+	""")
 
 useAmdLibm = GetOption('useamdlibm')
 if not ( (useAmdLibm == "n") or (useAmdLibm == "N") ):
@@ -151,11 +152,14 @@ unistd_n = 0
 stat_n = 0
 unistd_sys = 0
 stat_sys = 0
+types_n = 0
+has_types = 0
+types_sys = 0
 
 
 conf = Configure(t5env)
-#find the available headers for building T5 and networkTS.
-if sys.platform == 'linux' or sys.platform == 'linux2':
+#find the available headers for building TS, T5 and networkTS.
+if sys.platform == 'linux' or sys.platform == 'linux2' or sys.platform == 'cygwin':
 	if conf.CheckCHeader('unistd.h'):
 		has_unistd = 1
 		unistd_n = 1
@@ -168,7 +172,12 @@ if sys.platform == 'linux' or sys.platform == 'linux2':
 	elif conf.CheckHeader('sys/stat.h'):
 		has_stat = 1
 		stat_sys = 1
-
+	if conf.CheckHeader('types.h'):
+		has_types= 1
+		types_n = 1
+	elif conf.CheckHeader('sys/types.h'):
+		has_types= 1
+		types_sys = 1
 
 if stat_n:
 	conf.env.Append(CCFLAGS=" -DHAS_STAT -DUSE_STAT ")
@@ -186,10 +195,18 @@ t5env = conf.Finish()
 
 tsconf = Configure(tsenv)
 
+if stat_n:
+	tsconf.env.Append(CCFLAGS=" -DHAS_STAT ")
+elif stat_sys:
+	tsconf.env.Append(CCFLAGS=" -DHAS_STAT_SYS ")
 if unistd_sys == 1:
 	tsconf.env.Append(CCFLAGS=" -DHAS_UNISTD_SYS ")
 elif unistd_n == 1:
 	tsconf.env.Append(CCFLAGS=" -DHAS_UNISTD ")
+if types_sys == 1:
+	tsconf.env.Append(CCFLAGS=" -DHAS_TYPES_SYS ")
+elif types_n == 1:
+	tsconf.env.Append(CCFLAGS=" -DHAS_TYPES ")
 
 tsenv = tsconf.Finish()
 
@@ -229,27 +246,31 @@ graphiccommon = currentenv.SharedLibrary('graphiccommon', graphiccommon_files, C
 
 configmanager = currentenv.SharedLibrary('configmanager', configmanager_files, CPPPATH = configmanager_path, LIBS = ['t5', 'graphiccommon', 'v8'], LIBPATH = lib_path)
 
+spklib = tsenv.StaticLibrary(source = ['package_spk.cpp'], LIBS=[t5, 'z'])
+
 if sys.platform == 'darwin':
 	programenv = tsenv.Clone()
 	programenv.Append(FRAMEWORKS=['Cocoa'])
 	turbosphere = programenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
-		LIBS=['v8', t5, graphicalg, graphiccommon, configmanager, 'dl'],
+		LIBS=['v8', t5, graphicalg, graphiccommon, configmanager, 'dl', 'z', spklib],
 		LIBPATH = lib_path)
 	Depends(turbosphere, t5)
 
 elif sys.platform =='win32' or sys.platform == 'win64':
 	turbosphere = tsenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
-		LIBS=['v8', 't5', 'graphicalg', 'graphiccommon', 'configmanager'],
+		LIBS=['v8', 't5', 'graphicalg', 'graphiccommon', 'configmanager', 'z', spklib],
 		LIBPATH = lib_path)
 	Depends(turbosphere, t5)
 	networkTS_files	 = ['plugins/networkTS/win_network.cpp']
 
 else:
 	turbosphere = tsenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
-		LIBS=['v8', t5, graphicalg, graphiccommon, configmanager, 'dl' ],
+		LIBS=['v8', t5, graphicalg, graphiccommon, configmanager, 'dl', 'z', spklib],
 		LIBPATH = lib_path)
 	Depends(turbosphere, t5)
 	networkTS_files	 = ['plugins/networkTS/unix_network.cpp']
+
+spkeditor = tsenv.Program(target = './bin/Release/spkeditor', source = ['spkeditor/SPK_Editor.cpp'], LIBS=[spklib, t5, 'z'])
 
 #add the platform independant networkTS files.
 
