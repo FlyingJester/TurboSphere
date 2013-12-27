@@ -4,6 +4,9 @@
 #include <cstring>
 #include <cstdio>
 
+#define SPK_ERROR(x)\
+    fprintf(stderr, "[SPK] Error: " x " Exiting.\n");\
+    exit(1)
 #ifdef _WIN32
 
 #else
@@ -48,12 +51,12 @@ int main(int argc, char *argv[]){
                     {//Long option.
                         if((argv[i][2]=='i')&&(argv[i][3]=='f')&&(argv[i][4]=='=')){
                             in = (char *)realloc(in, strlen(argv[i]+5));
-                            memcpy(in, argv[i]+5, strlen(argv[i]+5)+1);
+                            memcpy(in, argv[i]+5, strlen(argv[i]+5));
                             continue;
                         }
                         if((argv[i][2]=='o')&&(argv[i][3]=='f')&&(argv[i][4]=='=')){
                             out = (char *)realloc(out, strlen(argv[i]+5));
-                            memcpy(out, argv[i]+5, strlen(argv[i]+5)+1);
+                            memcpy(out, argv[i]+5, strlen(argv[i]+5));
                             continue;
                         }
                     }
@@ -66,8 +69,10 @@ int main(int argc, char *argv[]){
 
     //Sanity Checks.
     if(unpack&&pack){
-        fprintf(stderr, "[SPK] Error: Both pack and unpack options specified. Exiting.\n");
-        exit(1);
+        SPK_ERROR("Both pack and unpack options specified.");
+    }
+    if((!unpack)&&(!pack)){
+        SPK_ERROR("Neither pack nor unpack options specified.");
     }
     if((strlen(in)<1)||(strlen(out)<1)){
         if((strlen(in)<1))
@@ -89,17 +94,17 @@ int main(int argc, char *argv[]){
     }
 
     if(pack){
-        fprintf(stderr, "[SPK] Error: Packing not implemented yet. Complain at http://forums.spheredev.org/index.php/topic,13 about it. Exiting.\n");
-        exit(1);
+        SPK_ERROR("Packing not implemented yet. Complain at http://forums.spheredev.org/index.php/topic,13 about it");
     }
     //End Sanity Checks.
 
     if(unpack==1){
         printf("[SPK] Info: Unpacking %s to %s...\n", in, out);
-        int Error = TS_UnpackSPK(in, out);
-        printf("[spk] Info: Done!\n\tError Level:\t%i\n", Error);
+        int Error = TS_UnpackSPK1(in, out);
+        if(Error!=0){
+            SPK_ERROR("An unspecified error has occured.");
+        }
+
+        printf("[spk] Info: Done!\n");
     }
-
-    printf("Extract? %i\nCompress? %i\nInput is %s, Output is %s.\n", unpack, pack, in, out);
-
 }

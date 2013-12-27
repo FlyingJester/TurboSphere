@@ -374,16 +374,6 @@ void runGame(const char * path){
 
 	context->Global()->Set(v8::String::New("GarbageCollect"), E_GarbageCollecttempl->GetFunction());
 
-    /*
-    if(SDL_WasInit(0)==0){
-		printf("[Engine] Warning: Nothing SDL2 related was initialized.\n");
-        SDL_Init(SDL_INIT_TIMER);
-        //atexit(SDL_Quit);
-    }
-    else if(SDL_WasInit(SDL_INIT_TIMER)==0){
-        SDL_InitSubSystem(SDL_INIT_TIMER);
-    }
-    */
     v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
 
     v8::V8::AddMessageListener(TS_MessageCallback);
@@ -403,6 +393,7 @@ void runGame(const char * path){
 	printf("\nContext exited.\n\n");
 	CloseAllPlugins();
 	CloseMessageBoxFunctions();
+	free((void *)dir);
 }
 
 #ifdef _WIN32

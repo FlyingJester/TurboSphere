@@ -479,8 +479,12 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
             glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
 			break;
-		case WS_STRETCHED:
 		case WS_STRETCHED_GRADIENT:
+            colorDataBkg[0] = cornerColors[0].toInt();
+            colorDataBkg[1] = cornerColors[1].toInt();
+            colorDataBkg[2] = cornerColors[2].toInt();
+            colorDataBkg[3] = cornerColors[3].toInt();
+        case WS_STRETCHED:
             glTexCoordPointer(2, GL_FLOAT, 0, texcoordData1);
             glVertexPointer(2, GL_INT, 0, vertexData1);
             glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorDataBkg);
@@ -490,7 +494,7 @@ void TS_WindowStyle::drawWindow(int x, int y, int w, int h){
             break;
 	}
 
-	glDisable(GL_TEXTURE_2D);
+	//glDisable(GL_TEXTURE_2D);
 
     if(background.type>=2){ //If the background is a gradient.
         colorDataBkg[0] = cornerColors[0].toInt();
