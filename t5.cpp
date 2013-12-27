@@ -25,6 +25,11 @@
     #endif
 #endif //else to PREFER_STAT
 
+#ifdef HAS_TYPES_SYS
+    #include <sys/types.h>
+#elif defined HAS_TYPES
+    #include <types.h>
+#endif
 
 #include <utility>
 #include <streambuf>
@@ -65,7 +70,80 @@ typedef HANDLE filehandle;
     #include <cstring>
 #endif
 
+
 static std::vector<const char*> T5_Directories(0);
+
+//TODO: Handle large files.
+inline uint64_t T5_UnsafeGetFileSize(const char *path){
+    FILE * f = fopen(path, "rb");
+    fseek(f, 0, SEEK_END);
+    uint64_t s = (uint64_t)ftell(f);
+    fclose(f);
+    return s;
+}
+
+uint64_t T5_GetFileSize(const char *path){
+    if(!T5_IsFile(path))
+        return 0ll;
+    return T5_UnsafeGetFileSize(path);
+}
+
+
+T5_MemMapFile::T5_MemMapFile(){
+    data=NULL;
+    size = 0;
+}
+
+//TODO: Not entirely sure if this should be MSC or WIN32 specific.
+#ifndef _MSC_VER //On Unix
+#include <fcntl.h>
+#include <sys/mman.h>
+
+//Ugly, but works.
+//Better than juggling static member functions that point to friend functions.
+namespace T5_Secret {
+    int(*close)(int) = close;
+};
+
+/*
+    T5_MemMapFile();
+    ~T5_MemMapFile();
+    T5_MemMapError load(const char *path, T5_MemMapLoadFlags flags);
+    const void *getData(uint32_t offset, T5_MemMapSeek whence) const;
+    T5_MemMapError writeData(const void *source, size_t blk, size_t n, uint32_t offset, T5_MemMapSeek whence);
+    T5_MemMapError flush(void);
+    T5_MemMapError close(void);
+    uint64_t getSize(void) const;
+*/
+
+T5_MemMapError T5_MemMapFile::load(const char *path, T5_MemMapLoadFlags flags){
+    if(!T5_IsFile(path))
+        return T5_MemMapError::T5_NoFile;
+
+    if(flags==T5_MemMapLoadFlags::T5_Read){
+        handle = open(path, O_RDONLY);
+        data = mmap(0, T5_UnsafeGetFileSize(path), PROT_READ, MAP_SHARED, handle, 0);
+        if(data == MAP_FAILED){//Ideally fallback to using C file functions.
+            T5_Secret::close(handle);
+            return T5_MemMapError::T5_CantMap;
+        }
+    }
+    //size =
+    return T5_MemMapError::T5_NoError;
+}
+
+T5_MemMapError T5_MemMapFile::close(void){
+    munmap(data, size);
+    T5_Secret::close(handle);
+
+    return T5_MemMapError::T5_NoError;
+}
+
+#else //On Windows.
+
+#endif
+
+
 
 #ifdef _WIN32
 
