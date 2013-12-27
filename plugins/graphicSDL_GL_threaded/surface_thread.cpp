@@ -115,9 +115,12 @@ int SurfaceThreadFunction(void *data){
 
         //If we don't get this mutex, we restart. This forces us to update all surfaces that need updating.
         if(SDL_AtomicGet(&SurfaceQueueIndependantFlag)){
+            SDL_Delay(0);
             goto endsub;
         }
+        SDL_Delay(5);
         if(((QueueOperatingPosition+1)%SurfaceQueueSize)==QueuePlacingPosition){
+            SDL_Delay(10);
             goto endsub; //No comments on using goto!
         }
         //Process the next surface operation.
