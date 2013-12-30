@@ -1,5 +1,5 @@
-EvaluateSystemScript("colors.js");
-
+//Modified by Martin McDonough to work with TurboSphere
+var Black = new Color(0, 0, 0);
 
 function ClearScreen()
 {
@@ -22,7 +22,7 @@ function FadeIn(milliseconds)
 function FadeToColor(msecs, clr)
 {
   var image = GrabImage(0, 0, GetScreenWidth(), GetScreenHeight());
-  var color = CreateColor(clr.red, clr.green, clr.blue, clr.alpha);
+  var color = new Color(clr.red, clr.green, clr.blue, clr.alpha);
 
   var time = GetTime();
   while (GetTime() - time < msecs) {
@@ -44,7 +44,7 @@ function FadeToColor(msecs, clr)
 function FadeFromColor(msecs, clr)
 {
   var image = GrabImage(0, 0, GetScreenWidth(), GetScreenHeight());
-  var color = CreateColor(clr.red, clr.green, clr.blue, clr.alpha);
+  var color = new Color(clr.red, clr.green, clr.blue, clr.alpha);
 
   var time = GetTime();
   while (GetTime() - time < msecs)

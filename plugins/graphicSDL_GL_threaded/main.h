@@ -46,15 +46,23 @@
 #define COLOR_ID ((PluginID<<8)|(0x01u))
 #define SURFACE_ID ((PluginID<<8)|(0x02u))
 #define IMAGE_ID ((PluginID<<8)|(0x03u))
+#define SHADER_ID ((PluginID<<8)|(0x04u))
+#define SHADERPROGRAM_ID ((PluginID<<8)|(0x05u))
+
+#include "shader.h"
 
 extern unsigned int ImageID;
 extern unsigned int SurfaceID;
 extern unsigned int ColorID;
+extern unsigned int ShaderID;
+extern unsigned int ShaderProgramID;
 
 extern GLuint TS_DefaultShader;
 extern GLuint TS_CurrentShader;
+extern GLuint TS_DefaultCompositeShader;
+extern GLuint TS_CurrentCompositeShader;
 
-#define NUMFUNCS 22
+#define NUMFUNCS 28
 #define NUMVARS  0
 
 #define IMG_FLAGS (IMG_INIT_JPG|IMG_INIT_PNG|IMG_INIT_TIF)
@@ -89,8 +97,6 @@ extern void (APIENTRY * glBufferSubData)(GLenum,  GLintptr, GLsizeiptr, const GL
 extern void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*);
 extern void (APIENTRY * glVertexAttribIPointer)(GLuint, GLint, GLenum, GLsizei, const GLvoid*);
 extern void (APIENTRY * glCopyImageSubData)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei);
-//extern void (APIENTRY * CopyImageSubDataNV)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei);
-
 extern void (APIENTRY * glGenVertexArrays)(GLsizei, GLuint*);
 extern void (APIENTRY * glDeleteVertexArrays)(GLsizei, GLuint*);
 extern GLenum (APIENTRY * glCreateShader)(GLenum);
@@ -118,8 +124,12 @@ extern void (APIENTRY * glDeleteFramebuffers)(GLsizei, GLuint*);
 extern void (APIENTRY * glBindFramebuffer)(GLenum, GLuint);
 extern void (APIENTRY * glFramebufferTexture2D)(GLenum, GLenum, GLenum, GLuint, GLint);
 extern void (APIENTRY * glBindVertexArray)(GLuint);
-extern GLint (APIENTRY * glGetAttribLocation)(GLuint, const GLchar *);
+extern void (APIENTRY * glBindAttribLocation)(GLuint program, GLuint index, const GLchar *name);
+extern GLint (APIENTRY * glGetAttribLocation )(GLuint program, const GLchar *name);
+extern GLboolean (APIENTRY * glIsProgram)(GLuint program);
 
+EXTERN_OBJECT_TEMPLATES(ScriptShader);
+EXTERN_OBJECT_TEMPLATES(ScriptShaderProgram);
 
 extern int PluginID;
 

@@ -276,6 +276,15 @@ extern v8::Handle<v8::ObjectTemplate> JSOBJ##proto
     P##JSOBJ##obj->SetAlignedPointerInInternalField(0, (void *)TO_WRAP);\
     P##JSOBJ##obj->GetConstructorName()=v8::String::New( #JSOBJ );\
 
+#define CHECK_ARG_TYPE(n, type_id, name){\
+    v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(args[n]);\
+    CHECK_OBJ_TYPE(obj, type_id, (std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string("Error: Argument " #n " is not a " name ".")).c_str())\
+}
+
+#define CHECK_OBJ_TYPE(obj, type_id, words)\
+    if((obj->InternalFieldCount()<2)||(type_id!=obj->GetInternalField(1)->Uint32Value())){\
+    THROWERROR_TYPE(words);}\
+
 #define GET_OBJECT_WRAP_CODE(JSOBJ) temporary_scope.Close(P##JSOBJ##obj)
 
 

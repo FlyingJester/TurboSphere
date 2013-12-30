@@ -1,3 +1,4 @@
+//Modified by Martin McDonough to work with TurboSphere.
 /*//////////////////////////////////////////////////////////
 // This script is so that you can define colors in terms of:
 // color name  |  value range
@@ -14,12 +15,12 @@
 // intensity   |  0 to 1
 
 e.g.
-  var Red = new Color(255, 0, 0);
+  var Red = new sColor(255, 0, 0);
 
   var DarkerRed = Red.clone(); // copy Red into DarkerRed
       DarkerRed.intensity -= 0.1; // this lowers the brightness of the red
 
-  var Yellow = new Color(255, 255, 255); // this is white
+  var Yellow = new sColor(255, 255, 255); // this is white
       Yellow.yellow = 255; // this is now yellow
 
   // Note that changing the yellow compontent of a color,
@@ -36,7 +37,7 @@ function Clamp(v, l, h) {
   return v;
 }
 
-function Color(red, green, blue, alpha) {
+function sColor(red, green, blue, alpha) {
   var red = red;
   var green = green;
   var blue = blue;
@@ -88,9 +89,9 @@ function Color(red, green, blue, alpha) {
     green = out_clr.green;
     blue = out_clr.blue;
   }
-  
+
   this.clone = function() {
-    return new Color(this.red, this.green, this.blue);
+    return new sColor(this.red, this.green, this.blue);
   }
 
   this.toString = function() {
@@ -189,7 +190,7 @@ function HSItoRGB(clr)
   var red = 0;
   var green = 0;
   var blue = 0;
-  
+
   var hue_in_degrees = Math.floor(RadiansToDegrees(hue));
 
   if (intensity <= 0.0001) {

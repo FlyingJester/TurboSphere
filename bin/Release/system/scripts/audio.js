@@ -13,9 +13,9 @@ function ChangeMusic(filename)
     if (Music != undefined) {
       Music.stop();
     }
-    
+
     if (filename.length != 0) {
-      Music = LoadSound(filename);
+      Music = new Sound(filename);
       Music.play(true);
     }
   }
@@ -25,16 +25,16 @@ function ChangeMusic(filename)
 function PlaySound(filename)
 {
   with (Sphere_Audio) {
-  
+
     // stop the current sound
     if (Sounds[CurrentSound] != undefined) {
       Sounds[CurrentSound].stop();
     }
-    
+
     // load new one
-    Sounds[CurrentSound] = LoadSound(filename);
+    Sounds[CurrentSound] = new Sound(filename);
     Sounds[CurrentSound].play(false);
-  
+
     // go to the next sound
     CurrentSound++;
     if (CurrentSound >= Sounds.length) {

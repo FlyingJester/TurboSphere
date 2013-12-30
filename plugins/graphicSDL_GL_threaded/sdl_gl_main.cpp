@@ -28,8 +28,16 @@ NAME = TYPING SDL_GL_GetProcAddress( #NAME )
 
 int PluginID;
 
+unsigned int ShaderID = 0;
+unsigned int ShaderProgramID = 0;
+
 TS_Shader TS_DefaultShader = 0;
 TS_Shader TS_CurrentShader = 0;
+TS_Shader TS_DefaultCompositeShader = 0;
+TS_Shader TS_CurrentCompositeShader = 0;
+
+DECLARE_OBJECT_TEMPLATES(ScriptShader);
+DECLARE_OBJECT_TEMPLATES(ScriptShaderProgram);
 
 GLuint TS_SDL_GL_GetCurrentShader(void){
     return TS_CurrentShader;
@@ -95,6 +103,9 @@ void (APIENTRY * glBindFramebuffer)(GLenum, GLuint) = NULL;
 void (APIENTRY * glFramebufferTexture2D)(GLenum, GLenum, GLenum, GLuint, GLint) = NULL;
 void (APIENTRY * glBindVertexArray)(GLuint) = NULL;
 void (APIENTRY * glCopyImageSubData)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei) = NULL;
+void (APIENTRY * glBindAttribLocation)(GLuint program, GLuint index, const GLchar *name) = NULL;
+GLint(APIENTRY * glGetAttribLocation )(GLuint program, const GLchar *name) = NULL;
+GLboolean (APIENTRY * glIsProgram)(GLuint program) = NULL;
 
 GLuint softTexCopy = 0;
 
@@ -187,6 +198,12 @@ void LoadGLFunctions(){
     GET_GL_FUNCTION(glBindFramebuffer,          (void (APIENTRY *)(GLenum, GLuint)));
     GET_GL_FUNCTION(glFramebufferTexture2D,     (void (APIENTRY *)(GLenum, GLenum, GLenum, GLuint, GLint)));
     GET_GL_FUNCTION(glBindVertexArray,          (void (APIENTRY *)(GLuint)));
+    GET_GL_FUNCTION(glBindAttribLocation,       (void (APIENTRY *)(GLuint program, GLuint index, const GLchar *name)));
+    GET_GL_FUNCTION(glGetAttribLocation,       (GLint (APIENTRY *)(GLuint program, const GLchar *name)));
+    GET_GL_FUNCTION(glIsProgram,           (GLboolean (APIENTRY *)(GLuint program)));
+    GET_GL_FUNCTION(glIsProgram,           (GLboolean (APIENTRY *)(GLuint program)));
+
+
     if(SDL_GL_GetProcAddress("glCopyImageSubData")!=NULL){
         glCopyImageSubData = (void(APIENTRY *)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint, GLsizei, GLsizei, GLsizei)) SDL_GL_GetProcAddress("glCopyImageSubData");
         printf("[" PLUGINNAME "] Init Info: CopyImageSubData is present in OpenGL library.\n");
@@ -244,6 +261,19 @@ void * LoadImagePointer             = V8FUNCPOINTER(LoadImage);
 void * NewSurfacePointer            = V8FUNCPOINTER(NewSurface);
 void * SurfaceGrabPointer           = V8FUNCPOINTER(SurfaceGrab);
 void * ImageGrabPointer             = V8FUNCPOINTER(ImageGrab);
+
+
+void * CreateFragShaderPointer      = V8FUNCPOINTER(CreateFragShader);
+void * CreateVertShaderPointer      = V8FUNCPOINTER(CreateVertShader);
+void * CreateProgramPointer         = V8FUNCPOINTER(CreateProgram);
+void * LoadProgramPointer           = V8FUNCPOINTER(LoadProgram);
+
+void * UseProgramPointer            = V8FUNCPOINTER(UseProgram);
+void * UseCompositeProgramPointer   = V8FUNCPOINTER(UseCompositeProgram);
+
+void * GetSystemProgramPointer      = V8FUNCPOINTER(GetSystemProgram);
+void * GetSystemCompositePointer    = V8FUNCPOINTER(GetSystemCompositeProgram);
+
 
 void ResetOrtho(void){
 
@@ -331,18 +361,9 @@ initFunction Init(int ID){
     LoadGLFunctions();
 
     glClearColor(0, 0, 0, 255);
-    //glClearDepth(1.0f);
     glEnable(GL_BLEND);
-    //glEnable(GL_SCISSOR_TEST);
-    //glEnable(GL_PROGRAM_POINT_SIZE);
-    //glPointSize();
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH_TEST);
-    //glDisable(GL_CULL_FACE);
-    //glEnable(GL_CULL_FACE);
-    //glEnable(GL_SCISSOR_TEST);
-
-    ResetOrtho();
 
     ScreenInit();
     ColorInit();
@@ -364,8 +385,21 @@ initFunction Init(int ID){
     SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
     SDL_SetEventFilter(TS_Filter, NULL);
 
+
+    INIT_OBJECT_TEMPLATES(ScriptShader);
+    INIT_OBJECT_TEMPLATES(ScriptShaderProgram);
+
+    ShaderID = SHADER_ID;
+    ShaderProgramID = SHADERPROGRAM_ID;
+
     TS_CurrentShader = TS_LoadSystemShader("system.shade");
     TS_DefaultShader = TS_CurrentShader;
+    TS_DefaultCompositeShader = TS_CurrentShader;
+    TS_CurrentCompositeShader = TS_CurrentShader;
+
+    CurrentColorAttrib      = glGetAttribLocation(TS_CurrentShader, "Color");
+    CurrentVertexAttrib     = glGetAttribLocation(TS_CurrentShader, "Vertex");
+    CurrentTexcoordAttrib   = glGetAttribLocation(TS_CurrentShader, "Texcoord");
 
     printf(BRACKNAME " Info: Compiled default shader as %i.\n", TS_DefaultShader);
 
@@ -435,6 +469,14 @@ functionArray GetFunctions(){
     funcs[numerate(false)] = SurfaceGrabPointer;
 
 
+    funcs[numerate(false)] =  CreateFragShaderPointer;
+    funcs[numerate(false)] = CreateVertShaderPointer;
+    funcs[numerate(false)] = CreateProgramPointer;
+    funcs[numerate(false)] = LoadProgramPointer;
+
+    funcs[numerate(false)] = UseProgramPointer;
+    funcs[numerate(false)] = UseCompositeProgramPointer;
+
     assert(numerate(false)==NUMFUNCS);
 
     return funcs;
@@ -470,6 +512,12 @@ nameArray GetFunctionNames(){
 
     names[numerate(false)] = (functionName)"Surface";           //21
     names[numerate(false)] = (functionName)"GrabSurface";       //22
+    names[numerate(false)] = (functionName)"FragmentShader";    //23
+    names[numerate(false)] = (functionName)"VertexShader";      //24
+    names[numerate(false)] = (functionName)"ShaderProgram";     //25
+    names[numerate(false)] = (functionName)"LoadShaderProgram"; //26
+    names[numerate(false)] = (functionName)"UseShaderProgram";  //27
+    names[numerate(false)] = (functionName)"UseCompositeShaderProgram"; //28
 
     assert(numerate(false)==NUMFUNCS);
 

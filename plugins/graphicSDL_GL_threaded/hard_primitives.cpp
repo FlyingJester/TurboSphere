@@ -31,6 +31,11 @@ void TS_Rectangle(int x, int y, int w, int h, TS_Color *color){
         color->toInt()
     };
 
+    GLuint tempbuff;
+    glGenBuffers(1, &tempbuff);
+    glBufferData(GL_ARRAY_BUFFER, 16l, colorData, GL_STREAM_DRAW);
+    //glVertexAttribPointer(CurrentColorAttrib, 4, GL_UNSIGNED_BYTE, GL_FALSE, 0, NULL);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindTexture(GL_TEXTURE_2D, TS_EmptyTexture);
     glVertexPointer(2, GL_INT, 0, vertexData);
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);

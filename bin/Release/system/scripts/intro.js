@@ -1,3 +1,5 @@
+//Modified by Martin McDonough to work with TurboSphere
+
 //System script by Tim Fitz aka FireMoth.
 //Claim this is your own, and I will kill you.
 
@@ -22,8 +24,8 @@ function Intro ()
 Intro.prototype.addText = function (string,fnt,clr)
 {
   if (fnt ==  undefined) fnt = GetSystemFont();
-  if (clr == undefined) clr = CreateColor(255,255,255);
-  if (string == undefined) return false; //You dumbfuck.
+  if (clr == undefined) clr = new Color(255,255,255);
+  if (string == undefined) return false; //You Fool.
   with (this)
   {
     var c = obj.length;
@@ -34,12 +36,12 @@ Intro.prototype.addText = function (string,fnt,clr)
     type[c]="String";
     font[c]=fnt;
   }
-  return true; 
+  return true;
 }
 
 Intro.prototype.addImage = function (image)
 {
-  if (image == undefined) return false; //You asshole.
+  if (image == undefined) return false; //You nerd.
   with (this)
   {
     var c = obj.length;
@@ -96,8 +98,8 @@ Intro.prototype.draw = function ()
      {
        for (var n = 0; n<gradsize; n++)
        {
-         Line(0,n,GetScreenWidth(),n,CreateColor(0,0,0,255-n/gradsize*255));
-         Line(0,GetScreenHeight()-n,GetScreenWidth(),GetScreenHeight()-n,CreateColor(0,0,0,255-n/gradsize*255));
+         Line(0,n,GetScreenWidth(),n,new Color(0,0,0,255-n/gradsize*255));
+         Line(0,GetScreenHeight()-n,GetScreenWidth(),GetScreenHeight()-n,new Color(0,0,0,255-n/gradsize*255));
        }
      }
   }

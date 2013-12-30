@@ -112,7 +112,7 @@ void ScreenInit(void){
         glGenTextures(1, &screenColorBuffer);
 
 
-        GLuint vertices[] = {0, 0, w, 0, w, h, 0, h, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0, 1, 1, 1, 1, 0, 0, 0};
+        GLuint vertices[] = {0, 0, (GLuint)w, 0, (GLuint)w, (GLuint)h, 0, (GLuint)h, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0, 1, 1, 1, 1, 0, 0, 0};
 
         glGenBuffers(1, &screenVertexBuffer);
         glBindBuffer(GL_ARRAY_BUFFER, screenVertexBuffer);
@@ -128,10 +128,10 @@ void ScreenInit(void){
 
 
         glBindFramebuffer(GL_FRAMEBUFFER, screenFrameBuffer);    glClearColor(0, 0, 0, 0);
-        ResetOrtho();
+        //ResetOrtho();
         glClear(GL_COLOR_BUFFER_BIT);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenColorBuffer, 0);
-        //ResetOrtho();
+        glClearColor(0, 0, 0, 255);
 
     }
     else{
@@ -140,6 +140,9 @@ void ScreenInit(void){
         TS_Conf->compositing = false;
     }
 
+    glClear(GL_COLOR_BUFFER_BIT);
+    SDL_GL_SwapWindow(screen);
+    glClear(GL_COLOR_BUFFER_BIT);
 
     EXPLAIN_ERROR
 
@@ -181,12 +184,18 @@ static bool * const scr = GetScreenShotFlag();
 void FlipScreenComposite(void){
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     //Must be initialised by ScreenInit.
-    assert(screenFrameBuffer!=0);
+    //assert(screenFrameBuffer!=0);
+    bool sh_same = true;
+    if(TS_CurrentCompositeShader!=TS_CurrentShader){
+        sh_same = false;
+        glUseProgram(TS_CurrentCompositeShader);
+    }
 
     glBindTexture(GL_TEXTURE_2D, screenColorBuffer);
-
     glBindBuffer(GL_ARRAY_BUFFER, screenVertexBuffer);
     glVertexPointer(2, GL_INT, 0, NULL);
+
+    //glVertexAttribPointer(CurrentColorAttrib, 4, GL_UNSIGNED_BYTE, GL_FALSE, 0, (void *)(32));
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, (void *)(32));
     glTexCoordPointer(2, GL_INT, 0, (void *)(48));
     glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -201,10 +210,15 @@ void FlipScreenComposite(void){
 
     glBindTexture(GL_TEXTURE_2D, TS_EmptyTexture);
 
+    if(!sh_same){
+        glUseProgram(TS_CurrentShader);
+    }
     //SDL_GL_SwapWindow(screen);
     glBindFramebuffer(GL_FRAMEBUFFER, screenFrameBuffer);
     SDL_GL_SwapWindow(screen);
     glClear(GL_COLOR_BUFFER_BIT);
+
+    //v8::V8::LowMemoryNotification();
 }
 
 void FlipScreenDirect(void){

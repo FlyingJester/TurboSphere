@@ -456,6 +456,8 @@ v8Function NewSurface(V8ARGS){
         surface = SDL_CreateRGBSurface(0, width, height, DEPTH, CHANNEL_MASKS);
         SDL_SetSurfaceBlendMode(surface, SDL_BLENDMODE_NONE);
         v8::Local<v8::Object> colorobj = v8::Local<v8::Object>::Cast(args[2]);
+        if(ColorID!=colorobj->GetInternalField(1)->Uint32Value())
+            THROWERROR_TYPE("[" PLUGINNAME "] NewSurface Error: Argument 2 is not a color.");
         TS_Color *color = (TS_Color*)colorobj->GetAlignedPointerFromInternalField(0);
 
         SDL_FillRect(surface, NULL, color->toInt());

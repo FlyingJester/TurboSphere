@@ -1,3 +1,5 @@
+//Modified by Martin McDonough to work with TurboSphere
+
 // Draws a textbox with faded text
 
 // v 1 Beta
@@ -11,7 +13,7 @@
 // ---
 // EvaluateSystemScript("fademessage.js");
 // setWindowBehevior("myfont.stuff", "mywindowstyle.stuff");
-// setColours(CreateColor(0,0,0,50), CreateColor(0,0,0,50), CreateColor(0,0,0,50), CreateColor(0,0,0,50), CreateColor(0,0,0,50));
+// setColours(new Color(0,0,0,50), new Color(0,0,0,50), new Color(0,0,0,50), new Color(0,0,0,50), new Color(0,0,0,50));
 // str = Array(3);
 // str[0] = "Hello world!";
 // str[1] = "The quick brown fox jumped over the lazy old uuuh";
@@ -23,7 +25,7 @@ function game()
 {
  EvaluateSystemScript("fademessage.js");
  setWindowBehevior("RM2000.rfn", "menu.rws");
- setColours(CreateColor(255,255,255,250), CreateColor(100,100,100,50), CreateColor(255,255,255,50), CreateColor(100,100,100,250), CreateColor(255,255,255,255));
+ setColours(new Color(255,255,255,250), new Color(100,100,100,50), new Color(255,255,255,50), new Color(100,100,100,250), new Color(255,255,255,255));
  str = Array(3);
  str[0] = "Hello world!";
  str[1] = "The quick brown fox jumped over the lazy old uuuh";
@@ -36,11 +38,11 @@ function game()
 // *** DECLARATION *** //
 var fonte;
 var windowse;
-c1 = CreateColor(255,0,0,120);
-c2 = CreateColor(100,0,0,120);
-c3 = CreateColor(255,0,0,120);
-c4 = CreateColor(100,0,0,120);
-tcol = CreateColor(100,100,0,120);
+c1 = new Color(255,0,0,120);
+c2 = new Color(100,0,0,120);
+c3 = new Color(255,0,0,120);
+c4 = new Color(100,0,0,120);
+tcol = new Color(100,100,0,120);
 
 // *** THE CODE *** //
 
@@ -57,12 +59,12 @@ function setColours(ac1, ac2, ac3, ac4, atcol)
 	c3 = ac3;
 	c4 = ac4;
 	tcol = atcol;
-}	
+}
 
 function drawMessage(x,y,strings, speed, prop)
 {
 	SetFrameRate(speed);
-	font = LoadFont(fonte);
+	font = new Font(fonte);
 	max_x = 0;
 	wh = 0;
 	pressed = 0;
@@ -83,9 +85,9 @@ function drawMessage(x,y,strings, speed, prop)
 		{
 			buffed.blit(0,0);
 			drawBox(x,y,max_x,max_y);
-			font.setColorMask(CreateColor(tcol.red,tcol.green,tcol.blue, (strings[u].length/255 * 100)*t));
+			font.setColorMask(new Color(tcol.red,tcol.green,tcol.blue, (strings[u].length/255 * 100)*t));
 			font.drawText(x + (t * 7) ,y  + (u * 12),strings[u][t]);
-			font.setColorMask(CreateColor(tcol.red,tcol.green,tcol.blue,255));
+			font.setColorMask(new Color(tcol.red,tcol.green,tcol.blue,255));
 			for(i = 0; i < u; i++)
 			{
 				for(o = 0; o < strings[i].length; o++)
@@ -93,11 +95,11 @@ function drawMessage(x,y,strings, speed, prop)
 					font.drawText(x + (o * 7), y + (i * 12), strings[i][o]);
 				}
 			}
-			font.setColorMask(CreateColor(0,0,0, (strings[u].length/255 * 100)*t));
+			font.setColorMask(new Color(0,0,0, (strings[u].length/255 * 100)*t));
 			for(t2 = 0; t2 < t; t2++)
 			{
 				swing = t + (t/2) - (t/3);
-				font.setColorMask(CreateColor(tcol.red,tcol.green,tcol.blue, (strings[u].length/255 * 100)*(t2+swing)));
+				font.setColorMask(new Color(tcol.red,tcol.green,tcol.blue, (strings[u].length/255 * 100)*(t2+swing)));
 				font.drawText(x + (t2 * 7) ,y + (u * 12) ,strings[u][t2]);
 			}
 			FlipScreen();
@@ -109,7 +111,8 @@ function drawMessage(x,y,strings, speed, prop)
 	}
 	while(GetKey() != KEY_SPACE)
 	{
-		//POOP!		
+        Delay(1);
+		//POOP!
 	}
 	SetFrameRate(65);
 	if(prop == "ScrollUp")

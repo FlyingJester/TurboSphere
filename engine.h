@@ -50,11 +50,52 @@
 #undef V8_USE_UNSAFE_HANDLES
 
 
+
 #if defined _WIN32
 
 #else
 
+
 #endif
 
+#include "configmanager/opengame.h"
+
+#ifdef _MSC_VER
+struct CONFIGMGR_EXPORT TS_ConfigOverride {
+#else
+struct TS_ConfigOverride {
+#endif
+public:
+	TS_ConfigOverride();
+	~TS_ConfigOverride();
+	bool gamefunc;
+	bool sgmname;
+    bool gamename;
+    bool mainscript;
+    bool screenwidth;
+    bool screenheight;
+    bool soundchannels;
+    bool fullscreen;
+    bool compositing;
+    bool scale;
+    bool systemfont;
+    bool systemttffont;
+    bool systemwindowstyle;
+    bool systemarrow;
+    bool systemuparrow;
+    bool systemdownarrow;
+    bool systemsoundfont;
+    bool author;
+	bool description;
+	bool fixedplugins;
+    bool plugins;
+    TS_Config *config;
+#ifdef _MSC_VER
+};
+#else
+};
+#endif
+
+void runGame(const char * path, TS_ConfigOverride *overrideConf = NULL);
 
 #endif

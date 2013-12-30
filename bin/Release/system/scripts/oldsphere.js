@@ -1,19 +1,11 @@
-EvaluateSystemScript("colors.js");
+//Modified by Martin McDonough to work with TurboSphere
 
+EvaluateSystemScript("colors.js");
 
 function ClearScreen()
 {
   ApplyColorMask(Black);
 }
-
-
-function Delay(time)
-{
-  var until = GetTime() + time;
-  while (GetTime() < until) {
-  }
-}
-
 
 // old font stuff
 var system_font = GetSystemFont();
@@ -21,7 +13,7 @@ var system_font = GetSystemFont();
 
 function SetFont(filename)
 {
-  system_font = LoadFont(filename);
+  system_font = new Font(filename);
 }
 
 function DrawText(x, y, text)
@@ -55,7 +47,7 @@ var system_windowstyle = GetSystemWindowStyle();
 
 function SetWindowStyle(filename)
 {
-  system_windowstyle = LoadWindowStyle(filename);
+  system_windowstyle = new WindowStyle(filename);
 }
 
 function DrawWindow(x,y, w, h)

@@ -1,8 +1,9 @@
+//Modified by Martin McDonough to work with TurboSphere
 /*
   simple music playlist script (m3u files)
 
   Example usage:
-  
+
   EvaluateSystemScript("playlist.js");
 
   var playlist = new Playlist("../sounds/list.m3u");
@@ -17,7 +18,7 @@
 /**
   perl like chomp function, removes end of line characters
 */
-function chomp(str) {  
+function chomp(str) {
   if (str.charAt(str.length - 1) == '\n')
     str = str.substr(0, str.length - 1);
   if (str.charAt(str.length - 1) == '\r')
@@ -56,11 +57,11 @@ function ReadLines(file) {
     }
 
   }
- 
+
   for (var i = 0; i < lines.length; i++) {
     lines[i] = chomp(lines[i]);
   }
- 
+
   return lines;
 }
 
@@ -68,17 +69,17 @@ function ReadLines(file) {
 
 /**
   Playlist object,
-  
+
   m3u files are just a bunch of lines, that are either:
   1) files
   2) # a comment
-  3) a blank line 
+  3) a blank line
 */
 function Playlist(filename) {
   if (this instanceof Playlist == false)
     return new Playlist(filename);
 
-  this.file = OpenRawFile(filename);
+  this.file = new RawFile(filename);
   this.lines = ReadLines(this.file);
 
   this.sound = null;
@@ -103,7 +104,7 @@ Playlist.prototype.getNextFile = function(first_call) {
         break;
       }
     }
-    
+
     this.current += 1;
   }
 
@@ -127,7 +128,7 @@ Playlist.prototype.update = function() {
     var filename = this.getNextFile(true);
 
     if (filename != "") {
-      this.sound = LoadSound(filename);
+      this.sound = new Sound(filename);
       this.sound.play(false);
     }
   }

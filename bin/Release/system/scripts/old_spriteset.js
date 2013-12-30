@@ -1,3 +1,8 @@
+//DO NOT USE WITH TURBOSPHERE
+
+//This will murder Jurassic and SpiderMonkey. V8 will swallow it normally, but debug-compiled V8 will be very cross and let you know something is wrong.
+error Deprecated use of old_spriteset.js
+
 ///////////////////////////////////////////////////////////
 
 function Spriteset(spriteset) {
@@ -44,7 +49,7 @@ function init_old_spriteset_code() {
     var direction = OldGetPersonDirection(name);
     for (var i = 0, spriteset = GetPersonSpriteset(name); i < spriteset.directions.length; ++i)
       if (spriteset.directions[i].name == direction)
-        return (i);       
+        return (i);
     return 0;
   }
 

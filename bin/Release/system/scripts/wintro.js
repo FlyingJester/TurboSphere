@@ -14,7 +14,7 @@ function textObject(text, font, color)
 	this.type = "Text";
 	if (color == undefined)
 	{
-		this.color = CreateColor(255, 255, 255);
+		this.color = new Color(255, 255, 255);
 	}
 	else
 		this.color = color;
@@ -32,7 +32,7 @@ function textObject(text, font, color)
 		this.font = GetSystemFont();
 	}
 	else
-		this.font = LoadFont(font);
+		this.font = new Font(font);
 	this.width = this.font.getStringWidth(text);
 	this.height = this.font.getHeight();
 	this.font.setColorMask(this.color);
@@ -90,9 +90,9 @@ textObject.prototype.isDone = function()
 // Creates a new image object
 function imageObject(fileName, displayTime)
 {
-	this.file = LoadImage(fileName);
+	this.file = new Image(fileName);
 	this.type = "Image";
-	this.color = CreateColor(255, 255, 255, 0);
+	this.color = new Color(255, 255, 255, 0);
 	this.fade = new Object();
 	this.fade.speed = 2;
 	this.current = "FadeIn"; // "FadeIn", "Display", "FadeOut", "Done"
@@ -173,8 +173,8 @@ function introObject(background, font)
 	else
 		this.background = background;
 	this.font = font;
-	this.bgColor = CreateColor(0, 0, 0);
-	this.endColor = CreateColor(0, 0, 0);
+	this.bgColor = new Color(0, 0, 0);
+	this.endColor = new Color(0, 0, 0);
 	this.endFade = 2000;
 	this.lastUpdate = 0;
 	this.lastThing = 0;

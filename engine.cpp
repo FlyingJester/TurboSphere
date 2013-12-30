@@ -50,6 +50,87 @@ int (*SDL_ShowSimpleMessageBox)(uint32_t flags, const char *title, const char *m
 //////////////////////////////////////////////////////////////
 #define VERSION "0.3.5e"
 
+inline void TS_OverrideConfig(TS_Config *conf, TS_ConfigOverride *overrideConf){
+    TS_Config *oconf = overrideConf->config;
+    if(overrideConf->gamefunc)
+        conf->gamefunc = oconf->gamefunc;
+
+	if(overrideConf->sgmname)
+        conf->sgmname = oconf->sgmname;
+
+	if(overrideConf->gamename)
+        conf->gamename = oconf->gamename;
+
+	if(overrideConf->mainscript)
+        conf->mainscript = oconf->mainscript;
+
+	if(overrideConf->screenwidth)
+        conf->screenwidth = oconf->screenwidth;
+
+	if(overrideConf->mainscript)
+        conf->screenheight = oconf->screenheight;
+
+	if(overrideConf->fullscreen)
+        conf->fullscreen = oconf->fullscreen;
+
+	if(overrideConf->compositing)
+        conf->compositing = oconf->compositing;
+
+	if(overrideConf->scale)
+        conf->scale = oconf->scale;
+
+	if(overrideConf->systemfont)
+        conf->systemfont = oconf->systemfont;
+
+	if(overrideConf->systemttffont)
+        conf->systemttffont = oconf->systemttffont;
+
+	if(overrideConf->systemwindowstyle)
+        conf->systemwindowstyle = oconf->systemwindowstyle;
+
+	if(overrideConf->systemarrow)
+        conf->systemarrow = oconf->systemarrow;
+
+	if(overrideConf->systemuparrow)
+        conf->systemuparrow = oconf->systemuparrow;
+
+	if(overrideConf->systemsoundfont)
+        conf->systemsoundfont = oconf->systemsoundfont;
+
+	if(overrideConf->fixedplugins)
+        conf->fixedplugins = oconf->fixedplugins;
+
+	if(overrideConf->plugins)
+        conf->plugins = oconf->plugins;
+
+}
+
+
+TS_ConfigOverride::TS_ConfigOverride(){
+	gamefunc = false;
+	sgmname = false;
+    gamename = false;
+    mainscript = false;
+    screenwidth = false;
+    screenheight = false;
+    soundchannels = false;
+    fullscreen = false;
+    compositing = false;
+    scale = false;
+    systemfont = false;
+    systemttffont = false;
+    systemwindowstyle = false;
+    systemarrow = false;
+    systemuparrow = false;
+    systemdownarrow = false;
+    systemsoundfont = false;
+    author = false;
+	description = false;
+	fixedplugins = false;
+    plugins = false;
+    config = NULL;
+}
+
 void TS_SDLMessageBox(const char *title, const char *content){
     SDL_ShowSimpleMessageBox(0x00000040, title, content, NULL);
 }
@@ -251,7 +332,7 @@ void TS_MessageCallback(v8::Handle<v8::Message> message, v8::Handle<v8::Value> d
 
 }
 
-void runGame(const char * path){
+void runGame(const char * path, TS_ConfigOverride *overrideConf){
     char * dir;
 
     const char *gameSGMfile;
@@ -303,6 +384,10 @@ void runGame(const char * path){
         fprintf(stderr, "[Engine] Error: Invalid path '%s' given for the game.\n", path);
         free((void *)dir);
         exit(0);
+    }
+
+    if((overrideConf!=NULL)&&(overrideConf->config!=NULL)){
+        TS_OverrideConfig(TS_conf, overrideConf);
     }
 
     LoadMessageBoxFunctions();
@@ -374,12 +459,11 @@ void runGame(const char * path){
 
 	context->Global()->Set(v8::String::New("GarbageCollect"), E_GarbageCollecttempl->GetFunction());
 
-    v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
+    //v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
 
     v8::V8::AddMessageListener(TS_MessageCallback);
 
 	ExecuteString(v8::String::New(ScriptFileText.c_str()), v8::String::New(script_name), true);
-
 	printf("[Engine] Info: Running Script.\n");
 
     TS_CallFunc("game", context);
@@ -402,7 +486,7 @@ int wmain
 int main
 #endif
   (int argc, char* argv[]) {
-    if(argc>1&&(strnlen(argv[1], 2)>0)){
+    if(argc>1&&(strnlen(argv[1], 2)>0)&&((T5_IsDir(argv[1]))||(T5_IsFile(argv[1])))){
         printf("[Engine] Info: We are running in given-path mode.\n");
         runGame(argv[1]);
     }

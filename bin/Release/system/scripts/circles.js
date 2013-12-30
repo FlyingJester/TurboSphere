@@ -1,19 +1,20 @@
+//Modified by Martin McDonough to work with TurboSphere
 /**
  * circles.js
- * 
+ *
  * Inspired by the same system script by Eric Duvic.
- * 
+ *
  * API:
  * LineCircle(radius, color[, antialias])
  * Circle(radius, color[, antialias])
  * GradientCircle(radius, color1, color2[, antialias])
- * 
+ *
  * @author	Tung Nguyen
  */
 
 /**
  * Traces the outline of a circle into a new image.
- * 
+ *
  * @param	radius	The radius of the circle.
  * @param	color	Sphere Color object used to colour line.
  * @param	antialias	If true, circle will be antialiased.
@@ -24,20 +25,20 @@ function LineCircle(radius, color, antialias)
 	if (radius < 0 || !color)
 		throw "LineCircle(): invalid parameter(s).";
 	else if (radius == 0)
-		return CreateSurface(1, 1, CreateColor(0, 0, 0, 0)).createImage();
-	
+		return new Surface(1, 1, new Color(0, 0, 0, 0)).createImage();
+
 	var pi = Math.PI;
 	var sin = Math.sin;
 	var cos = Math.cos;
 	var sqrt = Math.sqrt;
 	var abs = Math.abs;
-	
+
 	var w = radius * 2;
 	var h = w;
-	var s = CreateSurface(w, h, CreateColor(0, 0, 0, 0));
-	var c = CreateColor(color.red, color.green, color.blue, color.alpha);
+	var s = new Surface(w, h, new Color(0, 0, 0, 0));
+	var c = new Color(color.red, color.green, color.blue, color.alpha);
 	var r = Math.max(radius - 0.5, 0);
-	
+
 	if (antialias)
 	{
 		// Smooth antialias for "one-pixel" width
@@ -74,13 +75,13 @@ function LineCircle(radius, color, antialias)
 					color);
 		}
 	}
-	
+
 	return s.createImage();
 }
 
 /**
  * Draws a filled circle into a new image.
- * 
+ *
  * @param	radius	The radius of the circle.
  * @param	color	The color to fill the circle with.
  * @param	antialias	If true, antialiasing will smooth the edges.
@@ -91,21 +92,21 @@ function Circle(radius, color, antialias)
 	if (radius < 0 || !color)
 		throw "Circle(): invalid parameter(s).";
 	else if (radius == 0)
-		return CreateSurface(1, 1, CreateColor(0, 0, 0, 0)).createImage();
-	
+		return new Surface(1, 1, new Color(0, 0, 0, 0)).createImage();
+
 	var pi_1_2 = Math.PI / 2;
 	var sin = Math.sin;
 	var asin = Math.asin;
 	var cos = Math.cos;
 	var sqrt = Math.sqrt;
 	var abs = Math.abs;
-	
+
 	var w = radius * 2;
 	var h = w;
-	var s = CreateSurface(w, h, CreateColor(0, 0, 0, 0));
-	var c = CreateColor(color.red, color.green, color.blue, color.alpha);
+	var s = new Surface(w, h, new Color(0, 0, 0, 0));
+	var c = new Color(color.red, color.green, color.blue, color.alpha);
 	var r = Math.max(radius - 0.5, 0);
-	
+
 	if (antialias)
 	{
 		// Scan quadrant
@@ -139,14 +140,14 @@ function Circle(radius, color, antialias)
 			s.line(r - lw, h - y - 1, r + lw, h - y - 1, c);
 		}
 	}
-	
+
 	return s.createImage();
 }
 
 /**
  * Draws a radially-gradient colored circle.
  * The fade is sinusoidal, not linear.
- * 
+ *
  * @param	radius	The radius of the circle.
  * @param	color1	The internal color.
  * @param	color2	The external color.
@@ -158,23 +159,23 @@ function GradientCircle(radius, color1, color2, antialias)
 	if (radius < 0 || !color1 || !color2)
 		throw "Circle(): invalid parameter(s).";
 	else if (radius == 0)
-		return CreateSurface(1, 1, CreateColor(0, 0, 0, 0)).createImage();
-	
+		return new Surface(1, 1, new Color(0, 0, 0, 0)).createImage();
+
 	var pi_1_2 = Math.PI / 2;
 	var sin = Math.sin;
 	var sqrt = Math.sqrt;
-	
+
 	var w = radius * 2;
 	var h = w;
-	var s = CreateSurface(w, h, CreateColor(0, 0, 0, 0));
-	var c = CreateColor(0, 0, 0, 0);
+	var s = new Surface(w, h, new Color(0, 0, 0, 0));
+	var c = new Color(0, 0, 0, 0);
 	var r = Math.max(radius - 0.5, 0);
-	
+
 	var rd = color2.red - color1.red;
 	var gd = color2.green - color1.green;
 	var bd = color2.blue - color1.blue;
 	var ad = color2.alpha - color1.alpha;
-	
+
 	// Quadrant scan
 	s.setBlendMode(REPLACE);
 	for (var y = 0; y < radius; ++y)
@@ -191,7 +192,7 @@ function GradientCircle(radius, color1, color2, antialias)
 				c.alpha = color2.alpha - ad * factor;
 				if (antialias && dist > radius - 1)
 					c.alpha *= radius - dist;
-				
+
 				s.setPixel(x + r, y + r, c);	// Bottom-right
 				s.setPixel(r - x, y + r, c);	// Bottom-left
 				s.setPixel(r - x, r - y, c);	// Top-left
@@ -199,6 +200,6 @@ function GradientCircle(radius, color1, color2, antialias)
 			}
 		}
 	}
-	
+
 	return s.createImage();
 }

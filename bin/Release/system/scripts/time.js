@@ -1,6 +1,1 @@
-function Delay(milliseconds)
-{
-  var start = GetTime();
-  while (start + milliseconds > GetTime()) {
-  }
-}
+//Delay(millisecons) was inducted into the engine in TurboSphere.

@@ -78,7 +78,7 @@ DECLARE_OBJECT_TEMPLATES(ScriptFile);
 void Close(){
 }
 initFunction Init(){
-	T5_init(1, GetDirs()->save);
+	T5_init(3, GetDirs()->save, GetDirs()->root, "./");
 	RawfileInit();
     INIT_OBJECT_TEMPLATES(ScriptFile);
     SET_CLASS_NAME(ScriptFile, "File");
