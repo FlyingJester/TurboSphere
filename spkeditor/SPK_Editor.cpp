@@ -50,13 +50,13 @@ int main(int argc, char *argv[]){
                 case '-':
                     {//Long option.
                         if((argv[i][2]=='i')&&(argv[i][3]=='f')&&(argv[i][4]=='=')){
-                            in = (char *)realloc(in, strlen(argv[i]+5));
-                            memcpy(in, argv[i]+5, strlen(argv[i]+5));
+                            in = (char *)realloc(in, strlen(argv[i]+5)+1);
+                            memcpy(in, argv[i]+5, strlen(argv[i]+5)+1);
                             continue;
                         }
                         if((argv[i][2]=='o')&&(argv[i][3]=='f')&&(argv[i][4]=='=')){
-                            out = (char *)realloc(out, strlen(argv[i]+5));
-                            memcpy(out, argv[i]+5, strlen(argv[i]+5));
+                            out = (char *)realloc(out, strlen(argv[i]+5)+1);
+                            memcpy(out, argv[i]+5, strlen(argv[i]+5)+1);
                             continue;
                         }
                     }

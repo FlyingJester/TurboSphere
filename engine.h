@@ -60,11 +60,7 @@
 
 #include "configmanager/opengame.h"
 
-#ifdef _MSC_VER
-struct CONFIGMGR_EXPORT TS_ConfigOverride {
-#else
 struct TS_ConfigOverride {
-#endif
 public:
 	TS_ConfigOverride();
 	~TS_ConfigOverride();
@@ -90,11 +86,7 @@ public:
 	bool fixedplugins;
     bool plugins;
     TS_Config *config;
-#ifdef _MSC_VER
 };
-#else
-};
-#endif
 
 void runGame(const char * path, TS_ConfigOverride *overrideConf = NULL);
 

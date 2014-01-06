@@ -37,10 +37,12 @@
 
 #endif
 
+#ifndef _MSC_VER
 #ifdef USEMKDIR
     #include <errno.h>
 #else
     #warning you lost USEMKDIR somewhere.
+#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -187,14 +189,14 @@ int SPK_UncompressFileFromBufferToFile(const char *destination, void *input, TS_
 
 TS_DirectoryErrors TS_CreateDirectory(const char *path){
     if(path==NULL)
-        return TS_DirectoryErrors::UNKNOWN;
+        return UNKNOWN;
     if(strnlen(path, 4)==0)
-        return TS_DirectoryErrors::UNKNOWN;
+        return UNKNOWN;
 
     if(T5_IsFile(path))
-        return TS_DirectoryErrors::ISFILE;
+        return ISFILE;
     if(T5_IsDir(path))
-        return TS_DirectoryErrors::EXISTS;
+        return EXISTS;
 
 #ifdef USEMKDIR
     const int err = mkdir(path, 0777);
@@ -204,24 +206,24 @@ TS_DirectoryErrors TS_CreateDirectory(const char *path){
         case EACCES:
         case EPERM:
         case EFAULT:
-            return TS_DirectoryErrors::BADACCESS;
+            return BADACCESS;
         case ELOOP:
-            return TS_DirectoryErrors::LOOPS;
+            return LOOPS;
         case EMLINK:
-            return TS_DirectoryErrors::TOOMANYLINKS;
+            return TOOMANYLINKS;
         case ENAMETOOLONG:
-            return TS_DirectoryErrors::NAMETOOLONG;
+            return:NAMETOOLONG;
         case ENOENT:
-            return TS_DirectoryErrors::BADINTERMEDIATE;
+            return BADINTERMEDIATE;
         case ENOMEM:
-            return TS_DirectoryErrors::OOM;
+            return OOM;
         case ENOSPC:
-            return TS_DirectoryErrors::OOS;
+            return OOS;
         default:
-            return TS_DirectoryErrors::UNKNOWN;
+            return UNKNOWN;
         }
 
-    return TS_DirectoryErrors::NOERROR;
+    return NOERROR;
 
 #endif
 
@@ -665,10 +667,10 @@ int TS_UnpackSPK(TS_SPK &SPK, const char *destination){
             }
             if(!found){
                 err = TS_CreateDirectory(dirs[i]);
-                if((err!=TS_DirectoryErrors::EXISTS)||(err!=TS_DirectoryErrors::NOERROR))
+                if((err!=EXISTS)||(err!=NOERROR))
                     if(err==19)
                         err = TS_CreateDirectory(dirs[i]);
-                if((err!=TS_DirectoryErrors::EXISTS)||(err!=TS_DirectoryErrors::NOERROR))
+                if((err!=EXISTS)||(err!=NOERROR))
                     printf("[SPK] Error: %i. Don't know what it means.\n", err);
             }
         }
@@ -888,10 +890,10 @@ int TS_UnpackSPK1(const char *source, const char *destination){
 
         if((file->directory!=NULL)&&(!T5_IsDir(file->directory))){
             err = TS_CreateDirectory(file->directory);
-            if((err!=TS_DirectoryErrors::EXISTS)||(err!=TS_DirectoryErrors::NOERROR))
+            if((err!=EXISTS)||(err!=NOERROR))
                 if(err==19)
                     err = TS_CreateDirectory(file->directory);
-            if((err!=TS_DirectoryErrors::EXISTS)||(err!=TS_DirectoryErrors::NOERROR))
+            if((err!=EXISTS)||(err!=NOERROR))
                 printf("[SPK] Error: %i. Don't know what it means.\n", err);
         }
         printf("[SPK] Info: Creating file %s, of size %i\n", file->header.filename, file->header.compressedsize);
