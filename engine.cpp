@@ -7,7 +7,11 @@
 #include "functionload.h"
 #include "variableregister.h"
 #include "loadplugins.h"
+#include "typed_array.h"
+
 #include "common/noreturn.h"
+
+
 #include "t5.h"
 
 #ifdef __linux__
@@ -392,6 +396,12 @@ void TS_MessageCallback(v8::Handle<v8::Message> message, v8::Handle<v8::Value> d
 }
 
 void runGame(const char * path, TS_ConfigOverride *overrideConf){
+
+
+    v8::V8::SetFlagsFromString(V8FLAGS, strlen(V8FLAGS));
+
+    v8::V8::SetArrayBufferAllocator(new TS_ArrayBufferAllocator());
+
     char * dir;
 
     const char *gameSGMfile;
