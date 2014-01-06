@@ -212,7 +212,7 @@ TS_DirectoryErrors TS_CreateDirectory(const char *path){
         case EMLINK:
             return TOOMANYLINKS;
         case ENAMETOOLONG:
-            return:NAMETOOLONG;
+            return NAMETOOLONG;
         case ENOENT:
             return BADINTERMEDIATE;
         case ENOMEM:
