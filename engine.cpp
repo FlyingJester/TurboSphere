@@ -10,10 +10,19 @@
 #include "common/noreturn.h"
 #include "t5.h"
 
+#ifdef __linux__
+#define ENGINE "[Engine]"
+#else
+#define ENGINE "[Engine]"
+#endif
+
 #include <ctime>
 
 void (*TS_MessageBox)(const char * title, const char *content);
 int (*SDL_ShowSimpleMessageBox)(uint32_t flags, const char *title, const char *message, void *window);
+void (*TS_Sleep)(uint32_t milliseconds);
+uint32_t (*TS_GetTime)(void);
+
 #ifdef _WIN32
 
 #include <mmsystem.h>
@@ -136,7 +145,7 @@ void TS_SDLMessageBox(const char *title, const char *content){
 }
 
 void TS_TerminalMessageBox(const char *title, const char *content){
-    printf("[TurboSphere] Info: %s\n", title);
+    printf(ENGINE " Info: %s\n", title);
     printf("\t%s\n", content);
 }
 
@@ -147,10 +156,12 @@ void LoadMessageBoxFunctions(void){
     if(SDLhandle!=NULL){
         SDL_ShowSimpleMessageBox = (int(*)(uint32_t, const char *, const char *, void *))dlsym(SDLhandle, "SDL_ShowSimpleMessageBox");
         TS_MessageBox = TS_SDLMessageBox;
+        TS_Sleep = (void(*)(uint32_t))dlsym(SDLhandle, "SDL_Delay");
+        TS_GetTime = (uint32_t(*)(void))dlsym(SDLhandle, "SDL_GetTicks");
     }
 
     if(SDL_ShowSimpleMessageBox==NULL){
-        printf("[Engine] Warning: No suitable MessageBox backends. Defaulting to terminal output.\n");
+        printf(ENGINE " Warning: No suitable MessageBox backends. Defaulting to terminal output.\n");
         TS_MessageBox = TS_TerminalMessageBox;
     }
 
@@ -161,6 +172,7 @@ void CloseMessageBoxFunctions(void){
     if(SDLhandle==NULL){
         dlclose(SDLhandle);
         SDLhandle = NULL;
+        TS_Sleep = NULL;
         SDL_ShowSimpleMessageBox=NULL;
     }
     TS_MessageBox=NULL;
@@ -169,6 +181,16 @@ void CloseMessageBoxFunctions(void){
 static char ** loadedScripts = NULL;
 static int numUniqueScriptsLoaded = 0;
 
+void TS_FreeLoadedScripts(void){
+    for(int i = 0; i<numUniqueScriptsLoaded; i++){
+        free((void *)loadedScripts[i]);
+        loadedScripts[i] = NULL;
+    }
+    free(loadedScripts);
+    loadedScripts = NULL;
+    numUniqueScriptsLoaded = 0;
+}
+
 void exitContext(v8::Persistent<v8::Context> context){
     context->v8::Context::Exit();
 }
@@ -176,11 +198,11 @@ void exitContext(v8::Persistent<v8::Context> context){
 void TS_CallFunc(const char *name, v8::Persistent<v8::Context> context){
         v8::Handle<v8::Value> gameValue = context->Global()->Get(v8::String::New(name));
         if(false){
-            printf("TS_CallGame error: game is not defined.");
+            printf(ENGINE "TS_CallGame error: game is not defined.");
             return;
         }
         if(!gameValue->IsFunction()){
-            printf("TS_CallGame error: game is not a function.");
+            printf(ENGINE "TS_CallGame error: game is not a function.");
             return;
         }
 
@@ -198,7 +220,18 @@ v8::Handle<v8::Value> GetVersionString(const v8::Arguments& args){
 }
 
 v8::Handle<v8::Value> GarbageCollect(const v8::Arguments& args){
+    int collected = 0;
+    while(!v8::V8::IdleNotification(1000)){
+            if(collected==1)
+                printf(ENGINE " Info: Garbage Collecting ");
+            if(collected>1)
+                printf(".");
+            collected++;
+            v8::V8::LowMemoryNotification();
+    }
     v8::V8::LowMemoryNotification();
+    if(collected>1)
+        printf("\n");
     return v8::Undefined();
 }
 
@@ -217,17 +250,17 @@ TS_NORETURN v8::Handle<v8::Value> AbortGame(const v8::Arguments& args){
 
 v8::Handle<v8::Value> RequireScript(const v8::Arguments& args){
     if(args.Length()<1){
-        return v8::ThrowException(v8::Exception::Error(v8::String::New("[Engine] RequireScript Error: Called with no arguments.")));
+        return v8::ThrowException(v8::Exception::Error(v8::String::New(ENGINE " RequireScript Error: Called with no arguments.")));
     }
     if(!args[0]->IsString()) {
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New("[Engine] RequireScript Error: Argument 0 is not a string.")));
+        return v8::ThrowException(v8::Exception::TypeError(v8::String::New(ENGINE " RequireScript Error: Argument 0 is not a string.")));
     }
     v8::String::AsciiValue str(args[0]);
     const char *scriptname = *str;
 
     for(int i = 0; i< numUniqueScriptsLoaded; i++){
         if(strcmp(scriptname, loadedScripts[i])==0){
-            printf("[Engine] RequireScript Info: Did not load script %s, same as script number %i.\n", scriptname, i);
+            printf(ENGINE " RequireScript Info: Did not load script %s, same as script number %i.\n", scriptname, i);
 
             return v8::Undefined();
         }
@@ -256,15 +289,41 @@ v8::Handle<v8::Value> GetTime(const v8::Arguments& args)
     clock_gettime(CLOCK_MONOTONIC, &s);
 
 	return  v8::Number::New((s.tv_sec*1000)+(s.tv_nsec/1000000));//>>20)); //1000000
+
+    //return v8::Number::New(TS_GetTime());
     #endif
 }
 
-v8::Handle<v8::Value> Delay(const v8::Arguments& args)
-{
+v8::Handle<v8::Value> Delay(const v8::Arguments& args){
 	unsigned int t = args[0]->Uint32Value();
+
 	#ifdef _WIN32
 
 	#else
+	//If we are delaying for longer than the longest time it ever took to call v8::V8::LowMemoryNotification(),
+	//Then we will call it and subtract the time difference it made from the ms to sleep for.
+	static uint32_t max = 0;
+	if(t>max){
+
+        struct timespec s;
+
+        clock_gettime(CLOCK_MONOTONIC, &s);
+        uint32_t ot = (s.tv_sec*1000)+(s.tv_nsec/1000000);
+
+        while(!v8::V8::IdleNotification(1000)){}
+
+        v8::V8::LowMemoryNotification();
+
+
+        clock_gettime(CLOCK_MONOTONIC, &s);
+        ot = (s.tv_sec*1000)+(s.tv_nsec/1000000)-ot;
+        t-=ot;
+        if(ot>max){
+            max=ot;
+            printf(ENGINE " Info: Increased minimum time threshold to %i.\n", max);
+        }
+	}
+
         TS_SLEEP(t);
 	#endif  //_WIN32
 
@@ -273,7 +332,7 @@ v8::Handle<v8::Value> Delay(const v8::Arguments& args)
 }
 
 void notationCallback(v8::GCType type, v8::GCCallbackFlags flags){
-    printf("[Engine] GC was performed.\n");
+    printf(ENGINE " GC was performed.\n");
 }
 
 inline char * destructiveTrim(char * c){
@@ -349,14 +408,14 @@ void runGame(const char * path, TS_ConfigOverride *overrideConf){
             TS_dirs->root = STRDUP(dir);
             setDirectories(TS_dirs->root);
             setConfig(TS_dirs->root);
-            printf("[Engine] Info: %s is the sgmname. We are running in / mode.\n", TS_conf->sgmname);
+            printf(ENGINE " Info: %s is the sgmname. We are running in / mode.\n", TS_conf->sgmname);
             gameSGMfile = STRDUP(string(dir).append(TS_conf->sgmname).c_str());
         }
         else {
             TS_dirs->root = STRDUP(string(dir).append("/").c_str());
             setDirectories(TS_dirs->root);
             setConfig(TS_dirs->root);
-            printf("[Engine] Info: %s is the sgmname. We are running in NO / mode.\n", TS_conf->sgmname);
+            printf(ENGINE " Info: %s is the sgmname. We are running in NO / mode.\n", TS_conf->sgmname);
             gameSGMfile = STRDUP((string(TS_dirs->root)).append(TS_conf->sgmname).c_str());
         }
     }
@@ -381,7 +440,11 @@ void runGame(const char * path, TS_ConfigOverride *overrideConf){
         setConfig(TS_dirs->root);
     }
     else{
-        fprintf(stderr, "[Engine] Error: Invalid path '%s' given for the game.\n", path);
+        if(stderr==stdin)
+            fprintf(stderr, ENGINE " Error: Invalid path '%s' given for the game.\n", path);
+        else
+            fprintf(stderr, "[Engine] Error: Invalid path '%s' given for the game.\n", path);
+
         free((void *)dir);
         exit(0);
     }
@@ -401,8 +464,8 @@ void runGame(const char * path, TS_ConfigOverride *overrideConf){
 
     loadAllPlugins();
 
-    printf("[Engine] Info: All Plugins initialized.\n");
-    printf("[Engine] Info: The main script is %s\n", TS_conf->mainscript);
+    printf(ENGINE " Info: All Plugins initialized.\n");
+    printf(ENGINE " Info: The main script is %s\n", TS_conf->mainscript);
 
 	std::string ScriptFileText = openfile(TS_conf->mainscript);
 
@@ -464,19 +527,23 @@ void runGame(const char * path, TS_ConfigOverride *overrideConf){
     v8::V8::AddMessageListener(TS_MessageCallback);
 
 	ExecuteString(v8::String::New(ScriptFileText.c_str()), v8::String::New(script_name), true);
-	printf("[Engine] Info: Running Script.\n");
+	printf(ENGINE " Info: Running Script.\n");
+
+    printf(ENGINE " Info: Optimizing JS Stack before calling Game Function ");
+    while(!v8::V8::IdleNotification(1000)){printf("."); v8::V8::LowMemoryNotification();}
+    printf("\n");
 
     TS_CallFunc("game", context);
 
-	printf("[Engine] Info: Game function done running.\n");
+	printf(ENGINE " Info: Game function done running.\n");
 
     v8::V8::LowMemoryNotification();
 	//mainscope.Close();
     exitContext(context);
 	v8::V8::TerminateExecution();
-	printf("\nContext exited.\n\n");
 	CloseAllPlugins();
 	CloseMessageBoxFunctions();
+	TS_FreeLoadedScripts();
 	free((void *)dir);
 }
 
@@ -487,7 +554,7 @@ int main
 #endif
   (int argc, char* argv[]) {
     if(argc>1&&(strnlen(argv[1], 2)>0)&&((T5_IsDir(argv[1]))||(T5_IsFile(argv[1])))){
-        printf("[Engine] Info: We are running in given-path mode.\n");
+        printf(ENGINE " Info: We are running in given-path mode.\n");
         runGame(argv[1]);
     }
     else{

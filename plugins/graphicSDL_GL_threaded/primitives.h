@@ -10,6 +10,7 @@ extern double    (*ceil_override)(double);
 extern double    (*max_override)(double, double);
 extern double    (*min_override)(double, double);
 extern double    (*sqrt_override)(double);
+
 static double tempmin(double a, double b){
     return min(a, b);
 }
@@ -57,5 +58,6 @@ void TS_SoftFilledCircle(int x, int y, int rad, TS_Color *c, SDL_Surface *destin
 void TS_SoftOutlinedCircle(int x, int y, int rad, TS_Color *c, SDL_Surface* destination);
 void TS_SoftRectangle(int x, int y, int w, int h, TS_Color *c, SDL_Surface *destination);
 
+void HardPrimitivesInit(void);
 void PrimitivesInit(void);
 #endif

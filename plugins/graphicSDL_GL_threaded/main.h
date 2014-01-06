@@ -1,6 +1,7 @@
 #ifndef SDL_GL_MAIN_HEAD
 #define SDL_GL_MAIN_HEAD
 
+enum buffernames {VertexB = 0, ColorB, TexcoordB};
 
 #define BPP 4
 #define DEPTH 32
@@ -117,6 +118,7 @@ extern GLint (APIENTRY *glGetUniformLocation)(GLuint,  const GLchar *);
 extern void (APIENTRY * glProgramUniform4fv)(GLuint,  GLint,  GLsizei,  const GLfloat *);
 extern void (APIENTRY * glProgramUniform2fv)(GLuint,  GLint,  GLsizei,  const GLfloat *);
 extern void (APIENTRY * glProgramUniform2iv)(GLuint,  GLint,  GLsizei,  const GLint *);
+extern void (APIENTRY * glProgramUniform1f)(GLuint program, GLint location, GLfloat v0);
 extern void (APIENTRY * glEnableVertexAttribArray)(GLuint);
 extern void (APIENTRY * glDisableVertexAttribArray)(GLuint);
 extern void (APIENTRY * glGenFramebuffers)(GLsizei, GLuint*);
@@ -127,6 +129,7 @@ extern void (APIENTRY * glBindVertexArray)(GLuint);
 extern void (APIENTRY * glBindAttribLocation)(GLuint program, GLuint index, const GLchar *name);
 extern GLint (APIENTRY * glGetAttribLocation )(GLuint program, const GLchar *name);
 extern GLboolean (APIENTRY * glIsProgram)(GLuint program);
+extern GLint (APIENTRY * glGetUniformLocation)(GLuint program, const GLchar *name);
 
 EXTERN_OBJECT_TEMPLATES(ScriptShader);
 EXTERN_OBJECT_TEMPLATES(ScriptShaderProgram);

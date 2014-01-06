@@ -20,17 +20,85 @@
     #define sqrt sqrt_override
 #endif
 
+GLuint quadArray     = 0;
+GLuint quadBuffers[] = {0, 0, 0};
+
+void HardPrimitivesInit(void){
+    glGenVertexArrays(1, &quadArray);
+    glGenBuffers(3, quadBuffers);
+
+    const GLfloat texcoordData[] = {0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0};
+    glBindVertexArray(quadArray);
+    glBindBuffer(GL_ARRAY_BUFFER, quadBuffers[TexcoordB]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*8, texcoordData, GL_STREAM_DRAW);
+    glVertexAttribPointer(CurrentTexcoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
 
 void TS_Rectangle(int x, int y, int w, int h, TS_Color *color){
 
-    const GLint   vertexData[] = {x, y, x+w, y, x+w, y+h, x, y+h};
+    const GLfloat   vertexData[] = {x, y, x+w, y, x+w, y+h, x, y+h};
+    float CR = (float)color->red;
+    float CG = (float)color->green;
+    float CB = (float)color->blue;
+    float CA = (float)color->alpha;
+    CR/=255.0;
+    CG/=255.0;
+    CB/=255.0;
+    CA/=255.0;
+
+    const GLfloat colorData[] = {
+        CR, CG, CB, CA,
+        CR, CG, CB, CA,
+        CR, CG, CB, CA,
+        CR, CG, CB, CA
+    };
+
+    /*
     const GLuint  colorData[]  = {
         color->toInt(),
         color->toInt(),
         color->toInt(),
         color->toInt()
     };
+    */
 
+    glBindVertexArray(quadArray);
+    glEnableVertexAttribArray(CurrentColorAttrib);
+    glEnableVertexAttribArray(CurrentVertexAttrib);
+    glEnableVertexAttribArray(CurrentTexcoordAttrib);
+    glBindTexture(GL_TEXTURE_2D, TS_EmptyTexture);
+    //glEnableVertexAttribArray(quadArray);
+
+    glBindBuffer(GL_ARRAY_BUFFER, quadBuffers[VertexB]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*8, vertexData, GL_STREAM_DRAW);
+    glVertexAttribPointer(CurrentVertexAttrib, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+
+    glBindBuffer(GL_ARRAY_BUFFER, quadBuffers[ColorB]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*16, colorData, GL_STREAM_DRAW);
+    glVertexAttribPointer(CurrentColorAttrib, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+
+    //glBindBuffer(GL_ARRAY_BUFFER, quadBuffers[TexcoordB]);
+    //glBufferData(GL_ARRAY_BUFFER, sizeof(float)*8, texcoordData, GL_STREAM_DRAW);
+    //glVertexAttribPointer(CurrentTexcoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+    //glDisableVertexAttribArray(quadArray);
+    /*
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glVertexAttribPointer(CurrentVertexAttrib, 2, GL_INT, GL_FALSE, 0, vertexData);
+
+    glVertexAttribPointer(CurrentColorAttrib, 4, GL_FLOAT, GL_FALSE, 0, colorData);
+
+    glVertexAttribPointer(CurrentTexcoordAttrib, 2, GL_INT, GL_FALSE, 0, texcoordData);
+    glDisableVertexAttribArray(quadArray);
+*/
+
+    //glEnableVertexAttribArray(quadArray);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    //glDisableVertexAttribArray(quadArray);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+/*
     GLuint tempbuff;
     glGenBuffers(1, &tempbuff);
     glBufferData(GL_ARRAY_BUFFER, 16l, colorData, GL_STREAM_DRAW);
@@ -43,7 +111,7 @@ void TS_Rectangle(int x, int y, int w, int h, TS_Color *color){
     glEnableClientState(GL_COLOR_ARRAY);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
     glDisableClientState(GL_COLOR_ARRAY);
-
+*/
 }
 
 void TS_Line(int x1, int y1, int x2, int y2, TS_Color *color){

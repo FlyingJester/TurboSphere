@@ -102,21 +102,31 @@ TS_Image::TS_Image(TS_Texture tex, int w, int h){
     dheight = h;
     useTexCoords = false;
     diaglength = (int)ceil(sqrt(double((w*w)+(h*h)))/2);
-    GLuint vertices[] = {0, 0, w, 0, w, h, 0, h, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0, 0, 0, 0, 0, 0, 0, 0};
+    GLfloat vertices[] = {0.0, 0.0, (float)w, 0.0, (float)w, (float)h, 0.0, (float)h};
+    GLfloat colors[] =  {   (float)0x1, (float)0x1, (float)0x1, (float)0x1,
+                            (float)0x1, (float)0x1, (float)0x1, (float)0x1,
+                            (float)0x1, (float)0x1, (float)0x1, (float)0x1,
+                            (float)0x1, (float)0x1, (float)0x1, (float)0x1};
+    GLfloat texCoordsD[] = {0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0};
+
     //this->texCoords = {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f};
-    texCoords[0] = 0;
-    texCoords[1] = 0;
-    texCoords[2] = 1;
-    texCoords[3] = 0;
-    texCoords[4] = 1;
-    texCoords[5] = 1;
-    texCoords[6] = 0;
-    texCoords[7] = 1;
-    memcpy((void *)(vertices)+48, texCoords, 32);
-    glGenBuffers(1, &buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, 80, vertices, GL_STREAM_DRAW);
+    glGenBuffers(3, this->buffers);
+    glGenVertexArrays(1, &varray);
+    glBindVertexArray(varray);
+    glEnableVertexAttribArray(CurrentColorAttrib);
+    glEnableVertexAttribArray(CurrentVertexAttrib);
+    glEnableVertexAttribArray(CurrentTexcoordAttrib);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers[VertexB]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*8, vertices, GL_STREAM_DRAW);
+    glVertexAttribPointer(CurrentVertexAttrib, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers[ColorB]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*16, colors, GL_STREAM_DRAW);
+    glVertexAttribPointer(CurrentColorAttrib, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers[TexcoordB]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*8, texCoordsD, GL_STREAM_DRAW);
+    glVertexAttribPointer(CurrentTexcoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, NULL);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
     hasInternalMask = false;
     this->resetMask();
     GMmask = new TS_Color(mask->red, mask->green, mask->blue, mask->alpha);
@@ -310,6 +320,24 @@ void TS_Image::blit(int x, int y) const{
     glColorPointer(4, GL_UNSIGNED_BYTE, 0, colorData);
 */
 
+
+    glEnable(GL_TEXTURE_2D);
+    const GLfloat   vertex[]   = {(float)x, (float)y, (float)(x+width), (float)y, (float)(x+width), (float)(y+height), (float)x, (float)(y+height)};
+
+    glBindVertexArray(varray);
+    glEnableVertexAttribArray(CurrentColorAttrib);
+    glEnableVertexAttribArray(CurrentVertexAttrib);
+    glEnableVertexAttribArray(CurrentTexcoordAttrib);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glBindBuffer(GL_ARRAY_BUFFER, buffers[VertexB]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*8, vertex, GL_STREAM_DRAW);
+    glVertexAttribPointer(CurrentVertexAttrib, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    /*
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
     if(mask->toInt()!=GMmask->toInt()){
         const GLuint tempmask[] = {mask->toInt(), mask->toInt(), mask->toInt(), mask->toInt()};
@@ -334,7 +362,7 @@ void TS_Image::blit(int x, int y) const{
     glTranslatef(-x, -y, 0.0f);
     //glDisable(GL_TEXTURE_2D);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-
+    */
 }
 
 TS_Image *TS_Image::Clone(void) const{

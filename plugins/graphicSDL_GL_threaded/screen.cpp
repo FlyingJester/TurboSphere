@@ -94,12 +94,28 @@ GLuint screenVertexBuffer = 0;
     }\
 }\
 
+GLuint composArray     = 0;
+GLuint composBuffers[] = {0, 0, 0};
+
 void ScreenInit(void){
-    glGenTextures(1, &screenshottex);
-    *(GetScreenShotFlag())=false;
+
     TS_Config *TS_Conf = GetConfig();
     const int w = GetScreenWidth();
     const int h = GetScreenHeight();
+
+
+    const GLfloat texcoordData[] = {0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0};
+    const GLfloat colorData[] = {
+        1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0
+    };
+    const GLfloat vertexData[] = {0.0, 0.0, (float)w*(float)(TS_Conf->scale), 0.0, (float)w*(float)(TS_Conf->scale), (float)h*(float)(TS_Conf->scale), 0.0, (float)h*(float)(TS_Conf->scale)};
+
+
+    glGenTextures(1, &screenshottex);
+    *(GetScreenShotFlag())=false;
     screenCopy = calloc(w*h, BPP);
     if(TS_Conf->compositing){
         printf(BRACKNAME " Info: Compositing is defaults to on.\n");
@@ -132,6 +148,25 @@ void ScreenInit(void){
         glClear(GL_COLOR_BUFFER_BIT);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, screenColorBuffer, 0);
         glClearColor(0, 0, 0, 255);
+
+        glGenVertexArrays(1, &composArray);
+        glGenBuffers(3, composBuffers);
+
+        glBindVertexArray(composArray);
+        glEnableVertexAttribArray(CurrentColorAttrib);
+        glEnableVertexAttribArray(CurrentVertexAttrib);
+        glEnableVertexAttribArray(CurrentTexcoordAttrib);
+        glBindBuffer(GL_ARRAY_BUFFER, composBuffers[VertexB]);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float)*8, vertexData, GL_STATIC_DRAW);
+        glVertexAttribPointer(CurrentVertexAttrib, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+        glBindBuffer(GL_ARRAY_BUFFER, composBuffers[ColorB]);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float)*16, colorData, GL_STATIC_DRAW);
+        glVertexAttribPointer(CurrentColorAttrib, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+        glBindBuffer(GL_ARRAY_BUFFER, composBuffers[TexcoordB]);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float)*8, texcoordData, GL_STATIC_DRAW);
+        glVertexAttribPointer(CurrentTexcoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     }
     else{
@@ -191,7 +226,18 @@ void FlipScreenComposite(void){
         glUseProgram(TS_CurrentCompositeShader);
     }
 
+
+    glBindVertexArray(composArray);
+    glEnableVertexAttribArray(CurrentColorAttrib);
+    glEnableVertexAttribArray(CurrentVertexAttrib);
+    glEnableVertexAttribArray(CurrentTexcoordAttrib);
     glBindTexture(GL_TEXTURE_2D, screenColorBuffer);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    glBindVertexArray(0);
+
+    /*
+
+
     glBindBuffer(GL_ARRAY_BUFFER, screenVertexBuffer);
     glVertexPointer(2, GL_INT, 0, NULL);
 
@@ -206,7 +252,7 @@ void FlipScreenComposite(void){
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-
+    */
 
     glBindTexture(GL_TEXTURE_2D, TS_EmptyTexture);
 

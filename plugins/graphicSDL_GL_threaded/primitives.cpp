@@ -110,6 +110,8 @@ void PrimitivesInit(void){
         #endif
     #endif
 
+    HardPrimitivesInit();
+
 }
 
 

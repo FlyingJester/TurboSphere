@@ -89,10 +89,10 @@ GLboolean (APIENTRY * glIsShader)(GLuint) = NULL;
 void (APIENTRY * glGetShaderInfoLog)(GLuint,  GLsizei,  GLsizei *,  GLchar *) = NULL;
 void (APIENTRY * glGetProgramInfoLog)(GLuint, GLsizei, GLsizei*, GLchar*) = NULL;
 void (APIENTRY * glDeleteProgram)(GLuint) = NULL;
-GLint (APIENTRY *glGetUniformLocation)(GLuint,  const GLchar *) = NULL;
 void (APIENTRY * glProgramUniform4fv)(GLuint,  GLint,  GLsizei,  const GLfloat *) = NULL;
 void (APIENTRY * glProgramUniform2fv)(GLuint,  GLint,  GLsizei,  const GLfloat *) = NULL;
 void (APIENTRY * glProgramUniform2iv)(GLuint,  GLint,  GLsizei,  const GLint *) = NULL;
+void (APIENTRY * glProgramUniform1f)(GLuint program, GLint location, GLfloat v0) = NULL;
 void (APIENTRY * glEnableVertexAttribArray)(GLuint) = NULL;
 void (APIENTRY * glDisableVertexAttribArray)(GLuint) = NULL;
 void (APIENTRY * glVertexAttribPointer)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*) = NULL;
@@ -106,6 +106,7 @@ void (APIENTRY * glCopyImageSubData)(GLuint, GLenum, GLint, GLint, GLint, GLint,
 void (APIENTRY * glBindAttribLocation)(GLuint program, GLuint index, const GLchar *name) = NULL;
 GLint(APIENTRY * glGetAttribLocation )(GLuint program, const GLchar *name) = NULL;
 GLboolean (APIENTRY * glIsProgram)(GLuint program) = NULL;
+GLint(APIENTRY * glGetUniformLocation)(GLuint program, const GLchar *name) = NULL;
 
 GLuint softTexCopy = 0;
 
@@ -188,6 +189,7 @@ void LoadGLFunctions(){
     GET_GL_FUNCTION(glProgramUniform4fv,        (void (APIENTRY *)(GLuint, GLint, GLsizei, const GLfloat *)));
     GET_GL_FUNCTION(glProgramUniform2fv,        (void (APIENTRY *)(GLuint, GLint, GLsizei, const GLfloat *)));
     GET_GL_FUNCTION(glProgramUniform2iv,        (void (APIENTRY *)(GLuint, GLint, GLsizei, const GLint *)));
+    GET_GL_FUNCTION(glProgramUniform1f,         (void (APIENTRY *)(GLuint program, GLint location, GLfloat v0)));
     GET_GL_FUNCTION(glEnableVertexAttribArray,  (void (APIENTRY *)(GLuint)));
     GET_GL_FUNCTION(glDisableVertexAttribArray, (void (APIENTRY *)(GLuint)));
     GET_GL_FUNCTION(glVertexAttribPointer,      (void (APIENTRY *)(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*)));
@@ -201,7 +203,7 @@ void LoadGLFunctions(){
     GET_GL_FUNCTION(glBindAttribLocation,       (void (APIENTRY *)(GLuint program, GLuint index, const GLchar *name)));
     GET_GL_FUNCTION(glGetAttribLocation,       (GLint (APIENTRY *)(GLuint program, const GLchar *name)));
     GET_GL_FUNCTION(glIsProgram,           (GLboolean (APIENTRY *)(GLuint program)));
-    GET_GL_FUNCTION(glIsProgram,           (GLboolean (APIENTRY *)(GLuint program)));
+    GET_GL_FUNCTION(glGetUniformLocation,      (GLint (APIENTRY *)(GLuint program, const GLchar *name)));
 
 
     if(SDL_GL_GetProcAddress("glCopyImageSubData")!=NULL){
@@ -337,7 +339,7 @@ initFunction Init(int ID){
     //SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION,3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,1);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION,3);
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE,8);
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,8);
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,8);
@@ -365,11 +367,6 @@ initFunction Init(int ID){
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH_TEST);
 
-    ScreenInit();
-    ColorInit();
-    ImageInit();
-    SurfaceInit();
-    PrimitivesInit();
 
     printf("[" PLUGINNAME "] Info: Using OpenGL version %s\n", glGetString(GL_VERSION));
     if (IMG_Init(IMG_FLAGS) <=0) {
@@ -401,7 +398,18 @@ initFunction Init(int ID){
     CurrentVertexAttrib     = glGetAttribLocation(TS_CurrentShader, "Vertex");
     CurrentTexcoordAttrib   = glGetAttribLocation(TS_CurrentShader, "Texcoord");
 
-    printf(BRACKNAME " Info: Compiled default shader as %i.\n", TS_DefaultShader);
+    glEnableVertexAttribArray(CurrentColorAttrib);
+    glEnableVertexAttribArray(CurrentVertexAttrib);
+    glEnableVertexAttribArray(CurrentTexcoordAttrib);
+
+
+    ScreenInit();
+    ColorInit();
+    ImageInit();
+    SurfaceInit();
+    PrimitivesInit();
+
+    printf(BRACKNAME " Info: Compiled default shader as %i. Locations are \t%i,\t%i,\t%i\n", TS_DefaultShader, CurrentColorAttrib, CurrentVertexAttrib , CurrentTexcoordAttrib);
 
     glUseProgram(TS_DefaultShader);
     uint32_t white = 0xFFFFFFFF;

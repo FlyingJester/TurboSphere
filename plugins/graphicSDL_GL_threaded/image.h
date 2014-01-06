@@ -36,11 +36,6 @@ public:
 
     TS_Color *mask;
 
-    //TS_TextureBuffer pixelBuffer;
-    GLuint texCoordBuffer;
-
-    GLuint vertexBuffer;
-
     SDL_Surface *CreateSurface(void) const;
     TS_Image *Clone(void) const;
 
@@ -55,7 +50,8 @@ public:
     TS_Color *getMask(void) const;
     void setMask(TS_Color c);
 
-    GLuint buffer;
+    GLuint varray;
+    GLuint buffers[3];
 
 private:
     mutable TS_Color *GMmask;

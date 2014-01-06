@@ -164,6 +164,7 @@ TS_Shader TS_CreateShader(const char *text, GLenum type, char **error_text){
 
         return 0;
     }
+
     printf(BRACKNAME " Info: Shader compiled ok. ID number %i.\n", shader);
     return shader;
 
@@ -219,6 +220,22 @@ TS_ShaderProg TS_CreateProgram(TS_Shader frag, TS_Shader vert){
         return 0;
 
     }
+
+    //Apply default uniforms
+
+    GLint ScreenWidth = glGetUniformLocation(prog, "ScreenWidth");
+    GLint ScreenHeight = glGetUniformLocation(prog, "ScreenHeight");
+
+    if(ScreenWidth>=0){
+        float ScreenWidthVal = (float)GetScreenWidth();
+        glProgramUniform1f(prog, ScreenWidth, ScreenWidthVal);
+    }
+
+    if(ScreenHeight>=0){
+        float ScreenHeightVal = (float)GetScreenHeight();
+        glProgramUniform1f(prog, ScreenHeight, ScreenHeightVal);
+    }
+
     printf(BRACKNAME " Info: Program linked ok.\n");
     return prog;
 
@@ -419,9 +436,22 @@ v8Function UseProgram(V8ARGS){
 
     TS_CurrentShader = shader->name;
 
+    if((CurrentColorAttrib!=shader->colorAttrib)&&(CurrentColorAttrib!=shader->texcoordAttrib)&&(CurrentColorAttrib!=shader->vertexAttrib))
+        glDisableVertexAttribArray(CurrentColorAttrib);
+
+    if((CurrentVertexAttrib!=shader->colorAttrib)&&(CurrentVertexAttrib!=shader->texcoordAttrib)&&(CurrentVertexAttrib!=shader->vertexAttrib))
+        glDisableVertexAttribArray(CurrentVertexAttrib);
+
+    if((CurrentTexcoordAttrib!=shader->colorAttrib)&&(CurrentTexcoordAttrib!=shader->texcoordAttrib)&&(CurrentTexcoordAttrib!=shader->vertexAttrib))
+        glDisableVertexAttribArray(CurrentTexcoordAttrib);
+
     CurrentColorAttrib      = shader->colorAttrib;
     CurrentVertexAttrib     = shader->vertexAttrib;
     CurrentTexcoordAttrib   = shader->texcoordAttrib;
+
+    glEnableVertexAttribArray(CurrentColorAttrib);
+    glEnableVertexAttribArray(CurrentVertexAttrib);
+    glEnableVertexAttribArray(CurrentTexcoordAttrib);
 
     return v8::Undefined();
 
