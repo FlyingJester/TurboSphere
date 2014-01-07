@@ -2,6 +2,8 @@
 #define ENGINE_HEAD
 //extern v8::Persistent<v8::Context> context;
 
+#define V8FLAGS "--harmony_typed_arrays"
+
 #include <string>
 #include <string.h>
 #include <math.h>

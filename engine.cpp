@@ -1,9 +1,10 @@
 //#include "SDL_V8.h"
 #include "engine.h"
+
 #include "configmanager/openscript.h"
 #include "configmanager/opengame.h"
-#include <cstring>
-#include <cctype>
+#include "graphiccommon/screen.h"
+
 #include "functionload.h"
 #include "variableregister.h"
 #include "loadplugins.h"
@@ -13,6 +14,12 @@
 
 
 #include "t5.h"
+
+#include <cstring>
+#include <cctype>
+#include <utility>
+
+using std::pair;
 
 #ifdef __linux__
 #define ENGINE "[Engine]"
@@ -61,8 +68,8 @@ uint32_t (*TS_GetTime)(void);
 //////////////////////////////////////////////////////////////
 //Always update!
 //////////////////////////////////////////////////////////////
-#define VERSION "0.3.5e"
-
+#define VERSION "0.3.6"
+/*
 inline void TS_OverrideConfig(TS_Config *conf, TS_ConfigOverride *overrideConf){
     TS_Config *oconf = overrideConf->config;
     if(overrideConf->gamefunc)
@@ -80,7 +87,7 @@ inline void TS_OverrideConfig(TS_Config *conf, TS_ConfigOverride *overrideConf){
 	if(overrideConf->screenwidth)
         conf->screenwidth = oconf->screenwidth;
 
-	if(overrideConf->mainscript)
+	if(overrideConf->screenheight)
         conf->screenheight = oconf->screenheight;
 
 	if(overrideConf->fullscreen)
@@ -116,8 +123,141 @@ inline void TS_OverrideConfig(TS_Config *conf, TS_ConfigOverride *overrideConf){
 	if(overrideConf->plugins)
         conf->plugins = oconf->plugins;
 
+}*/
+
+/*
+int SetScreenWidth(unsigned int w){
+	if(w>MIN_SCREENWIDTH){
+		SCREENWIDTH = w;
+		return 0;
+	}
+	return 1;
 }
 
+int SetScreenHeight(unsigned int h){
+	if(h>MIN_SCREENHEIGHT){
+		SCREENHEIGHT = h;
+		return 0;
+	}
+	return 1;
+}
+*/
+
+
+inline void TS_OverrideConfig(TS_Config *conf, TS_ConfigOverride *overrideConf){
+    TS_Config *oconf = overrideConf->config;
+    if(overrideConf->gamefunc){
+        conf->gamefunc = oconf->gamefunc;
+    }
+	if(overrideConf->sgmname)
+        conf->sgmname = oconf->sgmname;
+
+	if(overrideConf->gamename)
+        conf->gamename = oconf->gamename;
+
+	if(overrideConf->mainscript)
+        conf->mainscript = oconf->mainscript;
+
+	if(overrideConf->screenwidth){
+        conf->screenwidth = oconf->screenwidth;
+        SetScreenWidth(oconf->screenwidth);
+	}
+	if(overrideConf->screenheight){
+        conf->screenheight = oconf->screenheight;
+        SetScreenHeight(oconf->screenheight);
+	}
+	if(overrideConf->fullscreen)
+        conf->fullscreen = oconf->fullscreen;
+
+	if(overrideConf->compositing)
+        conf->compositing = oconf->compositing;
+
+	if(overrideConf->scale)
+        conf->scale = oconf->scale;
+
+	if(overrideConf->systemfont)
+        conf->systemfont = oconf->systemfont;
+
+	if(overrideConf->systemttffont)
+        conf->systemttffont = oconf->systemttffont;
+
+	if(overrideConf->systemwindowstyle)
+        conf->systemwindowstyle = oconf->systemwindowstyle;
+
+	if(overrideConf->systemarrow)
+        conf->systemarrow = oconf->systemarrow;
+
+	if(overrideConf->systemuparrow)
+        conf->systemuparrow = oconf->systemuparrow;
+
+	if(overrideConf->systemsoundfont)
+        conf->systemsoundfont = oconf->systemsoundfont;
+
+	if(overrideConf->fixedplugins)
+        conf->fixedplugins = oconf->fixedplugins;
+
+	if(overrideConf->plugins)
+        conf->plugins = oconf->plugins;
+
+}
+
+enum TS_ConfigType {TS_Int, TS_Float, TS_String, TS_Bool};
+typedef pair<const char *, TS_ConfigType> TS_ConfVal;
+
+#define CHECK_PARAM(n, p) (strncmp(n, p, strnlen(n, 0xFF))==0)
+
+#define CUT_OUT_BLANK(p) while((*p!=' ')&&(*p!='=')&&(p[1]!='\0')) p++; p++;
+#define SET_PARAM_INT(n, p, c) if(CHECK_PARAM(#n, p)) {CUT_OUT_BLANK(p); c.config->n = atoi(p); c.n=true; printf("[Engine] Info: Overrode " #n " in config with %s.\n", p); return;}
+#define SET_PARAM_BOOL(n, p, c) if(CHECK_PARAM(#n, p)) {CUT_OUT_BLANK(p); c.config->n = (atoi(p)||false); c.n=true; printf("[Engine] Info: Overrode " #n " in config with %i.\n", atoi(p)); return;}
+#define SET_PARAM_STR(n, p, c) if(CHECK_PARAM(#n, p)) {CUT_OUT_BLANK(p); c.config->n = STRDUP(p); c.n=true; printf("[Engine] Info: Overrode " #n " in config with %i.\n", (p?1:0)); return;}
+
+
+void TS_SetConfigOverrideFromParameter(const char *param, TS_ConfigOverride &conf){
+    static const TS_ConfVal flags[] = {
+        TS_ConfVal("gamename", TS_String),
+        TS_ConfVal("sgmname",TS_String),
+        TS_ConfVal("gamefunc",TS_String),
+        TS_ConfVal("mainscript",TS_String),
+        TS_ConfVal("screenwidth", TS_Int), TS_ConfVal("screenheight", TS_Int),
+        TS_ConfVal("fullscreen", TS_Bool),
+        TS_ConfVal("compositing", TS_Bool),
+        TS_ConfVal("scale",TS_Int),
+        TS_ConfVal("systemfont",TS_String), TS_ConfVal("systemttffont",TS_String),
+        TS_ConfVal("systemwindowstyle",TS_String),
+        TS_ConfVal("systemarrow",TS_String),
+        TS_ConfVal("systemuparrow",TS_String),
+        TS_ConfVal("systemdownarrow",TS_String),
+        TS_ConfVal("systemsoundfont",TS_String),
+        TS_ConfVal("fixedplugins",TS_Int)
+    };
+
+    printf("[Engine] Info: Checking arg %s.\n", param);
+
+    const char *paramStart = param;
+    while(*paramStart=='-')
+        paramStart++;
+
+    printf("[Engine] Info: Checking arg %s.\n", paramStart);
+
+
+
+    SET_PARAM_STR(gamename, paramStart, conf);
+    SET_PARAM_STR(sgmname, paramStart, conf);
+    SET_PARAM_STR(gamefunc, paramStart, conf);
+    SET_PARAM_STR(mainscript, paramStart, conf);
+    SET_PARAM_INT(screenwidth, paramStart, conf);
+    SET_PARAM_INT(screenheight, paramStart, conf);
+    SET_PARAM_BOOL(compositing, paramStart, conf);
+    SET_PARAM_BOOL(fullscreen, paramStart, conf);
+    SET_PARAM_INT(scale, paramStart, conf);
+    SET_PARAM_STR(systemfont, paramStart, conf);
+    SET_PARAM_STR(systemttffont, paramStart, conf);
+    SET_PARAM_STR(systemarrow, paramStart, conf);
+    SET_PARAM_STR(systemuparrow, paramStart, conf);
+    SET_PARAM_STR(systemdownarrow, paramStart, conf);
+    SET_PARAM_STR(systemsoundfont, paramStart, conf);
+
+}
 
 TS_ConfigOverride::TS_ConfigOverride(){
 	gamefunc = false;
@@ -144,6 +284,8 @@ TS_ConfigOverride::TS_ConfigOverride(){
     config = NULL;
 }
 
+TS_ConfigOverride::~TS_ConfigOverride(){
+}
 void TS_SDLMessageBox(const char *title, const char *content){
     SDL_ShowSimpleMessageBox(0x00000040, title, content, NULL);
 }
@@ -400,7 +542,9 @@ void runGame(const char * path, TS_ConfigOverride *overrideConf){
 
     v8::V8::SetFlagsFromString(V8FLAGS, strlen(V8FLAGS));
 
-    v8::V8::SetArrayBufferAllocator(new TS_ArrayBufferAllocator());
+    auto allocator = new TS_ArrayBufferAllocator();
+
+    v8::V8::SetArrayBufferAllocator(allocator);
 
     char * dir;
 
@@ -418,6 +562,11 @@ void runGame(const char * path, TS_ConfigOverride *overrideConf){
             TS_dirs->root = STRDUP(dir);
             setDirectories(TS_dirs->root);
             setConfig(TS_dirs->root);
+
+            if((overrideConf!=NULL)&&(overrideConf->config!=NULL)){
+                TS_OverrideConfig(TS_conf, overrideConf);
+            }
+
             printf(ENGINE " Info: %s is the sgmname. We are running in / mode.\n", TS_conf->sgmname);
             gameSGMfile = STRDUP(string(dir).append(TS_conf->sgmname).c_str());
         }
@@ -425,6 +574,11 @@ void runGame(const char * path, TS_ConfigOverride *overrideConf){
             TS_dirs->root = STRDUP(string(dir).append("/").c_str());
             setDirectories(TS_dirs->root);
             setConfig(TS_dirs->root);
+
+            if((overrideConf!=NULL)&&(overrideConf->config!=NULL)){
+                TS_OverrideConfig(TS_conf, overrideConf);
+            }
+
             printf(ENGINE " Info: %s is the sgmname. We are running in NO / mode.\n", TS_conf->sgmname);
             gameSGMfile = STRDUP((string(TS_dirs->root)).append(TS_conf->sgmname).c_str());
         }
@@ -448,6 +602,9 @@ void runGame(const char * path, TS_ConfigOverride *overrideConf){
         TS_dirs->root = STRDUP(string(dir).append("/").c_str());
         setDirectories(TS_dirs->root);
         setConfig(TS_dirs->root);
+        if((overrideConf!=NULL)&&(overrideConf->config!=NULL)){
+            TS_OverrideConfig(TS_conf, overrideConf);
+        }
     }
     else{
         if(stderr==stdin)
@@ -459,9 +616,6 @@ void runGame(const char * path, TS_ConfigOverride *overrideConf){
         exit(0);
     }
 
-    if((overrideConf!=NULL)&&(overrideConf->config!=NULL)){
-        TS_OverrideConfig(TS_conf, overrideConf);
-    }
 
     LoadMessageBoxFunctions();
 
@@ -469,9 +623,20 @@ void runGame(const char * path, TS_ConfigOverride *overrideConf){
 
     opengame(gameSGMfile);
     free((void *)gameSGMfile);
+    if((TS_conf->mainscript==NULL)||TS_conf->mainscript[0]=='\0'){
+        printf("\n");
+        exit(10);
 
+    }
+
+    if((overrideConf!=NULL)&&(overrideConf->config!=NULL)){
+        TS_OverrideConfig(TS_conf, overrideConf);
+    }
     setDirectories(TS_dirs->root);
 
+    if((overrideConf!=NULL)&&(overrideConf->config!=NULL)){
+        TS_OverrideConfig(TS_conf, overrideConf);
+    }
     loadAllPlugins();
 
     printf(ENGINE " Info: All Plugins initialized.\n");
@@ -555,6 +720,7 @@ void runGame(const char * path, TS_ConfigOverride *overrideConf){
 	CloseMessageBoxFunctions();
 	TS_FreeLoadedScripts();
 	free((void *)dir);
+	delete allocator;
 }
 
 #ifdef _WIN32
@@ -562,12 +728,34 @@ int wmain
 #else
 int main
 #endif
-  (int argc, char* argv[]) {
-    if(argc>1&&(strnlen(argv[1], 2)>0)&&((T5_IsDir(argv[1]))||(T5_IsFile(argv[1])))){
+(int argc, char* argv[]){
+
+    int gamearg = 1;
+    TS_ConfigOverride conf;
+    conf.config = (TS_Config*)malloc(sizeof(TS_Config));
+    printf("\n\t%i\n", argc);
+    if(argc<3)
+        gamearg = 1;
+    else{
+        for(int i = 2; i<argc; i++){
+            if((argv[i][0]=='-')&&(argv[i][1]=='-')){
+                TS_SetConfigOverrideFromParameter(argv[i], conf);
+            }
+        }
+    }
+
+    if(argc>1&&(strnlen(argv[gamearg], 2)>0)&&((T5_IsDir(argv[gamearg]))||(T5_IsFile(argv[gamearg])))){
         printf(ENGINE " Info: We are running in given-path mode.\n");
-        runGame(argv[1]);
+        runGame(argv[1], &conf);
     }
     else{
-        runGame("startup/");
+        TS_ConfigOverride conf2;
+        for(int i = 1; i<argc; i++){
+            if((argv[i][0]=='-')&&(argv[i][1]=='-')){
+                TS_SetConfigOverrideFromParameter(argv[i], conf2);
+            }
+        }
+        runGame("startup/", &conf2);
     }
+    free(conf.config);
 }
