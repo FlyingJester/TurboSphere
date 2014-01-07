@@ -5,7 +5,7 @@ defaultenv	= Environment(ENV = os.environ)
 
 linuxenv        = defaultenv.Clone(tools = ['default', 'textfile'], CCFLAGS = " -Werror=return-type -Wno-unused-local-typedefs -Wall -Wno-pointer-arith -mtune=native -msse2 -flto -O2 -funroll-loops -std=c++11 -Wcast-align -pg -g ", LINKFLAGS = "-I./")
 
-windowsenv 	= defaultenv.Clone(CCFLAGS = "/O2 /EHsc")
+windowsenv 	= defaultenv.Clone(CCFLAGS = "/O2 /EHsc /Zi")
 
 win32env	= windowsenv.Clone()
 win64env	= windowsenv.Clone()
@@ -134,6 +134,7 @@ turbosphere_files = Split("""
 	./loadplugins.cpp
 	./functionload.cpp
 	./variableregister.cpp
+	./typed_array.cpp
 	""")
 
 useAmdLibm = GetOption('useamdlibm')
@@ -252,7 +253,7 @@ graphiccommon = currentenv.SharedLibrary('graphiccommon', graphiccommon_files, C
 
 configmanager = currentenv.SharedLibrary('configmanager', configmanager_files, CPPPATH = configmanager_path, LIBS = ['t5', 'graphiccommon', 'v8'], LIBPATH = lib_path)
 
-spklib = tsenv.StaticLibrary(source = ['package_spk.cpp'], LIBS=[t5, 'z'])
+spklib = tsenv.StaticLibrary(source = ['package_spk.cpp'], LIBS=['t5', 'z'])
 
 if sys.platform == 'darwin':
 	programenv = tsenv.Clone()
@@ -264,7 +265,7 @@ if sys.platform == 'darwin':
 
 elif sys.platform =='win32' or sys.platform == 'win64':
 	turbosphere = tsenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
-		LIBS=['v8', 't5', 'graphicalg', 'graphiccommon', 'configmanager', 'z', spklib],
+		LIBS=['v8', 't5', 'graphicalg', 'graphiccommon', 'configmanager', 'z', spklib, 'Winmm'],
 		LIBPATH = lib_path)
 	Depends(turbosphere, t5)
 	networkTS_files	 = ['plugins/networkTS/win_network.cpp']
@@ -276,7 +277,8 @@ else:
 	Depends(turbosphere, t5)
 	networkTS_files	 = ['plugins/networkTS/unix_network.cpp']
 
-spkeditor = tsenv.Program(target = './bin/Release/spkeditor', source = ['spkeditor/SPK_Editor.cpp'], LIBS=[spklib, t5, 'z'])
+spkeditor = tsenv.Program(target = './bin/Release/spkeditor', source = ['spkeditor/SPK_Editor.cpp'], LIBS=[spklib, 't5', 'z'])
+
 if has_fltk == 1:
     spkeditor_fltk = tsenv.Program(target = './bin/Release/spkeditor-fltk', source = ['spkeditor/SDK_Editor_fltk.cpp'], LIBS=[spklib, 'fltk', t5, 'z'])
 
