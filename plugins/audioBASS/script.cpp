@@ -1,28 +1,36 @@
 #include "script.h"
 
-DECLARE_OBJECT_TEMPLATES(Sound);
-DECLARE_OBJECT_TEMPLATES(SoundEffect);
+//DECLARE_OBJECT_TEMPLATES(Sound);
+//DECLARE_OBJECT_TEMPLATES(SoundEffect);
 
-void TS_SoundFinalizer(V8FINALIZERARGS) {
-    TS_Sound* sound = (TS_Sound*)parameter;
-    delete sound;
-    object->Dispose();
+void TS_SoundFinalizer(const v8::WeakCallbackData<v8::Object, TS_Sound> &args) {
+    delete args.GetParameter();
+    args.GetValue().Clear();
 }
 
-void TS_SoundEffectFinalizer(V8FINALIZERARGS) {
-    TS_Sound* sound = (TS_Sound*)parameter;
-    delete sound;
-    object->Dispose();
+void InitSound(void){
+    SoundObject.Finalize = TS_SoundFinalizer;
 }
 
-v8Function LoadSound(V8ARGS){
+void InitSoundEffect(void){
+    SoundEffectObject.Finalize = TS_SoundFinalizer;
+}
+
+
+Turbo::JSFunction LoadSound(Turbo::JSArguments args){
+
+    const int sig[] = {Turbo::String, 0};
+
+    if(!Turbo::CheckArg::CheckSig(args, 1, sig))
+        return;
+/*
     if(args.Length()<1){
         THROWERROR(" Error: Called with no arguments.");
     }
     CHECK_ARG_STR(0);
 
     BEGIN_OBJECT_WRAP_CODE
-
+*/
     TS_Sound *sound = NULL;
 	TS_Directories *TS_dirs = GetDirs();
         v8::String::Utf8Value str(args[0]);
@@ -31,7 +39,7 @@ v8Function LoadSound(V8ARGS){
         //THROWERROR(string(" Error: Could not load Sound ").append(soundname).c_str());
     bool stream = true;
     if(args.Length()==2){
-        CHECK_ARG_BOOL(1);
+        Turbo::CheckArg::Bool(args, 1, __func__);
         stream = args[1]->BooleanValue();
     }
 
@@ -43,31 +51,36 @@ v8Function LoadSound(V8ARGS){
         printf("Opened a file as a sample.\n");
         sound = new TS_AudioSampleSingle(string(TS_dirs->sound).append(soundname).c_str());
     }
-    if(!sound)
-        THROWERROR(string("Error: Could not load Sound ").append(soundname).c_str());
-
-    END_OBJECT_WRAP_CODE(Sound, sound);
-    return v8::Undefined();
+    if(!sound){
+        Turbo::SetError(args, string("Error: Could not load Sound ").append(soundname).c_str());
+        return;
+    }
+    Turbo::WrapObject(SoundObject,sound);
+    return;
 }
 
-v8Function LoadSoundEffect(V8ARGS){
+Turbo::JSFunction LoadSoundEffect(Turbo::JSArguments args){
+    /*
     if(args.Length()<1){
         THROWERROR("LoadSoundEffect Error: Called with no arguments.");
     }
     CHECK_ARG_STR(0);
+    */
+    int sig[] = {Turbo::String, Turbo::Int, 0};
+    if(!Turbo::CheckArg::CheckSig(args, 1, sig))
+        return;
 
     TS_AudioSimul sim = TS_MULTIPLE;
 
-    if(args.Length()>1){
-        CHECK_ARG_INT(1);
+    if(Turbo::CheckArg::CheckSig(args, 2, sig, false)){
+
         int s = args[1]->Int32Value();
         if((s!=TS_SINGLE)&&(s!=TS_MULTIPLE)){
-            THROWERROR(" Error: Argument 1 must be SE_SINGLE or SE_MULTIPLE.");
+            Turbo::SetError(args, string("[" PLUGINNAME "] ").append(__func__).append(" Error: Argument 1 must be SE_SINGLE or SE_MULTIPLE.").c_str(), v8::Exception::RangeError);
+            return;
         }
         sim = (TS_AudioSimul)s;
     }
-
-    BEGIN_OBJECT_WRAP_CODE
 
     TS_Sound *sound = NULL;
 	TS_Directories *TS_dirs = GetDirs();
@@ -80,25 +93,37 @@ v8Function LoadSoundEffect(V8ARGS){
     else{
         sound = new TS_AudioSampleMultiple(string(TS_dirs->sound).append(soundname).c_str());
     }
-    if(!sound)
-        THROWERROR(string("Error: Could not load SoundEffect ").append(soundname).c_str());
-
-
-    END_OBJECT_WRAP_CODE(SoundEffect, sound);
-    return v8::Undefined();
-}
-
-v8Function SoundGetLength(V8ARGS){
-    return v8::Integer::New(GET_SELF(TS_Sound*)->GetLength());
-}
-
-v8Function SoundSetVolume(V8ARGS){
-
-    if(args.Length()<1){
-        THROWERROR(" Error: Called with no arguments.");
+    if(!sound){
+        Turbo::SetError(args, string("Error: Could not load SoundEffect ").append(soundname).c_str());
+        return;
     }
 
-    CHECK_ARG_INT(0);
+
+    Turbo::WrapObject(SoundEffectObject, sound);
+    return;
+}
+
+Turbo::JSFunction SoundGetLength(Turbo::JSArguments args){
+    args.GetReturnValue().Set(
+        v8::Integer::New(
+            v8::Isolate::GetCurrent(),
+            Turbo::GetMemberSelf<TS_Sound>(args)->GetLength()
+        )
+    );
+}
+
+Turbo::JSFunction SoundSetVolume(Turbo::JSArguments args){
+
+//    if(args.Length()<1){
+//        THROWERROR(" Error: Called with no arguments.");
+//    }
+
+//    CHECK_ARG_INT(0);
+
+    int sig[] = {Turbo::Int, 0};
+
+    if(!Turbo::CheckArg::CheckSig(args, 1, sig))
+        return;
 
     int leveli = args[0]->IntegerValue();
 
@@ -109,44 +134,42 @@ v8Function SoundSetVolume(V8ARGS){
 
     unsigned char level = leveli;
 
-    GET_SELF(TS_Sound*)->SetVolume(level);
-    return v8::Undefined();
+    Turbo::GetMemberSelf<TS_Sound>(args)->SetVolume(level);
 }
 
-v8Function PlaySound(V8ARGS){
+Turbo::JSFunction PlaySound(Turbo::JSArguments args){
     bool loop = false;
-    if(args.Length()>0){
-        CHECK_ARG_BOOL(0);
+
+    int sig[] = {Turbo::Bool, 0};
+
+    if(Turbo::CheckArg::CheckSig(args, 1, sig, false)){
         loop = args[0]->BooleanValue();
     }
 
-    GET_SELF(TS_Sound*)->Play(loop);
-    return v8::Undefined();
+   Turbo::GetMemberSelf<TS_Sound>(args)->Play(loop);
 }
 
-v8Function SoundIsSeekable(V8ARGS){
-    return v8::False();
+Turbo::JSFunction SoundIsSeekable(Turbo::JSArguments args){
+
 }
 
-v8Function SoundSeek(V8ARGS){
-    return v8::Undefined();
+Turbo::JSFunction SoundSeek(Turbo::JSArguments args){
+
 }
 
-v8Function SoundGetPosition(V8ARGS){
-    return v8::Integer::New(GET_SELF(TS_Sound*)->GetPosition());
+Turbo::JSFunction SoundGetPosition(Turbo::JSArguments args){
+    args.GetReturnValue().Set( v8::Integer::New(v8::Isolate::GetCurrent(), Turbo::GetMemberSelf<TS_Sound>(args)->GetPosition()));
 }
 
-v8Function PauseSound(V8ARGS){
-    GET_SELF(TS_Sound*)->Pause();
-    return v8::Undefined();
+Turbo::JSFunction PauseSound(Turbo::JSArguments args){
+    Turbo::GetMemberSelf<TS_Sound>(args)->Pause();
 }
 
-v8Function StopSound(V8ARGS){
-    GET_SELF(TS_Sound*)->Stop();
-    return v8::Undefined();
+Turbo::JSFunction StopSound(Turbo::JSArguments args){
+    Turbo::GetMemberSelf<TS_Sound>(args)->Stop();
 }
 
-v8Function IsSoundPlaying(V8ARGS){
-    return v8::Boolean::New(GET_SELF(TS_Sound*)->IsPlaying());
+Turbo::JSFunction IsSoundPlaying(Turbo::JSArguments args){
+    args.GetReturnValue().Set( v8::Boolean::New(v8::Isolate::GetCurrent(), Turbo::GetMemberSelf<TS_Sound>(args)->IsPlaying()));
 }
 

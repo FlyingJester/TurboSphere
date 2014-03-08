@@ -11,7 +11,7 @@ void ColorInit(void);
 void ColorClose(void);
 
 v8Function CreateColor(V8ARGS);
-void TS_ColorFinalizer(V8FINALIZERARGS);
+void TS_ColorFinalizer(V8FINALIZERARGS(TS_Color));
 
 v8Function GetRed(V8GETTERARGS);
 void       SetRed(V8SETTERARGS);

@@ -1,13 +1,24 @@
+#define PLUGINNAME "GetKeyString"
 #include "../common/plugin.h"
 #include "getkeystring.h"
 #include <string>
 
-v8::Handle<v8::Value> GetKeyString(const v8::Arguments& args);
+Turbo::JSFunction GetKeyString(Turbo::JSArguments args);
 
-void * GetKeyStringPointer = (void *)((v8::Handle<v8::Value> (*)(const v8::Arguments& args))(GetKeyString));
+Turbo::JSCallback GetKeyStringPointer = (Turbo::JSCallback)((Turbo::JSFunction (*)(Turbo::JSArguments))(GetKeyString));
+
+static Turbo::JSFunctionArray funcs = NULL;
+static Turbo::JSNameArray names = NULL;
+
 
 const char * Init(void){
-    return (char*)"GetKeyString";
+    funcs = (Turbo::JSFunctionArray)calloc(1, sizeof(Turbo::JSCallback));
+    funcs[0]=GetKeyStringPointer;
+
+    names = (Turbo::JSNameArray)calloc(1, sizeof(Turbo::JSFunctionName));
+    names[0]=(Turbo::JSFunctionName)"GetKeyString";
+
+    return (const char*)"GetKeyString";
 }
 
 
@@ -16,18 +27,15 @@ int GetNumFunctions(void){
 }
 
 void Close(){
-
+    free(names);
+    free(funcs);
 }
 
-void ** GetFunctions(void){
-    void ** funcs = (void**)calloc(1, sizeof(void*));
-    funcs[0]=GetKeyStringPointer;
+Turbo::JSFunctionArray GetFunctions(void){
     return funcs;
 }
 
-const char ** GetFunctionNames(void){
-    const char ** names = (const char**)calloc(1, sizeof(char*));
-    names[0]=(const char *)"GetKeyString";
+Turbo::JSNameArray GetFunctionNames(void){
     return names;
 }
 
@@ -35,24 +43,24 @@ int GetNumVariables(void){
     return 0;
 }
 
-void ** GetVariables(void){
+Turbo::JSValueArray GetVariables(void){
     return NULL;
 }
 
-const char ** GetVariableNames(void){
+Turbo::JSNameArray  GetVariableNames(void){
     return NULL;
 }
 
-v8::Handle<v8::Value> GetKeyString(const v8::Arguments& args){
-	if(args.Length()<1){
-        return v8::ThrowException(v8::String::New("GetKeyString Error: Called with no arguments"));
-	}
-	CHECK_ARG_INT(0, "GetKeyString Error: Argument 0 is not a number.");
+Turbo::JSFunction GetKeyString(Turbo::JSArguments args){
+
+    int sig[] = {Turbo::Int, Turbo::Bool, 0};
+
+    if(!Turbo::CheckArg::CheckSig(args, 1, sig))
+        return;
 
     bool shift = false;
 
-	if(args.Length()>1){
-        CHECK_ARG_BOOL(1, "GetKeyString Error: Argument 1 is not a boolean.");
+    if(!Turbo::CheckArg::CheckSig(args, 2, sig, false)){
         if(args[1]->v8::Value::BooleanValue()){
             shift = true;
         }
@@ -60,7 +68,8 @@ v8::Handle<v8::Value> GetKeyString(const v8::Arguments& args){
 
     unsigned int keynum = args[0]->v8::Value::Int32Value();
     if (keynum>255){
-        return v8::String::New("");
+        args.GetReturnValue().Set( v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ""));
+        return;
     }
 
     if(shift){
@@ -68,5 +77,5 @@ v8::Handle<v8::Value> GetKeyString(const v8::Arguments& args){
     }
 
     std::string key(1, keynum);
-    return v8::String::New(key.c_str());
+    args.GetReturnValue().Set( v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), key.c_str()));
 }

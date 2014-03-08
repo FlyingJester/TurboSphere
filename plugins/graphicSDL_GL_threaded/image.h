@@ -79,7 +79,7 @@ v8Function ImageGrab(V8ARGS);
 
 v8Function ImageSave(V8ARGS);
 
-void TS_ImageFinalizer(V8FINALIZERARGS);
+void TS_ImageFinalizer(V8FINALIZERARGS(TS_Image));
 
 v8Function ImageGetWidth(V8GETTERARGS);
 void ImageSetWidth(V8SETTERARGS);

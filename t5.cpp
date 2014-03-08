@@ -491,7 +491,7 @@ T5_file::T5_file(const char*file){
                 #endif
         }
         else{
-        values.push_back(new INIvalue(STRDUP(key.c_str()), STRDUP(val.c_str()), STRDUP(sec.c_str())));
+            values.push_back(new INIvalue(STRDUP(key.c_str()), STRDUP(val.c_str()), STRDUP(sec.c_str())));
         }
     }
     stream.clear();
@@ -505,6 +505,14 @@ T5_file::~T5_file(){
     stream.clear();
     stream.flush();
     stream.close();
+
+    for(size_t i = 0; i<values.size(); i++){
+        delete values[i];
+    }
+    values.resize(0);
+
+
+
 //    while(!values.empty()) delete values.back(), values.pop_back();
 
 //    for(int i=0; i<values.size(); i++){

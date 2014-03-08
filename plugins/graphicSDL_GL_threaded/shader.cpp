@@ -489,40 +489,40 @@ v8Function GetSystemCompositeProgram(V8ARGS){
 
 }
 
-void TS_ScriptShaderFinalizer(V8FINALIZERARGS){
-    TS_ScriptShader* ss = (TS_ScriptShader*)parameter;
-    if(!ss->used_in_prog)
-        glDeleteShader(ss->name);
+void TS_ScriptShaderFinalizer(V8FINALIZERARGS(TS_ScriptShader)){
+    //TS_ScriptShader* ss = (TS_ScriptShader*)parameter;
+    if(!parameter->used_in_prog)
+        glDeleteShader(parameter->name);
 
-    free((void *)(ss->source));
+    free((void *)(parameter->source));
 
-    delete ss;
+    delete parameter;
     object->Dispose();
 }
 
-void TS_ScriptShaderProgramFinalizer(V8FINALIZERARGS){
-    TS_ShaderS* ss = (TS_ShaderS*)parameter;
+void TS_ScriptShaderProgramFinalizer(V8FINALIZERARGS(TS_ShaderS)){
+    //TS_ShaderS* ss = (TS_ShaderS*)parameter;
 
-    if(ss->vertex){
-        ss->vertex->used_in_prog--;
+    if(parameter->vertex){
+        parameter->vertex->used_in_prog--;
 
-        if(!ss->vertex->used_in_prog){
-            glDeleteShader(ss->vertex->name);
-            free((void *)(ss->vertex->source));
+        if(!parameter->vertex->used_in_prog){
+            glDeleteShader(parameter->vertex->name);
+            free((void *)(parameter->vertex->source));
         }
     }
 
-    if(ss->fragment){
-        ss->fragment->used_in_prog--;
+    if(parameter->fragment){
+        parameter->fragment->used_in_prog--;
 
-        if(!ss->fragment->used_in_prog){
-            glDeleteShader(ss->fragment->name);
-            free((void *)(ss->fragment->source));
+        if(!parameter->fragment->used_in_prog){
+            glDeleteShader(parameter->fragment->name);
+            free((void *)(parameter->fragment->source));
         }
     }
 
-    glDeleteProgram(ss->name);
+    glDeleteProgram(parameter->name);
 
-    delete ss;
+    delete parameter;
     object->Dispose();
 }

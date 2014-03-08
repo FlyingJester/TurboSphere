@@ -1,12 +1,389 @@
-#ifndef COMMON_PLUGIN_HEAD
-#define COMMON_PLUGIN_HEAD
+///////////////////////////////////////////////////////////////////////////////
+/*
 
-#include "../../configmanager/opengame.h"
-#define V8_USE_UNSAFE_HANDLES
+TurboSphere Plugin SDK
+
+Copyright (c) 2012-2014 Martin McDonough.
+
+All rights reserved.
+
+
+Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+
+   1. Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+
+   2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+   3. The name of the author may not be used to endorse or promote products
+    derived from this software without specific prior written permission.
+
+Permission is granted to anyone to use this software for any purpose, including
+ commercial applications, and to alter it and redistribute it freely, subject
+ to the following restrictions:
+
+   1. The origin of this software must not be misrepresented; you must not
+    claim that you wrote the original software. If you use this software in a
+    product, an acknowledgment in the product documentation would be
+    appreciated but is not required.
+
+   2. Altered source versions must be plainly marked as such, and must not be
+    misrepresented as being the original software. This notice may not be
+    removed or altered from any source distribution.
+
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
+    WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
+EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+  OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+    INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+ IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+                                  OF SUCH DAMAGE.
+
+/////
+// What is in this file:
+
+ - Type definitions for code that interacts with JS
+ - Data validation routines for C++ representations of JS data
+ - Forward declatarations of the required plugin functions. This is disabled
+     when PLUGINNAME is not defined, which signifies that this file is being
+     used by the TurboSphere engine binary itself.
+
+*/
+///////////////////////////////////////////////////////////////////////////////
+
+#ifdef COMMON_PLUGIN_HEAD
+#error You have included both the new and old plugin headers. This is not a good idea.
+#endif
+#ifndef COMMON_PLUGIN_NEW_HEAD
+#define COMMON_PLUGIN_NEW_HEAD
+
+#ifndef PLUGINNAME //In the engine
+    #ifdef _MSC_VER
+    #pragma warning No Plugin Name Specified. This is fine for the engine itself, bad for plugins.
+    #else
+    #warning No Plugin Name Specified. This is fine for the engine itself, bad for plugins.
+    #endif
+    #define PLUGINNAME "Engine"
+    #define NOPLUGNAME 1
+#endif
 #include "../../v8.h"
-#undef V8_USE_UNSAFE_HANDLES
 
-#define MIN_V8_ALIGN 2
+#include "../../common/stacktrace.h"
+
+#include <string>
+#include <cstdarg>
+#include <cassert>
+
+///////////////////////////////////////////////////////////////////////////////
+// New and shiny stuff
+
+namespace Turbo{
+
+    /////
+    // Basic TypeDefs
+    typedef const v8::FunctionCallbackInfo<v8::Value> & JSArguments;
+    typedef void JSFunction;
+    typedef JSFunction(*JSCallback)(JSArguments);
+    typedef JSCallback*  JSFunctionArray;
+    typedef const char*  JSFunctionName;
+    typedef const char*  JSVariableName;
+    typedef const char** JSNameArray;
+    typedef const char*  InitFunction;
+
+    typedef void * CallbackPointer;
+
+    /////
+    // Internal Typdefs
+
+    typedef v8::Handle<v8::String> JSString;
+    typedef v8::Local<v8::String> JSAccessorProperty;
+    typedef const v8::PropertyCallbackInfo<v8::Value>& JSAccessorInfo;
+    typedef v8::Local<v8::Value> JSValue;
+    typedef JSValue *JSValueArray;
+
+    inline void SetError(JSArguments args, const char *err, v8::Local<v8::Value> (&v8ExceptionType)(v8::Handle<v8::String>) = v8::Exception::Error){
+        v8::Isolate *iso = v8::Isolate::GetCurrent();
+        args.GetReturnValue().Set( v8ExceptionType(v8::String::NewFromUtf8(iso, err)));
+    }
+
+    enum JSType{Int = 1, Uint, String, Number, Bool, Array, Object};
+    class JSAccessor{
+    public:
+        JSString name;
+        void (*Getter)(JSAccessorProperty, JSAccessorInfo);
+        void (*Setter)(JSAccessorProperty, JSValue, JSAccessorInfo);
+    };
+
+    template<class T> class JSObj{
+        public:
+        v8::Handle<v8::FunctionTemplate> Template;
+        v8::Handle<v8::ObjectTemplate> InstanceTemplate;
+        v8::Handle<v8::ObjectTemplate> Prototype;
+        v8::Handle<v8::Function> Constructor;
+
+        JSObj<T>(){
+
+            Template         = v8::FunctionTemplate::New(v8::Isolate::GetCurrent());
+            InstanceTemplate = Template->InstanceTemplate();
+            Prototype        = Template->PrototypeTemplate();
+
+            //Constructor      = Template->GetFunction();
+            InstanceTemplate->SetInternalFieldCount(2);
+
+            accessors = NULL;
+        };
+
+        ~JSObj(){
+
+            Template.Clear();
+            InstanceTemplate.Clear();
+            Prototype.Clear();
+
+            if(!TypeName.IsEmpty())
+                TypeName.Clear();
+
+        };
+
+        template<class A>
+        bool IsA(v8::Handle<A> Tobj){
+            auto obj = v8::Handle<v8::Object>::Cast(Tobj);
+            return (ID&&(!((obj->InternalFieldCount()<2)||(ID!=obj->GetInternalField(1)->Uint32Value()))));
+
+        }
+
+        JSString TypeName;
+        void (*Finalize)(const v8::WeakCallbackData<v8::Object, T> &args);
+
+        JSAccessor *accessors; //Null-terminated.
+
+        unsigned long long ID;
+
+        void SetTypeName(const char *name){
+            if(!TypeName.IsEmpty())
+                TypeName.Clear();
+            TypeName = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name);
+        }
+
+        void AddToProto(const char *name , v8::FunctionCallback call){
+            auto iso = v8::Isolate::GetCurrent();
+            Prototype->Set(v8::String::NewFromUtf8(iso, name), v8::FunctionTemplate::New(iso, call));
+        }
+
+    };
+
+    /////
+    // Data Validation
+    namespace CheckArg{
+
+        inline bool String(JSArguments args, int i, const char *funcname){
+            if (!args[i]->IsString()) {
+                char argnumprnt[] = {(char)i, '\0'};
+                std::string err = std::string("[" PLUGINNAME "] ").append(funcname).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Boolean.");
+                args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), err.c_str())));
+                return false;
+            }
+        return true;
+        }
+
+        inline bool Int(JSArguments args, int i, const char *funcname){
+
+            if (!args[i]->IsInt32()) {
+                char argnumprnt[] = {(char)i, '\0'};
+                std::string err = std::string("[" PLUGINNAME "] ").append(funcname).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Boolean.");
+                args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), err.c_str())));
+                return false;
+            }
+        return true;
+        }
+
+        inline bool Bool(JSArguments args, int i, const char *funcname){
+
+
+            if (!args[i]->IsBoolean()) {
+                char argnumprnt[] = {(char)i, '\0'};
+
+                std::string err = std::string("[" PLUGINNAME "] ").append(funcname).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Boolean.");
+                args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), err.c_str())));
+                return false;
+            }
+        return true;
+        }
+
+        inline bool CheckSig(JSArguments args, int num, const int *argtypes/*<- Null terminated*/, bool error = true){
+
+            const char *prevF = NULL;
+            auto iso = v8::Isolate::GetCurrent();
+
+
+            if(args.Length()<num){
+                if(!error)
+                    return false;
+                TS_Stack_PreviousFunctionName(prevF);
+                const char *err = (std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Called with fewer than ")+std::to_string(num)+std::string(" arguments.")).c_str();
+                args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err)));
+                return false;
+            }
+            unsigned char argnumprnt [2] = {'0', '\0'};
+
+            std::string err;
+
+            for(int i = 0; i<num; i++){
+                *argnumprnt = (unsigned char)'0'+(unsigned char)i;
+                assert(argtypes[i]!=NULL);
+
+                switch(argtypes[i]){
+
+                    case (JSType::String):
+                        if (args[i]->IsString())
+                            break;
+                        TS_Stack_PreviousFunctionName(prevF);
+
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a String.");
+                        if(error)
+                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                    return false;
+
+                    case (JSType::Int):
+                        if (args[i]->IsInt32())
+                            break;
+                        TS_Stack_PreviousFunctionName(prevF);
+
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an Integer.");
+
+                        if(error)
+                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                    return false;
+
+                    case Uint:
+                        if (args[i]->IsUint32())
+                            break;
+                        TS_Stack_PreviousFunctionName(prevF);
+
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an Integer.");
+
+                        if(error)
+                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                    return false;
+
+                    case Number:
+                        if (args[i]->IsNumber())
+                            break;
+                        TS_Stack_PreviousFunctionName(prevF);
+
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Number.");
+
+                        if(error)
+                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                    return false;
+
+                    case JSType::Bool:
+                        if (args[i]->IsBoolean())
+                            break;
+                        TS_Stack_PreviousFunctionName(prevF);
+
+                       err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Boolean.");
+
+                        if(error)
+                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                    return false;
+
+                    case Array:
+                        if (args[i]->IsArray())
+                            break;
+                        TS_Stack_PreviousFunctionName(prevF);
+
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an Array.");
+
+                        if(error)
+                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                    return false;
+
+                    case Object:
+                        if (!args[i]->IsUndefined())
+                            break;
+                        TS_Stack_PreviousFunctionName(prevF);
+
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is undefined.");
+
+                        if(error)
+                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                    return false;
+                    default:
+                    return true;
+                }
+            }
+            return true;
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////
+    // Wrapping Objects
+
+    template<class T> inline v8::Persistent<v8::Object> &WrapObject(const JSObj<T> &JSo, T *obj){
+
+        //
+
+        auto iso = v8::Isolate::GetCurrent();
+
+        /////
+        // Create a JS object that holds an ID number and a pointer to the object
+
+        v8::Handle<v8::Object> returnobj;// = JSo.Constructor->NewInstance();
+        returnobj->SetAlignedPointerInInternalField(0, obj);
+        returnobj->SetInternalField(1, v8::Integer::NewFromUnsigned(iso, JSo.ID));
+        returnobj->GetConstructorName()=JSo.TypeName;
+
+        /////
+        // Set the weak reference callback
+
+        v8::Persistent<v8::Object> preturnobj(iso, returnobj);
+        preturnobj.SetWeak(obj, JSo.Finalize);
+
+        //
+
+        //v8::Handle<v8::Object> handle;//(preturnobj);
+        //handle->
+        return preturnobj;
+    }
+
+    /////
+    // Unwrapping objects
+
+    template<class T>
+    T *GetMemberSelf(JSArguments args) {
+        return static_cast<T*>(args.Holder()->GetAlignedPointerFromInternalField(0));
+    }
+
+    template<class T>
+    T *GetAccessorSelf(JSAccessorInfo info) {
+        return static_cast<T*>(info.Holder()->GetAlignedPointerFromInternalField(0));
+    }
+
+    template<class T, class A>
+    T* GetSelf(const A &container){
+        return static_cast<T*>(container.Holder()->GetAlignedPointerFromInternalField(0));
+    }
+
+    template<class A>
+    void *GetSelf(const A &container){
+        return container.Holder()->GetAlignedPointerFromInternalField(0);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Legacy and Old-fashioned stuff
+
+/////
+// Memory alignment
+
+#define MIN_MEM_ALIGN 2
 
 #ifdef _MSC_VER
 
@@ -18,309 +395,12 @@
     #define MEMALIGN(X) __attribute__((aligned(X)))
 #endif
 
+#define MINMEMALIGN MEMALIGN(MIN_MEM_ALIGN)
 
-#ifdef _WIN32
 
-    //TODO: Fix these includes for SDL2.
-//#error Fix these includes for SDL2!
-    #include "../../SDL2/SDL.h"
-    #include "../../SDL2/SDL_ttf.h"
-    #include "../../SDL2/SDL_image.h"
-    #include "../../SDL2/SDL_thread.h"
 
-#else
-    #include "../../SDL2/SDL.h"
-    #include "../../SDL2/SDL_ttf.h"
-    #include "../../SDL2/SDL_image.h"
-    #include "../../SDL2/SDL_thread.h"
+#ifdef NOPLUGNAME
+    #undef PLUGINNAME
 #endif
-#ifndef MINMEMALIGN
-#define MINMEMALIGN MEMALIGN(MIN_V8_ALIGN)
-#endif
-typedef const char* cstring;
-typedef v8::Handle<v8::Value> v8Function;
-typedef void** functionArray;
-typedef v8Function* v8FunctionArray;
-typedef const char* functionName;
-typedef const char* variableName;
-typedef const char* TS_name;
-typedef TS_name*	nameArray;
-typedef const char* initFunction;
-
-struct TS_PluginInfo {
-	const char * name;
-	const char * author;
-	const char * description;
-	const char * date;
-	const char * version;
-};
-
-#define CATEGORY_REQUIRES	(TS_name)"REQ"
-#define CATEGORY_IS			(TS_name)"IS"
-#define CATEGORY_SDL_12		(TS_name)"SDL 1.2"
-#define CATEGORY_GRAPHIC	(TS_name)"graphic"
-#define CATEGORY_FONT		(TS_name)"font"
-
-typedef v8::Handle<v8::Value> v8External;
-typedef v8::Persistent<v8::FunctionTemplate> v8Constructor;
-typedef v8::Persistent<v8::ObjectTemplate> v8InstanceTemplate;
-typedef v8::Persistent<v8::ObjectTemplate> v8PrototypeTemplate;
-
-#define V8ARGS const v8::Arguments& args
-
-#define V8GETTERARGS v8::Local<v8::String> property, const v8::AccessorInfo &info
-#define V8SETTERARGS v8::Local<v8::String> property, v8::Local<v8::Value> value, const v8::AccessorInfo& info
-#define V8FINALIZERARGS v8::Isolate* isolate, v8::Persistent<v8::Object>* object, void* parameter
-
-#define V8FUNCPOINTER(name)\
-	(void *)((v8Function (*)(V8ARGS))(name))
-
-#ifndef PLUGINNAME
-
-#define THROWERROR(name)\
-    return v8::ThrowException(v8::String::New(name));
-
-#define THROWERROR_RANGE(name)\
-	return v8::ThrowException(v8::Exception::RangeError(v8::String::New(name)));
-
-#define THROWERROR_REFERENCE(name)\
-	return v8::ThrowException(v8::Exception::ReferenceError(v8::String::New(name)));
-
-#define THROWERROR_SYNTAX(name)\
-	return v8::ThrowException(v8::Exception::SyntaxError(v8::String::New(name)));
-
-#define THROWERROR_TYPE(name)\
-	return v8::ThrowException(v8::Exception::TypeError(v8::String::New(name)));
-
-#define THROWERROR_MSG(name)\
-	return v8::ThrowException(v8::Exception::Error(v8::String::New(name)));
-
-#define CHECK_ARG_INT(index, name) \
-    if (!args[index]->IsNumber()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New(name)));\
-    }
-
-#define CHECK_ARG_STR(index, name) \
-    if (!args[index]->IsString()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New(name)));\
-    }
-
-#define CHECK_ARG_OBJ(index, name) \
-    if (!args[index]->IsObject()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New(name)));\
-    } \
-
-#define CHECK_ARG_BOOL(index, name) \
-    if (!args[index]->IsBoolean()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New(name)));\
-    } \
-
-#define CHECK_ARG_ARRAY(index, name) \
-    if (!args[index]->IsArray()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New(name)));\
-    } \
-
-#else
-
-#include <string>
-
-#define THROWERROR(name)\
-    return v8::ThrowException(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string(name)).c_str()));
-
-#define THROWERROR_RANGE(name)\
-	return v8::ThrowException(v8::Exception::RangeError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string(name)).c_str())));
-
-#define THROWERROR_REFERENCE(name)\
-	return v8::ThrowException(v8::Exception::ReferenceError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string(name)).c_str())));
-
-#define THROWERROR_SYNTAX(name)\
-	return v8::ThrowException(v8::Exception::SyntaxError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string(name)).c_str())));
-
-#define THROWERROR_TYPE(name)\
-	return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string(name)).c_str())));
-
-#define THROWERROR_MSG(name)\
-	return v8::ThrowException(v8::Exception::Error(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string(name)).c_str())));
-
-#define CHECK_ARG_INT(index) \
-    if (!args[index]->IsNumber()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string("Error: Argument " #index " is not an integer.")).c_str())));\
-    }
-
-#define CHECK_ARG_STR(index) \
-    if (!args[index]->IsString()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string("Error: Argument " #index " is not a string.")).c_str())));\
-    }
-
-#define CHECK_ARG_OBJ(index) \
-    if (!args[index]->IsObject()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string("Error: Argument " #index " is not an object.")).c_str())));\
-    } \
-
-#define CHECK_ARG_BOOL(index) \
-    if (!args[index]->IsBoolean()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string("Error: Argument " #index " is not a boolean.")).c_str())));\
-    } \
-
-#define CHECK_ARG_ARRAY(index) \
-    if (!args[index]->IsArray()) { \
-        return v8::ThrowException(v8::Exception::TypeError(v8::String::New((std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string("Error: Argument " #index " is not an array.")).c_str())));\
-    } \
-
-
-#endif
-
-    #define QuitGracefully \
-    printf("Exiting TurboSphere...\n");\
-    exitContext();\
-    QuitAll();
-
-    void QuitAll();
-
-#define FINALIZER(NAME) void TS_##NAME##Finalizer(v8::Handle<v8::Value> object, void* parameter)
-
-//Note!
-//This function requires you name your objects as:
-//obj_nameInsttempl
-//obj_nametempl
-//TS_obj_nameFinalizer
-//
-
-#define DECLARE_OBJECT_TEMPLATES(JSOBJ) \
-v8::Handle<v8::FunctionTemplate> JSOBJ##templ;\
-v8::Handle<v8::ObjectTemplate> JSOBJ##Insttempl;\
-v8::Handle<v8::ObjectTemplate> JSOBJ##proto
-
-#define SET_CLASS_NAME(JSOBJ, NAME) \
-JSOBJ##templ->SetClassName(v8::String::New(NAME))
-
-#define EXTERN_OBJECT_TEMPLATES(JSOBJ) \
-extern v8::Handle<v8::FunctionTemplate> JSOBJ##templ;\
-extern v8::Handle<v8::ObjectTemplate> JSOBJ##Insttempl;\
-extern v8::Handle<v8::ObjectTemplate> JSOBJ##proto
-
-
-#define INIT_OBJECT_TEMPLATES(JSOBJ) \
-    JSOBJ##templ    = v8::FunctionTemplate::New();\
-	JSOBJ##Insttempl= JSOBJ##templ->InstanceTemplate();\
-    JSOBJ##proto    = JSOBJ##templ->PrototypeTemplate()
-
-#define CLOSE_OBJECT_TEMPLATES(JSOBJ) \
-    JSOBJ##templ.Clear();\
-	JSOBJ##Insttempl.Clear();\
-    JSOBJ##proto.Clear();
-
-#define SET_CLASS_ACCESSOR(JSOBJ, NAME, GETTER, SETTER)\
-    JSOBJ##Insttempl->SetAccessor(v8::String::New(NAME), GETTER, SETTER)
-
-#define ADD_TO_PROTO(JSOBJ, PROPNAME, CALL){\
-    JSOBJ##proto->Set(PROPNAME, v8::FunctionTemplate::New(CALL));\
-}
-
-#define BEGIN_OBJECT_WRAP_CODE \
-    v8::HandleScope temporary_scope;\
-    //v8External external;
-
-#define END_OBJECT_WRAP_CODE(JSOBJ, TO_WRAP){\
-    JSOBJ##Insttempl->SetInternalFieldCount(2);\
-    v8::Handle<v8::Function> JSOBJ##ctor = JSOBJ##templ->GetFunction();\
-	v8::Handle<v8::Object> JSOBJ##obj = JSOBJ##ctor->NewInstance();\
-    v8::Persistent<v8::Object> P##JSOBJ##obj = v8::Persistent<v8::Object>::New(v8::Isolate::GetCurrent(), JSOBJ##obj);\
-    P##JSOBJ##obj.MakeWeak((void *)TO_WRAP, TS_##JSOBJ##Finalizer);\
-    P##JSOBJ##obj->SetAlignedPointerInInternalField(0, (void *)TO_WRAP);\
-    P##JSOBJ##obj->SetInternalField(1, v8::Integer::NewFromUnsigned(0ULL));\
-    P##JSOBJ##obj->GetConstructorName()=v8::String::New( #JSOBJ );\
-    return temporary_scope.Close(P##JSOBJ##obj);\
-}
-
-
-#define END_OBJECT_WRAP_CODE_NO_FINAL(JSOBJ, TO_WRAP){\
-    JSOBJ##Insttempl->SetInternalFieldCount(2);\
-    v8::Handle<v8::Function> JSOBJ##ctor = JSOBJ##templ->GetFunction();\
-	v8::Handle<v8::Object> JSOBJ##obj = JSOBJ##ctor->NewInstance();\
-    JSOBJ##obj->SetAlignedPointerInInternalField(0, (void *)TO_WRAP);\
-    JSOBJ##obj->SetInternalField(1, v8::Integer::NewFromUnsigned(0ULL));\
-    JSOBJ##obj->GetConstructorName()=v8::String::New( #JSOBJ );\
-    return temporary_scope.Close(JSOBJ##obj);\
-}
-
-
-#define END_OBJECT_WRAP_CODE_WITH_ID(JSOBJ, TO_WRAP, ID){\
-    JSOBJ##Insttempl->SetInternalFieldCount(2);\
-    v8::Handle<v8::Function> JSOBJ##ctor = JSOBJ##templ->GetFunction();\
-	v8::Handle<v8::Object> JSOBJ##obj = JSOBJ##ctor->NewInstance();\
-    v8::Persistent<v8::Object> P##JSOBJ##obj = v8::Persistent<v8::Object>::New(v8::Isolate::GetCurrent(), JSOBJ##obj);\
-    P##JSOBJ##obj.MakeWeak((void *)TO_WRAP, TS_##JSOBJ##Finalizer);\
-    P##JSOBJ##obj->SetAlignedPointerInInternalField(0, (void *)TO_WRAP);\
-    P##JSOBJ##obj->SetInternalField(1, v8::Integer::NewFromUnsigned(ID)); \
-    P##JSOBJ##obj->GetConstructorName()=v8::String::New( #JSOBJ );\
-    return temporary_scope.Close(P##JSOBJ##obj);\
-}
-
-#define END_OBJECT_WRAP_CODE_WITH_ID_NO_FINAL(JSOBJ, TO_WRAP, ID){\
-    JSOBJ##Insttempl->SetInternalFieldCount(2);\
-    v8::Handle<v8::Function> JSOBJ##ctor = JSOBJ##templ->GetFunction();\
-	v8::Handle<v8::Object> JSOBJ##obj = JSOBJ##ctor->NewInstance();\
-    JSOBJ##obj->SetAlignedPointerInInternalField(0, (void *)TO_WRAP);\
-    JSOBJ##obj->SetInternalField(1, v8::Integer::NewFromUnsigned(ID));\
-    JSOBJ##obj->GetConstructorName()=v8::String::New( #JSOBJ );\
-    return temporary_scope.Close(JSOBJ##obj);\
-}
-
-#define RETURN_OBJECT_WRAP_CODE(JSOBJ, TO_WRAP)\
-    JSOBJ##Insttempl->SetInternalFieldCount(1);\
-    v8::Handle<v8::Function> JSOBJ##ctor = JSOBJ##templ->GetFunction();\
-	v8::Handle<v8::Object> JSOBJ##obj = JSOBJ##ctor->NewInstance();\
-    v8::Persistent<v8::Object> P##JSOBJ##obj = v8::Persistent<v8::Object>::New(v8::Isolate::GetCurrent(), JSOBJ##obj);\
-    P##JSOBJ##obj.MakeWeak((void *)TO_WRAP, TS_##JSOBJ##Finalizer);\
-    P##JSOBJ##obj->SetAlignedPointerInInternalField(0, (void *)TO_WRAP);\
-    P##JSOBJ##obj->GetConstructorName()=v8::String::New( #JSOBJ );\
-
-#define CHECK_ARG_TYPE(n, type_id, name){\
-    v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(args[n]);\
-    CHECK_OBJ_TYPE(obj, type_id, (std::string("[" PLUGINNAME "] ")+std::string(__func__)+std::string("Error: Argument " #n " is not a " name ".")).c_str())\
-}
-
-#define CHECK_OBJ_TYPE(obj, type_id, words)\
-    if((obj->InternalFieldCount()<2)||(type_id!=obj->GetInternalField(1)->Uint32Value())){\
-    THROWERROR_TYPE(words);}\
-
-#define GET_OBJECT_WRAP_CODE(JSOBJ) temporary_scope.Close(P##JSOBJ##obj)
-
-
-#define GET_SELF(TYPE) static_cast<TYPE>(args.Holder()->GetAlignedPointerFromInternalField(0))
-
-#define GET_ACCESSOR_SELF(TYPE) static_cast<TYPE>(info.Holder()->GetAlignedPointerFromInternalField(0))
-
-    //v8::Local<v8::Object> self = info.Holder();
-    //v8::Local<v8::External> wrap = v8::Local<v8::External>::Cast(self->GetInternalField(0));
-    //void* ptr = wrap->Value();
-
-    //v8::Local<v8::Object> self = args.Holder();
-    //SDL_Surface *sstatic_cast<TS_Image*>(v8::Local<v8::External>::Cast((args.Holder())->GetAlignedPointerInInternalField(0)))->CreateSurface();
-
-//#define GET_SELF(TYPE) static_cast<TYPE>(v8::Local<v8::External>::Cast((args.Holder())->GetInternalField(0))->Value())
-
-/*
-#define INTERNAL_CHECK_int(ARGNAME, WORDS)\
-if(!ARGNAME->isInteger()){THROWERROR(WORDS)}
-
-#define INTERNAL_CHECK_double(ARGNAME, WORDS)\
-if(!ARGNAME->isNumber()){THROWERROR(WORDS)}
-
-#define INTERNAL_CHECK_float(ARGNAME, WORDS)\
-if(!ARGNAME->isNumber()){THROWERROR(WORDS)}
-
-#define INTERNAL_CHECK_cstring(ARGNAME, WORDS)\
-if(!ARGNAME->isString()){THROWERROR(WORDS)}
-
-
-#define V8ARGCHECK(TYPE, ARGNAME, WORDS)\
-INTERNAL_CHECK_##TYPE
-
-#define FUNCTION_FORWARD(NUMARGS, MODULE, FUNCTIONNAME, argtypes...)\
-if(args.Length()<NUMARGS){THROWERROR("[##MODULE##] ##FUNCTIONNAME## Error: Called with less than ##NUMARGD## arguments.");}
-*/
-
 
 #endif

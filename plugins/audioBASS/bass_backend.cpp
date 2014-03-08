@@ -43,38 +43,38 @@ void TS_ExplainBassErrorCode(int error, bool willTryAgain, bool FormatIsFailsafe
 
     switch(error){
         case BASS_ERROR_DX:
-            printf(TS_MSG_DXError);
+            printf("%s", TS_MSG_DXError);
             break;
         case BASS_ERROR_DEVICE:
-            printf(TS_MSG_BadDevice);
+            printf("%s", TS_MSG_BadDevice);
             break;
         case BASS_ERROR_ALREADY:
-            printf(TS_MSG_AlreadyOpen);
+            printf("%s", TS_MSG_AlreadyOpen);
             if(willTryAgain){
                 printf("\n");
-                printf(TS_MSG_WillReopen);
+                printf("%s", TS_MSG_WillReopen);
             }
             break;
         case BASS_ERROR_DRIVER:
-            printf(TS_MSG_BadDriver);
+            printf("%s", TS_MSG_BadDriver);
             if(willTryAgain){
                 printf("\n");
-                printf(TS_MSG_WillReopen);
+                printf("%s", TS_MSG_WillReopen);
             }
             break;
         case BASS_ERROR_FORMAT:
             if(!FormatIsFailsafe){
-                printf(TS_MSG_BadFormat);
+                printf("%s", TS_MSG_BadFormat);
             }
             else{
-                printf(TS_MSG_BadFormatFS);
+                printf("%s", TS_MSG_BadFormatFS);
             }
             if(willTryAgain){
                 printf("\n");
-                printf(TS_MSG_WillChangeFmt);
+                printf("%s", TS_MSG_WillChangeFmt);
             }
         case BASS_ERROR_MEM:
-            printf(TS_MSG_OutOfMemory);
+            printf("%s", TS_MSG_OutOfMemory);
             break;
         default:
             printf(TS_MSG_UnkownErrorPRT, error);
@@ -455,6 +455,10 @@ __stdcall
 #endif
 	ChannelCallback(HSYNC handle, DWORD channel, DWORD data, void *wrapv){
 	TS_ChannelWrap *wrap = (TS_ChannelWrap *)wrapv;
+
+	/////
+	// TODO: Find out WTF I was doing right here.
+
     TS_AudioSampleMultiple *sound = (TS_AudioSampleMultiple *)(wrap->ptr);
     printf("A channel has finished. Channel number is %i.\n", channel);
 

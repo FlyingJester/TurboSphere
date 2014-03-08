@@ -134,9 +134,9 @@ TS_Color *TS_BlendColorsWeighted(TS_Color *c1, TS_Color *c2, double w1, double w
 
 }
 
-void TS_ColorFinalizer(V8FINALIZERARGS) {
-    TS_Color* color = (TS_Color*)parameter;
-    delete color;
+void TS_ColorFinalizer(V8FINALIZERARGS(TS_Color)) {
+    //TS_Color* color = (TS_Color*)parameter;
+    delete parameter;
     object->Dispose();
 }
 

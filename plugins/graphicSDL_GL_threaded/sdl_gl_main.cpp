@@ -565,6 +565,5 @@ extern "C" v8Function CCALL TS_SDL_GL_MakeV8SurfaceHandleFromPixels(int w, int h
 
     BEGIN_OBJECT_WRAP_CODE;
     END_OBJECT_WRAP_CODE(Surface, surface);
-
 }
 

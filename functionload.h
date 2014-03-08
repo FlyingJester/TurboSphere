@@ -5,24 +5,24 @@
 
 #include "common/dlopenwrap.h"
 
-#define DLOPENFUNCTONPRESET(_type, _dlfunc, _handle, _name, _error, action) DLOPENFUNCTION(_type, _dlfunc, _handle, _name, "Error loading plugin : No function \"%s\".\n", _error, action)
+//#define DLOPENFUNCTONPRESET(_type, _dlfunc, _handle, _name, _error, action) DLOPENFUNCTION(_type, _dlfunc, _handle, _name, "Error loading plugin : No function \"%s\".\n", _error, action)
 
 typedef void** FunctionArray;
 
 class regFunction {
 public:
-    regFunction(const char *, v8::Handle<v8::FunctionTemplate>);
-    regFunction(const char *_name, v8::Handle<v8::Value> (*func)(const v8::Arguments& args));
+    regFunction(const char *, v8::Handle<v8::FunctionTemplate>, v8::Isolate *);
+    regFunction(const char *_name, void (*func)(const v8::FunctionCallbackInfo<v8::Value>&), v8::Isolate *);
     ~regFunction();
-    void registerToContext(v8::Persistent<v8::Context> context);
+    void registerToContext(v8::Handle<v8::Context> context, v8::Isolate *iso);
     const char *name;
     v8::Handle<v8::FunctionTemplate> templ;
 };
 
 //extern std::vector<regFunction> funclist;
 
-void addFunctionToList(const char *name, v8::Handle<v8::Value> (*func)(const v8::Arguments& args));
+void addFunctionToList(const char *name, void (*func)(const v8::FunctionCallbackInfo<v8::Value>&), v8::Isolate *iso);
 
-void registerAllFunctions(v8::Persistent<v8::Context> context);
+void registerAllFunctions(v8::Handle<v8::Context> context, v8::Isolate *iso);
 
 #endif

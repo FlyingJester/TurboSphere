@@ -52,11 +52,9 @@ TS_Config::TS_Config(void){
     systemuparrow = "";
     systemdownarrow = "";
     fixedplugins = 0;
-    plugins = (const char **)calloc(0, 1);
 }
 
 TS_Config::~TS_Config(void){
-    free(plugins);
 }
 
 TS_Directories::TS_Directories(void){
@@ -168,8 +166,15 @@ void setConfig(const char * basedirectory){
     TS_conf->fullscreen = (atoi(enginefile->getValueFromSection("fullscreen", "Video"))>0)?true:false;
     TS_conf->compositing= (atoi(enginefile->getValueFromSection("compositing", "Video"))>0)?true:false;
     TS_conf->scale      = atoi(enginefile->getValueFromSection("scale", "Video"));
-    TS_conf->gamefunc   = enginefile->getValueFromSection("gamefunc", "Engine");
-    TS_conf->sgmname    = enginefile->getValueFromSection("sgmname", "Engine");
+    if(enginefile->getValueFromSection("gamefunc", "Engine")==NULL)
+        TS_conf->gamefunc = STRDUP("game");
+    else
+        TS_conf->gamefunc   = STRDUP(enginefile->getValueFromSection("gamefunc", "Engine"));
+    if(enginefile->getValueFromSection("sgmname", "Engine")==NULL)
+        TS_conf->sgmname = STRDUP("game.sgm");
+    else
+        TS_conf->sgmname    = STRDUP(enginefile->getValueFromSection("sgmname", "Engine"));
+
 
 
     //Negative scale may take on a meaning. Technically I shouldn't even cleanse these values here.
@@ -187,16 +192,16 @@ void setConfig(const char * basedirectory){
     printf("[ConfigManager] Info: Fixed plugins as recorded: %i\n", TS_conf->fixedplugins);
     T5_file *systemfile = T5_OpenFile(string(TS_dirs->system).append("system.ini").c_str());
 
-    TS_conf->systemfont          = systemfile->getValue("Font");
-    TS_conf->systemttffont       = systemfile->getValue("TTFFont");
-    TS_conf->systemwindowstyle   = systemfile->getValue("WindowStyle");
-    TS_conf->systemarrow         = systemfile->getValue("Arrow");
-    TS_conf->systemuparrow       = systemfile->getValue("UpArrow");
-    TS_conf->systemdownarrow     = systemfile->getValue("DownArrow");
-    TS_conf->systemsoundfont     = systemfile->getValue("SoundFont");
+    TS_conf->systemfont          = STRDUP(systemfile->getValue("Font"));
+    TS_conf->systemttffont       = STRDUP(systemfile->getValue("TTFFont"));
+    TS_conf->systemwindowstyle   = STRDUP(systemfile->getValue("WindowStyle"));
+    TS_conf->systemarrow         = STRDUP(systemfile->getValue("Arrow"));
+    TS_conf->systemuparrow       = STRDUP(systemfile->getValue("UpArrow"));
+    TS_conf->systemdownarrow     = STRDUP(systemfile->getValue("DownArrow"));
+    TS_conf->systemsoundfont     = STRDUP(systemfile->getValue("SoundFont"));
 
-    TS_conf->plugins             = (const char **)calloc(TS_conf->fixedplugins, sizeof(const char *));
-
+    //TS_conf->plugins             = (const char **)calloc(TS_conf->fixedplugins, sizeof(const char *));
+/*
     for(int i = 0; i<TS_conf->fixedplugins; i++){
 
         std::stringstream s;
@@ -204,7 +209,7 @@ void setConfig(const char * basedirectory){
 		s << i;
         TS_conf->plugins[i]=enginefile->getValue(s.str().c_str());
     }
-
+*/
     T5_close(enginefile);
     T5_close(systemfile);
 
@@ -235,8 +240,10 @@ int opengameLocal(const char *Rfile, TS_Config *localConf, TS_Directories *local
 
 	localConf->screenwidth  = atoi(file->getValue("screen_width"));
 	localConf->screenheight = atoi(file->getValue("screen_height"));
-	localConf->author       = file->getValue("author");
-	localConf->description   = file->getValue("description");
+	localConf->author       = STRDUP(file->getValue("author"));
+	localConf->description   = STRDUP(file->getValue("description"));
+
+     T5_close(file);
 
     return 0;
 

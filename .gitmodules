@@ -1,3 +1,9 @@
 [submodule "common"]
 	path = common
 	url = https://github.com/FlyingJester/TSPR.git
+[submodule "v8"]
+	path = v8
+	url = https://github.com/v8/v8.git
+[submodule "fj-gl"]
+	path = fj-gl
+	url = https://github.com/FlyingJester/FJ-GL.git

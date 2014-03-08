@@ -27,14 +27,14 @@
 	extern "C" {
 #endif
 
-AUDIOBASS_EXPORT void            CCALL Close(void);
-AUDIOBASS_EXPORT initFunction    CCALL Init(void);
-AUDIOBASS_EXPORT int             CCALL GetNumFunctions(void);
-AUDIOBASS_EXPORT functionArray   CCALL GetFunctions(void);
-AUDIOBASS_EXPORT nameArray       CCALL GetFunctionNames(void);
-AUDIOBASS_EXPORT int             CCALL GetNumVariables(void);
-AUDIOBASS_EXPORT v8FunctionArray CCALL GetVariables(void);
-AUDIOBASS_EXPORT nameArray       CCALL GetVariableNames(void);
+AUDIOBASS_EXPORT void                   CCALL Close(void);
+AUDIOBASS_EXPORT const char *           CCALL Init(void);
+AUDIOBASS_EXPORT int                    CCALL GetNumFunctions(void);
+AUDIOBASS_EXPORT Turbo::JSFunctionArray CCALL GetFunctions(void);
+AUDIOBASS_EXPORT Turbo::JSNameArray     CCALL GetFunctionNames(void);
+AUDIOBASS_EXPORT int                    CCALL GetNumVariables(void);
+AUDIOBASS_EXPORT Turbo::JSValueArray    CCALL GetVariables(void);
+AUDIOBASS_EXPORT Turbo::JSNameArray     CCALL GetVariableNames(void);
 
 #ifdef _WIN32
 	}

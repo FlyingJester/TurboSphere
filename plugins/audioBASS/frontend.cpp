@@ -2,17 +2,20 @@
 #include "bass_backend.h"
 #include "script.h"
 
-v8Function PlaySound(V8ARGS);
-v8Function PlaySoundEffect(V8ARGS);
+Turbo::JSObj<TS_Sound> SoundObject       = Turbo::JSObj<TS_Sound>();
+Turbo::JSObj<TS_Sound> SoundEffectObject = Turbo::JSObj<TS_Sound>();
 
-v8Function PauseSound(V8ARGS);
-v8Function PauseSoundEffect(V8ARGS);
+Turbo::JSFunction PlaySound(Turbo::JSArguments);
+Turbo::JSFunction PlaySoundEffect(Turbo::JSArguments);
 
-v8Function StopSound(V8ARGS);
-v8Function StopSoundEffect(V8ARGS);
+Turbo::JSFunction PauseSound(Turbo::JSArguments);
+Turbo::JSFunction PauseSoundEffect(Turbo::JSArguments);
 
-void* LoadSoundPointer       = V8FUNCPOINTER(LoadSound);
-void* LoadSoundEffectPointer = V8FUNCPOINTER(LoadSoundEffect);
+Turbo::JSFunction StopSound(Turbo::JSArguments);
+Turbo::JSFunction StopSoundEffect(Turbo::JSArguments);
+
+void* LoadSoundPointer       = (void *)((Turbo::JSFunction (*)(Turbo::JSArguments))(LoadSound));
+void* LoadSoundEffectPointer = (void *)((Turbo::JSFunction (*)(Turbo::JSArguments))(LoadSoundEffect));
 
 /*
 void* PlaySoundPointer       = V8FUNCPOINTER(PlaySound);
@@ -35,34 +38,33 @@ int numerate(bool reset){
     return i-1;
 }
 
-initFunction Init(){
+const char * Init(){
     TS_InitBass();
 
-    INIT_OBJECT_TEMPLATES(Sound);
-    SET_CLASS_NAME(Sound, "Sound");
+    SoundObject.SetTypeName("Sound");
+    SoundEffectObject.SetTypeName("SoundEffect");
 
-    INIT_OBJECT_TEMPLATES(SoundEffect);
-    SET_CLASS_NAME(SoundEffect, "SoundEffect");
+//    INIT_OBJECT_TEMPLATES(SoundEffect);
+//    SET_CLASS_NAME(SoundEffect, "SoundEffect");
 
+    SoundObject.AddToProto(         "play", PlaySound);
+    SoundEffectObject.AddToProto(   "play", PlaySound);
 
-    ADD_TO_PROTO(Sound,       "play",  PlaySound);
-    ADD_TO_PROTO(SoundEffect, "play",  PlaySound);
+    SoundObject.AddToProto(         "pause", PauseSound);
+    SoundEffectObject.AddToProto(   "pause", PauseSound);
 
-    ADD_TO_PROTO(Sound,       "pause", PauseSound);
-    ADD_TO_PROTO(SoundEffect, "pause", PauseSound);
+    SoundObject.AddToProto(         "stop", StopSound);
+    SoundEffectObject.AddToProto(   "stop", StopSound);
 
-    ADD_TO_PROTO(Sound,       "stop",  StopSound);
-    ADD_TO_PROTO(SoundEffect, "stop",  StopSound);
+    SoundObject.AddToProto(         "isPlaying", IsSoundPlaying);
+    SoundEffectObject.AddToProto(   "isPlaying", IsSoundPlaying);
 
-    ADD_TO_PROTO(Sound,       "isPlaying",  IsSoundPlaying);
-    ADD_TO_PROTO(SoundEffect, "isPlaying",  IsSoundPlaying);
+    SoundObject.AddToProto(         "setVolume", SoundSetVolume);
+    SoundEffectObject.AddToProto(   "setVolume", SoundSetVolume);
 
-    ADD_TO_PROTO(Sound,       "getLength",  SoundGetLength);
+    SoundObject.AddToProto(         "getLength", SoundGetLength);
 
-    ADD_TO_PROTO(Sound,       "setVolume",  SoundSetVolume);
-    ADD_TO_PROTO(SoundEffect, "setVolume",  SoundSetVolume);
-
-    return (initFunction)PLUGINNAME;
+    return (const char *)PLUGINNAME;
 }
 
 void Close(){
@@ -77,24 +79,24 @@ int GetNumFunctions(){
     return NUMFUNCS;
 }
 
-functionArray GetFunctions(){
+Turbo::JSFunctionArray GetFunctions(){
     numerate(true);
 
-    functionArray funcs = (functionArray)calloc(NUMFUNCS, sizeof(void*));
+    static Turbo::JSFunctionArray funcs = (Turbo::JSFunctionArray)calloc(NUMFUNCS, sizeof(void*));
 
-    funcs[numerate(false)] = LoadSoundPointer;
-    funcs[numerate(false)] = LoadSoundEffectPointer;
+    funcs[numerate(false)] = LoadSound;
+    funcs[numerate(false)] = LoadSoundEffect;
 
     return funcs;
 }
 
-nameArray GetFunctionNames(){
+Turbo::JSNameArray GetFunctionNames(){
     numerate(true);
 
-    nameArray funcnames = (nameArray)calloc(NUMFUNCS, sizeof(functionName));
+    static Turbo::JSNameArray funcnames = (Turbo::JSNameArray)calloc(NUMFUNCS, sizeof(Turbo::JSFunctionName));
 
-    funcnames[numerate(false)] = (functionName)"Sound";
-    funcnames[numerate(false)] = (functionName)"SoundEffect";
+    funcnames[numerate(false)] = (Turbo::JSFunctionName)"Sound";
+    funcnames[numerate(false)] = (Turbo::JSFunctionName)"SoundEffect";
 
     return funcnames;
 }
@@ -103,24 +105,26 @@ int GetNumVariables(){
     return NUMVARS;
 }
 
-v8FunctionArray GetVariables(){
+Turbo::JSValueArray GetVariables(){
     numerate(true);
 
-    v8FunctionArray vars = (v8FunctionArray)calloc(NUMVARS, sizeof(v8Function));
+    auto iso = v8::Isolate::GetCurrent();
 
-    vars[numerate(false)]=v8::Integer::New(TS_SINGLE);
-    vars[numerate(false)]=v8::Integer::New(TS_MULTIPLE);
+    static Turbo::JSValueArray vars = (Turbo::JSValueArray)calloc(NUMVARS, sizeof(Turbo::JSValue));
+
+    vars[numerate(false)]=v8::Integer::New(iso, TS_SINGLE);
+    vars[numerate(false)]=v8::Integer::New(iso, TS_MULTIPLE);
 
     return vars;
 }
 
-nameArray GetVariableNames(){
+Turbo::JSNameArray GetVariableNames(){
     numerate(true);
 
-    nameArray varnames = (nameArray)calloc(NUMFUNCS, sizeof(variableName));
+    static Turbo::JSNameArray varnames = (Turbo::JSNameArray)calloc(NUMFUNCS, sizeof(Turbo::JSVariableName));
 
-    varnames[numerate(false)] = (functionName)"SE_SINGLE";
-    varnames[numerate(false)] = (functionName)"SE_MULTIPLE";
+    varnames[numerate(false)] = (Turbo::JSVariableName)"SE_SINGLE";
+    varnames[numerate(false)] = (Turbo::JSVariableName)"SE_MULTIPLE";
 
     return varnames;
 }

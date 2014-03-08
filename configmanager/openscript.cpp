@@ -7,6 +7,9 @@
 #define CONFIGMGR_INTERNAL
 #include "openscript.h"
 #include "opengame.h"
+
+#define PLUGINNAME "configmanager"
+
 #include "../plugins/common/plugin.h"
 using namespace std;
 
@@ -61,7 +64,7 @@ bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::Value> name,bool
 
   if (script.IsEmpty())
   {
-    v8::String::AsciiValue error(try_catch.Exception());
+    v8::String::Utf8Value error(try_catch.Exception());
     v8::String::Utf8Value pname(name);
     string namestr = std::string(*pname);
 
@@ -74,7 +77,7 @@ bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::Value> name,bool
     v8::Handle<v8::Value> result = script->Run();
     if (result.IsEmpty())
 	{
-      v8::String::AsciiValue error(try_catch.Exception());
+      v8::String::Utf8Value error(try_catch.Exception());
       printf("%s\n", *error);
 	printf("JS did not run successfully.\n");
       return false;
@@ -84,7 +87,7 @@ bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::Value> name,bool
 
       if (print_result && !result->IsUndefined())
 	  {
-        v8::String::AsciiValue str(result);
+        v8::String::Utf8Value str(result);
 		printf("JS Result will be passed.\n");
 		printf("%s\n", *str);
       }
@@ -93,44 +96,52 @@ bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::Value> name,bool
   return true;
 }
 
-v8::Handle<v8::Value> TS_LoadScript(const v8::Arguments& args){
+void TS_LoadScript(const v8::FunctionCallbackInfo<v8::Value> &args){
 	TS_Directories *TS_dirs = GetDirs();
     if(args.Length()<1){
-        return v8::ThrowException(v8::String::New("[ConfigManager] TS_LoadScript Error: No arguments given.\n"));
+        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "[ConfigManager] TS_LoadScript Error: No arguments given.\n")));
+        return;
     }
 
-    CHECK_ARG_STR(0, "[ConfigManager] TS_LoadScript Error: could not parse arg 0 to string.");
+    Turbo::CheckArg::String(args, 0, __func__);
 
-    v8::String::AsciiValue str(args[0]);
+    //CHECK_ARG_STR(0, "[ConfigManager] TS_LoadScript Error: could not parse arg 0 to string.");
+
+    v8::String::Utf8Value str(args[0]);
     const char *scriptname = *str;
     const char *scriptpath = STRDUP(string(TS_dirs->script).append(scriptname).c_str());
     string ScriptStr = openfile(scriptpath).c_str();
     if(ScriptStr.empty()){
-        return v8::ThrowException(v8::String::New("[ConfigManager] TS_LoadScript Error: Could not load script."));
+        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "[ConfigManager] TS_LoadScript Error: Could not load script.")));
+        return;
     }
-    if(!ExecuteString(v8::String::New(ScriptStr.c_str()), v8::String::New(scriptname), true)){
-		return v8::ThrowException(v8::String::New(((string)"Error in script "+string(scriptname)).c_str()));
+    if(!ExecuteString(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ScriptStr.c_str()), v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), scriptname), true)){
+		args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ((string)"Error in script "+string(scriptname)).c_str())));
+		return;
 	}
-    return v8::Undefined();
 }
 
-v8::Handle<v8::Value> TS_LoadSystemScript(const v8::Arguments& args){
+void TS_LoadSystemScript(const v8::FunctionCallbackInfo<v8::Value> &args){
 	TS_Directories *TS_dirs = GetDirs();
     if(args.Length()<1){
-        return v8::ThrowException(v8::String::New("[ConfigManager] TS_LoadSystemScript Error: No arguments given.\n"));
+        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "[ConfigManager] TS_LoadSystemScript Error: No arguments given.\n")));
+        return;
     }
 
-    CHECK_ARG_STR(0, "[ConfigManager] TS_LoadSystemScript Error: could not parse arg 0 to string.");
 
-    v8::String::AsciiValue str(args[0]);
+    Turbo::CheckArg::String(args, 0, __func__);
+
+    //CHECK_ARG_STR(0, "[ConfigManager] TS_LoadSystemScript Error: could not parse arg 0 to string.");
+
+    v8::String::Utf8Value str(args[0]);
     const char *scriptname = *str;
     const char *scriptpath = STRDUP(string(TS_dirs->systemscript).append(scriptname).c_str());
     string ScriptStr = openfile(scriptpath).c_str();
     if(ScriptStr.empty()){
-        return v8::ThrowException(v8::String::New("[ConfigManager] TS_LoadSystemScript Error: Could not load script."));
+        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "[ConfigManager] TS_LoadSystemScript Error: Could not load script.")));
+        return;
     }
-    if(!ExecuteString(v8::String::New(ScriptStr.c_str()), v8::String::New(scriptname), true)){
-		return v8::ThrowException(v8::String::New(((string)"[ConfigManager] Error in script "+string(scriptname)).c_str()));
+    if(!ExecuteString(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ScriptStr.c_str()), v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), scriptname), true)){
+		args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ((string)"[ConfigManager] Error in script "+string(scriptname)).c_str())));
 	}
-    return v8::Undefined();
 }

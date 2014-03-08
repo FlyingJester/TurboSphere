@@ -268,10 +268,10 @@ TS_Image::~TS_Image(){
     }
 }
 
-void TS_ImageFinalizer(V8FINALIZERARGS) {
+void TS_ImageFinalizer(V8FINALIZERARGS(TS_Image)) {
 
-    TS_Image* im = (TS_Image*)parameter;
-    delete im;
+    //TS_Image* im = (TS_Image*)parameter;
+    delete parameter;
     object->Dispose();
 }
 

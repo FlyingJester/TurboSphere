@@ -36,8 +36,8 @@ v8Function UseCompositeProgram(V8ARGS);
 v8Function GetSystemProgram(V8ARGS);
 v8Function GetSystemCompositeProgram(V8ARGS);
 
-void TS_ScriptShaderFinalizer(V8FINALIZERARGS);
-void TS_ScriptShaderProgramFinalizer(V8FINALIZERARGS);
+void TS_ScriptShaderFinalizer(V8FINALIZERARGS(TS_ScriptShader));
+void TS_ScriptShaderProgramFinalizer(V8FINALIZERARGS(TS_ShaderS));
 
 TS_Shader TS_LoadSystemShader(const char *file);
 TS_Shader TS_LoadShader(const char *file, GLuint *frag = NULL, GLuint *vert = NULL);

@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <string>
 
+#include "common/dlopenwrap.h"
+
 #include "engine.h"
 #include "functionload.h"
 #include "loadplugins.h"
@@ -182,7 +184,7 @@ const char ** getPluginNames(){
 
 
 int loadAllPlugins(){
-	TS_Config *TS_conf = GetConfig();
+	//TS_Config *TS_conf = GetConfig();
     const char ** plugins = getPluginNames();
     int numplugins = getNumPlugins();
     for(int i = 0; i<numplugins; i++){
@@ -193,8 +195,8 @@ int loadAllPlugins(){
             continue;
         }
 
-        bool skip = true;
-
+        //bool skip = true;
+        /*
         for(int e = 0; e < TS_conf->fixedplugins; e++){
             if(strcmp(plugins[i], TS_conf->plugins[e])==0){
             skip = false;
@@ -206,7 +208,7 @@ int loadAllPlugins(){
         if(skip){
             continue;
         }
-
+        */
 
         #ifdef _WIN32
 		DWORD error;
@@ -239,6 +241,7 @@ int loadAllPlugins(){
         if(plugins[i][0]=='.'){
             continue;
         }
+        /*
         bool skip = false;
         for(int e = 0; e < TS_conf->fixedplugins; e++){
             if(strcmp(plugins[i], TS_conf->plugins[e])==0){
@@ -249,6 +252,7 @@ int loadAllPlugins(){
         if(skip){
             continue;
         }
+        */
 
         #ifdef _WIN32
 		DWORD error;
@@ -332,7 +336,7 @@ void grabFuncsFromLibrary(HINSTANCE handle){
     for(int i = 0; i<numFuncs; i++){
         //DEBUG_VERBOSE
 
-        addFunctionToList(FuncNames[i], (v8::Handle<v8::Value> (*)(const v8::Arguments& args))Funcs[i]);
+        addFunctionToList(FuncNames[i], (v8::Handle<v8::Value> (*)(const v8::FunctionCallbackInfo<v8::Value> &args))Funcs[i]);
     }
 
     int numVars = dlGetNumVars();
@@ -356,6 +360,11 @@ void grabFuncsFromLibrary(HINSTANCE handle){
 
 //void grabFuncsFromLibrary(void *handle, const char *name = "Unkown"){
 void grabFuncsFromLibrary(void *handle){
+    if(!handle){
+        fprintf(stderr, "[Engine] Error: Bad handle.\n");
+        exit(EXIT_FAILURE);
+    }
+
     //printf("We'll try.\n");
     static int PluginNum = 1;
     char *error;
@@ -367,8 +376,8 @@ void grabFuncsFromLibrary(void *handle){
     int     (*dlGetNumVars)(void);
     VariableArray   (*dlGetVars)(void);
     const char**    (*dlGetVarNames)(void);
-    DLOPENFUNCTONPRESET(char *(*)(int), dlInit, handle, "Init", error, return);
-    DLOPENFUNCTONPRESET(void(*)(void), dlClose, handle, "Close", error, return);
+    dlInit = (char *(*)(int))DLOPENFUNCTION(handle, "Init");
+    dlClose = (void(*)(void))DLOPENFUNCTION(handle, "Close");
     const char * repname = dlInit(PluginNum);
     //DEBUG_VERBOSE
     if(repname==NULL){
@@ -380,19 +389,54 @@ void grabFuncsFromLibrary(void *handle){
 
     //printf("Loaded plugin %s.\n", repname);
 
-    DLOPENFUNCTONPRESET(int(*)(void), dlGetNumFuncs, handle, "GetNumFunctions", error, return);
-    DLOPENFUNCTONPRESET(void **(*)(void), dlGetFuncs, handle, "GetFunctions", error, return);
-    DLOPENFUNCTONPRESET(const char **(*)(void), dlGetFuncNames, handle, "GetFunctionNames", error, return);
+    dlGetNumFuncs   = (int(*)(void))DLOPENFUNCTION(handle, "GetNumFunctions");
 
-    DLOPENFUNCTONPRESET(int(*)(void), dlGetNumVars, handle, "GetNumVariables", error, return);
-    DLOPENFUNCTONPRESET(VariableArray (*)(void), dlGetVars, handle, "GetVariables", error, return);
-    DLOPENFUNCTONPRESET(const char **(*)(void), dlGetVarNames, handle, "GetVariableNames", error, return);
+    if(!dlGetNumFuncs){
+        fprintf(stderr, "[Engine] Error: could not load GetNumFunctions from plugin.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    dlGetFuncs      = (void **(*)(void))DLOPENFUNCTION(handle, "GetFunctions");
+
+    if(!dlGetFuncs){
+        fprintf(stderr, "[Engine] Error: could not load GetFunctions from plugin.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    dlGetFuncNames  = (const char **(*)(void))DLOPENFUNCTION(handle, "GetFunctionNames");
+
+    if(!dlGetFuncNames){
+        fprintf(stderr, "[Engine] Error: could not load GetFunctionNames from plugin.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    dlGetNumVars    = (int(*)(void))DLOPENFUNCTION(handle, "GetNumVariables");
+
+    if(!dlGetNumVars){
+        fprintf(stderr, "[Engine] Error: could not load GetNumVariables from plugin.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    dlGetVars       = (VariableArray (*)(void))DLOPENFUNCTION(handle, "GetVariables");
+
+    if(!dlGetVars){
+        fprintf(stderr, "[Engine] Error: could not load GetVariables from plugin.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    dlGetVarNames   = (const char **(*)(void))DLOPENFUNCTION(handle, "GetVariableNames");
+
+    if(!dlGetVarNames){
+        fprintf(stderr, "[Engine] Error: could not load GetVarNames from plugin.\n");
+        exit(EXIT_FAILURE);
+    }
+
 
     int numFuncs = dlGetNumFuncs();
-    FunctionArray Funcs = (FunctionArray) calloc (numFuncs, sizeof(void *));
+    FunctionArray Funcs;// = (FunctionArray) calloc (numFuncs, sizeof(void *));
 
     Funcs = dlGetFuncs();
-    const char ** FuncNames = (const char **)calloc(numFuncs, sizeof(const char*));
+    const char ** FuncNames;// = (const char **)calloc(numFuncs, sizeof(const char*));
 
     FuncNames = dlGetFuncNames();
 
@@ -402,7 +446,7 @@ void grabFuncsFromLibrary(void *handle){
                 printf("Problem with plugin %s: Function %i has no name.\n", repname, i);
             }
             else{
-                addFunctionToList(FuncNames[i], (v8::Handle<v8::Value> (*)(const v8::Arguments& args))Funcs[i]);
+                addFunctionToList(FuncNames[i], (void (*)(const v8::FunctionCallbackInfo<v8::Value> &args))Funcs[i], v8::Isolate::GetCurrent());
             }
     }
 
@@ -421,16 +465,16 @@ void grabFuncsFromLibrary(void *handle){
                 printf("Problem with plugin %s: Variable %i has no name.\n", repname, i);
             }
             else{
-                addVariableToList(VarNames[i], (v8::Handle<v8::Value>)Vars[i]);
+                addVariableToList(VarNames[i], (v8::Handle<v8::Value>)Vars[i], v8::Isolate::GetCurrent());
             }
         }
 
-        free(VarNames);
-        free(Vars);
+//        free(VarNames);
+//        free(Vars);
     }
 
-    free(FuncNames);
-    free(Funcs);
+//    free(FuncNames);
+//    free(Funcs);
     printf("[Engine] Info: Plugin %s successfully loaded.\n", repname);
 }
 

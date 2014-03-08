@@ -8,22 +8,25 @@
 #define __func__ __FUNCTION__
 #endif
 
-EXTERN_OBJECT_TEMPLATES(Sound);
-EXTERN_OBJECT_TEMPLATES(SoundEffect);
+extern Turbo::JSObj<TS_Sound>       SoundObject;
+extern Turbo::JSObj<TS_Sound> SoundEffectObject;
 
-v8Function SoundGetLength(V8ARGS);
+//EXTERN_OBJECT_TEMPLATES(Sound);
+//EXTERN_OBJECT_TEMPLATES(SoundEffect);
 
-v8Function LoadSound(V8ARGS);
-v8Function LoadSoundEffect(V8ARGS);
+Turbo::JSFunction SoundGetLength(Turbo::JSArguments);
 
-v8Function PlaySound(V8ARGS);
+Turbo::JSFunction LoadSound(Turbo::JSArguments);
+Turbo::JSFunction LoadSoundEffect(Turbo::JSArguments);
 
-v8Function PauseSound(V8ARGS);
+Turbo::JSFunction PlaySound(Turbo::JSArguments);
 
-v8Function StopSound(V8ARGS);
+Turbo::JSFunction PauseSound(Turbo::JSArguments);
 
-v8Function IsSoundPlaying(V8ARGS);
+Turbo::JSFunction StopSound(Turbo::JSArguments);
 
-v8Function SoundSetVolume(V8ARGS);
+Turbo::JSFunction IsSoundPlaying(Turbo::JSArguments);
+
+Turbo::JSFunction SoundSetVolume(Turbo::JSArguments);
 
 #endif
