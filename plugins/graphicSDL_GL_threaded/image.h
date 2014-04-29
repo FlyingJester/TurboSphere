@@ -1,6 +1,7 @@
 #ifndef SDL_GL_IMAGE_HEAD
 #define SDL_GL_IMAGE_HEAD
 
+
 typedef GLuint TS_Texture;
 typedef GLuint TS_TexVertexBuffer;
 typedef GLuint TS_TextureBuffer;

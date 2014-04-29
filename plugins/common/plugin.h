@@ -77,6 +77,12 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 
 #include "../../common/stacktrace.h"
 
+/////
+// Containers for JSAccessors
+//
+#include <tuple>
+#include <forward_list>
+
 #include <string>
 #include <cstdarg>
 #include <cassert>
@@ -92,8 +98,9 @@ namespace Turbo{
     typedef void JSFunction;
     typedef JSFunction(*JSCallback)(JSArguments);
     typedef JSCallback*  JSFunctionArray;
-    typedef const char*  JSFunctionName;
-    typedef const char*  JSVariableName;
+    typedef const char*  JSName;
+    typedef JSName       JSFunctionName;
+    typedef JSName       JSVariableName;
     typedef const char** JSNameArray;
     typedef const char*  InitFunction;
 
@@ -101,12 +108,55 @@ namespace Turbo{
 
     /////
     // Internal Typdefs
-
+    //
     typedef v8::Handle<v8::String> JSString;
     typedef v8::Local<v8::String> JSAccessorProperty;
     typedef const v8::PropertyCallbackInfo<v8::Value>& JSAccessorInfo;
     typedef v8::Local<v8::Value> JSValue;
     typedef JSValue *JSValueArray;
+
+    /////
+    // A helper for GetFunctions/Variables and names
+    //
+    /////
+    // More safely stores script data (functions and variables) in a format
+    //   easily used by Engine.
+    //
+    template <class A>
+    class ScriptObjectList{
+    public:
+        ScriptObjectList(size_t n = 0){
+            num = n;
+            contains = new A[num];
+            names    = new Turbo::JSName[num];
+        }
+        ~ScriptObjectList(){
+            delete []contains;
+            delete []names;
+        }
+
+        const A *GetA(void){
+            return contains;
+        }
+
+        size_t GetNum(void){
+            return num;
+        }
+        const Turbo::JSNameArray GetNames(void){
+            return names;
+        }
+
+        void Set(A a, Turbo::JSName name, size_t at){
+            assert(at<num);
+            contains[at] = a;
+            names[at] = name;
+        }
+
+    private:
+        A *contains;
+        size_t num;
+        Turbo::JSNameArray names;
+    };
 
     inline void SetError(JSArguments args, const char *err, v8::Local<v8::Value> (&v8ExceptionType)(v8::Handle<v8::String>) = v8::Exception::Error){
         v8::Isolate *iso = v8::Isolate::GetCurrent();
@@ -131,11 +181,11 @@ namespace Turbo{
         JSObj<T>(){
 
             Template         = v8::FunctionTemplate::New(v8::Isolate::GetCurrent());
-            InstanceTemplate = Template->InstanceTemplate();
             Prototype        = Template->PrototypeTemplate();
+            InstanceTemplate = Template->InstanceTemplate();
 
-            //Constructor      = Template->GetFunction();
             InstanceTemplate->SetInternalFieldCount(2);
+            Constructor      = Template->GetFunction();
 
             accessors = NULL;
         };
@@ -169,11 +219,16 @@ namespace Turbo{
             if(!TypeName.IsEmpty())
                 TypeName.Clear();
             TypeName = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name);
+            Template->SetClassName(TypeName);
         }
 
         void AddToProto(const char *name , v8::FunctionCallback call){
             auto iso = v8::Isolate::GetCurrent();
             Prototype->Set(v8::String::NewFromUtf8(iso, name), v8::FunctionTemplate::New(iso, call));
+        }
+
+        void AddAccessor(const char *name, v8::AccessorGetterCallback Getter, v8::AccessorSetterCallback Setter){
+            InstanceTemplate->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name), Getter, Setter);
         }
 
     };
@@ -326,19 +381,20 @@ namespace Turbo{
     ///////////////////////////////////////////////////////////////////////////////
     // Wrapping Objects
 
-    template<class T> inline v8::Persistent<v8::Object> &WrapObject(const JSObj<T> &JSo, T *obj){
+    template<class T> inline void WrapObject(JSArguments args, const JSObj<T> &JSo, T *obj){
 
         //
-
         auto iso = v8::Isolate::GetCurrent();
+
 
         /////
         // Create a JS object that holds an ID number and a pointer to the object
-
-        v8::Handle<v8::Object> returnobj;// = JSo.Constructor->NewInstance();
+        assert(obj != NULL);
+        JSo.InstanceTemplate->SetInternalFieldCount(2);
+        v8::Handle<v8::Object> returnobj = JSo.Constructor->NewInstance();//JSo.Constructor->NewInstance();//v8::Object::New(iso);// = JSo.Constructor->NewInstance();
         returnobj->SetAlignedPointerInInternalField(0, obj);
         returnobj->SetInternalField(1, v8::Integer::NewFromUnsigned(iso, JSo.ID));
-        returnobj->GetConstructorName()=JSo.TypeName;
+        printf("%s\n", *(v8::String::Utf8Value(JSo.TypeName)));
 
         /////
         // Set the weak reference callback
@@ -347,10 +403,7 @@ namespace Turbo{
         preturnobj.SetWeak(obj, JSo.Finalize);
 
         //
-
-        //v8::Handle<v8::Object> handle;//(preturnobj);
-        //handle->
-        return preturnobj;
+        args.GetReturnValue().Set(preturnobj);
     }
 
     /////
@@ -361,8 +414,8 @@ namespace Turbo{
         return static_cast<T*>(args.Holder()->GetAlignedPointerFromInternalField(0));
     }
 
-    template<class T>
-    T *GetAccessorSelf(JSAccessorInfo info) {
+    template<class T, typename A>
+    T *GetAccessorSelf(v8::PropertyCallbackInfo<A> info) {
         return static_cast<T*>(info.Holder()->GetAlignedPointerFromInternalField(0));
     }
 

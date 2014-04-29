@@ -44,9 +44,6 @@ const char * Init(){
     SoundObject.SetTypeName("Sound");
     SoundEffectObject.SetTypeName("SoundEffect");
 
-//    INIT_OBJECT_TEMPLATES(SoundEffect);
-//    SET_CLASS_NAME(SoundEffect, "SoundEffect");
-
     SoundObject.AddToProto(         "play", PlaySound);
     SoundEffectObject.AddToProto(   "play", PlaySound);
 

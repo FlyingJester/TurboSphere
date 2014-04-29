@@ -55,8 +55,13 @@ Turbo::JSFunction LoadSound(Turbo::JSArguments args){
         Turbo::SetError(args, string("Error: Could not load Sound ").append(soundname).c_str());
         return;
     }
-    Turbo::WrapObject(SoundObject,sound);
-    return;
+
+    //auto ret =
+    Turbo::WrapObject(args, SoundObject, sound);
+
+    //args.GetReturnValue().Set(ret);
+//    args.GetReturnValue().Set(Turbo::WrapObject(SoundObject,sound));
+    //return;
 }
 
 Turbo::JSFunction LoadSoundEffect(Turbo::JSArguments args){
@@ -99,8 +104,9 @@ Turbo::JSFunction LoadSoundEffect(Turbo::JSArguments args){
     }
 
 
-    Turbo::WrapObject(SoundEffectObject, sound);
-    return;
+    Turbo::WrapObject(args, SoundEffectObject, sound);
+//    args.GetReturnValue().Set((const v8::Persistent<v8::Object> &)(Turbo::WrapObject(SoundEffectObject, sound)));
+//    return;
 }
 
 Turbo::JSFunction SoundGetLength(Turbo::JSArguments args){
