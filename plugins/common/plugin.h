@@ -183,11 +183,9 @@ namespace Turbo{
             Template         = v8::FunctionTemplate::New(v8::Isolate::GetCurrent());
             Prototype        = Template->PrototypeTemplate();
             InstanceTemplate = Template->InstanceTemplate();
-
             InstanceTemplate->SetInternalFieldCount(2);
             Constructor      = Template->GetFunction();
 
-            accessors = NULL;
         };
 
         ~JSObj(){
@@ -224,11 +222,13 @@ namespace Turbo{
 
         void AddToProto(const char *name , v8::FunctionCallback call){
             auto iso = v8::Isolate::GetCurrent();
-            Prototype->Set(v8::String::NewFromUtf8(iso, name), v8::FunctionTemplate::New(iso, call));
+            InstanceTemplate->Set(v8::String::NewFromUtf8(iso, name), v8::FunctionTemplate::New(iso, call));
+            //Prototype->Set(v8::String::NewFromUtf8(iso, name), v8::FunctionTemplate::New(iso, call));
         }
 
         void AddAccessor(const char *name, v8::AccessorGetterCallback Getter, v8::AccessorSetterCallback Setter){
             InstanceTemplate->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name), Getter, Setter);
+            Prototype->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name), Getter, Setter);
         }
 
     };
@@ -390,10 +390,15 @@ namespace Turbo{
         /////
         // Create a JS object that holds an ID number and a pointer to the object
         assert(obj != NULL);
-        JSo.InstanceTemplate->SetInternalFieldCount(2);
-        v8::Handle<v8::Object> returnobj = JSo.Constructor->NewInstance();//JSo.Constructor->NewInstance();//v8::Object::New(iso);// = JSo.Constructor->NewInstance();
+        assert(args.IsConstructCall());
+        //JSo.InstanceTemplate->SetInternalFieldCount(2);
+        v8::Handle<v8::Object> returnobj = JSo.InstanceTemplate->NewInstance();//JSo.Constructor->NewInstance();//v8::Object::New(iso);// = JSo.Constructor->NewInstance();
+        assert(JSo.Template->HasInstance(returnobj));
         returnobj->SetAlignedPointerInInternalField(0, obj);
         returnobj->SetInternalField(1, v8::Integer::NewFromUnsigned(iso, JSo.ID));
+        //args.GetReturnValue().Set(returnobj);
+        //return;
+
         printf("%s\n", *(v8::String::Utf8Value(JSo.TypeName)));
 
         /////
@@ -404,6 +409,7 @@ namespace Turbo{
 
         //
         args.GetReturnValue().Set(preturnobj);
+
     }
 
     /////
