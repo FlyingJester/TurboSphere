@@ -1,0 +1,8 @@
+import os
+import sys
+
+Import(" currentenv ")
+
+graphicalg = currentenv.SharedLibrary('../graphicalg', 'structures.cpp')
+
+Return(" graphicalg ")

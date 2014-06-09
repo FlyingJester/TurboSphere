@@ -1,0 +1,10 @@
+import os
+import sys
+
+Import(" currentenv lib_path graphiccommon ")
+
+files = ["opengame.cpp", "openscript.cpp"]
+configmanager = currentenv.SharedLibrary('../configmanager', files, LIBS = ['t5', 'graphiccommon', 'v8'], LIBPATH = lib_path)
+
+Return(" configmanager ")
+
