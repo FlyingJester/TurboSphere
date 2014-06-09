@@ -64,6 +64,12 @@ uint32_t (*TS_GetTime)(void);
 #define STRDUP strdup
 #endif
 
+#if ( defined __MACH__ ) && (defined __APPLE__ )
+    #include "osx_time.h"
+
+    #define OS_X 1
+#endif
+
 /*
 inline void TS_OverrideConfig(TS_Config *conf, TS_ConfigOverride *overrideConf){
     TS_Config *oconf = overrideConf->config;
@@ -426,7 +432,11 @@ void GetTime(const v8::FunctionCallbackInfo<v8::Value> &args)
 
     #ifdef _WIN32
 
-	args.GetReturnValue().Set(v8::Number::New(timeGetTime()));
+    args.GetReturnValue().Set(v8::Number::New(timeGetTime()));
+
+    #elif defined OS_X
+
+    args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), TS_OSX_GetTime()));
 
     #else
     struct timespec s;
@@ -442,11 +452,32 @@ void Delay(const v8::FunctionCallbackInfo<v8::Value> &args){
 
 	#ifdef _WIN32
 
-	#else
-	//If we are delaying for longer than the longest time it ever took to call v8::V8::LowMemoryNotification(),
-	//Then we will call it and subtract the time difference it made from the ms to sleep for.
-	static uint32_t max = 0;
-	if(t>max){
+    #elif defined OS_X
+    //If we are delaying for longer than the longest time it ever took to call v8::V8::LowMemoryNotification(),
+    //Then we will call it and subtract the time difference it made from the ms to sleep for.
+    static uint32_t max = 0;
+    if(t>max){
+
+        uint32_t ot = TS_OSX_GetTime();
+
+        while(!v8::V8::IdleNotification(1000)){}
+
+        v8::V8::LowMemoryNotification();
+
+        ot = TS_OSX_GetTime()-ot;
+        t-=ot;
+        if(ot>max){
+            max=ot;
+            printf(ENGINE " Info: Increased minimum time threshold to %i.\n", max);
+        }
+    }
+
+    TS_SLEEP(t);
+    #else
+    //If we are delaying for longer than the longest time it ever took to call v8::V8::LowMemoryNotification(),
+    //Then we will call it and subtract the time difference it made from the ms to sleep for.
+    static uint32_t max = 0;
+    if(t>max){
 
         struct timespec s;
 
@@ -465,10 +496,10 @@ void Delay(const v8::FunctionCallbackInfo<v8::Value> &args){
             max=ot;
             printf(ENGINE " Info: Increased minimum time threshold to %i.\n", max);
         }
-	}
+    }
 
         TS_SLEEP(t);
-	#endif  //_WIN32
+    #endif  //_WIN32
 
 	//SDL_Delay(t);
 	//return v8::Undefined(v8::Isolate::GetCurrent());

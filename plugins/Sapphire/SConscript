@@ -24,10 +24,12 @@ if "mips" in cpu:
 else:
 	embedded = False
 
+sapphireenv = currentenv.Clone()
+
 libs = []
 
 if sys.platform == 'darwin':
-	libs = ['SDL2_image', 'png', 'GL']
+	libs = ['SDL2_image', 'png']
 elif sys.platform == 'win32' or sys.platform == 'win64':
 	libs = ['SDL2_image', 'libpng16-16', 'OpenGL32']
 else:
@@ -57,14 +59,17 @@ if(has_tbb):
 	addCflags += " -DUSE_INTEL_TBB "
 	addLibs += "tbb"
 
-ifflib = currentenv.StaticLibrary("tsiff", "iff.cpp", LIBS = [libs, "tbb"], CPPFLAGS = " -DUSE_INTEL_TBB ")
+if sys.platform=='darwin':
+  addLinkflags += " -framework OpenGL"
 
-sapphire = currentenv.SharedLibrary(os.path.join(tsdir, 'bin/Release/plugin/sapphire'), files, LIBS = [libs, "tbb"], CPPFLAGS = addCflags, LINKFLAGS = addLinkflags)
+ifflib = sapphireenv.StaticLibrary("tsiff", "iff.cpp", LIBS = [libs, "tbb"], CPPFLAGS = " -DUSE_INTEL_TBB ")
+
+sapphire = sapphireenv.SharedLibrary(os.path.join(tsdir, 'bin/Release/plugin/sapphire'), files, LIBS = [libs, "tbb"], CPPFLAGS = addCflags, LINKFLAGS = addLinkflags)
 Depends(sapphire, create_iff)
 
 testFiles = glob.glob("test/test/*.cpp")
 
 for file in testFiles:
-	test = currentenv.Program(os.path.join(os.getcwd(), file [0:len(file)-4]), [file], LIBS = [libs, ifflib, "tbb"], CPPFLAGS = addCflags)
+	test = sapphireenv.Program(os.path.join(os.getcwd(), file [0:len(file)-4]), [file], LIBS = [libs, ifflib, "tbb"], CPPFLAGS = addCflags)
 	Depends(sapphire, test)
 	Depends(test, create_iff)

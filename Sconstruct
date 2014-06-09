@@ -3,7 +3,7 @@ import sys
 
 defaultenv	= Environment(ENV = os.environ)
 
-linuxenv        = defaultenv.Clone(tools = ['default', 'textfile'], CXXFLAGS = " -std=c++11 ", CFLAGS = " -std=c11 ", CCFLAGS = " -Werror=return-type -Wno-unused-local-typedefs -Wall -Wno-pointer-arith -mtune=native -flto -O2 -Wcast-align -g ", CPPFLAGS = "-I./common")
+linuxenv        = defaultenv.Clone(tools = ['default', 'textfile'], CXXFLAGS = " -std=c++11 ", CFLAGS = " -std=c11 ", CCFLAGS = " -Werror=return-type -Wall -Wno-pointer-arith -mtune=native -flto -O2 -Wcast-align -g ", CPPFLAGS = "-I./common")
 
 windowsenv 	= defaultenv.Clone(CCFLAGS = "/O2 /EHsc /Zi")
 
@@ -74,12 +74,19 @@ if sys.platform == 'win32' or sys.platform == 'win64':
 else:
 	if sys.platform == 'linux':
 		lib_install_dir = '/usr/lib/turbosphere'
+		currentenv.Append(CCFLAGS=" -Wno-unused-local-typedefs ")
 		currentenv = linux32env.Clone(LIBPATH=lib_install_dir)
 	else:
 		v8name = 'libv8.so'
 		lib_install_dir = '/usr/lib64/turbosphere'
 		currentenv = linux64env.Clone(LIBPATH=lib_install_dir)
 		arch = 'x64'
+
+# OS X is consistent, we can plug this right in.
+if sys.platform == 'darwin':
+  currentenv.Append(CCFLAGS = " -DHAS_UNISTD -DHAS_STAT_SYS -DUSE_STAT -Wno-return-type-c-linkage -Wno-null-arithmetic")
+  currentenv.Append(CPPPATH = os.getcwd()+"/osx")
+  currentenv.Append(LINKFLAGS = " -L"+os.getcwd())
 
 setuplibs = "False"
 
@@ -236,12 +243,14 @@ configmanager = SConscript(dirs=["configmanager"], exports = ' currentenv lib_pa
 spklib = tsenv.StaticLibrary(source = ['package_spk.cpp'], LIBS=[t5, 'z'])
 
 if sys.platform == 'darwin':
-	programenv = tsenv.Clone()
-	programenv.Append(FRAMEWORKS=['Cocoa'])
-	turbosphere = programenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
-		LIBS=['v8', t5, graphicalg, graphiccommon, configmanager, 'dl', 'z', spklib],
-		LIBPATH = lib_path)
-	Depends(turbosphere, t5)
+  programenv = tsenv.Clone()
+  programenv.Append(FRAMEWORKS=['Cocoa'])
+  osx_time = StaticLibrary(target = 'osx_time', source = ['osx_time.m'])
+  turbosphere = programenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
+    LIBS=['v8', osx_time, t5, graphicalg, graphiccommon, configmanager, 'dl', 'z', spklib, 'objc'],
+    LIBPATH = lib_path)
+  Depends(turbosphere, t5)
+  networkTS_files	 = ['plugins/networkTS/osx_network.cpp']
 
 elif sys.platform =='win32' or sys.platform == 'win64':
 	turbosphere = tsenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
