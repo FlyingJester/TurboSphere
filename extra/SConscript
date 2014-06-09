@@ -1,0 +1,15 @@
+import os
+import sys
+
+Import(" currentenv ")
+
+cflags = ""
+if sys.platform == 'win32' or sys.platform == 'win64':
+    cflags = " /Os "
+else:
+    cflags = " -Os -Wpedantic -pedantic-errors -Wno-overlength-strings "
+turbo_icon = StaticLibrary("turbo_icon", ["TurboMicro.c"], CFLAGS = cflags)
+
+Export(" turbo_icon ")
+
+Return(" turbo_icon ")

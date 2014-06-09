@@ -16,6 +16,21 @@
 #define CHANNEL_MASKS Frmask, Fgmask, Fbmask, Famask
 
 #ifdef __cplusplus
+
+#include "sapphire.h"
+namespace Sapphire {
+
+    extern Turbo::JSObj<SDL_Surface> SurfaceObject;
+
+    namespace Script{
+
+        Turbo::JSFunction CreateSurface(Turbo::JSArguments args);
+
+    }
+}
+#endif
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -24,6 +39,7 @@ extern "C" {
     } surface_data;
 
     void SurfaceInit(uint32_t ID);
+    void SurfaceObjInit(uint32_t ID);
 
     inline void TS_PrimeSurface(SDL_Surface *surf){
         SDL_SetSurfaceRLE(surf,1);
@@ -34,6 +50,9 @@ extern "C" {
     inline void TS_ClearSurface(SDL_Surface *surf){
         free(surf->userdata);
     }
+
+    //C Wrapper for some T5 functions.
+    int TS_IsSurfacePathValid(const char *path);
 
     // Asynchronous
     SDL_Surface *TS_CreateSurface(unsigned int w, unsigned int h, RGBA color);

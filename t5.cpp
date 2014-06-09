@@ -52,11 +52,24 @@
 
 #ifdef _WIN32
     #include <windows.h>
+    #include <locale>
+    #include <cctype>
 
 typedef HANDLE filehandle;
 	typedef WIN32_FIND_DATA filedata;
 	#define FILENAME(NAME) NAME.cFileName
 	#define ISDIRECTORY(NAME) (NAME.dwFileAttributes&FILE_ATTRIBUTE_DIRECTORY)
+
+bool T5_PathIsAbs(const char *path){
+    if(!T5_IsDir(path))
+        return false;
+
+    if()
+
+    unsigned int drives = GetLogicalDrives();
+    char letter = tolower(*path)
+
+}
 
 #else
 
@@ -66,12 +79,101 @@ typedef HANDLE filehandle;
 	typedef struct dirent * filedata;
 	#define FILENAME(NAME) NAME->d_name
 	#define ISDIRECTORY(NAME) (NAME->d_type==DT_DIR)
-
-    #include <cstring>
 #endif
 
-
 static std::vector<const char*> T5_Directories(0);
+
+
+const char * T5_JoinPaths(const char *a, const char *b){
+
+    if(*b==NULL)
+        return STRDUP(a);
+    if(*a==NULL)
+        return STRDUP(b);
+
+#if ( defined __linux__ ) || (defined __ANDROID__) || ( defined unix ) || ( defined __unix ) || ( defined __unix__ )
+
+    std::string path(a);
+
+    const char *c = b;
+
+    if(*b==' ')
+        while(*c == ' ')
+            c++;
+
+    if(*c=='/')
+        b=c;
+
+    if(*b=='/')
+        return STRDUP(a);
+    else if(path.empty()||(*(path.crbegin())=='/'))
+        path+=std::string(b);
+    else
+        path+=std::string("/").append(b);
+
+    return STRDUP(path.c_str());
+#else
+
+    std::string path(a);
+    bool b_is_abs = false;
+    if(path.empty())
+        b_is_abs = true;
+    else if()
+
+
+    path = a
+    for b in p:
+        b_wins = 0  # set to 1 iff b makes path irrelevant
+        if path == "":
+            b_wins = 1
+
+        elif isabs(b):
+            # This probably wipes out path so far.  However, it's more
+            # complicated if path begins with a drive letter:
+            #     1. join('c:', '/a') == 'c:/a'
+            #     2. join('c:/', '/a') == 'c:/a'
+            # But
+            #     3. join('c:/a', '/b') == '/b'
+            #     4. join('c:', 'd:/') = 'd:/'
+            #     5. join('c:/', 'd:/') = 'd:/'
+            if path[1:2] != ":" or b[1:2] == ":":
+                # Path doesn't start with a drive letter, or cases 4 and 5.
+                b_wins = 1
+
+            # Else path has a drive letter, and b doesn't but is absolute.
+            elif len(path) > 3 or (len(path) == 3 and
+                                   path[-1] not in "/\\"):
+                # case 3
+                b_wins = 1
+
+        if b_wins:
+            path = b
+        else:
+            # Join, and ensure there's a separator.
+            assert len(path) > 0
+            if path[-1] in "/\\":
+                if b and b[0] in "/\\":
+                    path += b[1:]
+                else:
+                    path += b
+            elif path[-1] == ":":
+                path += b
+            elif b:
+                if b[0] in "/\\":
+                    path += b
+                else:
+                    path += "\\" + b
+            else:
+                # path is not empty and does not end with a backslash,
+                # but b is empty; since, e.g., split('a/') produces
+                # ('a', ''), it's best if join() adds a backslash in
+                # this case.
+                path += '\\'
+
+    return path
+
+#endif
+}
 
 //TODO: Handle large files.
 inline uint64_t T5_UnsafeGetFileSize(const char *path){

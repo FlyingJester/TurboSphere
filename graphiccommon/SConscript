@@ -1,0 +1,11 @@
+import os
+import sys
+
+Import(" currentenv turbo_icon ")
+
+files = ["screen.cpp", "color.cpp"]
+
+graphiccommon = currentenv.SharedLibrary('../graphiccommon', files, LIBS = turbo_icon)
+
+Return(" graphiccommon ")
+

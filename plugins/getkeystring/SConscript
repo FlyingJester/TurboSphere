@@ -1,0 +1,6 @@
+Import('currentenv lib_path base_libs tsdir')
+
+import os
+
+getkeystring     = currentenv.SharedLibrary(os.path.join(tsdir, 'bin/Release/plugin/getkeystring'), ['getkeystring.cpp'], LIBS = ['v8'], LIBPATH = lib_path)
+Depends(getkeystring, base_libs)

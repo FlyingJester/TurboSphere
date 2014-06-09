@@ -5,6 +5,7 @@
 #include "../common/plugin.h"
 #include <list>
 
+#define SDL2_VIDEO_FLAGS SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS
 
 namespace Sapphire {
 

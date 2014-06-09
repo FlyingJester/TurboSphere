@@ -3,7 +3,7 @@ import sys
 
 defaultenv	= Environment(ENV = os.environ)
 
-linuxenv        = defaultenv.Clone(tools = ['default', 'textfile'], CCFLAGS = " -Werror=return-type -Wno-unused-local-typedefs -Wall -Wno-pointer-arith -mtune=native -msse2 -flto -O2 -funroll-loops -std=c++11 -Wcast-align -pg -g ", LINKFLAGS = "-I./")
+linuxenv        = defaultenv.Clone(tools = ['default', 'textfile'], CXXFLAGS = " -std=c++11 ", CFLAGS = " -std=c11 ", CCFLAGS = " -Werror=return-type -Wno-unused-local-typedefs -Wall -Wno-pointer-arith -mtune=native -flto -O2 -Wcast-align -g ", CPPFLAGS = "-I./common")
 
 windowsenv 	= defaultenv.Clone(CCFLAGS = "/O2 /EHsc /Zi")
 
@@ -15,10 +15,12 @@ linux64env	= linuxenv.Clone()
 
 macintoshenv	= defaultenv.Clone()
 
-print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-print '!!  I apologize for the build system being held together with bailing wire and duct tape.                                !!'
-print '!!  As root, run `scons --install_libs=y`. Then as a normal use run `scons  --build_plugins=all buildplugins`.           !!'
-print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+print '!!  I apologize for the build system being held together  !!'
+print '!!   with bailing wire and duct tape.                     !!'
+print '!!  As root, run `scons --install_libs=y`. Then as a      !!'
+print '!!   user run `scons  --build_plugins=all buildplugins`.  !!'
+print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 
 AddOption('--install_libs',
                   dest='install_libs',
@@ -69,16 +71,7 @@ if sys.platform == 'win32' or sys.platform == 'win64':
 	lib_install_dir = './bin/Release'
 	currentenv = win32env.Clone(LIBPATH=lib_install_dir)
 
-	graphicalg_name    = './bin/Release/graphicalg'
-	graphiccommon_name = './bin/Release/graphiccommon'
-	configmanager_name = './bin/Release/configmanager'
-
 else:
-	v8name = 'libv8.so'
-	graphicalg_name    = 'graphicalg'
-	graphiccommon_name = 'graphiccommon'
-	configmanager_name = 'configmanager'
-
 	if sys.platform == 'linux':
 		lib_install_dir = '/usr/lib/turbosphere'
 		currentenv = linux32env.Clone(LIBPATH=lib_install_dir)
@@ -88,46 +81,10 @@ else:
 		currentenv = linux64env.Clone(LIBPATH=lib_install_dir)
 		arch = 'x64'
 
-usemingw = GetOption('usemingw')
-if usemingw == "y":
-	currentenv.Replace(CC = 'i686-w64-mingw32-gcc')
-	#currentenv.Tool('i686-w64-mingw32-gcc')
-
 setuplibs = "False"
-
-
-#build and install v8
-#def v8_install():
-#	installv8 = currentenv.Command(lib_install_dir+'/'+v8name, 'v8/out/'+arch+'.release/lib.target/'+v8name, Copy("$TARGET", "$SOURCE"))
-
-#def v8_build():
-#	downloadv8 = currentenv.Command('v8/DEPS', [], '-svn checkout http://v8.googlecode.com/svn/trunk v8')
-#	buildv8 = currentenv.Command('v8/out/'+arch+'.release/lib.target/'+v8name, downloadv8, "cd v8 && pwd && make dependencies && make "+arch+".release library=shared -j2")
-#	addincludes = currentenv.Command([], downloadv8,  "-cp -f v8/include/* ./")
-#	AlwaysBuild(addincludes)
-#	v8_install()
-#	ldconfig = currentenv.Command([], [], "ldconfig")
-#	AlwaysBuild(ldconfig)
-
 
 lib_path = lib_install_dir
 pluginpath = 'bin/Release/plugin'
-
-graphiccommon_files = Split("""
-	graphiccommon/screen.cpp
-	graphiccommon/color.cpp""")
-
-graphiccommon_path = ['graphiccommon']
-
-graphicalg_files = Split("""./graphicalg/structures.cpp""")
-
-graphicalg_path = ['./graphicalg']
-
-configmanager_files = Split("""
-	./configmanager/opengame.cpp
-	./configmanager/openscript.cpp""")
-
-configmanager_path = ['./configmanager']
 
 turbosphere_files = Split("""
 	./engine.cpp
@@ -135,6 +92,8 @@ turbosphere_files = Split("""
 	./functionload.cpp
 	./variableregister.cpp
 	./typed_array.cpp
+	./version.cpp
+	./options.c
 	""")
 
 useAmdLibm = GetOption('useamdlibm')
@@ -157,12 +116,31 @@ types_n = 0
 has_types = 0
 types_sys = 0
 has_fltk = 0
+has_tbb = 0
+has_pthreads = 0
+has_cppatomics = 0
+has_cppthreads = 0
+has_pthreads = 0
 
 conf = Configure(t5env)
 #find the available headers for building TS, T5 and networkTS.
-if sys.platform == 'linux' or sys.platform == 'linux2' or sys.platform == 'cygwin':
-    if conf.CheckLib('fltk'):
-        has_fltk = 1
+if True:
+	if conf.CheckLib('fltk'):
+        	has_fltk = 1
+	if conf.CheckCHeader('tbb/concurrent_queue.h') or conf.CheckCXXHeader('tbb/concurrent_queue.h'):
+        	has_tbb = 1
+	if conf.CheckCXXHeader('atomic'):
+		currentenv.Append(CCFLAGS=" -DHAS_ATOMIC")
+		has_cppatomics = 1
+	if conf.CheckCXXHeader('thread'):
+		currentenv.Append(CCFLAGS=" -DHAS_THREAD")
+		has_cppthreads = 1
+	if conf.CheckCXXHeader('mutex'):
+		currentenv.Append(CCFLAGS=" -DHAS_MUTEX")
+		has_cppmutices = 1
+	if conf.CheckLib('pthread'):
+		has_pthreads = 1
+		currentenv.Append(CCFLAGS=" -DHAS_PTHREAD")
 	if conf.CheckCHeader('unistd.h'):
 		has_unistd = 1
 		unistd_n = 1
@@ -247,13 +225,15 @@ if(dontUseStat != "y"):
 
 t5 = t5env.SharedLibrary('t5', ['t5.cpp'])
 
-graphicalg = currentenv.SharedLibrary('graphicalg', graphicalg_files, CPPPATH = graphicalg_path)
+turbo_icon = SConscript(dirs=["extra"], exports = ' currentenv ')
 
-graphiccommon = currentenv.SharedLibrary('graphiccommon', graphiccommon_files, CPPPATH = graphiccommon_path)
+graphicalg = SConscript(dirs=["graphicalg"], exports = ' currentenv ')#currentenv.SharedLibrary('graphicalg', graphicalg_files, CPPPATH = graphicalg_path)
 
-configmanager = currentenv.SharedLibrary('configmanager', configmanager_files, CPPPATH = configmanager_path, LIBS = ['t5', 'graphiccommon', 'v8'], LIBPATH = lib_path)
+graphiccommon = SConscript(dirs=["graphiccommon"], exports = ' currentenv turbo_icon ')# currentenv.SharedLibrary('graphiccommon', graphiccommon_files, CPPPATH = graphiccommon_path)
 
-spklib = tsenv.StaticLibrary(source = ['package_spk.cpp'], LIBS=['t5', 'z'])
+configmanager = SConscript(dirs=["configmanager"], exports = ' currentenv lib_path graphiccommon ') #
+
+spklib = tsenv.StaticLibrary(source = ['package_spk.cpp'], LIBS=[t5, 'z'])
 
 if sys.platform == 'darwin':
 	programenv = tsenv.Clone()
@@ -277,7 +257,9 @@ else:
 	Depends(turbosphere, t5)
 	networkTS_files	 = ['plugins/networkTS/unix_network.cpp']
 
-spkeditor = tsenv.Program(target = './bin/Release/spkeditor', source = ['spkeditor/SPK_Editor.cpp'], LIBS=[spklib, 't5', 'z'])
+spkeditor = tsenv.Program(target = './bin/Release/spkeditor', source = ['spkeditor/SPK_Editor.cpp'], LIBS=[spklib, t5, 'z'])
+
+
 
 if has_fltk == 1:
     spkeditor_fltk = tsenv.Program(target = './bin/Release/spkeditor-fltk', source = ['spkeditor/SDK_Editor_fltk.cpp'], LIBS=[spklib, 'fltk', t5, 'z'])
@@ -294,60 +276,41 @@ else:
 	pluginsrc_path = 'plugins'
 
 base_libs = [t5, configmanager, graphicalg, graphiccommon]
-graphicSDL_files = ['graphic.cpp']
 bmpfontSDL_files = ['bmpfont.cpp']
 ttffontSDL_files = ['ttffont.cpp']
-inputSDL_files = ['main.cpp,', 'mouse.cpp', 'key.cpp']
 scriptfs_files = ['plugins/scriptfs/scriptfs.cpp', 'plugins/scriptfs/bytearray.cpp', 'plugins/scriptfs/rawfile.cpp', 'plugins/scriptfs/bytearray_frontend.cpp', 'plugins/scriptfs/rawfile_frontend.cpp']
-getkeystring_files = ['getkeystring.cpp']
-SDL_GL_path 	 = ['plugins/graphicSDL_GL_threaded']
-SDL_GL_files	 = ['plugins/graphicSDL_GL_threaded/sdl_gl_main.cpp', 'plugins/graphicSDL_GL_threaded/shader.cpp', 'plugins/graphicSDL_GL_threaded/soft_primitives.cpp', 'plugins/graphicSDL_GL_threaded/hard_primitives.cpp', 'plugins/graphicSDL_GL_threaded/save.cpp', 'plugins/graphicSDL_GL_threaded/image.cpp', 'plugins/graphicSDL_GL_threaded/surface.cpp', 'plugins/graphicSDL_GL_threaded/surface_thread.cpp', 'plugins/graphicSDL_GL_threaded/color.cpp', 'plugins/graphicSDL_GL_threaded/primitives.cpp', 'plugins/graphicSDL_GL_threaded/screen.cpp']
-
-SDLGLenv = currentenv.Clone()
-sconf = Configure(SDLGLenv)
-sconf.env.Append()
-SDLGLenv = sconf.Finish()
-
-mapengineGL_files= ['plugins/mapengineGL/map.cpp', 'plugins/mapengineGL/mapengine.cpp', 'plugins/mapengineGL/tileset.cpp', 'plugins/mapengineGL/spriteset.cpp', 'plugins/mapengineGL/person.cpp']
-audioBASS_files	 = ['plugins/audioBASS/frontend.cpp', 'plugins/audioBASS/bass_backend.cpp', 'plugins/audioBASS/script.cpp']
-audioBASS_libs	 = ['bass', 'bassmidi']
-
-spritebatcher_files = ['plugins/spritebatcherGL/frontend.cpp', 'plugins/spritebatcherGL/batcher.cpp']
 
 build_plugins = GetOption('build_plugins')
 if build_plugins != "n":
 	if build_plugins == "y" or build_plugins == "all":
-		#v8_build()
-		if sys.platform == 'darwin':
-			SDL_GL = 		SDLGLenv.SharedLibrary('./bin/Release/plugin/SDL_GL', SDL_GL_files , LIBS = [plugin_libs, 'SDL2_image', 'png', 'libSDLmain', 'GL'], LIBPATH = lib_path)
-			spritebatcherGL = 	SDLGLenv.SharedLibrary('./bin/Release/plugin/spritebatcherGL', spritebatcher_files , LIBS = [plugin_libs, 'GL'], LIBPATH = lib_path)
-		elif sys.platform == 'win32' or sys.platform == 'win64':
-			SDL_GL = 		SDLGLenv.SharedLibrary('./bin/Release/plugin/SDL_GL', SDL_GL_files , LIBS = [plugin_libs, 'SDL2_image', 'png', 'GL'], LIBPATH = lib_path)
-			spritebatcherGL = 	SDLGLenv.SharedLibrary('./bin/Release/plugin/spritebatcherGL', spritebatcher_files , LIBS = [plugin_libs, 'GL'], LIBPATH = lib_path)
-		else:
-			SDL_GL = 		SDLGLenv.SharedLibrary('./bin/Release/plugin/SDL_GL_threaded', SDL_GL_files , LIBS = [plugin_libs, 'SDL2_image', 'GL', 'png', 'GLU', 'X11'], LIBPATH = ['/usr/local/lib', lib_path])
-			spritebatcherGL = 	SDLGLenv.SharedLibrary('./bin/Release/plugin/spritebatcherGL', spritebatcher_files , LIBS = [plugin_libs, 'GL', 'X11'], LIBPATH = ['/usr/local/lib', lib_path])
 
-		Depends(SDL_GL, base_libs)
+		tsdir = os.getcwd();
 
-		bmpfontGL     = currentenv.SharedLibrary('./bin/Release/plugin/bmpfontGL', ['plugins/bmpfontGL/bmpfont.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
-		Depends(bmpfontGL, base_libs)
-		ttffontGL     = currentenv.SharedLibrary('./bin/Release/plugin/ttffontGL', ['plugins/ttffontGL/ttffont.cpp'], LIBS = [plugin_libs, 'SDL2_ttf'], LIBPATH = lib_path)
-		Depends(ttffontGL, base_libs)
-		inputSDL      = currentenv.SharedLibrary('./bin/Release/plugin/inputSDL', ['plugins/inputSDL/input_main.cpp', 'plugins/inputSDL/joystick.cpp', 'plugins/inputSDL/mouse.cpp', 'plugins/inputSDL/key.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
-		Depends(inputSDL, base_libs)
-		scriptfs      = scriptfsenv.SharedLibrary('./bin/Release/plugin/scriptfs', scriptfs_files, LIBS = [plugin_libs, "md5"], LIBPATH = lib_path)
-		Depends(scriptfs, base_libs)
-		getkeystring  = currentenv.SharedLibrary('./bin/Release/plugin/getkeystring', ['plugins/getkeystring/getkeystring.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
-		Depends(getkeystring, base_libs)
-		windowstyleGL = currentenv.SharedLibrary('./bin/Release/plugin/windowstyleGL', ['plugins/windowstyleGL/windowstyle.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
-		Depends(windowstyleGL, base_libs)
-		mapengineGL   = currentenv.SharedLibrary('./bin/Release/plugin/mapengineGL', mapengineGL_files, LIBS = plugin_libs, LIBPATH = lib_path)
-		Depends(mapengineGL, base_libs)
-		audioBASS     = currentenv.SharedLibrary('./bin/Release/plugin/audioBASS', audioBASS_files, LIBS = ['t5', 'configmanager', 'v8', audioBASS_libs], LIBPATH = lib_path)
-		Depends(audioBASS, base_libs)
-		networkTS     = networkenv.SharedLibrary('./bin/Release/plugin/networkTS', networkTS_files, LIBS = ['t5', 'configmanager', 'v8'], LIBPATH = lib_path)
-		Depends(networkTS, base_libs)
+		plugin_directory = os.path.abspath('plugins')
+
+
+		for d in os.listdir(plugin_directory):
+			 if d != 'common':
+				if os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'SConscript')):
+					print "Using Scons on "+os.path.join(os.path.join(plugin_directory, d))
+					SConscript(dirs=[os.path.join(plugin_directory, d)], exports = 'has_pthreads currentenv lib_path base_libs tsdir has_tbb')
+				elif os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'makefile')) or os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'Makefile')):
+
+					print "Using Make on "+os.path.join(os.path.join(plugin_directory, d))
+					os.system("make -C " + os.path.join(plugin_directory, d))
+		if False: #Remove this block once all the plugins are using proper SConscripts.
+            #Remove each plugin as it is changed to use a SConscript.
+
+			bmpfontGL     = currentenv.SharedLibrary('./bin/Release/plugin/bmpfontGL', ['plugins/bmpfontGL/bmpfont.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
+			Depends(bmpfontGL, base_libs)
+			ttffontGL     = currentenv.SharedLibrary('./bin/Release/plugin/ttffontGL', ['plugins/ttffontGL/ttffont.cpp'], LIBS = [plugin_libs, 'SDL2_ttf'], LIBPATH = lib_path)
+			Depends(ttffontGL, base_libs)
+			scriptfs      = scriptfsenv.SharedLibrary('./bin/Release/plugin/scriptfs', scriptfs_files, LIBS = [plugin_libs, "md5"], LIBPATH = lib_path)
+			Depends(scriptfs, base_libs)
+			windowstyleGL = currentenv.SharedLibrary('./bin/Release/plugin/windowstyleGL', ['plugins/windowstyleGL/windowstyle.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
+			Depends(windowstyleGL, base_libs)
+			networkTS     = networkenv.SharedLibrary('./bin/Release/plugin/networkTS', networkTS_files, LIBS = ['t5', 'configmanager', 'v8'], LIBPATH = lib_path)
+			Depends(networkTS, base_libs)
 
 if setuplibs == "y":
 	print "Setting up libraries."
@@ -357,35 +320,15 @@ if setuplibs == "y":
 		print "Writing conf file."
 		currentenv.Textfile(target = '/etc/ld.so.conf.d/turbosphere.conf', source = [lib_install_dir])
 
-
-#conf = Configure(currentenv)
-#hasgraphicalg = conf.CheckLib('graphicalg')
-#hasgraphiccommon = conf.CheckLib('graphiccommon')
-#hasconfigmanager = conf.CheckLib('configmanager')
-#hasT5 = conf.CheckLib('t5')
-#currentenv = conf.Finish()
-
 Depends(turbosphere, graphicalg)
 Depends(turbosphere, graphiccommon)
+Depends(turbosphere, configmanager)
 Depends(turbosphere, t5)
+
 Depends(graphicalg, graphiccommon)
 Depends(graphicalg, t5)
 Depends(configmanager, t5)
-
-#if not setuplibs:
-#	if not (hasgraphicalg):
-#		print "The library graphicalg is not installed, but can be built and installed. Please rerun Scons with options `libinstall --install_libs=y`."
-#	if not (hasgraphiccommon):
-#		print "The library graphiccommon is not installed, but can be built and installed. Please rerun Scons with options `libinstall --install_libs=y`."
-#	if not (hasconfigmanager):
-#		print "The library configmanager is not installed, but can be built and installed. Please rerun Scons with options `libinstall --install_libs=y`."
-#	if not (hasT5):
-#		print "The library t5 is not installed, but can be built and installed. Please rerun Scons with options `libinstall --install_libs=y`."
-
-#if not(hasT5 and hasgraphiccommon and hasgraphicalg and hasconfigmanager):
-#	exit(1)
-
-Depends(turbosphere, configmanager)
+Depends(graphiccommon, turbo_icon)
 
 currentenv.Alias('libinstall', lib_install_dir)
 currentenv.Alias('confwrite', '/etc/ld.so.conf.d')

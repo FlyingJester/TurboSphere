@@ -3,13 +3,17 @@
 
 #ifdef _WIN32
 	#ifdef GRAPHICC_INTERNAL
-		#define GRAPHICC_EXPORT __declspec(dllexport) 
+		#define GRAPHICC_EXPORT __declspec(dllexport)
 	#else
 		#define GRAPHICC_EXPORT __declspec(dllimport)
 	#endif
 #define GRAPHICCCALL _cdecl
 #else
-	#define GRAPHICC_EXPORT extern "C"
+    #ifdef __cplusplus
+        #define GRAPHICC_EXPORT extern "C"
+    #else
+        #define GRAPHICC_EXPORT
+    #endif
 #endif
 
 GRAPHICC_EXPORT unsigned int GetScreenWidth(void);

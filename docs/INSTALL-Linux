@@ -1,14 +1,14 @@
 Building TurboSphere on Linux:
 
 First, whether you use Code::Blocks or make, you will need to get a checkout of V8. From the root of the TurboSphere source, run
-   svn checkout http://v8.googlecode.com/svn/branches/3.19 v8
-The exact version used was 3.19.18.10. This is the final 3.19 revision. Older versions, back to 3.19.7 should work.
+   svn checkout http://v8.googlecode.com/svn/branches/3.24 v8
+The exact version used was 3.19.18.10. This is the final 3.24 revision. Older versions, back to 3.19.7 should work.
 Newer versions of V8 may work as well, but may or may not, and have been tested.
 
 	32-Bit:
 1. Be sure you have SDL, SDL_ttf, SDL_img, freetype, BASS, and optionally BASSMidi. Freetype comes with most linux distros, and SDL comes with some.
 2. If they are not already present, get the SDL headers and place them in the SDL directory of the TurboSphere build. You may need to create the directory.
-3. Building V8 with scons no longer works. You must build by running, from the root of your V8 checkout, 'make dependencies', and then 'make ia32.debug component=shared_library gdbjit=on'. Gyp does not reliably detect the architecture of the system, so 'make native' may not work. Release builds of V8 often fail on linux, although if you want to make the V8 library smaller you can try it. Place the generated libv8.so file (from 'v8/out/ia32.debug/obj.target/tools/gyp') into the base directory of the TurboSphere source.
+3. Building V8 with scons no longer works. You must build by running, from the root of your V8 checkout, 'make dependencies', and then 'make ia32.debug i18nsupport=off component=shared_library gdbjit=on'. Gyp does not reliably detect the architecture of the system, so 'make native' may not work. Release builds of V8 often fail on linux, although if you want to make the V8 library smaller you can try it. Place the generated libv8.so file (from 'v8/out/ia32.debug/obj.target/tools/gyp') into the base directory of the TurboSphere source.
 4. Copy the v8 headers in the 'include' directory of the V8 root directory to the root directory of the TurboSphere build.
 5. from the root of the TurboSphere build, run 'make'.
 6. Move libv8.so to the bin/Release directory.
@@ -18,11 +18,11 @@ Newer versions of V8 may work as well, but may or may not, and have been tested.
 1. Be sure you have SDL, SDL_ttf, SDL_img, freetype, BASS, and optionally BASSMidi, all 64-bit. Freetype comes with most linux distros, and SDL comes with some.
   Most RPM based distros come with 32-bit SDL, even for 64-bit distros.
 2. If they are not already present, get the SDL headers and place them in the SDL directory of the TurboSphere build. You may need to create the directory.
-3. Building V8 with scons no longer works. You must build by running, from the root of your V8 checkout, 'make dependencies', and then 'make x64.debug component=shared_library gdbjit=on'. Gyp does not reliably detect the architecture of the system, so 'make native' may not work. Release builds of V8 often fail on linux, especially in 64-bits. Place the generated libv8.so file (from 'v8/out/x64.debug/obj.target/tools/gyp') into the base directory of the TurboSphere source.
+3. Building V8 with scons no longer works. You must build by running, from the root of your V8 checkout, 'make dependencies', and then 'make x64.debug i18nsupport=off component=shared_library gdbjit=on'. Gyp does not reliably detect the architecture of the system, so 'make native' may not work. Release builds of V8 often fail on linux, especially in 64-bits. Place the generated libv8.so file (from 'v8/out/x64.debug/obj.target/tools/gyp') into the base directory of the TurboSphere source.
 4. Copy the v8 headers in the 'include' directory of the V8 root directory to the root directory of the TurboSphere build.
 5. from the root of the TurboSphere build, run 'make'.
 6. Move libv8.so to the bin/Release directory.
 7. Go to bin/Release and type ./turbosphere.
 
-Note that if you don't have proper video video drivers, like if you have the nouveau drivers, the Linux native build of TurboSphere can 
+Note that if you don't have proper video video drivers, like if you have the nouveau drivers, the Linux native build of TurboSphere can
 run very slowly. Using the windows binaries and Wine may be faster, although frame loss can occur.

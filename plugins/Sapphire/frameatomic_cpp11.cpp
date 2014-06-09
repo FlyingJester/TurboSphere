@@ -4,8 +4,8 @@
 #include <cinttypes>
 #include <atomic>
 
-typedef std::atomic_uint_fast32_t FJ_Atomic;
-static FJ_Atomic engine_frame, render_frame, thread_die;
+typedef std::atomic_uint_fast32_t TS_Atomic;
+static TS_Atomic engine_frame, render_frame, thread_die;
 
 void IncRenderFrame(void){
     render_frame.fetch_add(1, std::memory_order::memory_order_relaxed);
@@ -36,7 +36,7 @@ void SetThreadDie(int v){
 }
 
 int  GetThreadDie(void){
-    return thread_die;
+    return thread_die.load();
 }
 
 #endif

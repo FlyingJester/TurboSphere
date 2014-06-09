@@ -1,0 +1,9 @@
+Import('currentenv lib_path base_libs tsdir')
+
+import os
+
+audioBASS_files	 = ['frontend.cpp', 'bass_backend.cpp', 'script.cpp']
+audioBASS_libs	 = ['bass', 'bassmidi']
+
+audioBASS     = currentenv.SharedLibrary(os.path.join(tsdir, 'bin/Release/plugin/audioBASS'), audioBASS_files, LIBS = ['t5', 'configmanager', 'v8', audioBASS_libs], LIBPATH = lib_path)
+Depends(audioBASS, base_libs)

@@ -4,7 +4,17 @@
 /////
 // FJGL Header
 //
-// Contains the functions intended for direct use from without Sapphire
+// Contains the functions intended for direct use from without Sapphire.
+//
+// The functions here are NOT guaranteed to cause immediate results, except
+//  for the following functions:
+//
+//  * GetClippingRectangle
+//  * GetImageWidth
+//  * GetImageHeight
+//
+// Other functions may or may not queue operations. Operations are guaranteed
+//  to be called in the order the order they are issued.
 //
 
 #include <GL/gl.h>
@@ -73,48 +83,9 @@ typedef struct {
 } DriverInfo_t;
 #endif
 
-
-#ifdef __cplusplus
-enum BlendMode{
-#else
-typedef enum {
-#endif
-    bmBlend = 0,
-    bmReplace,
-    bmRGB,
-    bmAlpha,
-    bmAdd,
-    bmSubtract,
-    bmMultiply,
-    bmAverage,
-    bmInvert,
-    bmSquare,
-    bmNone
-#ifdef __cplusplus
-};
-#else
-} BlendMode;
-#endif
-
-#ifdef __cplusplus
-struct IMAGE{
-#else
-typedef struct {
-#endif
-    RGBA *pixels;
-    GLuint texture;
-    unsigned int w;
-    unsigned int h;
-GLuint TexCoordBuffer;
-GLuint ColorBuffer;
-GLuint VertexBuffer;
-GLuint VertexArray; //Only valid when configl.hasVertexArrays is not zero.
-#ifdef __cplusplus
-};
-#else
-} ALIGN IMAGE;
-#endif
-
+#include "blendmodes.h"
+typedef TS_Blendmode BlendMode;
+typedef void IMAGE;
 
 /*
 #ifdef __linux__
@@ -129,23 +100,24 @@ EXPORT(bool STDCALL InitVideoDriver(HWND window, int w, int h));
 
 EXPORT(void STDCALL GetDriverInfo(DriverInfo_t* driverinfo));
 
-EXPORT(void STDCALL CloseVideoDriver(void));
-EXPORT(bool STDCALL ToggleFullScreen(void));
+//EXPORT(void STDCALL CloseVideoDriver(void));
+//EXPORT(bool STDCALL ToggleFullScreen(void));
 
 EXPORT(void STDCALL FlipScreen(void));
 EXPORT(void STDCALL SetClippingRectangle(int x, int y, int w, int h));
 EXPORT(void STDCALL GetClippingRectangle(int* x, int* y, int* w, int* h));
 
-EXPORT(IMAGE * STDCALL CreateImage(int width, int height, RGBA* pixels));
-EXPORT(IMAGE * STDCALL CloneImage(IMAGE * image));
-EXPORT(IMAGE * STDCALL GrabImage(int x, int y, int width, int height));
+EXPORT(IMAGE* STDCALL CreateImage(int width, int height, RGBA* pixels));
+EXPORT(IMAGE* STDCALL CloneImage(IMAGE * image));
+EXPORT(IMAGE* STDCALL GrabImage(int x, int y, int width, int height));
 EXPORT(void STDCALL DestroyImage(IMAGE * image));
 EXPORT(void STDCALL BlitImage(IMAGE * image, int x, int y, BlendMode blendmode));
+EXPORT(void STDCALL TiledBlitImage(IMAGE * image, int x, int y, int w, int h, int xoffset, int yoffset, BlendMode blendmode));
 EXPORT(void STDCALL BlitImageMask(IMAGE * image, int x, int y, BlendMode blendmode, RGBA mask, BlendMode mask_blendmode));
-EXPORT(void STDCALL TransformBlitImage(IMAGE * image, int *x, int *y, BlendMode blendmode));
+EXPORT(void STDCALL TransformBlitImage(IMAGE * image, int x[4], int y[4], BlendMode blendmode));
 EXPORT(void STDCALL TransformBlitImageMask(IMAGE * image, int x[4], int y[4], BlendMode blendmode, RGBA mask, BlendMode mask_blendmode));
-EXPORT(int STDCALL GetImageWidth(IMAGE * image));
-EXPORT(int STDCALL GetImageHeight(IMAGE * image));
+EXPORT(int  STDCALL GetImageWidth(IMAGE * image));
+EXPORT(int  STDCALL GetImageHeight(IMAGE * image));
 EXPORT(RGBA* STDCALL LockImage(IMAGE * image));
 EXPORT(void STDCALL UnlockImage(IMAGE * image));
 EXPORT(void STDCALL DirectBlit(int x, int y, int w, int h, RGBA* pixels));
@@ -173,9 +145,11 @@ EXPORT(void STDCALL DrawOutlinedCircle(int x, int y, int r, RGBA color, int anti
 EXPORT(void STDCALL DrawFilledCircle(int x, int y, int r, RGBA color, int antialias));
 EXPORT(void STDCALL DrawGradientCircle(int x, int y, int r, RGBA colors[2], int antialias));
 
+/*
 EXPORT(unsigned int GetVertexAttrib(void));
 EXPORT(unsigned int GetColorAttrib(void));
 EXPORT(unsigned int GetTexCoordAttrib(void));
+*/
 
 #ifdef EXPORT
     #undef EXPORT

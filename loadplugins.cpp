@@ -266,7 +266,7 @@ int loadAllPlugins(){
 			error = GetLastError();
             printf("Error: %i\n", error);
         }
-        #else
+        #else/*
         void * handle = dlopen(string("plugin/").append(plugins[i]).c_str(), RTLD_GLOBAL|RTLD_NOW);
         if(handle!=NULL) {
             //printf("Plugin %s is open.\n", plugins[i]);
@@ -275,7 +275,7 @@ int loadAllPlugins(){
         else{
             printf("[Engine] Error: Plugin %s is not open.\n", plugins[i]);
             printf("[Engine] Error: %s\n", dlerror());
-        }
+        }*/
         #endif
 
     }

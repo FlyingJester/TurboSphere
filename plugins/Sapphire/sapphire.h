@@ -1,6 +1,22 @@
 #ifndef PLUGINNAME
 #define PLUGINNAME "Sapphire"
 
+/////
+// The Sapphire Graphics Plugin
+//
+//   A threaded graphics plugin for the TurboSphere game engine. It includes
+// the same bindings as a Sphere graphics plugin as well, provided solely for
+// use by other plugins. It cannot directly be used by Sphere 1.x, as it does
+// not initilize properly for it.
+//
+//   Sapphire has two threaded renderers, one for software graphics (surfaces)
+// and one of hardware graphics (images, primitives, the Galileo API). The
+// software renderer supports out-of-order renderer processes.
+//
+//   The hardware renderer uses full OpenGL 4.3 and contemporary GLSL shaders.
+// It supports per-operation shading and only uses full Vertex Arrays.
+//
+
 #include <stdint.h>
 
     #ifdef __cplusplus

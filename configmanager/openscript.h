@@ -18,7 +18,7 @@ using namespace std;
 
 
 CONFIGMGR_EXPORT std::string openfile(const char *Rfile);
-CONFIGMGR_EXPORT bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::Value> name,bool print_result);
+CONFIGMGR_EXPORT bool ExecuteString(v8::Handle<v8::String> source, v8::Handle<v8::String> name, v8::Isolate *isolate, bool print_result);
 CONFIGMGR_EXPORT void TS_LoadScript(const v8::FunctionCallbackInfo<v8::Value>& args);
 CONFIGMGR_EXPORT void TS_LoadSystemScript(const v8::FunctionCallbackInfo<v8::Value>& args);
 #endif

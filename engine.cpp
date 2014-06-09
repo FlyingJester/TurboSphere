@@ -1,5 +1,8 @@
-//#include "SDL_V8.h"
+//TurboSphere - A plugin-based, JavaScript game engine.
+
 #include "engine.h"
+#include "version.h"
+#include "options.h"
 
 #include "configmanager/openscript.h"
 #include "configmanager/opengame.h"
@@ -21,11 +24,7 @@
 
 using std::pair;
 
-#ifdef __linux__
 #define ENGINE "[Engine]"
-#else
-#define ENGINE "[Engine]"
-#endif
 
 #include <ctime>
 
@@ -39,7 +38,7 @@ uint32_t (*TS_GetTime)(void);
 #include <mmsystem.h>
 
 //Get Sleep function
-#if NTDDI_VERSION == NTDDI_WIN8
+#if NTDDI_VERSION == NTDDI_WIN8 //As much as I am loathe to do this.
     #include <Synchapi.h>
 #else
     #include <WinBase.h>
@@ -65,10 +64,6 @@ uint32_t (*TS_GetTime)(void);
 #define STRDUP strdup
 #endif
 
-//////////////////////////////////////////////////////////////
-//Always update!
-//////////////////////////////////////////////////////////////
-#define VERSION "0.3.6"
 /*
 inline void TS_OverrideConfig(TS_Config *conf, TS_ConfigOverride *overrideConf){
     TS_Config *oconf = overrideConf->config;
@@ -363,7 +358,7 @@ void GetVersionNumber(const v8::FunctionCallbackInfo<v8::Value> &args){
 }
 
 void GetVersionString(const v8::FunctionCallbackInfo<v8::Value> &args){
-    args.GetReturnValue().Set( v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), VERSION));
+    args.GetReturnValue().Set( v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), TS_GetVersion()));
 }
 
 void GarbageCollect(const v8::FunctionCallbackInfo<v8::Value> &args){
@@ -589,7 +584,7 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
 
         //If the path ends in a slash, we need to remove it so that we can use just the filename.
 
-        //This stops crashes with the QT+T5 launcher when it is set to use directories, and then
+        //This stops crashes with the FLTK+T5 launcher when it is set to use directories, and then
         //that setting is overridden by check in the open... dialog.
         if(dir[path_size_chr]=='/'){
             dir[path_size_chr]='\0';
@@ -621,7 +616,11 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
 
     LoadMessageBoxFunctions();
 
+    v8::Isolate *iso = v8::Isolate::GetCurrent();
     v8::HandleScope mainscope(v8::Isolate::GetCurrent());
+    auto  context = v8::Context::New(iso);
+
+    context->Enter();
 
     opengame(gameSGMfile);
     free((void *)gameSGMfile);
@@ -639,10 +638,12 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
     if((overrideConf!=NULL)&&(overrideConf->config!=NULL)){
         TS_OverrideConfig(TS_conf, overrideConf);
     }
+
     loadAllPlugins();
 
     printf(ENGINE " Info: All Plugins initialized.\n");
     printf(ENGINE " Info: The main script is %s\n", TS_conf->mainscript);
+    printf(ENGINE " Info: Running game %s\n",       TS_conf->gamename);
 
 	std::string ScriptFileText = openfile(TS_conf->mainscript);
 
@@ -652,7 +653,6 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
     // Hooray for Unicode.
 //    v8::V8::InitializeICU();
 
-    v8::Isolate *iso = v8::Isolate::GetCurrent();
 
     iso->Enter();
 
@@ -662,9 +662,6 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
 
     //v8::Persistent<v8::Context> context(v8::Isolate::GetCurrent(), v8::Context::New(v8::Isolate::GetCurrent()));
     //v8::Persistent<v8::Context> context(v8::Isolate::GetCurrent(), v8::Context::New(v8::Isolate::GetCurrent()));
-    auto  context = v8::Context::New(iso);
-
-    context->Enter();
 
 	v8::Handle<v8::FunctionTemplate> E_EvaluateScripttempl = v8::FunctionTemplate::New(iso, TS_LoadScript);
 
@@ -720,18 +717,18 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
 
     v8::V8::AddMessageListener(TS_MessageCallback);
 
-	ExecuteString(v8::String::NewFromUtf8(iso, ScriptFileText.c_str()), v8::String::NewFromUtf8(iso, script_name), true);
-	printf(ENGINE " Info: Running Script.\n");
+	ExecuteString(v8::String::NewFromUtf8(iso, ScriptFileText.c_str()), v8::String::NewFromUtf8(iso, script_name), iso, true);
+	//printf(ENGINE " Info: Running Script.\n");
 
-    printf(ENGINE " Info: Optimizing JS Stack before calling Game Function ");
-    while(!v8::V8::IdleNotification(1000)){printf("."); v8::V8::LowMemoryNotification();}
-    printf("\n");
+    //printf(ENGINE " Info: Optimizing JS Stack before calling Game Function ");
+    //while(!v8::V8::IdleNotification(1000)){printf("."); v8::V8::LowMemoryNotification();}
+    //printf("\n");
 
     TS_CallFunc("game", context, iso);
 
 	printf(ENGINE " Info: Game function done running.\n");
 
-    v8::V8::LowMemoryNotification();
+    //v8::V8::LowMemoryNotification();
 	//mainscope.Close();
     exitContext(context);
 	v8::V8::TerminateExecution();
@@ -749,6 +746,8 @@ int main
 #endif
 (int argc, char* argv[]){
 
+    TS_CMD_ProcessStubbingOptions(argc, argv);
+
     const char * flagprefix = " --";
 
     char *v8flags = (char *)malloc(1);
@@ -761,6 +760,8 @@ int main
     TS_ConfigOverride conf;
     conf.config = (TS_Config*)malloc(sizeof(TS_Config));
     printf("\n\t%i\n", argc);
+
+
     if(argc<3)
         gamearg = 1;
     else{

@@ -112,6 +112,8 @@ namespace Turbo{
     typedef v8::Handle<v8::String> JSString;
     typedef v8::Local<v8::String> JSAccessorProperty;
     typedef const v8::PropertyCallbackInfo<v8::Value>& JSAccessorInfo;
+    typedef JSAccessorInfo JSAccessorGetterInfo;
+    typedef const v8::PropertyCallbackInfo<void>& JSAccessorSetterInfo;
     typedef v8::Local<v8::Value> JSValue;
     typedef JSValue *JSValueArray;
 
@@ -381,7 +383,7 @@ namespace Turbo{
     ///////////////////////////////////////////////////////////////////////////////
     // Wrapping Objects
 
-    template<class T> inline void WrapObject(JSArguments args, const JSObj<T> &JSo, T *obj){
+    template<class T, class A> inline void WrapObject(A args, const JSObj<T> &JSo, T *obj){
 
         //
         auto iso = v8::Isolate::GetCurrent();
@@ -390,7 +392,6 @@ namespace Turbo{
         /////
         // Create a JS object that holds an ID number and a pointer to the object
         assert(obj != NULL);
-        assert(args.IsConstructCall());
         //JSo.InstanceTemplate->SetInternalFieldCount(2);
         v8::Handle<v8::Object> returnobj = JSo.InstanceTemplate->NewInstance();//JSo.Constructor->NewInstance();//v8::Object::New(iso);// = JSo.Constructor->NewInstance();
         assert(JSo.Template->HasInstance(returnobj));

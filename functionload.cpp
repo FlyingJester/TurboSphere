@@ -40,7 +40,7 @@ regFunction::~regFunction(){
 }
 
 void regFunction::registerToContext(v8::Handle<v8::Context> context, v8::Isolate *iso){
-    printf("[Engine] Info: Name is at %p\n", name);
+    printf("[Engine] Info: Name is at %p\tname is %s\n", name, name);
     context->Global()->Set(v8::String::NewFromUtf8(iso, name), templ->GetFunction());
 }
 

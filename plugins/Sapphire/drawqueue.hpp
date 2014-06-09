@@ -24,6 +24,10 @@ void CloseDrawQueue(void);
 void SetThreadDie(int);
 int  GetThreadDie(void);
 
+// Synchronizes engine and renderer.
+// This is the BIG LOCK. Avoid whenever possible, and use a synchro object.
+void SynchroEngineAndRender(void);
+
 #ifdef __cplusplus
 }
 #endif
@@ -34,6 +38,7 @@ namespace Sapphire {
 
     class DrawingOp {
     public:
+        DrawingOp(){}
         virtual ~DrawingOp(){}
         virtual int call(void) = 0;
         virtual void SetVertexAttribBinding(uint32_t vertex, uint32_t texcoor, uint32_t color){}

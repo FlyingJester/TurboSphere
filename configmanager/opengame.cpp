@@ -225,7 +225,9 @@ int opengameLocal(const char *Rfile, TS_Config *localConf, TS_Directories *local
         return 1;
     }
 
-	localConf->gamename     = file->getValue("name");
+	localConf->gamename     = STRDUP(file->getValue("name"));
+	printf("[ConfigManager] Info: Reading game configuration for %s\n", localConf->gamename);
+
 
 	const char *scriptname  = file->getValue("script");
 	char * mainscriptname =  strcat((char *)calloc(strlen(localDirs->script)+strlen(scriptname)+1, 1), localDirs->script);

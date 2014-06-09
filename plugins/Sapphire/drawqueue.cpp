@@ -8,26 +8,30 @@ struct TS_Renderer {
     SDL_Window    *window;
 };
 
-typedef concurrent_queue<Sapphire::DrawingOp *> DrawOpQueue;
+typedef concurrent_queue<Sapphire::DrawingOp *> DrawOpQueue_t;
 
-DrawOpQueue DrawQueue = DrawOpQueue();
+DrawOpQueue_t DrawQueue = DrawOpQueue_t();
 
 static SDL_Thread *renderThread = NULL;
 static SDL_GLContext threadglcontext;
 
+void Sapphire::PushDrawingOp(DrawingOp *op){
+    DrawQueue.push(op);
+}
+
+void SynchroEngineAndRender(void){
+    while((GetRenderFrame()!=GetEngineFrame())&&(!DrawQueue.empty())){
+        while(!DrawQueue.empty())
+            SDL_Delay(10);
+    }
+
+}
+
 int RenderThread(void *data) {
 
     int width, height;
-    SDL_GLContext *context = ((TS_Renderer *)(data))->context;
-    SDL_Window *window = ((TS_Renderer *)(data))->window;
-
-
-    /////
-    // This demo is designed to work even on Intel GMA cards.
-    //
-    // In fact, it was written on a machine with one.
-    // The horror...the horror...
-    //
+    SDL_GLContext *context = static_cast<TS_Renderer *>(data)->context;
+    SDL_Window *window     = static_cast<TS_Renderer *>(data)->window;
 
     if(SDL_GL_MakeCurrent(window, *((SDL_GLContext*)context))!=0)
         SDL_ShowSimpleMessageBox(0, "Error", SDL_GetError(), NULL);
@@ -97,7 +101,7 @@ void InitDrawQueue(void) {
 
             if(!ContextIsShared)
             {
-                SDL_ShowSimpleMessageBox(0, "Error", "Could not make context shared.\nTurboSphere requires OpenGL 3.1 or greater.", NULL);
+                SDL_ShowSimpleMessageBox(0, "Error", "Could not make context shared.\nTurboSphere requires OpenGL 3.1 or greater, and GLX 1.4 on Linux and older OS X, or WGL and Windows 2000 or greater.", NULL);
                 abort();
             }
         }
@@ -110,7 +114,7 @@ void InitDrawQueue(void) {
         TS_Renderer* data = new TS_Renderer();
         data->context= &threadglcontext;
         data->window = SDL_GL_GetCurrentWindow();
-        renderThread = SDL_CreateThread(RenderThread, "GLRenderer", data);
+        renderThread = SDL_CreateThread(RenderThread, "TSGLRenderer", data);
         if(!renderThread)
         {
             SDL_ShowSimpleMessageBox(0, "OpenGL Error", SDL_GetError(), NULL);

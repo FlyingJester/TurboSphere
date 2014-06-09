@@ -38,7 +38,9 @@ Turbo::JSFunction CreateColor(Turbo::JSArguments args){
 
     Turbo::WrapObject(args, ColorObject, color);
 
-    printf("[" PLUGINNAME "] Info: Making an object as %i.\n", ColorObject.ID);
+    printf("[" PLUGINNAME "] Info: Making an object as %x.\n", ColorObject.ID);
+
+
 
 }
 
@@ -59,9 +61,14 @@ Turbo::JSFunction ColorToInt(Turbo::JSArguments args){
 
 }
 
+Turbo::JSFunction RedMember(Turbo::JSArguments args){
+
+    args.GetReturnValue().Set((uint32_t)(255));
+}
+
 void InitColor(uint32_t ID){
 
-    printf("[" PLUGINNAME "] Info: Color ID is %i\n", (ID<<16)|(0xFE24u));
+    printf("[" PLUGINNAME "] Info: Color ID is %x\n", (ID<<16)|(0xFE24u));
 
     ColorObject                 = Turbo::JSObj<TS_Color>();
     ColorObject.Finalize        = TS_ColorFinalizer;
@@ -71,6 +78,7 @@ void InitColor(uint32_t ID){
     ColorObject.AddAccessor("green", ColorGreenGetter,  ColorGreenSetter);
     ColorObject.AddAccessor("blue",  ColorBlueGetter,   ColorBlueSetter);
     ColorObject.AddAccessor("alpha", ColorAlphaGetter,  ColorAlphaSetter);
+    ColorObject.AddToProto("RedMember", RedMember);
 }
 
 /////

@@ -1,0 +1,9 @@
+Import('currentenv lib_path base_libs tsdir')
+
+import os
+import glob
+
+inputSDL2_files	 = glob.glob("*.cpp") #['frontend.cpp', 'bass_backend.cpp', 'script.cpp']
+
+inputSDL2     = currentenv.SharedLibrary(os.path.join(tsdir, 'bin/Release/plugin/inputSDL2'), inputSDL2_files, LIBS = ['t5', 'configmanager', 'v8', 'SDL2'], LIBPATH = lib_path)
+Depends(inputSDL2, base_libs)

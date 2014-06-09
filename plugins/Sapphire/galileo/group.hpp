@@ -3,7 +3,9 @@
 
 #include <vector>
 #include <utility>
+#include <memory>
 #include "shape.hpp"
+#include "../sapphire.h"
 
 namespace Sapphire {
 
@@ -11,7 +13,7 @@ namespace Sapphire {
 
     namespace Galileo {
 
-        typedef unique_ptr<Shape> shapeptr;
+        typedef std::unique_ptr<Shape> shapeptr;
 
         class Group {
         public:
@@ -54,9 +56,15 @@ namespace Sapphire {
             int offsetX;
             int offsetY;
             std::vector<shapeptr>Shapes;
-        }
+        };
+
+        Group *GetGlobalGroup(void);
+
+        void InitGroup(uint32_t ID, v8::Isolate *isol);
 
     }
+
+    extern Turbo::JSObj<Galileo::Group> GroupObject;
 
 }
 
