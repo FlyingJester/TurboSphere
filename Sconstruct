@@ -1,344 +1,99 @@
 import os
 import sys
 
-defaultenv	= Environment(ENV = os.environ)
+defaultenv = Environment(ENV = os.environ)
 
-linuxenv        = defaultenv.Clone(tools = ['default', 'textfile'], CXXFLAGS = " -std=c++11 ", CFLAGS = " -std=c11 ", CCFLAGS = " -Werror=return-type -Wall -Wno-pointer-arith -mtune=native -flto -O2 -Wcast-align -g ", CPPFLAGS = "-I./common")
+msvc_ccflags = "/O2 /EHsc /Zi"
+msvc_cflags = ""
+msvc_cxxflags = ""
 
-windowsenv 	= defaultenv.Clone(CCFLAGS = "/O2 /EHsc /Zi")
+gcc_ccflags = " -Werror=return-type -Wall -Wno-pointer-arith -mtune=native -flto -O2 -Wcast-align -g "
+gcc_cflags = " -std=c11 "
+gcc_cxxflags = " -std=c++11 "
 
-win32env	= windowsenv.Clone()
-win64env	= windowsenv.Clone()
+clang_ccflags = gcc_ccflags + " -DHAS_UNISTD -DHAS_STAT_SYS -DUSE_STAT -Wno-return-type-c-linkage -Wno-null-arithmetic "
+clang_cflags = gcc_cflags
+clang_cxxflags = gcc_cxxflags
 
-linux32env	= linuxenv.Clone()
-linux64env	= linuxenv.Clone()
+#Checking platform.
 
-macintoshenv	= defaultenv.Clone()
+def IsWindows():
+  return sys.platform == 'win32' or sys.platform.startswith('win64')
 
-print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-print '!!  I apologize for the build system being held together  !!'
-print '!!   with bailing wire and duct tape.                     !!'
-print '!!  As root, run `scons --install_libs=y`. Then as a      !!'
-print '!!   user run `scons  --build_plugins=all buildplugins`.  !!'
-print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+def IsLinux():
+  return sys.platform.startswith('linux')
 
-AddOption('--install_libs',
-                  dest='install_libs',
-                  type='string',
-                  nargs=1,
-                  action='store',
-                  help='y|n : Determines whether or not to try and install the core TurboSphere libraries')
-AddOption('--build_plugins',
-                  dest='build_plugins',
-                  type='string',
-                  nargs=1,
-                  action='store',
-                  help='y/all|n : Determines whether or not to build the plugins for TurboSphere.')
-AddOption('--usemingw',
-                  dest='usemingw',
-                  type='string',
-                  nargs=1,
-                  action='store',
-                  help='y|n : Use the MingW toolchain.')
+def IsDarwin():
+  return sys.platform == 'darwin'
 
-AddOption('--dontusestat',
-                  dest='dontusestat',
-                  type='string',
-                  nargs=1,
-                  action='store',
-                  help='y|n : Sets T5 and the scriptfs plugin to use access rather than stat on Unix systems. Has no effect on Windows builds. Default=n.')
+compiler = ""
 
-AddOption('--useamdlibm',
-                  dest='useamdlibm',
-                  type='string',
-                  nargs=1,
-                  action='store',
-                  help='y|n : Use the AMD libm for speed critical sections when the AMD LibM is available. AMD LibM shared library should be placed in the same directory as the TurboSphere binary. If the AMD libm is not available then the normal libm is still used instead. Has no effect on Windows builds. Default=y')
-
-AddOption('--build_v8',
-                  dest='buildv8opt',
-                  type='string',
-                  nargs=1,
-                  action='store',
-                  help='y|n : Download and build v8. This must be done manually if not done through scons (see the install file for your platform in the docs directory).')
-
-#set up the environment depending on platform. Mainly for installing libraries.
-v8name = ''
-bassname = ''
-arch = 'ia32'
-if sys.platform == 'win32' or sys.platform == 'win64':
-	v8name = 'v8.dll'
-	lib_install_dir = './bin/Release'
-	currentenv = win32env.Clone(LIBPATH=lib_install_dir)
-
+#Todo: Make these overrideable.
+if IsWindows():
+  compiler = 'msvc'
+elif IsLinux():
+  compiler = 'gcc'
+elif IsDarwin():
+  compiler = 'clang'
 else:
-	if sys.platform == 'linux':
-		lib_install_dir = '/usr/lib/turbosphere'
-		currentenv.Append(CCFLAGS=" -Wno-unused-local-typedefs ")
-		currentenv = linux32env.Clone(LIBPATH=lib_install_dir)
-	else:
-		v8name = 'libv8.so'
-		lib_install_dir = '/usr/lib64/turbosphere'
-		currentenv = linux64env.Clone(LIBPATH=lib_install_dir)
-		arch = 'x64'
+  compiler = 'cc' # who knows.
 
-# OS X is consistent, we can plug this right in.
-if sys.platform == 'darwin':
-  currentenv.Append(CCFLAGS = " -DHAS_UNISTD -DHAS_STAT_SYS -DUSE_STAT -Wno-return-type-c-linkage -Wno-null-arithmetic")
-  currentenv.Append(CPPPATH = os.getcwd()+"/osx")
-  currentenv.Append(LINKFLAGS = " -L"+os.getcwd())
+#Create a unified environment.
+globalenv = defaultenv.Clone()
 
-setuplibs = "False"
+if os.name == 'posix':
+  globalenv.Append(tools = ['default', 'textile'])
 
-lib_path = lib_install_dir
-pluginpath = 'bin/Release/plugin'
+if compiler == 'msvc':
+  globalenv.Replace(CCFLAGS = msvc_ccflags, CFLAGS = msvc_cflags, CXXFLAGS = msvc_cxxflags)
+if compiler == 'gcc':
+  globalenv.Replace(CCFLAGS = gcc_ccflags, CFLAGS = gcc_cflags, CXXFLAGS = gcc_cxxflags)
+if compiler == 'clang':
+  globalenv.Replace(CCFLAGS = clang_ccflags, CFLAGS = clang_cflags, CXXFLAGS = clang_cxxflags)
 
-turbosphere_files = Split("""
-	./engine.cpp
-	./loadplugins.cpp
-	./functionload.cpp
-	./variableregister.cpp
-	./typed_array.cpp
-	./version.cpp
-	./options.c
-	""")
+def CheckForHeader(env, conf, header_name, macro_name):
+  if conf.CheckCHeader(header_name) or conf.CheckCXXHeader(header_name):
+    env.Append(CPPDEFINES = macro_name)
+    return True
+  return False
 
-useAmdLibm = GetOption('useamdlibm')
-if not ( (useAmdLibm == "n") or (useAmdLibm == "N") ):
-	currentenv.Append(CCFLAGS=" -DUSE_AMDLIBM ")
+# Linux requires we check if the include files are in X/Open or SysV locations.
+conf = Configure(globalenv.Clone())
+if IsLinux():
+  if CheckForHeader(globalenv, conf, 'tbb/concurrent_queue.h', "HAS_INTEL_TBB"):
+    # Use Intel Thread Building Blocks whenever available.
+    globalenv.Append(CPPDEFINES= "USE_INTEL_TBB")
+  CheckForHeader(globalenv, conf, 'atomic', "HAS_ATOMIC")
+  CheckForHeader(globalenv, conf, 'thread', "HAS_THREAD")
+  CheckForHeader(globalenv, conf, 'mutex', "HAS_MUTEX")
+  CheckForHeader(globalenv, conf, 'unistd.h', "HAS_UNISTD")
+  CheckForHeader(globalenv, conf, 'sys/unistd.h', "HAS_UNISTD_SYS")
+  if CheckForHeader(globalenv, conf, 'stat.h', "HAS_STAT") or CheckForHeader(globalenv, conf, 'stat.h', "HAS_STAT_SYS"):
+    globalenv.Append(CPPDEFINES = "USE_STAT")
+  CheckForHeader(globalenv, conf, 'types', "HAS_TYPES")
+  CheckForHeader(globalenv, conf, 'sys/types', "HAS_TYPES_SYS")
 
-setuplibs = GetOption('install_libs')
+conf.Finish()
 
-t5env = currentenv.Clone()
-tsenv = currentenv.Clone()
-networkenv = currentenv.Clone()
+# OS X has singular define locations:
+if IsDarwin():
+    globalenv.Append(CPPDEFINES = ["HAS_UNISTD", "HAS_STAT_SYS", "USE_STAT"])
+    globalenv.Append(CPPDEFINES = ["OS_X"]) # We could probably just trust __APPLE__ or __MACH__.
 
-has_unistd = 0
-has_stat = 0
-unistd_n = 0
-stat_n = 0
-unistd_sys = 0
-stat_sys = 0
-types_n = 0
-has_types = 0
-types_sys = 0
-has_fltk = 0
-has_tbb = 0
-has_pthreads = 0
-has_cppatomics = 0
-has_cppthreads = 0
-has_pthreads = 0
+# Because Windows requires different functions entirely, it is implemented as a unique code path in
+# the source code proper.
 
-conf = Configure(t5env)
-#find the available headers for building TS, T5 and networkTS.
-if True:
-	if conf.CheckLib('fltk'):
-        	has_fltk = 1
-	if conf.CheckCHeader('tbb/concurrent_queue.h') or conf.CheckCXXHeader('tbb/concurrent_queue.h'):
-        	has_tbb = 1
-	if conf.CheckCXXHeader('atomic'):
-		currentenv.Append(CCFLAGS=" -DHAS_ATOMIC")
-		has_cppatomics = 1
-	if conf.CheckCXXHeader('thread'):
-		currentenv.Append(CCFLAGS=" -DHAS_THREAD")
-		has_cppthreads = 1
-	if conf.CheckCXXHeader('mutex'):
-		currentenv.Append(CCFLAGS=" -DHAS_MUTEX")
-		has_cppmutices = 1
-	if conf.CheckLib('pthread'):
-		has_pthreads = 1
-		currentenv.Append(CCFLAGS=" -DHAS_PTHREAD")
-	if conf.CheckCHeader('unistd.h'):
-		has_unistd = 1
-		unistd_n = 1
-	elif conf.CheckHeader('sys/unistd.h'):
-		has_unistd = 1
-		unistd_sys = 1
-	if conf.CheckHeader('stat.h'):
-		has_stat = 1
-		stat_n = 1
-	elif conf.CheckHeader('sys/stat.h'):
-		has_stat = 1
-		stat_sys = 1
-	if conf.CheckHeader('types.h'):
-		has_types= 1
-		types_n = 1
-	elif conf.CheckHeader('sys/types.h'):
-		has_types= 1
-		types_sys = 1
+librarydir = os.path.join(os.getcwd(), "lib")
+binarydir  = os.path.join(os.getcwd(), "bin")
 
-if stat_n:
-	conf.env.Append(CCFLAGS=" -DHAS_STAT -DUSE_STAT ")
-if stat_sys:
-	conf.env.Append(CCFLAGS=" -DHAS_STAT_SYS -DUSE_STAT ")
-if has_unistd == 1:
-	conf.env.Append(CCFLAGS=" -DUSE_UNISTD ")
+localenv = globalenv.Clone()
 
-if unistd_sys == 1:
-	conf.env.Append(CCFLAGS=" -DHAS_UNISTD_SYS ")
-elif unistd_n == 1:
-	conf.env.Append(CCFLAGS=" -DHAS_UNISTD ")
-if types_sys == 1:
-	conf.env.Append(CCFLAGS=" -DHAS_TYPES_SYS ")
-elif types_n == 1:
-	conf.env.Append(CCFLAGS=" -DHAS_TYPES ")
+# perform config.
+libconfig = SConscript(dirs = ["lib"], exports = "globalenv localenv")
 
-t5env = conf.Finish()
+#because this was a config script, we copy back what it set.
+globalenv = libconfig.Clone()
+localenv  = libconfig.Clone()
 
-tsconf = Configure(tsenv)
-
-if stat_n:
-	tsconf.env.Append(CCFLAGS=" -DHAS_STAT ")
-elif stat_sys:
-	tsconf.env.Append(CCFLAGS=" -DHAS_STAT_SYS ")
-if unistd_sys == 1:
-	tsconf.env.Append(CCFLAGS=" -DHAS_UNISTD_SYS ")
-elif unistd_n == 1:
-	tsconf.env.Append(CCFLAGS=" -DHAS_UNISTD ")
-if types_sys == 1:
-	tsconf.env.Append(CCFLAGS=" -DHAS_TYPES_SYS ")
-elif types_n == 1:
-	tsconf.env.Append(CCFLAGS=" -DHAS_TYPES ")
-
-tsenv = tsconf.Finish()
-
-nconf = Configure(networkenv)
-
-if unistd_sys == 1:
-	nconf.env.Append(CCFLAGS=" -DHAS_UNISTD_SYS ")
-elif unistd_n == 1:
-	nconf.env.Append(CCFLAGS=" -DHAS_UNISTD ")
-
-networkenv = nconf.Finish()
-
-has_mmap = 0;
-
-scriptfsenv = currentenv.Clone()
-sconf = Configure(scriptfsenv)
-#find the available headers for building T5 and networkTS.
-if sconf.CheckCHeader('sys/mman.h') and 0:
-	has_mmap = 1
-	sconf.env.Append(CCFLAGS=" -DHAS_MMAP ")
-else:
-	has_mmap = 0
-	sconf.env.Append(CCFLAGS=" -DUSE_SDLRWOPS ")
-
-scriptfsenv = sconf.Finish()
-scriptfsenv.Append(LINKFLAGS=" -L./ ")
-
-dontUseStat = GetOption('dontusestat')
-if(dontUseStat != "y"):
-	t5env.Append(CCFLAGS=" -DPREFER_STAT ")
-
-t5 = t5env.SharedLibrary('t5', ['t5.cpp'])
-
-turbo_icon = SConscript(dirs=["extra"], exports = ' currentenv ')
-
-graphicalg = SConscript(dirs=["graphicalg"], exports = ' currentenv ')#currentenv.SharedLibrary('graphicalg', graphicalg_files, CPPPATH = graphicalg_path)
-
-graphiccommon = SConscript(dirs=["graphiccommon"], exports = ' currentenv turbo_icon ')# currentenv.SharedLibrary('graphiccommon', graphiccommon_files, CPPPATH = graphiccommon_path)
-
-configmanager = SConscript(dirs=["configmanager"], exports = ' currentenv lib_path graphiccommon ') #
-
-spklib = tsenv.StaticLibrary(source = ['package_spk.cpp'], LIBS=[t5, 'z'])
-
-if sys.platform == 'darwin':
-  programenv = tsenv.Clone()
-  programenv.Append(FRAMEWORKS=['Cocoa'])
-  osx_time = StaticLibrary(target = 'osx_time', source = ['osx_time.m'])
-  turbosphere = programenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
-    LIBS=['v8', osx_time, t5, graphicalg, graphiccommon, configmanager, 'dl', 'z', spklib, 'objc'],
-    LIBPATH = lib_path)
-  Depends(turbosphere, t5)
-  networkTS_files	 = ['plugins/networkTS/osx_network.cpp']
-
-elif sys.platform =='win32' or sys.platform == 'win64':
-	turbosphere = tsenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
-		LIBS=['v8', 't5', 'graphicalg', 'graphiccommon', 'configmanager', 'z', spklib, 'Winmm'],
-		LIBPATH = lib_path)
-	Depends(turbosphere, t5)
-	networkTS_files	 = ['plugins/networkTS/win_network.cpp']
-
-else:
-	turbosphere = tsenv.Program(target = './bin/Release/turbosphere', source = turbosphere_files,
-		LIBS=['v8', t5, graphicalg, graphiccommon, configmanager, 'dl', 'z', spklib],
-		LIBPATH = lib_path)
-	Depends(turbosphere, t5)
-	networkTS_files	 = ['plugins/networkTS/unix_network.cpp']
-
-spkeditor = tsenv.Program(target = './bin/Release/spkeditor', source = ['spkeditor/SPK_Editor.cpp'], LIBS=[spklib, t5, 'z'])
-
-
-
-if has_fltk == 1:
-    spkeditor_fltk = tsenv.Program(target = './bin/Release/spkeditor-fltk', source = ['spkeditor/SDK_Editor_fltk.cpp'], LIBS=[spklib, 'fltk', t5, 'z'])
-
-#add the platform independant networkTS files.
-
-networkTS_files.append(['plugins/networkTS/frontend.cpp','plugins/networkTS/networkTS_main.cpp'])
-
-
-if sys.platform == 'win32' or sys.platform == 'win64':
-	plugin_libs = ['t5', 'configmanager', 'graphicalg', 'graphiccommon', 'SDL', 'v8', 'OpenGL32']
-else:
-	plugin_libs = [t5, configmanager, graphicalg, graphiccommon, 'SDL2', 'GL', 'v8']
-	pluginsrc_path = 'plugins'
-
-base_libs = [t5, configmanager, graphicalg, graphiccommon]
-bmpfontSDL_files = ['bmpfont.cpp']
-ttffontSDL_files = ['ttffont.cpp']
-scriptfs_files = ['plugins/scriptfs/scriptfs.cpp', 'plugins/scriptfs/bytearray.cpp', 'plugins/scriptfs/rawfile.cpp', 'plugins/scriptfs/bytearray_frontend.cpp', 'plugins/scriptfs/rawfile_frontend.cpp']
-
-build_plugins = GetOption('build_plugins')
-if build_plugins != "n":
-	if build_plugins == "y" or build_plugins == "all":
-
-		tsdir = os.getcwd();
-
-		plugin_directory = os.path.abspath('plugins')
-
-
-		for d in os.listdir(plugin_directory):
-			 if d != 'common':
-				if os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'SConscript')):
-					print "Using Scons on "+os.path.join(os.path.join(plugin_directory, d))
-					SConscript(dirs=[os.path.join(plugin_directory, d)], exports = 'has_pthreads currentenv lib_path base_libs tsdir has_tbb')
-				elif os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'makefile')) or os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'Makefile')):
-
-					print "Using Make on "+os.path.join(os.path.join(plugin_directory, d))
-					os.system("make -C " + os.path.join(plugin_directory, d))
-		if False: #Remove this block once all the plugins are using proper SConscripts.
-            #Remove each plugin as it is changed to use a SConscript.
-
-			bmpfontGL     = currentenv.SharedLibrary('./bin/Release/plugin/bmpfontGL', ['plugins/bmpfontGL/bmpfont.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
-			Depends(bmpfontGL, base_libs)
-			ttffontGL     = currentenv.SharedLibrary('./bin/Release/plugin/ttffontGL', ['plugins/ttffontGL/ttffont.cpp'], LIBS = [plugin_libs, 'SDL2_ttf'], LIBPATH = lib_path)
-			Depends(ttffontGL, base_libs)
-			scriptfs      = scriptfsenv.SharedLibrary('./bin/Release/plugin/scriptfs', scriptfs_files, LIBS = [plugin_libs, "md5"], LIBPATH = lib_path)
-			Depends(scriptfs, base_libs)
-			windowstyleGL = currentenv.SharedLibrary('./bin/Release/plugin/windowstyleGL', ['plugins/windowstyleGL/windowstyle.cpp'], LIBS = plugin_libs, LIBPATH = lib_path)
-			Depends(windowstyleGL, base_libs)
-			networkTS     = networkenv.SharedLibrary('./bin/Release/plugin/networkTS', networkTS_files, LIBS = ['t5', 'configmanager', 'v8'], LIBPATH = lib_path)
-			Depends(networkTS, base_libs)
-
-if setuplibs == "y":
-	print "Setting up libraries."
-	installed_libraries = currentenv.Install(lib_install_dir, [graphicalg, graphiccommon, configmanager, t5])
-	AlwaysBuild(installed_libraries)
-	if sys.platform != 'win32':
-		print "Writing conf file."
-		currentenv.Textfile(target = '/etc/ld.so.conf.d/turbosphere.conf', source = [lib_install_dir])
-
-Depends(turbosphere, graphicalg)
-Depends(turbosphere, graphiccommon)
-Depends(turbosphere, configmanager)
-Depends(turbosphere, t5)
-
-Depends(graphicalg, graphiccommon)
-Depends(graphicalg, t5)
-Depends(configmanager, t5)
-Depends(graphiccommon, turbo_icon)
-
-currentenv.Alias('libinstall', lib_install_dir)
-currentenv.Alias('confwrite', '/etc/ld.so.conf.d')
-currentenv.Alias('buildplugins', 'bin/Release')
+# Begin the build proper.
+build = SConscript(dirs = ["src", "extra"], exports = "globalenv localenv IsLinux IsWindows IsDarwin compiler librarydir binarydir")

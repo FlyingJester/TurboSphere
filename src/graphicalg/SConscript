@@ -1,8 +1,17 @@
 import os
 import sys
 
-Import(" currentenv ")
+full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin compiler librarydir binarydir component"
 
-graphicalg = currentenv.SharedLibrary('../graphicalg', 'structures.cpp')
+Import(full_import_list)
 
-Return(" graphicalg ")
+files = ["opengame.cpp", "openscript.cpp"]
+
+graphicalg = globalenv.SharedLibrary('graphicalg', 'structures.cpp')
+
+installdir = os.path.join(os.path.join(librarydir, component))
+
+globalenv.Install(installdir, [graphicalg])
+globalenv.Install(os.path.join(installdir, "include"), ["structures.h"])
+
+Return("graphicalg")
