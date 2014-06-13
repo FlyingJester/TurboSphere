@@ -9,3 +9,4 @@ v8*.h
 v8
 V8
 plugins-backup
+.DS_Store
