@@ -1,0 +1,43 @@
+import os
+import sys
+
+full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin compiler librarydir binarydir"
+
+Import(full_import_list)
+
+files = [
+  "engine.cpp",
+  "functionload.cpp",
+  "loadplugins.cpp",
+  "variableregister.cpp",
+  "typed_array.cpp",
+  "package_spk.cpp",
+  "version.cpp",
+  "options.c",
+]
+
+enginelibs = [
+  "t5",
+  "graphiccommon",
+  "graphicalg",
+  "configmanager",
+  "v8",
+]
+
+if not IsWindows():
+  enginelibs+= "dl"
+  enginelibs+= "z"
+
+if IsDarwin():
+  files += ["osx_time.m"]
+  enginelibs += ["objc"]
+  localenv.Append(FRAMEWORKS=['Cocoa'])
+
+localenv.Append(LIBS = enginelibs)
+
+turbosphere = localenv.Program("turbosphere", source = files, )
+
+globalenv.Install(binarydir, [turbosphere])
+
+Return("turbosphere")
+
