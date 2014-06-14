@@ -11,13 +11,13 @@
 #include <stdio.h>
 #include <string>
 
-#include "common/dlopenwrap.h"
+#include <TSPR/dlopenwrap.h>
 
 #include "engine.h"
 #include "functionload.h"
 #include "loadplugins.h"
 #include "variableregister.h"
-#include "configmanager/opengame.h"
+#include <opengame.h>
 
 using namespace std;
 

@@ -4,19 +4,19 @@
 #include "version.h"
 #include "options.h"
 
-#include "configmanager/openscript.h"
-#include "configmanager/opengame.h"
-#include "graphiccommon/screen.h"
+#include <openscript.h>
+#include <opengame.h>
+#include <screen.h>
 
 #include "functionload.h"
 #include "variableregister.h"
 #include "loadplugins.h"
 #include "typed_array.h"
 
-#include "common/noreturn.h"
+#include <TSPR/noreturn.h>
 
 
-#include "t5.h"
+#include <t5.h>
 
 #include <cstring>
 #include <cctype>

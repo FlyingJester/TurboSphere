@@ -10,9 +10,9 @@
 #define V8_ALLOW_ACCESS_TO_RAW_HANDLE_CONSTRUCTOR
 #define V8_USE_UNSAFE_HANDLES
 
-#include "t5.h"
+#include <t5.h>
+#include <v8.h>
 #if defined _WIN32
-    #include "v8.h"
 /*
     #include "SDL2/SDL.h"
     #include "SDL2/SDL_ttf.h"
@@ -31,7 +31,6 @@
 
 #ifndef _WIN32
 
-#include "v8.h"
 /*
     #include <SDL2/SDL.h>
     #include <SDL2/SDL_ttf.h>
@@ -60,7 +59,7 @@
 
 #endif
 
-#include "configmanager/opengame.h"
+#include <opengame.h>
 
 struct TS_ConfigOverride {
 public:

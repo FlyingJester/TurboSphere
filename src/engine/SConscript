@@ -25,8 +25,8 @@ enginelibs = [
 ]
 
 if not IsWindows():
-  enginelibs+= "dl"
-  enginelibs+= "z"
+  enginelibs+= ["dl"]
+  enginelibs+= ["z"]
 
 if IsDarwin():
   files += ["osx_time.m"]
@@ -35,7 +35,7 @@ if IsDarwin():
 
 localenv.Append(LIBS = enginelibs)
 
-turbosphere = localenv.Program("turbosphere", source = files, )
+turbosphere = globalenv.Program("turbosphere", source = files, LIBS = enginelibs)
 
 globalenv.Install(binarydir, [turbosphere])
 
