@@ -3,13 +3,13 @@
 #include <stdlib.h>
 #include <sstream>
 
-#include "../graphiccommon/screen.h"
+#include <screen.h>
 /*! \def CONFIGMGR_INTERNAL
 Indicates that the the header files opengame.h and openscript.h are being processed from the compilation of configmanager.
 */
 #define CONFIGMGR_INTERNAL
 #include "opengame.h"
-#include "../t5.h"
+#include <t5.h>
 
 
 /*! \file opengame.cpp

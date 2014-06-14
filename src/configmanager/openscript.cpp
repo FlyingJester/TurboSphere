@@ -3,14 +3,14 @@
 #include <fstream>
 #include <string>
 #include <stdio.h>
-#include "../v8.h"
+#include <v8.h>
 #define CONFIGMGR_INTERNAL
 #include "openscript.h"
 #include "opengame.h"
 
 #define PLUGINNAME "configmanager"
 
-#include "../plugins/common/plugin.h"
+#include <pluginsdk/plugin.h>
 using namespace std;
 
 #ifdef _WIN32

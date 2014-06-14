@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "common/noreturn.h"
+#include <TSPR/noreturn.h>
 
 //Valid short option starters
 char option_marks[] = {
