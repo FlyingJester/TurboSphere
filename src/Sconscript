@@ -13,7 +13,7 @@ globalenv.Append(CPPPATH = os.path.join(os.getcwd(), "thirdparty/v8/include"))
 globalenv.Append(CPPPATH = os.path.join(os.getcwd(), "pluginsdk"))
 
 # Locate the TS Portable Runtime tools
-globalenv.Append(CPPPATH = os.path.join(os.getcwd(), "TSPR"))
+globalenv.Append(CPPPATH = os.path.join(os.getcwd(), "extra"))
 
 # Dependencies of TurboSphere, called in the precise order they _should_ be compiled in:
 # T5, configmanager, graphiccommon, graphicalg,

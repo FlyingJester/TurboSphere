@@ -1,5 +1,5 @@
 [submodule "common"]
-	path = src/TSPR
+	path = src/extra/TSPR
 	url = https://github.com/FlyingJester/TSPR.git
 [submodule "v8"]
 	path = src/thirdparty/v8

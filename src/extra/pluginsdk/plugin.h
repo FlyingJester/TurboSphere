@@ -73,9 +73,9 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
     #define PLUGINNAME "Engine"
     #define NOPLUGNAME 1
 #endif
-#include "../../v8.h"
+#include <v8.h>
 
-#include "../../common/stacktrace.h"
+#include <TSPR/stacktrace.h>
 
 /////
 // Containers for JSAccessors
