@@ -1,7 +1,7 @@
 import os
 import sys
 
-full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin compiler librarydir binarydir component"
+full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir component"
 
 Import(full_import_list)
 
@@ -11,7 +11,7 @@ graphicalg = globalenv.SharedLibrary('graphicalg', 'structures.cpp')
 
 installdir = os.path.join(os.path.join(librarydir, component))
 
-globalenv.Install(installdir, [graphicalg])
+LibraryInstall(installdir, graphicalg, globalenv)
 globalenv.Install(os.path.join(installdir, "include"), ["structures.h"])
 
 Return("graphicalg")

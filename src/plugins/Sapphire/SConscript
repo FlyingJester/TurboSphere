@@ -1,75 +1,11 @@
-# Sapphire Graphics plugin
-
-Import('currentenv lib_path base_libs tsdir has_tbb has_pthreads')
+Import('currentenv librarydir corelibtargets binarydir')
 
 import os
 import glob
-import sys
-import subprocess
 
-embedded = False
+Sapphire_files	 = glob.glob("*.cpp") + glob.glob("Galileo/*.cpp")
 
-# Determine if we are embedded (ARM, MIPS) or desktop (Intel, AMD)
-uname = os.uname()
-
-cpu = uname[4]
-
-if "arm" in cpu:
-	embedded = True
-if "mips" in cpu:
-	if not "Irix" in uname[0]:
-		embedded = True
-	else: # Just for Sphere 1.6 with FJ-GL
-		embedded = False
-else:
-	embedded = False
-
-sapphireenv = currentenv.Clone()
-
-libs = []
-
-if sys.platform == 'darwin':
-	libs = ['SDL2_image', 'png']
-elif sys.platform == 'win32' or sys.platform == 'win64':
-	libs = ['SDL2_image', 'libpng16-16', 'OpenGL32']
-else:
-	libs = ['SDL2_image', 'GL', 'png', 'X11']
-
-libs += ['t5', 'SDL2']
-
-files = glob.glob("*.c")+glob.glob("*.cpp")
-
-files+= glob.glob("*/*.cpp")
-files+= glob.glob("*/*.c")
-
-#try: files.remove("iff.cpp")
-#except: pass
-
-create_iff = subprocess.check_call(['python', 'embeddedscript/create_embed.py', 'embeddedscript'])
-
-
-addCflags = ""
-addLibs = ""
-addLinkflags = ""
-
-if(has_pthreads):
-	addLinkflags+=" "
-
-if(has_tbb):
-	addCflags += " -DUSE_INTEL_TBB "
-	addLibs += "tbb"
-
-if sys.platform=='darwin':
-  addLinkflags += " -framework OpenGL"
-
-ifflib = sapphireenv.StaticLibrary("tsiff", "iff.cpp", LIBS = [libs, "tbb"], CPPFLAGS = " -DUSE_INTEL_TBB ")
-
-sapphire = sapphireenv.SharedLibrary(os.path.join(tsdir, 'bin/Release/plugin/sapphire'), files, LIBS = [libs, "tbb"], CPPFLAGS = addCflags, LINKFLAGS = addLinkflags)
-Depends(sapphire, create_iff)
-
-testFiles = glob.glob("test/test/*.cpp")
-
-for file in testFiles:
-	test = sapphireenv.Program(os.path.join(os.getcwd(), file [0:len(file)-4]), [file], LIBS = [libs, ifflib, "tbb"], CPPFLAGS = addCflags)
-	Depends(sapphire, test)
-	Depends(test, create_iff)
+Sapphire     = currentenv.SharedLibrary("Sapphire", Sapphire_files,
+  LIBS = ['t5', 'graphiccommon', 'graphicalg', 'configmanager', 'v8', 'SDL2'],
+  FRAMEWORKS = ['SDL2_image', ['OpenGL']] )
+Depends(Sapphire, corelibtargets)

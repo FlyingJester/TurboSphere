@@ -1,6 +1,6 @@
 #ifndef INPUT_JOYSTICK_H
 #define INPUT_JOYSTICK_H
-#include "../common/plugin.h"
+#include <pluginsdk/plugin.h>
 
 #define JOY_PNP 0;
 

@@ -1,7 +1,7 @@
 import os
 import sys
 
-full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin compiler librarydir binarydir component"
+full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir component"
 
 Import(full_import_list)
 
@@ -9,7 +9,8 @@ t5 = globalenv.SharedLibrary('t5', 't5.cpp')
 
 installdir = os.path.join(os.path.join(librarydir, component))
 
-globalenv.Install(installdir, [t5])
+
+LibraryInstall(installdir, t5, globalenv)
 globalenv.Install(os.path.join(installdir, "include"), ["t5.h"], CPPDEFINES = "PREFER_STAT")
 
 Return("t5")

@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cassert>
 #include <cstdint>
-#include "../../common/literaltype.h"
+#include <TSPR/literaltype.h>
 
 //TODO: Add seperate error for OS X.
 #ifdef _WIN32

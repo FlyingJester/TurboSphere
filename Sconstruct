@@ -28,6 +28,16 @@ def IsDarwin():
 
 compiler = ""
 
+# Perform extra futzing for shared libraries on Unix platforms.
+
+def LibraryInstall(name, library, env):
+  if(IsDarwin()):
+    print library[0].name
+    LibraryFileName = os.path.join(os.getcwd(), library[0].name)
+    return env.Command(os.path.join(name, library[0].name), LibraryFileName, "install_name_tool $SOURCE -id $TARGET && cp $SOURCE $TARGET ")
+  else:
+    return env.Install(name, [library])
+
 #Todo: Make these overrideable.
 if IsWindows():
   compiler = 'msvc'
@@ -96,4 +106,4 @@ globalenv = libconfig.Clone()
 localenv  = libconfig.Clone()
 
 # Begin the build proper.
-build = SConscript(dirs = ["src", "extra"], exports = "globalenv localenv IsLinux IsWindows IsDarwin compiler librarydir binarydir")
+build = SConscript(dirs = ["src", "extra"], exports = "globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir ")

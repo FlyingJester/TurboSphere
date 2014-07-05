@@ -1,0 +1,112 @@
+#include "Image.hpp"
+#include <cassert>
+
+#ifdef OS_X
+#include <OpenGL/gl3.h>
+#endif
+
+#include <color.h>
+
+namespace Sapphire {
+
+namespace GL{
+
+    Image::~Image(){
+        glDeleteTextures(1, &mTexture);
+    }
+
+    void Image::Bind() const{
+        glBindTexture(GL_TEXTURE_2D, mTexture);
+    }
+
+    Image::Image(const SDL_Surface *aFrom){
+        glGenTextures(1, &mTexture);
+        Bind();
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, aFrom->w, aFrom->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, aFrom->pixels);
+    }
+    Image::Image(unsigned aTexture, unsigned w, unsigned h){
+        glGenTextures(1, &mTexture);
+        Bind();
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+        //glCopyImageSubData(aTexture, GL_TEXTURE_2D, 0, 0, 0, 0, mTexture, GL_TEXTURE_2D, 0, 0, 0, 0, w, h, 1);
+
+
+    }
+}
+
+/*
+class Image {
+public:
+  union PixelData {
+      uint32_t pixel;
+      unsigned char channel[4];
+  };
+
+protected:
+
+    unsigned w;
+    unsigned h;
+
+   PixelData *RGBA;
+
+public:
+*/
+Image::Image()
+  : GL::Image() {
+
+    assert( sizeof(PixelData) == sizeof (int32_t) );
+
+    w = 0;
+    h = 0;
+    RGBA = nullptr;
+}
+
+Image::Image(const SDL_Surface *aFrom)
+  : GL::Image(aFrom)
+  , RGBA(new PixelData[aFrom->w*aFrom->h])
+  , w(aFrom->w)
+  , h(aFrom->h){
+
+    assert( sizeof(PixelData) == sizeof (int32_t) );
+
+    memcpy(RGBA, aFrom->pixels, aFrom->w*aFrom->h*4);
+
+}
+
+Image::Image(Image *aFrom)
+  : GL::Image(aFrom->mTexture, aFrom->w, aFrom->h)
+  , RGBA(new PixelData[aFrom->w*aFrom->h])
+  , w(aFrom->w)
+  , h(aFrom->h){
+
+    assert( sizeof(PixelData) == sizeof (int32_t) );
+
+    memcpy(RGBA, aFrom->RGBA, aFrom->BufferSize());
+
+}
+
+Image::~Image(){
+    delete[] RGBA;
+}
+
+Image::PixelData *Image::LockImage(){
+    return RGBA;
+}
+
+void UnlockImage(){
+
+}
+
+void Image::CopyData(void *aTo){ //Fills a buffer with a copy of the color data.
+    GetBuffer(aTo);
+}
+
+}

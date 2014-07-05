@@ -4,7 +4,7 @@
 #include "bass_backend.h"
 #include "include/bass.h"
 #define PLUGINNAME "audioBASS"
-#include "../common/plugin.h"
+#include <pluginsdk/plugin.h>
 #include "../../configmanager/opengame.h"
 
 #define FAILSAFE_BASS_INIT_FLAGS (BASS_DEVICE_8BITS|BASS_DEVICE_MONO)

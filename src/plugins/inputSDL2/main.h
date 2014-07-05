@@ -16,7 +16,7 @@
 #define INPUTSDL2_EXPORT extern "C"
 #endif
 
-#include "../common/plugin.h"
+#include <pluginsdk/plugin.h>
 
 #define NUMVARS 115
 #define NUMFUNCS 13

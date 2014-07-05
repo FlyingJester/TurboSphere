@@ -1,5 +1,5 @@
 #define PLUGINNAME "GetKeyString"
-#include "../common/plugin.h"
+#include <pluginsdk/plugin.h>
 #include "getkeystring.h"
 #include <string>
 
