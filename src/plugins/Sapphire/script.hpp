@@ -5,6 +5,7 @@
 #include "Galileo/Galileo.hpp"
 #include "Image.hpp"
 #include <SDL2/SDL.h>
+#include <array>
 
 /////
 // This file contains all JS-Wrapping functions
@@ -14,6 +15,14 @@ namespace Sapphire {
 namespace Script {
 
 void InitScript(int64_t ID);
+
+static const size_t NumFuncs = 8;
+static const size_t NumVars  = 0;
+
+extern std::array<Turbo::JSCallback,    NumFuncs> FunctionList;
+extern std::array<Turbo::JSName,        NumFuncs> FunctionNameList;
+extern std::array<Turbo::JSValue,       NumVars>  VariableList;
+extern std::array<Turbo::JSVariableName,NumVars>  VariableNameList;
 
 extern Turbo::JSObj<TS_Color>        ColorJSObj;
 extern Turbo::JSObj<SDL_Surface>     SurfaceJSObj;

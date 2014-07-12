@@ -16,7 +16,11 @@ namespace GL{
       Image(const SDL_Surface *aFrom);
       Image(unsigned aTexture, unsigned w, unsigned h);
 
-      void GetBuffer(void *);
+      void GetBuffer(void *) const;
+
+      /////
+      // Sets default parameters on the currently bound image.
+      static void SetTexParameters();
 
   public:
       virtual ~Image();

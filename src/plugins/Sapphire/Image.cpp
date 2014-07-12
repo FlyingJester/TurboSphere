@@ -11,6 +11,11 @@ namespace Sapphire {
 
 namespace GL{
 
+    void Image::SetTexParameters(){
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+
     Image::~Image(){
         glDeleteTextures(1, &mTexture);
     }
@@ -22,24 +27,26 @@ namespace GL{
     Image::Image(const SDL_Surface *aFrom){
         glGenTextures(1, &mTexture);
         Bind();
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        SetTexParameters();
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, aFrom->w, aFrom->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, aFrom->pixels);
     }
     Image::Image(unsigned aTexture, unsigned w, unsigned h){
         glGenTextures(1, &mTexture);
         Bind();
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        SetTexParameters();
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
         //glCopyImageSubData(aTexture, GL_TEXTURE_2D, 0, 0, 0, 0, mTexture, GL_TEXTURE_2D, 0, 0, 0, 0, w, h, 1);
+    }
 
+    void Image::GetBuffer(void *aTo) const{
+        Bind();
+        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, aTo);
 
     }
+
 }
 
 /*

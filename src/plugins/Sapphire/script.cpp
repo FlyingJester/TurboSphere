@@ -38,7 +38,6 @@ void NoFree(const v8::WeakCallbackData<v8::Object, void>       &args){
 }
 
 void Surface(const v8::WeakCallbackData<v8::Object, SDL_Surface>    &args) {
-
     SDL_FreeSurface(args.GetParameter());
     args.GetValue().Clear();
 }
@@ -58,10 +57,35 @@ void Group  (const v8::WeakCallbackData<v8::Object, Galileo::Group> &args){
 
 }
 
+std::array<Turbo::JSCallback, NumFuncs> FunctionList = {
+    ColorCtor,
+    SurfaceCtor,
+    ImageCtor,
+    VertexCtor,
+    ShapeCtor,
+    GroupCtor,
+    ShaderCtor,
+    ShaderProgramCtor
+
+};
+
+std::array<Turbo::JSName, NumFuncs> FunctionNameList = {
+    "Color",
+    "Surface",
+    "Image",
+    "Vertex",
+    "Shape",
+    "Group",
+    "Shader",
+    "ShaderProgram"
+};
+
+std::array<Turbo::JSValue,       NumVars>  VariableList = {};
+std::array<Turbo::JSVariableName,NumVars>  VariableNameList = {};
+
 void InitScript(int64_t ID){
 
     printf(BRACKNAME " Info: ID is %llx\n", ID);
-
 
     ColorJSObj   = Turbo::JSObj<TS_Color>       ();
     SurfaceJSObj = Turbo::JSObj<SDL_Surface>    ();
@@ -231,14 +255,27 @@ Turbo::JSFunction SurfaceCtor(Turbo::JSArguments args){
 
 /////
 // New School!
-Turbo::JSFunction VertexCtor(Turbo::JSArguments args);
-Turbo::JSFunction ShapeCtor(Turbo::JSArguments args);
-Turbo::JSFunction GroupCtor(Turbo::JSArguments args);
+Turbo::JSFunction VertexCtor(Turbo::JSArguments args){
+
+}
+
+Turbo::JSFunction ShapeCtor(Turbo::JSArguments args){
+
+}
+
+Turbo::JSFunction GroupCtor(Turbo::JSArguments args){
+
+}
 
 /////
 // Middle School
-Turbo::JSFunction ShaderCtor(Turbo::JSArguments args);
-Turbo::JSFunction ShaderProgramCtor(Turbo::JSArguments args);
+Turbo::JSFunction ShaderCtor(Turbo::JSArguments args){
+
+}
+
+Turbo::JSFunction ShaderProgramCtor(Turbo::JSArguments args){
+
+}
 
 //Turbo::JSFunction (Turbo::JSArguments args);
 
