@@ -38,7 +38,7 @@ namespace RenderThread{
     // in order to create a context that is shared with the on associated with the
     // window.
     void ClaimWindow(Window *aClaim);
-    SDL_GLContext CreateContextFor(Window *aFor);
+    SDL_GLContext CreateContextFor(Window *aFor, Version aGLVersion);
 
 }
 

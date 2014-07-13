@@ -38,6 +38,11 @@ void Init(uint64_t ID){
 
     GL::Window *lWindow = GL::MainThread::CreateWindow(GetScreenWidth(), GetScreenHeight(), lVersion);
 
+    GL::RenderThread::StartThread(lWindow);
+
+    //SDL_GLContext lRenderThreadContext =  CreateContextFor(lWindow, lVersion);
+
+
 }
 
 }
