@@ -1,12 +1,44 @@
 #include "SapphirePlugin.hpp"
+#include "SapphireInit.hpp"
 #include "Sapphire.hpp"
 #include "script.hpp"
 
-using namespace Sapphire;
+
+#define L_WINDOW_TEST 1
+
+#ifdef L_WINDOW_TEST
+#include <unistd.h>
+#include <cstdlib>
+#include "GLStart.hpp"
+
+const char *L_NUMS[] = {
+  "one",
+  "two",
+  "three",
+  "four",
+  "five"
+};
+
+#endif
+
 
 const char * Init(int aID){
 
-    Script::InitScript(aID);
+    Sapphire::Script::InitScript(aID);
+
+    Sapphire::Init(aID);
+
+    #ifdef L_WINDOW_TEST
+    for(int i = 0; i<5; i++){
+        printf(BRACKNAME "Test: That's %s.\n", L_NUMS[i]);
+        sleep(1);
+    }
+
+    Sapphire::GL::RenderThread::StopThread();
+
+    exit(EXIT_SUCCESS);
+
+    #endif
 
     return PLUGINNAME;
 }
@@ -14,6 +46,8 @@ const char * Init(int aID){
 void Close(void){
 
 }
+
+using namespace Sapphire;
 
 int GetNumFunctions(void){
     return Script::NumFuncs;

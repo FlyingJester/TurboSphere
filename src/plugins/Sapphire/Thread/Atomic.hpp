@@ -22,7 +22,7 @@ extern "C" {
 
 namespace Sapphire {
 
-    typedef atomic32_t TS_Atomic32;
+    typedef TS_Atomic32 atomic32_t;
 
     inline atomic32_t *CreateAtomic(int32_t aInitialValue){
         return TS_CreateAtomic(aInitialValue);
@@ -38,6 +38,15 @@ namespace Sapphire {
 
     inline int32_t AtomicGet(atomic32_t * aToGet){
         return TS_AtomicGet(aToGet);
+    }
+
+    inline int32_t AtomicInc(atomic32_t * aToInc){
+        return TS_AtomicInc(aToInc);
+    }
+
+    inline int32_t AtomicDec(atomic32_t * aToDec){
+        return TS_AtomicDec(aToDec);
+
     }
 
     inline bool AtomicCAS(atomic32_t * aToSwap, int32_t aIfEqualTo, int32_t aTo){

@@ -1,25 +1,10 @@
 #include "GLStart.hpp"
 
-#include "Thread/Atomic.hpp"
-#include "Thread/Thread.hpp"
-#include <pluginsdk/concurrent_queue.h>
-#include "Galileo/Shape.hpp"
 
 using Sapphire::Galileo::GL::Operation;
 
 namespace Sapphire{
 namespace GL{
-
-struct ThreadKit{ // A recursive structure that describes and controls a renderthread.
-    Window *mWindow; // Includes the destined context, not the creating thread's context.
-    atomic32_t *EngineFrame;
-    atomic32_t *RenderFrame;
-    atomic32_t *ShouldDie;
-    atomic32_t *DidDie;
-    TS_Thread  *Thread;
-
-    concurrent_queue<Operation *> DrawQueue;
-};
 
 typedef struct ThreadKit * ThreadKitP;
 
@@ -105,7 +90,18 @@ namespace RenderThread{
 
     }
 
-    void StopThread();
+    void StopThread(){
+        ThreadKit *lKit = GetSystemThreadkit();
+        AtomicSet(lKit->ShouldDie, 1);
+
+        //lKit->DrawQueue.push(new DummyOperation<1> ());
+
+        WaitThread(lKit->Thread);
+
+        delete lKit->mWindow;
+        delete lKit;
+
+    }
 
     // Makes the given window available to the current thread. This is necessary
     // in order to create a context that is shared with the on associated with the

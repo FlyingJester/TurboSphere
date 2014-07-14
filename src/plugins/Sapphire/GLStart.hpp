@@ -2,15 +2,35 @@
 
 #include "Galileo/Galileo.hpp"
 #include <SDL2/SDL.h>
+#include "Thread/Atomic.hpp"
+#include "Thread/Thread.hpp"
+#include "Galileo/Shape.hpp"
+#include <pluginsdk/concurrent_queue.h>
 
 #define SDL2_VIDEO_FLAGS SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS
 
 namespace Sapphire{
 namespace GL{
 
+template<int T>
+class DummyOperation : public Sapphire::Galileo::GL::Operation {
+    virtual int Draw(){return T;}
+};
+
 struct Window {
     SDL_GLContext context;
     SDL_Window   *screen;
+};
+
+struct ThreadKit{ // A recursive structure that describes and controls a renderthread.
+    Window *mWindow; // Includes the destined context, not the creating thread's context.
+    atomic32_t *EngineFrame;
+    atomic32_t *RenderFrame;
+    atomic32_t *ShouldDie;
+    atomic32_t *DidDie;
+    TS_Thread  *Thread;
+
+    concurrent_queue<Sapphire::Galileo::GL::Operation *> DrawQueue;
 };
 
 // OpenGL version.

@@ -17,16 +17,16 @@ extern "C" {
 
 namespace Sapphire {
 
-    typedef thread_t TS_Thread;
-    typedef threadfunc_t TS_ThreadFunction;
-    typedef threadarg_t TS_ThreadFuncArg;
-    typedef threadret_t TS_ThreadFuncRet;
+    typedef TS_Thread thread_t;
+    typedef TS_ThreadFunction threadfunc_t;
+    typedef TS_ThreadFuncArg threadarg_t;
+    typedef TS_ThreadFuncRet threadret_t;
 
     inline thread_t *CreateThread(threadfunc_t aFunc, threadarg_t *aArg){
         return TS_CreateThread(aFunc, aArg);
     }
 
-    inline threadarg_t WaitThread(thread_t *aWaitFor){
+    inline threadarg_t *WaitThread(thread_t *aWaitFor){
         return TS_WaitThread(aWaitFor);
     }
 
