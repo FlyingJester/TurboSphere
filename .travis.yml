@@ -13,7 +13,8 @@ before_install:
   - "git submodule update"
   - "sudo apt-get update -qq"
 install:
-  - "cd src/thirdparty && wget http://libsdl.org/release/SDL2-2.0.3.tar.gz && tar -xzvf SDL2-2.0.3.tar.gz && cd SDL2-2.0.3 && ./configure && make && sudo make install"
+  - "cd src/thirdparty && wget http://libsdl.org/release/SDL2-2.0.3.tar.gz && tar -xzvf SDL2-2.0.3.tar.gz && cd SDL2-2.0.3 && ./configure && make && sudo make install && cd ../../.."
+  - "cd src/thirdparty && wget http://www.libsdl.org/projects/SDL_image/release/SDL2_image-2.0.0.tar.gz && tar -xzvf SDL2_image-2.0.0.tar.gz && cd SDL2_image-2.0.0 && ./configure && make && sudo make install && cd ../../.."
   - "cd src/thirdparty/v8 && make dependencies && make native.release component=shared_library -j8 i18nsupport=off && sudo cp out/native.release/libv8.so /usr/local/lib/libv8.so && cd ../../.."
 script: "scons"
 
