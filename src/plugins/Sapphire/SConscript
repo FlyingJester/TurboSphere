@@ -21,7 +21,8 @@ elif IsDarwin():
 
 Sapphire     = currentenv.SharedLibrary("Sapphire", Sapphire_files,
   LIBS = ['t5', 'graphiccommon', 'graphicalg', 'configmanager', 'v8'] + elibs,
-  FRAMEWORKS = ['SDL2', 'SDL2_image', 'OpenGL'] + eframeworks )
+  FRAMEWORKS = ['SDL2', 'SDL2_image', 'OpenGL'] + eframeworks,
+  CCFLAGS = " -g " )
 
 Depends(Sapphire, corelibtargets)
 LibraryInstall(os.path.join(binarydir, 'plugin'), Sapphire, currentenv)

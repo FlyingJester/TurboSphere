@@ -1,9 +1,11 @@
-Import('currentenv librarydir corelibtargets binarydir')
+Import('currentenv librarydir corelibtargets binarydir LibraryInstall')
 
 import os
 import glob
 
 inputSDL2_files	 = glob.glob("*.cpp") #['frontend.cpp', 'bass_backend.cpp', 'script.cpp']
 
-inputSDL2     = currentenv.SharedLibrary(os.path.join(binarydir, 'bin/Release/plugin/inputSDL2'), inputSDL2_files, LIBS = ['t5', 'configmanager', 'v8', 'SDL2'])
+inputSDL2     = currentenv.SharedLibrary('inputSDL2', inputSDL2_files, LIBS = ['t5', 'configmanager', 'v8'], FRAMEWORKS = ['SDL2'])
 Depends(inputSDL2, corelibtargets)
+
+LibraryInstall(os.path.join(binarydir, 'plugin'), inputSDL2, currentenv)

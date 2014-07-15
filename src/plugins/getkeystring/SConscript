@@ -1,6 +1,8 @@
-Import('currentenv librarydir corelibtargets binarydir')
+Import('currentenv librarydir corelibtargets binarydir LibraryInstall')
 
 import os
 
-getkeystring     = currentenv.SharedLibrary(os.path.join(binarydir, 'bin/Release/plugin/getkeystring'), ['getkeystring.cpp'], LIBS = ['v8'])
+getkeystring     = currentenv.SharedLibrary('getkeystring', ['getkeystring.cpp'], LIBS = ['v8'])
 Depends(getkeystring, corelibtargets)
+
+LibraryInstall(os.path.join(binarydir, 'plugin'), getkeystring, currentenv)
