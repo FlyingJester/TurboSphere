@@ -15,7 +15,7 @@ before_install:
 install:
   - "cd src/thirdparty && wget http://libsdl.org/release/SDL2-2.0.3.tar.gz && tar -xzvf SDL2-2.0.3.tar.gz > /dev/null && cd SDL2-2.0.3 && ./configure > /dev/null && make > /dev/null && sudo make install && cd ../../.."
   - "cd src/thirdparty && wget http://www.libsdl.org/projects/SDL_image/release/SDL2_image-2.0.0.tar.gz && tar -xzvf SDL2_image-2.0.0.tar.gz && cd SDL2_image-2.0.0 > /dev/null && ./configure > /dev/null && make > /dev/null && sudo make install && cd ../../.."
-  - "cd src/thirdparty/v8 && make dependencies > /dev/null && make x64.release component=shared_library -j8 i18nsupport=off > /dev/null && sudo cp out/x64.release/libv8.so /usr/local/lib/libv8.so && cd ../../.."
+  - "cd src/thirdparty/v8 && make dependencies > /dev/null && make x64.release component=shared_library -j8 i18nsupport=off > /dev/null && ls out && ls out/x64.release && sudo cp out/x64.release/libv8.so /usr/local/lib/libv8.so && cd ../../.."
 script: "scons"
 
 
