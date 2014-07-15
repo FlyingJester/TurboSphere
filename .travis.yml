@@ -4,6 +4,10 @@ branches:
     - galileo
     - master
 
+compiler:
+  - clang
+  - gcc
+
 before_script:
   - "scons -c"
 
