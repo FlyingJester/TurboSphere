@@ -12,10 +12,8 @@ before_install:
   - "git submodule init"
   - "git submodule update"
   - "sudo apt-get update -qq"
-
 install:
-  - "sudo apt-get install -qq libsdl2-dev"
-  - "sudo apt-get install -qq libsdl2-image-dev"
+  - "cd src/thirdparty && wget http://libsdl.org/release/SDL2-2.0.3.tar.gz && tar -xzvf SDL2-2.0.3.tar.gz && cd SDL2-2.0.3 && ./configure && make && sudo make install"
   - "cd src/thirdparty/v8 && make dependencies && make native.release component=shared_library -j8 i18nsupport=off && sudo cp out/native.release/libv8.so /usr/local/lib/libv8.so && cd ../../.."
 script: "scons"
 
