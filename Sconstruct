@@ -82,7 +82,7 @@ if IsLinux():
   CheckForHeader(globalenv, conf, 'mutex', "HAS_MUTEX")
   CheckForHeader(globalenv, conf, 'unistd.h', "HAS_UNISTD")
   CheckForHeader(globalenv, conf, 'sys/unistd.h', "HAS_UNISTD_SYS")
-  if CheckForHeader(globalenv, conf, 'stat.h', "HAS_STAT") or CheckForHeader(globalenv, conf, 'stat.h', "HAS_STAT_SYS"):
+  if CheckForHeader(globalenv, conf, 'stat.h', "HAS_STAT") or CheckForHeader(globalenv, conf, 'sys/stat.h', "HAS_STAT_SYS"):
     globalenv.Append(CPPDEFINES = "USE_STAT")
   CheckForHeader(globalenv, conf, 'types', "HAS_TYPES")
   CheckForHeader(globalenv, conf, 'sys/types', "HAS_TYPES_SYS")
