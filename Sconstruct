@@ -11,7 +11,7 @@ gcc_ccflags = " -Werror=return-type -Wall -Wno-pointer-arith -mtune=native -flto
 gcc_cflags = " -std=c11 "
 gcc_cxxflags = " -std=c++11 "
 
-if os.environ['TRAVIS'] == 'true':
+if os.environ.get('TRAVIS') == 'true':
   gcc_cflags = " -std=gnu0x "
   gcc_cxxflags = " -std=gnu++0x "
 
