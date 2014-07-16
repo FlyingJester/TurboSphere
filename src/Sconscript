@@ -79,7 +79,7 @@ Depends(turbosphere, graphicalg)
 Depends(turbosphere, graphiccommon)
 
 
-plugins = SConscript(dirs = [os.path.join(os.getcwd(), "plugins")], exports = full_export_list)
+plugins = SConscript(os.path.join(os.path.join(os.getcwd(), "plugins"), "Sconscript"), exports = full_export_list)
 
 Depends(plugins, turbosphere)
 
