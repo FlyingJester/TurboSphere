@@ -29,9 +29,10 @@ if not IsWindows():
   enginelibs+= ["z"]
 
 if IsDarwin():
-  files += ["osx_time.m"]
+  files += ["osx_time.m", "osx_messagebox.m"]
   enginelibs += ["objc"]
-  localenv.Append(FRAMEWORKS=['Cocoa'])
+  localenv.Append(FRAMEWORKS=['Cocoa', 'CoreFoundation'])
+  globalenv.Append(FRAMEWORKS=['CoreFoundation'])
 
 localenv.Append(LIBS = enginelibs)
 

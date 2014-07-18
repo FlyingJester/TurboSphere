@@ -6,6 +6,8 @@
 #endif
 
 #include <color.h>
+#include <SDL2/SDL.h>
+#include "Sapphire.hpp"
 
 namespace Sapphire {
 
@@ -16,6 +18,9 @@ namespace GL{
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
 
+    Image::Image(){
+        glGenTextures(1, &mTexture);
+    }
     Image::~Image(){
         glDeleteTextures(1, &mTexture);
     }
@@ -30,7 +35,12 @@ namespace GL{
         SetTexParameters();
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, aFrom->w, aFrom->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, aFrom->pixels);
+        #ifdef OS_X
+        glFinish(); //Janky OS X OpenGL 4.
+        #endif
+
     }
+
     Image::Image(unsigned aTexture, unsigned w, unsigned h){
         glGenTextures(1, &mTexture);
         Bind();
@@ -86,6 +96,7 @@ Image::Image(const SDL_Surface *aFrom)
 
     memcpy(RGBA, aFrom->pixels, aFrom->w*aFrom->h*4);
 
+    printf(BRACKNAME " Info: created image.\n");
 }
 
 Image::Image(Image *aFrom)

@@ -1,5 +1,6 @@
 #include "GLStart.hpp"
-
+#include <cassert>
+#include "Sapphire.hpp"
 
 using Sapphire::Galileo::GL::Operation;
 
@@ -13,6 +14,17 @@ ThreadKitP &GetSystemThreadkit(void){
     return s;
 }
 
+concurrent_queue<Sapphire::Galileo::GL::Operation *> *RenderQueue(){
+    return &(GetSystemThreadkit()->DrawQueue);
+}
+
+atomic32_t *GetRenderFrame(){
+    return GetSystemThreadkit()->RenderFrame;
+}
+
+atomic32_t *GetEngineFrame(){
+    return GetSystemThreadkit()->EngineFrame;
+}
 
 inline void SetSDL_GL_Attributes(void){
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE,8);
@@ -23,9 +35,6 @@ inline void SetSDL_GL_Attributes(void){
 }
 
 SDL_GLContext CreateForWindow(Window *aFor, Version aGLVersion){
-
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, aGLVersion.major);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, aGLVersion.minor);
 
     SetSDL_GL_Attributes();
 
@@ -38,11 +47,22 @@ namespace MainThread{
     Window *CreateWindow(unsigned aWidth,unsigned aHeight,Version aGLVersion){
         Window *rWindow = new Window();
 
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, aGLVersion.major);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, aGLVersion.minor);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,  SDL_GL_CONTEXT_PROFILE_CORE);
+
         rWindow->screen = SDL_CreateWindow("Sapphire Heart",
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
             aWidth, aHeight, SDL2_VIDEO_FLAGS);
 
         rWindow->context = CreateForWindow(rWindow, aGLVersion);
+
+        if(!rWindow->context)
+            fprintf(stderr, BRACKNAME " Error: %s\n", SDL_GetError());
+
+        printf(BRACKNAME " Info: Using OpenGL: %s\n", glGetString(GL_VERSION));
+
+        assert(rWindow->context);
 
         return rWindow;
     }
@@ -56,7 +76,20 @@ namespace RenderThread{
 
         ClaimWindow(lKit->mWindow);
 
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_DEPTH_TEST);
+
+        //glEnable(GL_TEXTURE_2D);
+
+        SDL_GL_SetSwapInterval(0);
+
         Operation *Op = nullptr;
+
+        //glUseProgram(3);
 
         while(AtomicGet(lKit->ShouldDie)==0){
             if(lKit->DrawQueue.try_pop(Op)==false){
@@ -64,7 +97,13 @@ namespace RenderThread{
                 continue;
             }
 
+            assert(Op);
+
             Op->Draw();
+            if(!Op->IsPersistent()){
+                delete Op;
+                Op=nullptr;
+            }
 
         }
 
@@ -77,9 +116,21 @@ namespace RenderThread{
 
         GetSystemThreadkit() = lKit;
 
+        ClaimWindow(aWindow);
+
+        glEnable(GL_BLEND);
+
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
+        glEnable(GL_SCISSOR_TEST);
+
+       // glEnable(GL_TEXTURE_2D);
+
         lKit->mWindow = new Window();
         lKit->mWindow->screen = aWindow->screen;
-        lKit->mWindow->context= CreateContextFor(aWindow, {4, 1});
+        lKit->mWindow->context= CreateContextFor(aWindow, {3, 3});
+        ClaimWindow(aWindow);
 
         lKit->EngineFrame = CreateAtomic(0);
         lKit->RenderFrame = CreateAtomic(0);
@@ -108,6 +159,7 @@ namespace RenderThread{
     // window.
     void ClaimWindow(Window *aClaim){
         SDL_GL_MakeCurrent(aClaim->screen, aClaim->context);
+        printf(BRACKNAME " Info: Made\t%p\twindow, \t%p\tcontext\n", aClaim->screen, aClaim->context);
 
     }
 
@@ -116,15 +168,10 @@ namespace RenderThread{
         SDL_GLContext lNewContext;
         SDL_GLContext lOldContext = SDL_GL_GetCurrentContext();
         SDL_Window *lOldWindow =SDL_GL_GetCurrentWindow();
-
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, aGLVersion.major);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, aGLVersion.minor);
+        SetSDL_GL_Attributes();
+        ClaimWindow(aFor);
 
         SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
-
-        SetSDL_GL_Attributes();
-
-        ClaimWindow(aFor);
 
         lNewContext = SDL_GL_CreateContext(aFor->screen);
 

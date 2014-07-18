@@ -32,16 +32,19 @@ void Init(uint64_t ID){
     else
         fprintf(stderr, P_WARNING "SDL2 Video was already initialized. Another video plugin loaded?\n");
 
+    printf(BRACKNAME " Info: SDL2 Video is initialized.\n");
     IMG_Init(IMG_FLAGS);
 
-    GL::Version lVersion = {4, 1};
+    //TODO: Make this more lenient, ask for 4.4 and then lower versions if that fails
+    GL::Version lVersion = {3, 3};
 
     GL::Window *lWindow = GL::MainThread::CreateWindow(GetScreenWidth(), GetScreenHeight(), lVersion);
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_SCISSOR_TEST);
+
     GL::RenderThread::StartThread(lWindow);
-
-    //SDL_GLContext lRenderThreadContext =  CreateContextFor(lWindow, lVersion);
-
 
 }
 

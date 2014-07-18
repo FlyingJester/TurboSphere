@@ -1,5 +1,6 @@
 #include "api.hpp"
 #include "Sapphire.hpp"
+#include "Image.hpp"
 
 namespace Sapphire {
 
@@ -13,8 +14,9 @@ SDL_Surface *LoadSurface(const char *aPath){
         return nullptr;
     }
 
-    const SDL_Rect lRect = {0, 0, lAnyFormatSurface->w, lAnyFormatSurface->h};
-    SDL_Surface* rCorrectFormatSurface = SDL_CreateRGBSurface(0, lRect->w, lRect->h, IMAGE_DEPTH, CHANNEL_MASKS);
+    SDL_Rect lRect = {0, 0, lAnyFormatSurface->w, lAnyFormatSurface->h};
+
+    SDL_Surface* rCorrectFormatSurface = GenerateSurface(lRect);// SDL_CreateRGBSurface(0, lRect.w, lRect.h, IMAGE_DEPTH, CHANNEL_MASKS);
     assert(rCorrectFormatSurface);
 
     SDL_LowerBlit(lAnyFormatSurface, &lRect, rCorrectFormatSurface, &lRect);
@@ -27,7 +29,7 @@ SDL_Surface *LoadSurface(const char *aPath){
 SDL_Surface *CreateSurface(unsigned aWidth, unsigned aHeight, TS_Color *color){
     const uint32_t Color = color->toInt();
 
-    SDL_Surface* rSurface = SDL_CreateRGBSurface(0, aWidth, aHeight, IMAGE_DEPTH, CHANNEL_MASKS);
+    SDL_Surface* rSurface =  GenerateSurface(aWidth, aHeight);//SDL_CreateRGBSurface(0, aWidth, aHeight, IMAGE_DEPTH, CHANNEL_MASKS);
     assert(rSurface);
 
     SDL_LockSurface(   rSurface );
@@ -38,6 +40,19 @@ SDL_Surface *CreateSurface(unsigned aWidth, unsigned aHeight, TS_Color *color){
     SDL_UnlockSurface( rSurface );
 
     return rSurface;
+}
+
+SDL_Surface *FromImage(Image *aFrom){
+    SDL_Surface* rSurface =  GenerateSurface(aFrom->Width(), aFrom->Height());
+
+    SDL_LockSurface(   rSurface );
+    {
+        aFrom->CopyData(rSurface->pixels);
+    }
+    SDL_UnlockSurface( rSurface );
+
+    return rSurface;
+
 }
 
 }
