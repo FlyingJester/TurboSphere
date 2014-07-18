@@ -12,21 +12,28 @@
    width="256"
    height="256"
    id="svg2">
-  <title
-     id="title6348">TurboSphere</title>
-  <defs
-     id="defs4">
+  <title id="title6348">TurboSphere</title>
+  <defs  id="defs4">
+    <!-- Turbine intake background -->
     <linearGradient
        id="linearGradient6340">
+
+      <!-- Center of the turbine's circular background gradient -->
       <stop
          id="stop6342"
-         style="stop-color:#ffffff;stop-opacity:0.25892857"
+         style="stop-color:#FFFFFF;stop-opacity:0.25892857"
          offset="0" />
+
+      <!-- Outer edge of the turbine's circular background gradient -->
       <stop
          id="stop6344"
          style="stop-color:#000000;stop-opacity:1"
          offset="1" />
     </linearGradient>
+
+    <!-- Inner fill of the turbine blades (near the center)
+          Ordered from centermost to outermost.
+    -->
     <linearGradient
        id="linearGradient6182">
       <stop
@@ -42,17 +49,28 @@
          style="stop-color:#000000;stop-opacity:0"
          offset="1" />
     </linearGradient>
+
+    <!-- Turbine intake face shading
+          Somehow seperately controls the outer edge of the
+          intake lip, and the spindle cap. I have no idea how
+          Inkscape made that happen.
+    -->
     <linearGradient
        id="linearGradient4631">
+      <!-- The inner edge -->
       <stop
          id="stop4633"
-         style="stop-color:#ffffff;stop-opacity:1"
+         style="stop-color:#FFFFFF;stop-opacity:1"
          offset="0" />
+      <!-- The outer edge -->
       <stop
          id="stop4635"
          style="stop-color:#505050;stop-opacity:1"
          offset="1" />
     </linearGradient>
+
+    <!-- What is this? -->
+    <!-- Changes seemingly not visible. -->
     <marker
        refX="0"
        refY="0"
@@ -65,6 +83,8 @@
          id="path3811"
          style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt" />
     </marker>
+
+    <!-- Turbo spirals fill -->
     <linearGradient
        id="linearGradient3759">
       <stop
@@ -76,6 +96,8 @@
          style="stop-color:#ffffff;stop-opacity:1"
          offset="1" />
     </linearGradient>
+
+    <!-- What is this? -->
     <radialGradient
        cx="66.670067"
        cy="189.32993"
@@ -86,6 +108,8 @@
        xlink:href="#linearGradient3759"
        gradientUnits="userSpaceOnUse"
        spreadMethod="pad" />
+
+    <!-- What is this? -->
     <linearGradient
        x1="170.66101"
        y1="228.73766"
@@ -96,6 +120,8 @@
        gradientUnits="userSpaceOnUse"
        gradientTransform="matrix(1.8601546,0,0,1.8602156,-170.55644,567.67416)"
        spreadMethod="pad" />
+
+    <!-- What is this? -->
     <linearGradient
        x1="60.456715"
        y1="1015.5117"
@@ -105,6 +131,8 @@
        xlink:href="#linearGradient3759"
        gradientUnits="userSpaceOnUse"
        gradientTransform="matrix(0.74603116,0,0,0.89116726,24.20637,107.56611)" />
+
+    <!-- What is this? -->
     <linearGradient
        x1="61.608047"
        y1="919.64783"
@@ -113,6 +141,8 @@
        id="linearGradient4655-8"
        xlink:href="#linearGradient3759-2"
        gradientUnits="userSpaceOnUse" />
+
+    <!-- What is this? -->
     <linearGradient
        id="linearGradient3759-2">
       <stop
@@ -124,6 +154,8 @@
          style="stop-color:#ffffff;stop-opacity:1"
          offset="1" />
     </linearGradient>
+
+    <!-- What is this? -->
     <linearGradient
        x1="59.282837"
        y1="1051.1975"
