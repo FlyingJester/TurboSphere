@@ -193,12 +193,12 @@ int Shape::Draw(){
 
     //SetShader(mShader);
 
-    static auto lmode = (mVertices.size()<=3)?GL_TRIANGLE_FAN:((mVertices.size()==2)?GL_LINE_LOOP:GL_POINTS);
+    static auto lmode = (mVertices.size()>=3)?GL_TRIANGLE_FAN:((mVertices.size()==2)?GL_LINE_LOOP:GL_POINTS);
 
-    printf(BRACKNAME " Info: Drawing a primitive with %lu size.\n", mVertices.size());
+    //printf(BRACKNAME " Info: Drawing a primitive with %lu size.\n", mVertices.size());
 
 
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, mVertices.size());
+    glDrawArrays(lmode, 0, mVertices.size());
 
     return 0;
 }

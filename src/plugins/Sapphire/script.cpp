@@ -1,5 +1,7 @@
 #include "script.hpp"
 #include "Sapphire.hpp"
+#include "SapphireInit.hpp"
+#include "api.hpp"
 
 #include <v8.h>
 
@@ -122,6 +124,7 @@ void Group  (const v8::WeakCallbackData<v8::Object, Galileo::Group> &args){
 }
 
 std::array<Turbo::JSCallback, NumFuncs> FunctionList = {
+    FlipScreen,
     ColorCtor,
     SurfaceCtor,
     ImageCtor,
@@ -137,6 +140,7 @@ std::array<Turbo::JSCallback, NumFuncs> FunctionList = {
 };
 
 std::array<Turbo::JSName, NumFuncs> FunctionNameList = {
+    "FlipScreen",
     "Color",
     "Surface",
     "Image",
@@ -191,6 +195,12 @@ void InitScript(int64_t ID){
 
 }
 
+Turbo::JSFunction FlipScreen(Turbo::JSArguments args){
+    Sapphire::GL::EngineFlipScreenDelay();
+    Sapphire::GL::RenderQueue()->push(new Sapphire::Galileo::FlipScreen(Sapphire::GL::GetRenderFrame()));
+    AtomicInc(Sapphire::GL::GetEngineFrame());
+}
+
 /////
 // Old School
 Turbo::JSFunction ColorCtor(Turbo::JSArguments args){
@@ -228,7 +238,7 @@ Turbo::JSFunction ImageCtor(Turbo::JSArguments args){
 
         if(Turbo::CheckArg::String(args, 0, __func__)){ // From Path
             v8::String::Utf8Value lStr(args[0]);
-            SDL_Surface *lSurf = IMG_Load(*lStr);
+            SDL_Surface *lSurf = LoadSurface(*lStr);
             if(!lSurf){
                 Turbo::SetError(args, (std::string(BRACKNAME " ImageCtor Error: Could not open path '") +
                                        std::string(*lStr) + std::string("'.") ).c_str());
@@ -378,6 +388,10 @@ Turbo::JSFunction ShapeCtor(Turbo::JSArguments args){
             if(num_vertices<FIXEDUVCOORD_SIZE){
                 Vertices[i].u = FixedUVCoord[i][(i*2)  ];
                 Vertices[i].v = FixedUVCoord[i][(i*2)+1];
+
+                printf("Using uv: %f\t%f\n", Vertices[i].u, Vertices[i].v);
+                printf("\t\t\t\tUsing xy: %f\t%f\n", Vertices[i].x, Vertices[i].y);
+
             }
         }
 

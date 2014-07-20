@@ -75,8 +75,8 @@ Amask
 
     lVertices[0] = Sapphire::Galileo::Vertex(-16,   0, 0.0f, 1.0f);
     lVertices[1] = Sapphire::Galileo::Vertex(128,   0, 1.0f, 1.0f);
-    lVertices[3] = Sapphire::Galileo::Vertex(144, 128, 1.0f, 0.0f);
     lVertices[2] = Sapphire::Galileo::Vertex(16,  144, 0.0f, 0.0f);
+    lVertices[3] = Sapphire::Galileo::Vertex(144, 128, 1.0f, 0.0f);
 
 //    lVertices[0].color. = 0;
 

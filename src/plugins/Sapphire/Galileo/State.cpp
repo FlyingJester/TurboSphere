@@ -24,7 +24,7 @@ int FlipScreen::Draw(){
     AtomicInc(mRenderFrame);
     //SDL_GL_SwapWindow(window);
     SDL_Window *w = SDL_GL_GetCurrentWindow();
-    printf(BRACKNAME " Info: Context is %p\tWindows at %p\n", SDL_GL_GetCurrentContext(), w);
+    //printf(BRACKNAME " Info: Context is %p\tWindows at %p\n", SDL_GL_GetCurrentContext(), w);
     SDL_GL_MakeCurrent(w, SDL_GL_GetCurrentContext());
     SDL_GL_SwapWindow(w);
     glClear(GL_COLOR_BUFFER_BIT);

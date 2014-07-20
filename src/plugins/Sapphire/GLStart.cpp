@@ -14,6 +14,17 @@ ThreadKitP &GetSystemThreadkit(void){
     return s;
 }
 
+void EngineFlipScreenDelay(){
+
+    while(AtomicGet(GetSystemThreadkit()->RenderFrame) + 32 < AtomicGet(GetSystemThreadkit()->EngineFrame)){
+
+        SDL_Delay(1);
+    }
+
+
+
+}
+
 concurrent_queue<Sapphire::Galileo::GL::Operation *> *RenderQueue(){
     return &(GetSystemThreadkit()->DrawQueue);
 }
