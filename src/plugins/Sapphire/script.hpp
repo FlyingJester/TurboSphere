@@ -16,7 +16,7 @@ namespace Script {
 
 void InitScript(int64_t ID);
 
-static const size_t NumFuncs = 8;
+static const size_t NumFuncs = 11;
 static const size_t NumVars  = 0;
 
 extern std::array<Turbo::JSCallback,    NumFuncs> FunctionList;
@@ -30,6 +30,7 @@ extern Turbo::JSObj<Image>           ImageJSObj;
 extern Turbo::JSObj<Galileo::Vertex> VertexJSObj;
 extern Turbo::JSObj<Galileo::Shape>  ShapeJSObj;
 extern Turbo::JSObj<Galileo::Group>  GroupJSObj;
+extern Turbo::JSObj<Galileo::Shader> ShaderProgramJSObj;
 
 /////
 // Old School
@@ -43,11 +44,17 @@ Turbo::JSFunction VertexCtor(Turbo::JSArguments args);
 Turbo::JSFunction ShapeCtor(Turbo::JSArguments args);
 Turbo::JSFunction GroupCtor(Turbo::JSArguments args);
 
+Turbo::JSFunction DrawGroup(Turbo::JSArguments args);
+
 /////
 // Middle School
 Turbo::JSFunction ShaderCtor(Turbo::JSArguments args);
 Turbo::JSFunction ShaderProgramCtor(Turbo::JSArguments args);
+Turbo::JSFunction GetDefaultShaderProgram(Turbo::JSArguments args);
 
+
+Turbo::JSFunction GetScreenWidth(Turbo::JSArguments args);
+Turbo::JSFunction GetScreenHeight(Turbo::JSArguments args);
 //Turbo::JSFunction (Turbo::JSArguments args);
 
 }

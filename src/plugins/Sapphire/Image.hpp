@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 
 namespace Sapphire {
 
@@ -12,7 +13,7 @@ namespace GL{
 
       unsigned mTexture;
 
-      Image(){}
+      Image();
       Image(const SDL_Surface *aFrom);
       Image(unsigned aTexture, unsigned w, unsigned h);
 

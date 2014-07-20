@@ -10,7 +10,17 @@
 #ifdef __cplusplus
 
 #include <pluginsdk/concurrent_queue.h>
+
+#ifdef __GNUC__
+  #pragma GCC diagnostic ignored "-Wnull-arithmetic"
+  #pragma GCC diagnostic push
+#endif
+
 #include <pluginsdk/plugin.h>
+
+#ifdef __GNUC__
+  #pragma GCC diagnostic pop
+#endif
 
 #endif
 
@@ -20,3 +30,4 @@
 #define Famask 0xff000000
 
 #define CHANNEL_MASKS Frmask, Fgmask, Fbmask, Famask
+#define IMAGE_DEPTH 32

@@ -9,9 +9,11 @@ public:
 
     int x;
     int y;
+    float u;
+    float v;
     TS_Color color;
 
-    Vertex(int _x, int _y);
+    Vertex(int _x, int _y, float _u, float _v);
     Vertex(const Vertex&);
     Vertex(){};
     ~Vertex() {}

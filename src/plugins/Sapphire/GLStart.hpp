@@ -12,6 +12,10 @@
 namespace Sapphire{
 namespace GL{
 
+concurrent_queue<Sapphire::Galileo::GL::Operation *> *RenderQueue();
+atomic32_t *GetRenderFrame();
+atomic32_t *GetEngineFrame();
+
 template<int T>
 class DummyOperation : public Sapphire::Galileo::GL::Operation {
     virtual int Draw(){return T;}

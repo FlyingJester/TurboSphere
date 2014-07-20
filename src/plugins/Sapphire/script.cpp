@@ -7,6 +7,7 @@
 #include "Image.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include "GLStart.hpp" // RenderQueue()
 
 #include <algorithm>
 #include <queue>
@@ -154,7 +155,7 @@ std::array<Turbo::JSVariableName,NumVars>  VariableNameList = {};
 
 void InitScript(int64_t ID){
 
-    printf(BRACKNAME " Info: ID is %llx\n", ID);
+    printf(BRACKNAME " Info: ID is %llx!\n", ID);
 
     ColorJSObj   = Turbo::JSObj<TS_Color>       ();
     SurfaceJSObj = Turbo::JSObj<SDL_Surface>    ();
@@ -165,8 +166,12 @@ void InitScript(int64_t ID){
     ShaderProgramJSObj   = Turbo::JSObj<Galileo::Shader> ();
 
     ColorJSObj.Finalize             = Finalizer::Generic<TS_Color>;
-    ShaderProgramJSObj.Finalize  = Finalizer::Generic<Galileo::Shader>;
-    ImageJSObj.SetTypeName("Color");
+    ShaderProgramJSObj.Finalize     = Finalizer::Generic<Galileo::Shader>;
+    ImageJSObj.SetTypeName("Image");
+
+    GroupJSObj.Finalize     = Finalizer::Generic<Galileo::Group>;
+    GroupJSObj.SetTypeName("Group");
+    GroupJSObj.AddToProto("Draw", DrawGroup);
 
     ColorJSObj.ID              = (ID<<16)|(0x0312u);
     SurfaceJSObj.ID            = (ID<<16)|(0x0302u);
@@ -175,6 +180,7 @@ void InitScript(int64_t ID){
     ShapeJSObj.ID              = (ID<<16)|(0x0260u);
     GroupJSObj.ID              = (ID<<16)|(0x0221u);
     ShaderProgramJSObj.ID      = (ID<<16)|(0x0144u);
+
 
     auto lIso = v8::Isolate::GetCurrent();
 
@@ -380,7 +386,9 @@ Turbo::JSFunction ShapeCtor(Turbo::JSArguments args){
 
         Sapphire::Galileo::Shape *rShape = new Galileo::Shape(Vertices,lImage);
 
-         Turbo::WrapObject(args, ShapeJSObj, rShape);
+        rShape->FillGL();
+
+        Turbo::WrapObject(args, ShapeJSObj, rShape);
     }
     else{
             Turbo::SetError(args, BRACKNAME " ShapeCtor Error: Called with fewer than 2 arguments.");
@@ -388,6 +396,9 @@ Turbo::JSFunction ShapeCtor(Turbo::JSArguments args){
 }
 
 Turbo::JSFunction GroupCtor(Turbo::JSArguments args){
+
+    printf(BRACKNAME " Info: Creating a group.\n");
+
     if(args.Length()<2){
         Turbo::SetError(args, BRACKNAME " GroupCtor Error: Called with fewer than 2 arguments.");
         return;
@@ -409,6 +420,9 @@ Turbo::JSFunction GroupCtor(Turbo::JSArguments args){
           static_cast<Galileo::Shader*>(v8::Local<v8::Object>::Cast(args[1])->GetAlignedPointerFromInternalField(0)));
 
         lGroup->push(static_cast<Galileo::Shape*>(v8::Local<v8::Object>::Cast(args[0])->GetAlignedPointerFromInternalField(0)));
+
+        Turbo::WrapObject(args, GroupJSObj, lGroup);
+        return;
 
     }
     else if(args[0]->IsArray()){
@@ -435,6 +449,13 @@ Turbo::JSFunction GroupCtor(Turbo::JSArguments args){
     }
 
 
+
+}
+
+Turbo::JSFunction DrawGroup(Turbo::JSArguments args){
+    Galileo::Group* mGroup = Turbo::GetMemberSelf <Galileo::Group> (args);
+
+    mGroup->DrawAll(Sapphire::GL::RenderQueue());
 
 }
 

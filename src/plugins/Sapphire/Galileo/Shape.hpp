@@ -1,13 +1,17 @@
 #pragma once
 
 #include "Vertex.hpp"
-#include "Shader.hpp"
 #include <vector>
 #include <algorithm>
 #include <color.h>
+#include "../Image.hpp"
+#include <v8.h>
+#include <memory>
 
 namespace Sapphire{
 namespace Galileo {
+
+class Shader;
 
 /////
 // ContainerClass is intended to be a std::array, std::list, or std::vector.
@@ -31,27 +35,31 @@ namespace GL {
       Shader *mShader;
   public:
 
+      virtual ~Operation();
+      Operation();
 
-      virtual void Draw() = 0;
-      virtual void SetShader(Shader *aShader);
+      virtual int Draw() = 0;
+      virtual bool IsPersistent(void){
+          return true;
+      }
+
+    virtual void SetShader(Shader *aShader){}
 
   };
 
   class Drawable : public Operation {
+  protected:
 
       void InitGL(void); //Initializes the OpenGL components.
       void CloseGL(void);//Deletes the OpenGL components.
 
-  protected:
       std::vector<Vertex> mVertices;
       unsigned mVertexArray;
-      unsigned mBuffer;
-
-      // Extra preparation of OpenGL state, such as teture binding.
-      virtual void PrepareForDraw() = 0;
+      unsigned mBuffer[3];
 
       virtual void FillGL(void) = 0; //Fills the OpenGL components given the vertices.
 
+      Image *mImage;
   public:
 
       Drawable()
@@ -65,18 +73,22 @@ namespace GL {
           InitGL();
 
       }
+
+      Drawable(int a)
+      {mVertices.reserve(a);}
+
       virtual ~Drawable(){CloseGL();}
 
-      virtual void Draw() = 0;
+      virtual int Draw() = 0;
 
-      virtual void SetShader(Shader *aShader);
+      virtual void SetShader(Shader *aShader) = 0;
       // Checks if the specified shader contains the attribtues and
       // uniforms this drawable expects.
       virtual bool CanUse(Shader *aShader) = 0;
 
       virtual void BindBuffer();
       virtual void BindArray();
-      virtual void Bind() {BindBuffer(); BindArray();}
+      virtual void Bind() {BindBuffer(); BindArray(); mImage->Bind();}
   };
 }
 
@@ -84,13 +96,15 @@ class Shape : public GL::Drawable {
 protected:
 
 public:
+    Shape(std::vector<Vertex> &aVertices, Image *aImage);
 
+    virtual ~Shape() {}
     virtual bool CanUse(Shader *aShader);
     virtual void SetShader(Shader *aShader);
 
     virtual void FillGL();
 
-    virtual void Draw();
+    virtual int Draw();
 
 };
 
