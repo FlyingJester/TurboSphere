@@ -16,7 +16,7 @@ namespace Script {
 
 void InitScript(int64_t ID);
 
-static const size_t NumFuncs = 11;
+static const size_t NumFuncs = 12;
 static const size_t NumVars  = 0;
 
 extern std::array<Turbo::JSCallback,    NumFuncs> FunctionList;
@@ -45,6 +45,7 @@ Turbo::JSFunction ShapeCtor(Turbo::JSArguments args);
 Turbo::JSFunction GroupCtor(Turbo::JSArguments args);
 
 Turbo::JSFunction DrawGroup(Turbo::JSArguments args);
+Turbo::JSFunction GroupSetPosition(Turbo::JSArguments args);
 
 /////
 // Middle School
@@ -53,6 +54,7 @@ Turbo::JSFunction ShaderProgramCtor(Turbo::JSArguments args);
 Turbo::JSFunction GetDefaultShaderProgram(Turbo::JSArguments args);
 
 
+Turbo::JSFunction FlipScreen(Turbo::JSArguments args);
 Turbo::JSFunction GetScreenWidth(Turbo::JSArguments args);
 Turbo::JSFunction GetScreenHeight(Turbo::JSArguments args);
 //Turbo::JSFunction (Turbo::JSArguments args);

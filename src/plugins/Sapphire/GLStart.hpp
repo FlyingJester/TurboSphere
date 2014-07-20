@@ -12,9 +12,14 @@
 namespace Sapphire{
 namespace GL{
 
+//This functions ensures that the Engine respects the framerate, and doesn't vastly outrun the renderer.
+void EngineFlipScreenDelay();
+
 concurrent_queue<Sapphire::Galileo::GL::Operation *> *RenderQueue();
 atomic32_t *GetRenderFrame();
 atomic32_t *GetEngineFrame();
+
+
 
 template<int T>
 class DummyOperation : public Sapphire::Galileo::GL::Operation {

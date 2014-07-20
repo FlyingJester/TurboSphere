@@ -44,7 +44,10 @@ const float FixedUV3[6]  = {
   };
 
 const float FixedUV4[8]  = {
-    0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f
+    0.0f, 0.0f,
+    1.0f, 0.0f,
+    1.0f, 1.0f,
+    0.0f, 1.0f,
   };
 
 const float FixedUV5[10] = {
@@ -176,6 +179,7 @@ void InitScript(int64_t ID){
     GroupJSObj.Finalize     = Finalizer::Generic<Galileo::Group>;
     GroupJSObj.SetTypeName("Group");
     GroupJSObj.AddToProto("Draw", DrawGroup);
+    GroupJSObj.AddToProto("setPosition", GroupSetPosition);
 
     ColorJSObj.ID              = (ID<<16)|(0x0312u);
     SurfaceJSObj.ID            = (ID<<16)|(0x0302u);
@@ -188,7 +192,7 @@ void InitScript(int64_t ID){
 
     auto lIso = v8::Isolate::GetCurrent();
 
-    ExecuteString(v8::String::NewFromUtf8(lIso, JSVertexCode), v8::String::NewFromUtf8(lIso, "Sapphire_Internal"), lIso, true);
+    //ExecuteString(v8::String::NewFromUtf8(lIso, JSVertexCode), v8::String::NewFromUtf8(lIso, "Sapphire_Internal"), lIso, true);
 
     XProp = v8::String::NewFromUtf8(lIso, "x");
     YProp = v8::String::NewFromUtf8(lIso, "y");
@@ -382,15 +386,22 @@ Turbo::JSFunction ShapeCtor(Turbo::JSArguments args){
                 return;
             }
 
-            Vertices[i].x = vertex->Get(XProp)->NumberValue();
-            Vertices[i].y = vertex->Get(YProp)->NumberValue();
+            Vertices[i].x = vertex->Get(XProp)->NumberValue();// - (::GetScreenWidth());
+            Vertices[i].y = vertex->Get(YProp)->NumberValue();// + (::GetScreenHeight()/2);
             Vertices[i].color = TS_Color(0xFF, 0xFF, 0xFF, 0xFF);
             if(num_vertices<FIXEDUVCOORD_SIZE){
-                Vertices[i].u = FixedUVCoord[i][(i*2)  ];
-                Vertices[i].v = FixedUVCoord[i][(i*2)+1];
+                switch(num_vertices){
+                case 4:
+                  Vertices[i].u = FixedUV4[(i*2)  ];
+                  Vertices[i].v = FixedUV4[(i*2)+1];
+                break;
+            }
 
-                printf("Using uv: %f\t%f\n", Vertices[i].u, Vertices[i].v);
-                printf("\t\t\t\tUsing xy: %f\t%f\n", Vertices[i].x, Vertices[i].y);
+            //Vertices[i].u = FixedUVCoord[i][(i*2)  ];
+            //Vertices[i].v = FixedUVCoord[i][(i*2)+1];
+
+            //printf("Using uv: %f\t%f\n", Vertices[i].u, Vertices[i].v);
+            //printf("\t\t\t\tUsing xy: %f\t%f\n", Vertices[i].x, Vertices[i].y);
 
             }
         }
@@ -468,8 +479,24 @@ Turbo::JSFunction GroupCtor(Turbo::JSArguments args){
 
 Turbo::JSFunction DrawGroup(Turbo::JSArguments args){
     Galileo::Group* mGroup = Turbo::GetMemberSelf <Galileo::Group> (args);
+    assert(mGroup!=nullptr);
 
     mGroup->DrawAll(Sapphire::GL::RenderQueue());
+
+}
+
+Turbo::JSFunction GroupSetPosition(Turbo::JSArguments args){
+
+    const int sig[] = {Turbo::Number, Turbo::Number, 0};
+
+    if(!Turbo::CheckArg::CheckSig(args, 2, sig))
+      return;
+
+
+    Galileo::Group* mGroup = Turbo::GetMemberSelf <Galileo::Group> (args);
+    assert(mGroup!=nullptr);
+
+    mGroup->SetOffset(args[0]->NumberValue(), args[1]->NumberValue());
 
 }
 

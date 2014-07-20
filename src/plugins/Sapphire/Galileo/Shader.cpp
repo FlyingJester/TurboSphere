@@ -46,7 +46,8 @@ namespace Sapphire {
     {\n\
         tex_v = TS_TextureUV;\n\
         color_v = TS_Color;\n\
-        gl_Position = (vec4(TS_Offset.x, TS_Offset.y, 0.0, 0.0) + TS_Position)/vec4(TS_ScreenSize, 1.0, 1.0);\n\
+        vec4 TS_NewPos = TS_Position*2.0;\n\
+        gl_Position = (vec4(TS_Offset.x*2.0, TS_Offset.y*(-2.0), 0.0, 0.0) +(vec4(TS_NewPos.x - TS_ScreenSize.x, -TS_NewPos.y + (TS_ScreenSize.y), TS_Position.ba)))/vec4(TS_ScreenSize, 1.0, 1.0);\n\
     }\
     ";
   }

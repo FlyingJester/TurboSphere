@@ -29,6 +29,12 @@ public:
     // required operations to the concurrent_queue given.
     //
 
+    template<typename T>
+    void SetOffset(T _x, T _y){
+        mOffset[0] = _x;
+        mOffset[1] = _y;
+    }
+
     virtual inline iterator begin(){
         return mShapes.begin();
     }

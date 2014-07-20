@@ -3,6 +3,7 @@
 #include <color.h>
 #include "Group.hpp"
 #include "Shape.hpp"
+#include "State.hpp"
 #include "Vertex.hpp"
 
 namespace Sapphire{
