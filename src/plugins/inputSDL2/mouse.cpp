@@ -13,6 +13,9 @@ Turbo::JSFunction GetMouseY(Turbo::JSArguments args){
 	SDL_PumpEvents();
 	int	y = 0;
 	SDL_GetMouseState(NULL, &y);
+	#ifdef OS_X
+    y-=16;
+	#endif
 	args.GetReturnValue().Set( v8::Int32::New(iso, y));
 }
 
