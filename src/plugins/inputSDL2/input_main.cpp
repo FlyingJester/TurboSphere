@@ -6,7 +6,9 @@
 #include "joystick.h"
 #include <stdio.h>
 
-v8::Isolate *iso = NULL;
+#include "event_tend.h"
+
+v8::Isolate *iso = nullptr;
 
 SDL_Event keyevent;
 
@@ -22,11 +24,19 @@ int numerate(bool reset){
     return (int)(i-1);
 }
 
+//Turbo::Function GetKeyStub(Turbo::Arguments args){
+//}
+
+int GetKeyEvent(SDL_Event &aEvent){return aEvent.key.keysym.sym;}
+int GetClickEvent(SDL_Event &aEvent){return aEvent.button.button;}
+
 Turbo::JSCallback ScriptFunctionList[] = {
     IsKeyPressed,
     IsAnyKeyPressed,
-    GetKey,
-    AreKeysLeft,
+    GetEvent<(int)SDL_KEYDOWN, GetKeyEvent>,
+    GetEvent<(int)SDL_MOUSEBUTTONDOWN, GetClickEvent>,
+    AreEventsLeft<(int)SDL_KEYDOWN>,
+    AreEventsLeft<(int)SDL_MOUSEBUTTONDOWN>,
     GetMouseX,
     GetMouseY,
     IsMouseButtonPressed,
@@ -42,7 +52,9 @@ Turbo::JSFunctionName ScriptFunctionNameList[] = {
     "IsKeyPressed",
     "IsAnyKeyPressed",
     "GetKey",
+    "GetClick",
     "AreKeysLeft",
+    "AreClicksLeft",
     "GetMouseX",
     "GetMouseY",
     "IsMouseButtonPressed",
@@ -564,7 +576,7 @@ Turbo::JSVariableName *GetVariableNames(void){
 	varnames[numerate(false)]=(char*)"KEY_EURO";
 
     //Mouse
-    varnames[numerate(false)]=(char*)"MOUSE_LEFT"; //0
+  varnames[numerate(false)]=(char*)"MOUSE_LEFT"; //0
 
 	varnames[numerate(false)]=(char*)"MOUSE_MIDDLE"; //1
 

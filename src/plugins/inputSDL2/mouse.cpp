@@ -25,5 +25,5 @@ Turbo::JSFunction IsMouseButtonPressed(Turbo::JSArguments args){
     if(!Turbo::CheckArg::CheckSig(args, 1, sig, true))
         return;
     //Just inline it to death.
-	args.GetReturnValue().Set( v8::Boolean::New(iso, SDL_GetMouseState(NULL, NULL)&(1<<args[0]->Int32Value())));
+	args.GetReturnValue().Set(v8::Boolean::New(iso, SDL_GetMouseState(NULL, NULL)&(1<<args[0]->Int32Value())));
 }

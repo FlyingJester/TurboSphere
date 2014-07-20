@@ -1,8 +1,8 @@
-#ifndef MOUSE_HEAD
-#define MOUSE_HEAD
+#ifndef INPUTSDL2_MOUSE_HEAD
+#define INPUTSDL2_MOUSE_HEAD
 
-extern Turbo::JSFunction GetMouseX(Turbo::JSArguments);
-extern Turbo::JSFunction GetMouseY(Turbo::JSArguments);
-extern Turbo::JSFunction IsMouseButtonPressed(Turbo::JSArguments);
+Turbo::JSFunction GetMouseX(Turbo::JSArguments);
+Turbo::JSFunction GetMouseY(Turbo::JSArguments);
+Turbo::JSFunction IsMouseButtonPressed(Turbo::JSArguments);
 
 #endif

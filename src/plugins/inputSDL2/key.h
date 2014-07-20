@@ -4,7 +4,5 @@
 
 Turbo::JSFunction IsKeyPressed(Turbo::JSArguments args);
 Turbo::JSFunction IsAnyKeyPressed(Turbo::JSArguments args);
-Turbo::JSFunction GetKey(Turbo::JSArguments args);
-Turbo::JSFunction AreKeysLeft(Turbo::JSArguments args);
 
 #endif

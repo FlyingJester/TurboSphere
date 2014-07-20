@@ -19,7 +19,7 @@
 #include <pluginsdk/plugin.h>
 
 #define NUMVARS 115
-#define NUMFUNCS 13
+#define NUMFUNCS 15
 
 //BIG UGLY HACK FOR SDL2 MIGRATION!
 #define SDLK_NUMLOCK 0
