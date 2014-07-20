@@ -10,7 +10,7 @@ UseSDL2ThreadsAndAtomics = ARGUMENTS.get('sdl2_thread', 0)
 
 elibs = []
 
-eframeworks = ""
+eframeworks = []
 
 if int(UseCpp11ThreadsAndAtomics):
   Sapphire_files += [os.path.join("Thread", "Thread_cpp11.cpp"), os.path.join("Thread", "Atomic_cpp11.cpp")]
@@ -20,7 +20,8 @@ elif IsDarwin():
   Sapphire_files += [os.path.join("Thread", "Thread_nsthread.m"), os.path.join("Thread", "Atomic_darwin.c")]
   elibs = ["objc"]
   eframeworks = ["Foundation"]
-
+if 'USE_INTEL_TBB' in currentenv['CPPDEFINES']:
+  elibs+= ['tbb']
 
 Sapphire     = currentenv.SharedLibrary("Sapphire", Sapphire_files,
   LIBS = ['t5', 'graphiccommon', 'graphicalg', 'configmanager', 'v8'] + elibs,
