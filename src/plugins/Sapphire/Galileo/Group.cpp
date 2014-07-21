@@ -20,7 +20,6 @@ Group::Group(){
 }
 
 Group::~Group(){
-
 }
 
 int Group::Draw(void){

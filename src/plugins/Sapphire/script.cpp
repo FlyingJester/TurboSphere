@@ -80,7 +80,7 @@ v8::Handle<v8::Value> XProp, YProp;
 
 Turbo::JSObj<TS_Color>        ColorJSObj;
 Turbo::JSObj<SDL_Surface>     SurfaceJSObj;
-Turbo::JSObj<Image>           ImageJSObj;
+Turbo::JSObj<std::shared_ptr<Image> > ImageJSObj;
 Turbo::JSObj<Galileo::Vertex> VertexJSObj;
 Turbo::JSObj<Galileo::Shape>  ShapeJSObj;
 Turbo::JSObj<Galileo::Group>  GroupJSObj;
@@ -166,7 +166,7 @@ void InitScript(int64_t ID){
 
     ColorJSObj   = Turbo::JSObj<TS_Color>       ();
     SurfaceJSObj = Turbo::JSObj<SDL_Surface>    ();
-    ImageJSObj   = Turbo::JSObj<Image>          ();
+    ImageJSObj   = Turbo::JSObj<std::shared_ptr<Image> >          ();
     VertexJSObj  = Turbo::JSObj<Galileo::Vertex>();
     ShapeJSObj   = Turbo::JSObj<Galileo::Shape> ();
     GroupJSObj   = Turbo::JSObj<Galileo::Group> ();
@@ -174,6 +174,7 @@ void InitScript(int64_t ID){
 
     ColorJSObj.Finalize             = Finalizer::Generic<TS_Color>;
     ShaderProgramJSObj.Finalize     = Finalizer::Generic<Galileo::Shader>;
+    ImageJSObj.Finalize     = Finalizer::Generic<std::shared_ptr<Image> >;
     ImageJSObj.SetTypeName("Image");
 
     GroupJSObj.Finalize     = Finalizer::Generic<Galileo::Group>;
@@ -236,7 +237,7 @@ Turbo::JSFunction ImageCtor(Turbo::JSArguments args){
             const SDL_Surface *lSurf =
               (SDL_Surface*)(v8::Local<v8::Object>::Cast(args[0]))->GetAlignedPointerFromInternalField(0);
             Image *rImage = new Image(lSurf);
-            Turbo::WrapObject(args, ImageJSObj, rImage);
+            Turbo::WrapObject(args, ImageJSObj, new std::shared_ptr<Image> (rImage) );
             return;
         }
 
@@ -249,7 +250,7 @@ Turbo::JSFunction ImageCtor(Turbo::JSArguments args){
             }
             else{
               Image *rImage = new Sapphire::Image(lSurf);
-              Turbo::WrapObject(args, ImageJSObj, rImage);
+              Turbo::WrapObject(args, ImageJSObj, new std::shared_ptr<Image> (rImage)  );
             }
 
             SDL_FreeSurface(lSurf);
@@ -294,7 +295,7 @@ Turbo::JSFunction ImageCtor(Turbo::JSArguments args){
         SDL_FreeSurface(lSurf);
         delete[] pixels;
 
-        Turbo::WrapObject(args, ImageJSObj, rImage);
+        Turbo::WrapObject(args, ImageJSObj, new std::shared_ptr<Image> (rImage) );
 
     }
 
@@ -308,7 +309,7 @@ Turbo::JSFunction SurfaceCtor(Turbo::JSArguments args){
 
         if(Turbo::CheckArg::String(args, 0, __func__)){ // From Path
             v8::String::Utf8Value lStr(args[0]);
-            SDL_Surface *rSurf = IMG_Load(*lStr);
+            SDL_Surface *rSurf = LoadSurface(*lStr);
             if(!rSurf){
                 Turbo::SetError(args, (std::string(BRACKNAME " SurfaceCtor Error: Could not open path '") +
                                         std::string(*lStr) + std::string("'.") ).c_str());
@@ -406,7 +407,7 @@ Turbo::JSFunction ShapeCtor(Turbo::JSArguments args){
             }
         }
 
-        Image *lImage = static_cast<Image*>(v8::Local<v8::Object>::Cast(args[1])->GetAlignedPointerFromInternalField(0));
+        Image *lImage = static_cast< std::shared_ptr<Image> *>(v8::Local<v8::Object>::Cast(args[1])->GetAlignedPointerFromInternalField(0))->get();
         assert(lImage);
 
         Sapphire::Galileo::Shape *rShape = new Galileo::Shape(Vertices,lImage);

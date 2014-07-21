@@ -10,6 +10,25 @@
 namespace Sapphire{
 
 /////
+// The SDL event filter that makes Sapphire well behaved.
+//
+
+int TS_Filter(void * _unused, SDL_Event *event){
+if(event->type==SDL_QUIT){
+        exit(0);
+    }
+
+    if(event->type==SDL_KEYDOWN){
+        //printf("[SDL_GL] Info: Keydown Event.\n");
+        int key = event->key.keysym.sym;
+        if(!key) {
+            return 1;
+        }
+    }
+    return 1;
+}
+
+/////
 // The init process for Sapphire's threaded OpenGL renderer:
 //
 // Init SDL2
@@ -39,6 +58,10 @@ void Init(uint64_t ID){
     GL::Version lVersion = {3, 3};
 
     GL::Window *lWindow = GL::MainThread::CreateWindow(GetScreenWidth(), GetScreenHeight(), lVersion);
+
+    SDL_ShowCursor(0);
+
+    SDL_SetEventFilter(TS_Filter, NULL);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

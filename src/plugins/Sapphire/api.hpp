@@ -14,7 +14,7 @@ namespace Sapphire {
 
 //TODO: Commented out functions are still unimplemented.
 
-SDL_Surface *LoadSurface(const char *aPath);
+SDL_Surface *LoadSurface(const char *aPath, bool aAbsolute = false);
 SDL_Surface *CreateSurface(unsigned aWidth, unsigned aHeight, TS_Color *color);
 SDL_Surface *FromImage(Image *aFrom);
 

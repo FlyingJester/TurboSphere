@@ -7,6 +7,8 @@
 #include <SDL2/SDL.h>
 #include <array>
 
+#include <memory>
+
 /////
 // This file contains all JS-Wrapping functions
 //
@@ -26,7 +28,7 @@ extern std::array<Turbo::JSVariableName,NumVars>  VariableNameList;
 
 extern Turbo::JSObj<TS_Color>        ColorJSObj;
 extern Turbo::JSObj<SDL_Surface>     SurfaceJSObj;
-extern Turbo::JSObj<Image>           ImageJSObj;
+extern Turbo::JSObj<std::shared_ptr<Image> >           ImageJSObj;
 extern Turbo::JSObj<Galileo::Vertex> VertexJSObj;
 extern Turbo::JSObj<Galileo::Shape>  ShapeJSObj;
 extern Turbo::JSObj<Galileo::Group>  GroupJSObj;

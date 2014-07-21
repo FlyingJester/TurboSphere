@@ -46,9 +46,9 @@ void Drawable::BindArray(){
 }
 
 Shape::Shape(std::vector<Vertex> &aVertices, Image *aImage)
-  : Drawable(aVertices)
+  : Drawable(aVertices, aImage)
 {
-    mImage = aImage;
+
 }
 
 void Shape::FillGL(void){

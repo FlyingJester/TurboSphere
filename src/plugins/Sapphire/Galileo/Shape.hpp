@@ -59,12 +59,23 @@ namespace GL {
 
       virtual void FillGL(void) = 0; //Fills the OpenGL components given the vertices.
 
-      Image *mImage;
+      std::shared_ptr<Image> mImage;
   public:
 
       Drawable()
       {InitGL();}
       Drawable(std::vector<Vertex> &aVertices){
+
+          mVertices.resize(aVertices.size());
+
+          std::copy(aVertices.begin(), aVertices.end(), mVertices.begin());
+
+          InitGL();
+
+      }
+
+      Drawable(std::vector<Vertex> &aVertices, Image *aImage)
+        : mImage(aImage) {
 
           mVertices.resize(aVertices.size());
 

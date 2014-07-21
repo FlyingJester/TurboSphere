@@ -1,11 +1,27 @@
 #include "api.hpp"
 #include "Sapphire.hpp"
 #include "Image.hpp"
+#include <opengame.h>
 
 namespace Sapphire {
 
+static TS_Directories *TS_Dirs = GetDirs();
+
 // TODO: new T5!
-SDL_Surface *LoadSurface(const char *aPath){
+SDL_Surface *LoadSurface(const char *aPath, bool aAbsolute){
+
+    const char * lPath = aPath;
+    char *lsPath = nullptr;
+
+    if(!aAbsolute){
+        const size_t aPathLen  = strlen(aPath);
+        const size_t aImageLen = strlen(TS_Dirs->image);
+        lsPath = (char *)alloca(aPathLen + aImageLen + 1);
+        lsPath[aPathLen+aImageLen] = 0;
+        memcpy(lsPath, TS_Dirs->image, aImageLen);
+        memcpy(lsPath+aImageLen, aPath, aPathLen);
+        lPath = lsPath;
+    }
 
     SDL_Surface *lAnyFormatSurface = IMG_Load(aPath);
 

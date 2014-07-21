@@ -17,6 +17,8 @@ protected:
     std::list<GL::Operation *> mShapes;
     Shader *mShader;
     float mOffset[2];
+    float mRotationOffset[2];
+    float mRotationAngle;
 public:
 
     Group();
@@ -33,6 +35,15 @@ public:
     void SetOffset(T _x, T _y){
         mOffset[0] = _x;
         mOffset[1] = _y;
+    }
+    template<typename T>
+    void SetRotationOffset(T _x, T _y){
+        mRotationOffset[0] = _x;
+        mRotationOffset[1] = _y;
+    }
+    template<typename T>
+    void SetRotation(T _a){
+        mRotationAngle = _a;
     }
 
     virtual inline iterator begin(){
