@@ -5,7 +5,7 @@
 #include "Thread/Atomic.hpp"
 #include "Thread/Thread.hpp"
 #include "Galileo/Shape.hpp"
-#include <pluginsdk/concurrent_queue.h>
+#include <TSPR/concurrent_queue.h>
 
 #define SDL2_VIDEO_FLAGS SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS
 

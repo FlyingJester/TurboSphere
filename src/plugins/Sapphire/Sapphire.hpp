@@ -9,7 +9,7 @@
 
 #ifdef __cplusplus
 
-#include <pluginsdk/concurrent_queue.h>
+#include <TSPR/concurrent_queue.h>
 
 #ifdef __GNUC__
   #pragma GCC diagnostic ignored "-Wnull-arithmetic"

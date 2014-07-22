@@ -5,6 +5,8 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
+#include "SaveImage.hpp"
+
 #include <screen.h>
 
 namespace Sapphire{
@@ -53,6 +55,8 @@ void Init(uint64_t ID){
 
     printf(BRACKNAME " Info: SDL2 Video is initialized.\n");
     IMG_Init(IMG_FLAGS);
+
+    Save::InitSurfaceSave();
 
     //TODO: Make this more lenient, ask for 4.4 and then lower versions if that fails
     GL::Version lVersion = {3, 3};
