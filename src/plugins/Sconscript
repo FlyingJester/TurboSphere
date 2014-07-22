@@ -16,6 +16,8 @@ for d in os.listdir(plugin_directory):
 
   currentenv = globalenv.Clone()
 
+  currentenv.Append(CPPDEFINES = ["USE_PNG"])
+
   if os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'SConscript')):
     print "Using Scons on "+os.path.join(os.path.join(plugin_directory, d))
     SConscript(dirs=[os.path.join(plugin_directory, d)], exports = local_export_list)

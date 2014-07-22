@@ -12,6 +12,9 @@ elibs = []
 
 eframeworks = []
 
+if IsLinux():
+  currentenv.Append(CPPDEFINES("USE_PTHREAD"))
+
 if int(UseCpp11ThreadsAndAtomics):
   Sapphire_files += [os.path.join("Thread", "Thread_cpp11.cpp"), os.path.join("Thread", "Atomic_cpp11.cpp")]
 elif int(UseSDL2ThreadsAndAtomics):
