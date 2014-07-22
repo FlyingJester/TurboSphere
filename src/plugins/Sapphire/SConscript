@@ -1,0 +1,35 @@
+Import('currentenv librarydir corelibtargets binarydir LibraryInstall IsDarwin IsLinux IsWindows')
+
+import os
+import glob
+
+Sapphire_files	 = glob.glob("*.cpp") + glob.glob("Galileo/*.cpp")
+
+UseCpp11ThreadsAndAtomics = ARGUMENTS.get('cpp11_thread', 0)
+UseSDL2ThreadsAndAtomics = ARGUMENTS.get('sdl2_thread', 0)
+
+elibs = []
+
+eframeworks = []
+
+if IsLinux():
+  currentenv.Append(CPPDEFINES = ["USE_PTHREAD"])
+
+if int(UseCpp11ThreadsAndAtomics):
+  Sapphire_files += [os.path.join("Thread", "Thread_cpp11.cpp"), os.path.join("Thread", "Atomic_cpp11.cpp")]
+elif int(UseSDL2ThreadsAndAtomics):
+  Sapphire_files += [os.path.join("Thread", "Thread_sdl2.c"), os.path.join("Thread", "Atomic_sdl2.c")]
+elif IsDarwin():
+  Sapphire_files += [os.path.join("Thread", "Thread_nsthread.m"), os.path.join("Thread", "Atomic_darwin.c")]
+  elibs = ["objc"]
+  eframeworks = ["Foundation"]
+if 'USE_INTEL_TBB' in currentenv['CPPDEFINES']:
+  elibs+= ['tbb']
+
+Sapphire     = currentenv.SharedLibrary("Sapphire", Sapphire_files,
+  LIBS = ['t5', 'graphiccommon', 'graphicalg', 'configmanager', 'v8'] + elibs,
+  FRAMEWORKS = ['SDL2', 'SDL2_image', 'OpenGL'] + eframeworks,
+  CCFLAGS = " -g " )
+
+Depends(Sapphire, corelibtargets)
+LibraryInstall(os.path.join(binarydir, 'plugin'), Sapphire, currentenv)

@@ -1,0 +1,17 @@
+import os
+import sys
+
+full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir component"
+
+Import(full_import_list)
+
+files = ["opengame.cpp", "openscript.cpp"]
+configmanager = globalenv.SharedLibrary('configmanager', files, LIBS = ['t5', 'graphiccommon', 'v8'])
+
+installdir = os.path.join(os.path.join(librarydir, component))
+
+inst = LibraryInstall(installdir, configmanager, globalenv)
+globalenv.Install(os.path.join(installdir, "include"), ["opengame.h", "openscript.h"])
+
+Return("configmanager")
+

@@ -1,0 +1,10 @@
+Import('currentenv librarydir corelibtargets binarydir LibraryInstall IsDarwin IsLinux IsWindows')
+
+import os
+
+audioBASS_files	 = ['frontend.cpp', 'bass_backend.cpp', 'script.cpp']
+audioBASS_libs	 = ['bass', 'bassmidi']
+
+audioBASS     = currentenv.SharedLibrary("audioBASS", audioBASS_files, LIBS = ['t5', 'configmanager', 'v8', audioBASS_libs])
+Depends(audioBASS, corelibtargets)
+LibraryInstall(os.path.join(binarydir, 'plugin'), audioBASS, currentenv)

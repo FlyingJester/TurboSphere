@@ -1,0 +1,31 @@
+import os
+import sys
+
+Import("globalenv localenv")
+
+# Add paths for third-party binary files for linking.
+localenv.Append(LIBPATH = os.path.join(os.getcwd(), "thirdparty"))
+
+firstparty_lib_dirs = [
+  os.path.join(os.getcwd(), 'core'),
+  os.path.join(os.getcwd(), 'extra'),
+  os.path.join(os.getcwd(), 't5')
+]
+
+firstparty_lib_include_dirs = []
+
+for d in firstparty_lib_dirs:
+  i = os.path.join(os.path.join(os.getcwd(), d), 'include')
+  print "Adding directory \""+os.path.abspath(i)+"\" to the include path."
+  firstparty_lib_include_dirs.append(os.path.abspath(i))
+  #make sure the include directories exist in the first place.
+  if not os.path.exists(i):
+    os.makedirs(i)
+
+# Add paths for first-party binary files for linking.
+localenv.Append(LIBPATH = firstparty_lib_dirs)
+# Add paths for first-party includes.
+localenv.Append(CPPPATH = firstparty_lib_include_dirs)
+
+Export("localenv")
+Return("localenv")

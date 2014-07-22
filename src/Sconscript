@@ -1,0 +1,85 @@
+import os
+import sys
+
+full_import_list ="globalenv IsLinux IsWindows IsDarwin LibraryInstall compiler binarydir localenv librarydir "
+
+full_export_list ="globalenv IsLinux IsWindows IsDarwin LibraryInstall compiler binarydir localenv librarydir corelibtargets"
+
+Import(full_import_list)
+
+# Set up V8 includes.
+
+globalenv.Append(CPPPATH = os.path.join(os.getcwd(), "thirdparty/v8/include"))
+
+# Locate the TS Plugin SDK
+globalenv.Append(CPPPATH = os.path.join(os.getcwd(), "pluginsdk"))
+
+# Locate the TS Portable Runtime tools
+globalenv.Append(CPPPATH = os.path.join(os.getcwd(), "extra"))
+
+#The orders here indicate the priority of these values
+V8Archs = [
+  "x64",
+  "arm",
+  "ia32"
+]
+
+V8Builds =[
+  "debug",
+  "release"
+]
+
+V8Paths = [];
+
+for A in V8Archs:
+  for P in V8Builds:
+    TestPath = os.path.join(os.getcwd(), "thirdparty/v8/out/" + A + "." + P + "/")
+    if os.path.isdir(TestPath):
+      V8Paths += [TestPath]
+
+
+globalenv.Append(LIBPATH = V8Paths)
+
+# Dependencies of TurboSphere, called in the precise order they _should_ be compiled in:
+# T5, configmanager, graphiccommon, graphicalg,
+
+# Explain the dependency chain to Scons, and pray it works out the way it should.
+
+corelibs = [
+  "graphiccommon",
+  "graphicalg",
+  "configmanager",
+]
+
+corelibtargets = []
+
+# build T5
+component = "t5"
+
+t5 = SConscript(dirs = [os.path.join(os.getcwd(), "t5")], exports = full_export_list + " component ")
+
+component = "core"
+
+for d in corelibs:
+  corelibtargets.append(SConscript(dirs = [d], exports = full_export_list + " component "))
+
+graphiccommon = corelibtargets[0]
+graphicalg    = corelibtargets[1]
+configmanager = corelibtargets[2]
+
+Depends(graphicalg, graphiccommon)
+Depends(graphicalg, t5)
+Depends(configmanager, t5)
+
+turbosphere = SConscript(dirs = [os.path.join(os.getcwd(), "engine")], exports = full_export_list)
+
+Depends(turbosphere, t5)
+Depends(turbosphere, configmanager)
+Depends(turbosphere, graphicalg)
+Depends(turbosphere, graphiccommon)
+
+
+plugins = SConscript(os.path.join(os.path.join(os.getcwd(), "plugins"), "Sconscript"), exports = full_export_list)
+
+Depends(plugins, turbosphere)
+

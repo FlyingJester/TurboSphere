@@ -1,0 +1,17 @@
+import os
+import sys
+
+full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir component"
+
+Import(full_import_list)
+
+files = ["screen.cpp", "color.cpp"]
+
+graphiccommon = globalenv.SharedLibrary('graphiccommon', files)
+
+installdir = os.path.join(os.path.join(librarydir, component))
+
+LibraryInstall(installdir, graphiccommon, globalenv)
+globalenv.Install(os.path.join(installdir, "include"), ["color.h", "screen.h"])
+
+Return("graphiccommon")
