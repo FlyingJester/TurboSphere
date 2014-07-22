@@ -225,7 +225,7 @@ namespace Turbo{
         void AddToProto(const char *name , v8::FunctionCallback call){
             auto iso = v8::Isolate::GetCurrent();
             InstanceTemplate->Set(v8::String::NewFromUtf8(iso, name), v8::FunctionTemplate::New(iso, call));
-            //Prototype->Set(v8::String::NewFromUtf8(iso, name), v8::FunctionTemplate::New(iso, call));
+            Prototype->Set(v8::String::NewFromUtf8(iso, name), v8::FunctionTemplate::New(iso, call));
         }
 
         void AddAccessor(const char *name, v8::AccessorGetterCallback Getter, v8::AccessorSetterCallback Setter){
@@ -275,7 +275,7 @@ namespace Turbo{
 
         inline bool CheckSig(JSArguments args, int num, const int *argtypes/*<- Null terminated*/, bool error = true){
 
-            const char *prevF = NULL;
+            const char *prevF = nullptr;
             auto iso = v8::Isolate::GetCurrent();
 
 
@@ -292,8 +292,8 @@ namespace Turbo{
             std::string err;
 
             for(int i = 0; i<num; i++){
-                *argnumprnt = (unsigned char)'0'+(unsigned char)i;
-                assert(argtypes[i]!=NULL);
+                *argnumprnt = (unsigned char)'0'+(unsigned char)i; // poor-man's to_string.
+                assert(argtypes[i]!=0);
 
                 switch(argtypes[i]){
 
@@ -391,7 +391,7 @@ namespace Turbo{
 
         /////
         // Create a JS object that holds an ID number and a pointer to the object
-        assert(obj != NULL);
+        assert(obj != nullptr);
         //JSo.InstanceTemplate->SetInternalFieldCount(2);
         v8::Handle<v8::Object> returnobj = JSo.InstanceTemplate->NewInstance();//JSo.Constructor->NewInstance();//v8::Object::New(iso);// = JSo.Constructor->NewInstance();
         assert(JSo.Template->HasInstance(returnobj));
