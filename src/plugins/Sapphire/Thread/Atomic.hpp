@@ -1,13 +1,19 @@
 #pragma once
 
-#include <cstdlib>
+
+
+#include <stdlib.h>
 
 typedef void TS_Atomic32;
 
 /////
 // These are internal functions. It is not recommended to use these unless the C++ interface is unavailable.
 //  An atomic or thread backend must only define these functions.
+
+#ifdef __cplusplus
 extern "C" {
+#endif
+
     TS_Atomic32 *TS_CreateAtomic(int32_t aInitialValue);
     int32_t TS_DestroyAtomic(TS_Atomic32 *aToDestroy); //Returns the last value.
 
@@ -18,7 +24,10 @@ extern "C" {
     int32_t TS_AtomicAdd(TS_Atomic32 * aTo, int32_t aToAdd);
     int32_t TS_AtomicSub(TS_Atomic32 * aTo, int32_t aToSub);
     int     TS_AtomicCAS(TS_Atomic32 * aToSwap, int32_t aIfEqualTo, int32_t aTo);
+
+#ifdef __cplusplus
 }
+
 
 namespace Sapphire {
 
@@ -54,3 +63,4 @@ namespace Sapphire {
     }
 
 }
+#endif

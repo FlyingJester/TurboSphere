@@ -1,7 +1,7 @@
 #pragma once
 #include <color.h>
 #include <list>
-#include <pluginsdk/concurrent_queue.h>
+#include <TSPR/concurrent_queue.h>
 #include "Shape.hpp"
 #include "Shader.hpp"
 
