@@ -36,35 +36,6 @@ namespace Save {
   const int PNG_FILTER_TYPE_BASE     = 0x0;
   const char *PNG_LIBPNG_VER_STRING  = "1.6.10";
 
-class FileHolder {
-    FILE *mFile;
-    public:
-    FileHolder(FILE *aFile)
-      : mFile(aFile){}
-
-    ~FileHolder(){fflush(mFile); fclose(mFile);}
-};
-
-class SurfaceHolder {
-    SDL_Surface *mSurface;
-    public:
-    SurfaceHolder(SDL_Surface *aSuface)
-      : mSurface(aSuface){
-        SDL_LockSurface(aSuface);
-      }
-
-    ~SurfaceHolder(){ SDL_UnlockSurface(mSurface);}
-};
-
-template<typename T>
-class ArrayHolder {
-    T *mT;
-    public:
-    ArrayHolder(T *aT)
-      : mT(aT){}
-
-    ~ArrayHolder(){delete[] mT;}
-};
 
 SaveStatus PNGSaveFunction(SDL_Surface *aToSave, const std::string &aPath){
 

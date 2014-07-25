@@ -5,11 +5,18 @@
 #include <SDL2/SDL.h>
 #include <string>
 
+#ifndef USE_TGA
+  #define USE_TGA 1
+#endif
+
 namespace Sapphire {
 namespace Save {
 
 enum Formats {
   bmp,
+#ifdef USE_TGA
+  tga,
+#endif
 #ifdef USE_JPEG
   jpeg,
 #endif

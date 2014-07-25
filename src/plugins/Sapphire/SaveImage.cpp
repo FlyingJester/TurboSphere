@@ -2,6 +2,36 @@
 #include <cassert>
 #include "Sapphire.hpp"
 
+class FileHolder {
+    FILE *mFile;
+    public:
+    FileHolder(FILE *aFile)
+      : mFile(aFile){}
+
+    ~FileHolder(){fflush(mFile); fclose(mFile);}
+};
+
+class SurfaceHolder {
+    SDL_Surface *mSurface;
+    public:
+    SurfaceHolder(SDL_Surface *aSuface)
+      : mSurface(aSuface){
+        SDL_LockSurface(aSuface);
+      }
+
+    ~SurfaceHolder(){ SDL_UnlockSurface(mSurface);}
+};
+
+template<typename T>
+class ArrayHolder {
+    T *mT;
+    public:
+    ArrayHolder(T *aT)
+      : mT(aT){}
+
+    ~ArrayHolder(){delete[] mT;}
+};
+
 #ifdef USE_JPEG
 
 #endif
@@ -18,6 +48,11 @@
 #ifdef USE_GIF
 
 
+
+#endif
+#ifdef USE_TGA
+
+  #include "Formats/SaveTGA.cpp"
 
 #endif
 
@@ -56,8 +91,10 @@ SaveStatus InitFormats(void){
 
 #ifdef USE_JPEG
   InitFunctions[Formats::jpeg] = JPEGInitFunction;
-  if(SaveFunctions[Formats::jpeg])
+  if(SaveFunctions[Formats::jpeg]){
     SaveViaExtension["jpeg"]    = SaveFunctions[Formats::jpeg];
+    SaveViaExtension["jpg"]     = SaveFunctions[Formats::jpeg];
+  }
 #endif
 #ifdef USE_PNG
   InitFunctions[Formats::png] = PNGInitFunction;
@@ -73,6 +110,11 @@ SaveStatus InitFormats(void){
   InitFunctions[Formats::gif] = GIFInitFunction;
   if(SaveFunctions[Formats::gif])
     SaveViaExtension["gif"]     = SaveFunctions[Formats::gif];
+#endif
+#ifdef USE_TGA
+  InitFunctions[Formats::tga] = TGAInitFunction;
+  if(SaveFunctions[Formats::tga])
+    SaveViaExtension["tga"]     = SaveFunctions[Formats::tga];
 #endif
 
   return ssSuccess;
