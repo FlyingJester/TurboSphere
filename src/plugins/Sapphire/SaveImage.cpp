@@ -26,6 +26,9 @@ namespace Save {
 
 std::array<SaveFunction, num_formats> SaveFunctions = std::array<SaveFunction, num_formats> ();
 std::array<InitFunction, num_formats> InitFunctions = std::array<InitFunction, num_formats> ();
+std::map<std::string, SaveFunction> SaveViaExtension = std::map<std::string, SaveFunction> ();
+const std::map<std::string, SaveFunction> &SaveWithExtension = SaveViaExtension;
+
 
 SaveStatus BMPSaveFunction(SDL_Surface *aToSave, const std::string &aPath){
 
@@ -49,18 +52,27 @@ SaveStatus BMPInitFunction(void){
 SaveStatus InitFormats(void){
 
   InitFunctions[Formats::bmp] = BMPInitFunction;
+  SaveViaExtension["bmp"]     = BMPSaveFunction;
 
 #ifdef USE_JPEG
   InitFunctions[Formats::jpeg] = JPEGInitFunction;
+  if(SaveFunctions[Formats::jpeg])
+    SaveViaExtension["jpeg"]    = SaveFunctions[Formats::jpeg];
 #endif
 #ifdef USE_PNG
   InitFunctions[Formats::png] = PNGInitFunction;
+  if(SaveFunctions[Formats::png])
+    SaveViaExtension["png"]     = SaveFunctions[Formats::png];
 #endif
 #ifdef USE_TIFF
   InitFunctions[Formats::tiff] = TIFFInitFunction;
+  if(SaveFunctions[Formats::tiff])
+    SaveViaExtension["tiff"]    = SaveFunctions[Formats::tiff];
 #endif
 #ifdef USE_GIF
   InitFunctions[Formats::gif] = GIFInitFunction;
+  if(SaveFunctions[Formats::gif])
+    SaveViaExtension["gif"]     = SaveFunctions[Formats::gif];
 #endif
 
   return ssSuccess;
@@ -74,6 +86,7 @@ void InitSurfaceSave(){
     (*InitIter)();
     InitIter++;
   }
+  InitFormats();
 }
 
 }

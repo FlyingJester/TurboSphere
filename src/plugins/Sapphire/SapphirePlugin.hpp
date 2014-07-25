@@ -15,6 +15,8 @@
 #define SAPPHIRE_EXPORT extern "C"
 #endif
 
+#define CROSSPLUGIN_EXPORT SAPPHIRE_EXPORT
+
 #ifdef _WIN32
 	extern "C" {
 #endif

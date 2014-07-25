@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <map>
 #include <SDL2/SDL.h>
 #include <string>
 
@@ -29,12 +30,14 @@ enum SaveStatus {ssSuccess, ssFailure};
 typedef SaveStatus(*SaveFunction)(SDL_Surface *aToSave, const std::string &aPath);
 typedef SaveStatus(*InitFunction)(void);
 
+typedef std::pair<std::string, SaveFunction>SavePair;
+
 SaveStatus InitFormats(void);
 void InitSurfaceSave();
 
 extern std::array<SaveFunction, num_formats> SaveFunctions;
 extern std::array<InitFunction, num_formats> InitFunctions;
-
+extern const std::map<std::string, SaveFunction> &SaveWithExtension;
 
 }
 }

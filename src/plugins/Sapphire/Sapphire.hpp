@@ -14,15 +14,15 @@
 #ifdef __GNUC__
   #pragma GCC diagnostic ignored "-Wnull-arithmetic"
   #pragma GCC diagnostic push
-#endif
+#endif // GNU
 
 #include <pluginsdk/plugin.h>
 
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
-#endif
+#endif //GNU
 
-#endif
+#endif //c++
 
 #define Frmask 0x000000ff
 #define Fgmask 0x0000ff00
@@ -31,3 +31,31 @@
 
 #define CHANNEL_MASKS Frmask, Fgmask, Fbmask, Famask
 #define IMAGE_DEPTH 32
+
+#ifdef __cplusplus
+
+namespace Sapphire {
+
+template <typename A>
+class DoNothing{
+public:
+  void operator () (A) {}
+};
+
+template <class A, class B, class C = DoNothing<A *> >
+class GenericHolder {
+  public:
+  A *mWraps;
+  GenericHolder(A *a){
+    mWraps = a;
+    C(mWraps);
+  }
+  ~GenericHolder(){
+    B(mWraps);
+  }
+
+};
+
+}
+
+#endif // __cplusplus

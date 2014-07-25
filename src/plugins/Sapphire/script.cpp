@@ -9,7 +9,8 @@
 #include "Image.hpp"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-#include "GLStart.hpp" // RenderQueue()
+#include "GLStart.hpp"
+#include "SaveImage.hpp" // RenderQueue()
 
 #include <algorithm>
 #include <queue>
@@ -176,6 +177,8 @@ void InitScript(int64_t ID){
     ShaderProgramJSObj.Finalize     = Finalizer::Generic<Galileo::Shader>;
     ImageJSObj.Finalize     = Finalizer::Generic<std::shared_ptr<Image> >;
     ImageJSObj.SetTypeName("Image");
+
+    SurfaceJSObj.AddToProto("save", SaveSurface);
 
     GroupJSObj.Finalize     = Finalizer::Generic<Galileo::Group>;
     GroupJSObj.SetTypeName("Group");
@@ -485,6 +488,49 @@ Turbo::JSFunction DrawGroup(Turbo::JSArguments args){
     mGroup->DrawAll(Sapphire::GL::RenderQueue());
 
 }
+
+Turbo::JSFunction SaveSurface(Turbo::JSArguments args){
+    SDL_Surface* mSurf = Turbo::GetMemberSelf <SDL_Surface> (args);
+    assert(mSurf);
+
+    std::string lSaveName;
+
+    if(args.Length()<1){
+      const char *lTmp = std::tmpnam(nullptr);
+      SDL_SaveBMP(mSurf, lTmp);
+      fprintf(stderr, BRACKNAME " %s Warning: no file name supplied. Using %s.", __func__, lTmp);
+    }
+    else if(Turbo::CheckArg::String(args, 0, __func__)){
+      v8::String::Utf8Value lStr(args[0]);
+      lSaveName = *lStr;
+      std::string::reverse_iterator lStrExtBeg = lSaveName.rbegin();
+      while(*lStrExtBeg!='.' && (lStrExtBeg.base()!=lSaveName.begin()))
+        lStrExtBeg++;
+
+      std::string lExt = std::string(lStrExtBeg.base(), lSaveName.end());
+      printf(BRACKNAME " %s Info: Saving a '%s'.\n", __func__, lExt.c_str());
+      std::map<std::string, Sapphire::Save::SaveFunction>::const_iterator lSaveFunc = Sapphire::Save::SaveWithExtension.find(lExt);
+
+
+      if(lSaveFunc!=Sapphire::Save::SaveWithExtension.end()){
+        printf(BRACKNAME " %s Info: Saving a with save func %p.\n", __func__, (*lSaveFunc).second);
+
+        (*lSaveFunc).second(mSurf, lSaveName);
+      }
+      else
+        SDL_SaveBMP(mSurf, lSaveName.c_str());
+
+
+    }
+    else{
+      args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(),
+                                 BRACKNAME " SaveSurface Error: Argument 0 is not a string.")));
+      return;
+    }
+
+}
+
+Turbo::JSFunction SaveImage(Turbo::JSArguments args);
 
 Turbo::JSFunction GroupSetPosition(Turbo::JSArguments args){
 

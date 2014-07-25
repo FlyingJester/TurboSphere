@@ -135,5 +135,5 @@ CONFIGMGR_EXPORT void setDirectories(const char * basedir);
 \param basedir The directory containing the game.sgm and system.ini files to read.
 */
 CONFIGMGR_EXPORT void setConfig(const char * basedir);
-
+CONFIGMGR_EXPORT void setLocalConfig(TS_Config *c);
 #endif

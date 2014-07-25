@@ -19,7 +19,7 @@ namespace Save {
 #  define png_jmpbuf(png_ptr) \
       (png_set_longjmp_fn((png_ptr), longjmp, (sizeof (jmp_buf))))
 
-  int *(*png_set_longjmp_fn)(png_structp, void(*)(jmp_buf, int), size_t) = nullptr;
+  int * (*png_set_longjmp_fn)(png_structp, void(*)(jmp_buf, int), size_t) = nullptr;
   void   (*png_init_io )(png_structp, FILE *) = nullptr;
   void   (*png_set_rows)(png_structp, png_infop, png_byte **) = nullptr;
   void   (*png_set_IHDR)(png_structp, png_infop, uint32_t, uint32_t, int, int, int, int, int) = nullptr;
@@ -68,6 +68,8 @@ class ArrayHolder {
 
 SaveStatus PNGSaveFunction(SDL_Surface *aToSave, const std::string &aPath){
 
+    printf( BRACKNAME " : Saving PNG %s, %ix%i\n", aPath.c_str(), aToSave->w, aToSave->h);
+
     assert(aToSave);
     assert(!aPath.empty());
 
@@ -81,9 +83,6 @@ SaveStatus PNGSaveFunction(SDL_Surface *aToSave, const std::string &aPath){
 
     std::unique_ptr<FileHolder> lFileKill = std::unique_ptr<FileHolder>(new FileHolder(file));
 
-    if(setjmp(png_jmpbuf(pngs)))
-      return ssFailure;
-
     pngs = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
     info = png_create_info_struct(pngs);
     if((!pngs)||(!info))
@@ -92,7 +91,9 @@ SaveStatus PNGSaveFunction(SDL_Surface *aToSave, const std::string &aPath){
     if(setjmp(png_jmpbuf(pngs)))
       return ssFailure;
 
-    png_set_IHDR(pngs, info, aToSave->w, aToSave->h, 32, PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_ADAM7, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+    int e = IMAGE_DEPTH;
+
+    png_set_IHDR(pngs, info, aToSave->w, aToSave->h, 8, PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_ADAM7, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 
     png_bytep*rowlist = new png_bytep [aToSave->h*sizeof(png_byte*)];
 

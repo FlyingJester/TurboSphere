@@ -40,6 +40,8 @@ Turbo::JSFunction ColorCtor(Turbo::JSArguments args);
 Turbo::JSFunction ImageCtor(Turbo::JSArguments args);
 Turbo::JSFunction SurfaceCtor(Turbo::JSArguments args);
 
+Turbo::JSFunction SaveSurface(Turbo::JSArguments args);
+Turbo::JSFunction SaveImage(Turbo::JSArguments args);
 /////
 // New School!
 Turbo::JSFunction VertexCtor(Turbo::JSArguments args);
