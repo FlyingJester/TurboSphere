@@ -1,6 +1,13 @@
 #include "SaveImage.hpp"
 #include <cassert>
 #include "Sapphire.hpp"
+#include <memory>
+
+namespace Sapphire {
+namespace Save {
+  const char *ErrorText;
+}
+}
 
 class FileHolder {
     FILE *mFile;
@@ -34,6 +41,8 @@ class ArrayHolder {
 
 #ifdef USE_JPEG
 
+  #include "Formats/SaveJPEG.cpp"
+
 #endif
 #ifdef USE_PNG
 
@@ -42,7 +51,7 @@ class ArrayHolder {
 #endif
 #ifdef USE_TIFF
 
-
+  #include "Formats/SaveTIFF.cpp"
 
 #endif
 #ifdef USE_GIF

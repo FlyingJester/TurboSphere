@@ -7,6 +7,20 @@ Sapphire_files	 = glob.glob("*.cpp") + glob.glob("Galileo/*.cpp")
 
 UseCpp11ThreadsAndAtomics = ARGUMENTS.get('cpp11_thread', 0)
 UseSDL2ThreadsAndAtomics = ARGUMENTS.get('sdl2_thread', 0)
+Uselibpng = ARGUMENTS.get('use_png', 1)
+Uselibjpg = ARGUMENTS.get('use_jpg', 1)
+Uselibjpeg = ARGUMENTS.get('use_jpeg', 1)
+Uselibtiff = ARGUMENTS.get('use_tiff', 0)
+
+Uselibtiff = 0
+
+if int(Uselibpng):
+  currentenv.Append(CPPDEFINES = ["USE_PNG"])
+if int(Uselibjpg) or int(Uselibtiff):
+  currentenv.Append(CPPDEFINES = ["USE_TIFF"])
+if int(Uselibjpg) or int(Uselibjpeg):
+  currentenv.Append(CPPDEFINES = ["USE_JPEG"])
+  currentenv.Append(LIBPATH = ["/usr/local/opt/jpeg-turbo/lib"])
 
 elibs = []
 
@@ -25,6 +39,9 @@ elif IsDarwin():
   eframeworks = ["Foundation"]
 if 'USE_INTEL_TBB' in currentenv['CPPDEFINES']:
   elibs+= ['tbb']
+
+if int(Uselibjpg) or int(Uselibjpeg):
+    elibs+=['jpeg']
 
 Sapphire     = currentenv.SharedLibrary("Sapphire", Sapphire_files,
   LIBS = ['t5', 'graphiccommon', 'graphicalg', 'configmanager', 'v8'] + elibs,

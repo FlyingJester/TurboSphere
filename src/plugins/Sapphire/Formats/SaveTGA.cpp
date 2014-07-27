@@ -35,10 +35,10 @@ namespace TGA{
     0, 0, 0, 0, // X and Y origins as shorts.
   };
 
-  const uint32_t rmask = 0x00ff0000;
-  const uint32_t gmask = 0x0000ff00;
-  const uint32_t bmask = 0x000000ff;
-  const uint32_t amask = 0xff000000;
+  const uint32_t rmask = 0x00FF0000;
+  const uint32_t gmask = 0x0000FF00;
+  const uint32_t bmask = 0x000000FF;
+  const uint32_t amask = 0xFF000000;
 
   #define TGA_CHANNEL_MASKS TGA::rmask, TGA::gmask, TGA::bmask, TGA::amask
 
@@ -93,18 +93,20 @@ SaveStatus TGASaveFunction(SDL_Surface *aToSave, const std::string &aPath){
   SDL_Rect lRect = {0, 0, aToSave->w, aToSave->h};
   SDL_LowerBlit(aToSave, &lRect, lTGAFormatSurface, &lRect);
 
-  SDL_LockSurface(lTGAFormatSurface);
   // Write Sapphire's signature to the file.
   fwrite(TGA::TurboSphereID, 1, TGA::IDSize, lFile);
 
+  SDL_LockSurface(lTGAFormatSurface);
   WriteMatchesV(lFile, lTGAFormatSurface->pixels, (uint8_t *)lTGAFormatSurface->pixels+(lDimensions[0]*lDimensions[1]*4));
+  SDL_UnlockSurface(lTGAFormatSurface);
 
   //fwrite(lTGAFormatSurface->pixels, 4, lDimensions[0]*lDimensions[1], lFile);
 
   fflush(lFile);
   fclose(lFile);
-  SDL_UnlockSurface(lTGAFormatSurface);
   SDL_FreeSurface(lTGAFormatSurface);
+
+  return ssSuccess;
 }
 
 }

@@ -504,6 +504,7 @@ Turbo::JSFunction SaveSurface(Turbo::JSArguments args){
       v8::String::Utf8Value lStr(args[0]);
       lSaveName = *lStr;
       std::string::reverse_iterator lStrExtBeg = lSaveName.rbegin();
+
       while(*lStrExtBeg!='.' && (lStrExtBeg.base()!=lSaveName.begin()))
         lStrExtBeg++;
 
@@ -513,9 +514,25 @@ Turbo::JSFunction SaveSurface(Turbo::JSArguments args){
 
 
       if(lSaveFunc!=Sapphire::Save::SaveWithExtension.end()){
-        printf(BRACKNAME " %s Info: Saving a with save func %p.\n", __func__, (*lSaveFunc).second);
+          printf(BRACKNAME " %s Info: Saving a with save func %p.\n", __func__, (*lSaveFunc).second);
 
-        (*lSaveFunc).second(mSurf, lSaveName);
+          int err = (*lSaveFunc).second(mSurf, lSaveName);
+
+          if(err!=Save::SaveStatus::ssSuccess){
+
+              fprintf(stderr, BRACKNAME " %s Error: Could not save surface.\n", __func__);
+
+              args.GetReturnValue().Set(
+                v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(),
+                (
+                  std::string(BRACKNAME " SaveSurface Error: Could not save surface")
+                + std::string(lSaveName)
+                + std::string(".")
+                ).c_str()
+              )));
+              return;
+          }
+
       }
       else
         SDL_SaveBMP(mSurf, lSaveName.c_str());

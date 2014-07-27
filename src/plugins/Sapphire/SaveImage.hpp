@@ -9,6 +9,10 @@
   #define USE_TGA 1
 #endif
 
+#ifdef USE_TIFF
+#undef USE_TIFF
+#endif
+
 namespace Sapphire {
 namespace Save {
 

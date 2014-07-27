@@ -2,6 +2,11 @@
 #error
 #endif
 
+#ifdef NDEBUG
+  #define debug_print(...)
+#else
+  #define debug_print(...) printf(__VA_ARGS__)
+#endif
 #include <memory>
 #include <cstdio>
 #include <setjmp.h>
@@ -39,7 +44,7 @@ namespace Save {
 
 SaveStatus PNGSaveFunction(SDL_Surface *aToSave, const std::string &aPath){
 
-    printf( BRACKNAME " : Saving PNG %s, %ix%i\n", aPath.c_str(), aToSave->w, aToSave->h);
+    debug_print( BRACKNAME " : Saving PNG %s, %ix%i\n", aPath.c_str(), aToSave->w, aToSave->h);
 
     assert(aToSave);
     assert(!aPath.empty());
@@ -97,12 +102,14 @@ SaveStatus PNGSaveFunction(SDL_Surface *aToSave, const std::string &aPath){
 
 SaveStatus PNGInitFunction(void){
 
-  printf(BRACKNAME " Info: Initializing PNG save subsystem.\n");
+  debug_print(BRACKNAME " Info: Initializing PNG save subsystem.\n");
 
   void *LibPng = DLOPENSYSLIBRARY("png", DL_LAZY|DL_LOCAL);
 
-  if(!LibPng)
+  if(!LibPng){
+    fprintf(stderr, BRACKNAME "Couldn't load libpng.\n");
     return ssFailure;
+  }
 
   printf(BRACKNAME " Info: Loaded libpng.\n");
 
@@ -127,7 +134,7 @@ SaveStatus PNGInitFunction(void){
   ){
     SaveFunctions[Formats::png] = PNGSaveFunction;
 
-    printf(BRACKNAME " Info: Can save PNGs.\n");
+    debug_print(BRACKNAME " Info: Can save PNGs.\n");
 
     return ssSuccess;
   }
