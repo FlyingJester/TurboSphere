@@ -299,6 +299,10 @@ void TS_TerminalMessageBox(const char *title, const char *content){
 
 void * SDLhandle = NULL;
 
+#ifdef OS_X
+#include "osx_messagebox.h"
+#endif
+
 void LoadMessageBoxFunctions(void){
     SDLhandle = dlopen("libSDL2.so", RTLD_GLOBAL|RTLD_NOW);
     if(SDLhandle!=NULL){
@@ -309,9 +313,15 @@ void LoadMessageBoxFunctions(void){
     }
 
     if(SDL_ShowSimpleMessageBox==NULL){
+        #ifdef OS_X
+          TS_MessageBox = TS_OSX_MessageBox;
+          return;
+        #endif
+
         printf(ENGINE " Warning: No suitable MessageBox backends. Defaulting to terminal output.\n");
         TS_MessageBox = TS_TerminalMessageBox;
     }
+
 
 
 }
