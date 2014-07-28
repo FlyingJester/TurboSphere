@@ -18,10 +18,12 @@
 #include <string>
 #include <screen.h>
 #include <openscript.h>
+#include <opengame.h>
 
 
 namespace Sapphire {
 namespace Script {
+std::vector<CallbackWithName> CrossPluginSurfaceMembers = std::vector<CallbackWithName>();
 
 const char *JSVertexCode = "\
 function Vertex(_x, _y){\
@@ -180,6 +182,26 @@ void InitScript(int64_t ID){
 
     SurfaceJSObj.AddToProto("save", SaveSurface);
 
+    memberiter_t lIter = CrossPluginSurfaceMembers.begin();
+
+    while(lIter!=CrossPluginSurfaceMembers.end()){
+
+      if(!(*lIter).first){
+          fprintf(stderr, BRACKNAME " Error: Bad cross-plugin Surface member name.\n");
+          lIter++;
+          continue;
+      }
+      if(!(*lIter).second){
+          fprintf(stderr, BRACKNAME " Error: Bad cross-plugin Surface member function for %s.\n", (*lIter).first);
+          lIter++;
+          continue;
+      }
+
+      SurfaceJSObj.AddToProto((*lIter).first, (*lIter).second);
+      printf(BRACKNAME " Info: Registered cross-plugin Surface member function %s.\n", (*lIter).first);
+      lIter++;
+    }
+
     GroupJSObj.Finalize     = Finalizer::Generic<Galileo::Group>;
     GroupJSObj.SetTypeName("Group");
     GroupJSObj.AddToProto("Draw", DrawGroup);
@@ -196,7 +218,7 @@ void InitScript(int64_t ID){
 
     auto lIso = v8::Isolate::GetCurrent();
 
-    //ExecuteString(v8::String::NewFromUtf8(lIso, JSVertexCode), v8::String::NewFromUtf8(lIso, "Sapphire_Internal"), lIso, true);
+    ExecuteString(v8::String::NewFromUtf8(lIso, JSVertexCode), v8::String::NewFromUtf8(lIso, "Sapphire_Internal"), lIso, true);
 
     XProp = v8::String::NewFromUtf8(lIso, "x");
     YProp = v8::String::NewFromUtf8(lIso, "y");
@@ -312,7 +334,7 @@ Turbo::JSFunction SurfaceCtor(Turbo::JSArguments args){
 
         if(Turbo::CheckArg::String(args, 0, __func__)){ // From Path
             v8::String::Utf8Value lStr(args[0]);
-            SDL_Surface *rSurf = LoadSurface(*lStr);
+            SDL_Surface *rSurf = LoadSurface(std::string(GetDirs()->image).append(*lStr).c_str());
             if(!rSurf){
                 Turbo::SetError(args, (std::string(BRACKNAME " SurfaceCtor Error: Could not open path '") +
                                         std::string(*lStr) + std::string("'.") ).c_str());
@@ -401,12 +423,6 @@ Turbo::JSFunction ShapeCtor(Turbo::JSArguments args){
                 break;
             }
 
-            //Vertices[i].u = FixedUVCoord[i][(i*2)  ];
-            //Vertices[i].v = FixedUVCoord[i][(i*2)+1];
-
-            //printf("Using uv: %f\t%f\n", Vertices[i].u, Vertices[i].v);
-            //printf("\t\t\t\tUsing xy: %f\t%f\n", Vertices[i].x, Vertices[i].y);
-
             }
         }
 
@@ -425,8 +441,6 @@ Turbo::JSFunction ShapeCtor(Turbo::JSArguments args){
 }
 
 Turbo::JSFunction GroupCtor(Turbo::JSArguments args){
-
-    printf(BRACKNAME " Info: Creating a group.\n");
 
     if(args.Length()<2){
         Turbo::SetError(args, BRACKNAME " GroupCtor Error: Called with fewer than 2 arguments.");
@@ -516,7 +530,7 @@ Turbo::JSFunction SaveSurface(Turbo::JSArguments args){
       if(lSaveFunc!=Sapphire::Save::SaveWithExtension.end()){
           printf(BRACKNAME " %s Info: Saving a with save func %p.\n", __func__, (*lSaveFunc).second);
 
-          int err = (*lSaveFunc).second(mSurf, lSaveName);
+          int err = (*lSaveFunc).second(mSurf, std::string(GetDirs()->image).append(lSaveName).c_str());
 
           if(err!=Save::SaveStatus::ssSuccess){
 

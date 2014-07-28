@@ -1,13 +1,16 @@
 #ifndef BMPFONT_HEAD
 #define BMPFONT_HEAD
 
-#include"../common/plugin.h"
-#include "../../SDL2/SDL_opengl.h"
+#define PLUGINNAME "bmpfont"
+#define BRACKNAME "[" PLUGINNAME "]"
 
-#include "../../configmanager/opengame.h"
-#include "../common/graphic_common.h"
-#include "../common/graphic_algorithm.h"
-#include "../common/font.h"
+#include <pluginsdk/plugin.h>
+
+#include <opengame.h>
+#include <screen.h>
+#include <structures.h>
+#include <color.h>
+#include "bmpfont.h"
 
 
 #define BPP 4

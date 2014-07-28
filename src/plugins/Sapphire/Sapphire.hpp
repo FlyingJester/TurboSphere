@@ -24,10 +24,10 @@
 
 #endif //c++
 
-#define Frmask 0x000000ff
-#define Fgmask 0x0000ff00
-#define Fbmask 0x00ff0000
-#define Famask 0xff000000
+#define Frmask 0x000000FF
+#define Fgmask 0x0000FF00
+#define Fbmask 0x00FF0000
+#define Famask 0xFF000000
 
 #define CHANNEL_MASKS Frmask, Fgmask, Fbmask, Famask
 #define IMAGE_DEPTH 32
@@ -46,12 +46,18 @@ template <class A, class B, class C = DoNothing<A *> >
 class GenericHolder {
   public:
   A *mWraps;
+  B *b;
   GenericHolder(A *a){
+    printf(BRACKNAME " Info: creating RAII primitive.\n");
     mWraps = a;
+    b = new B();
     C(mWraps);
   }
   ~GenericHolder(){
-    B(mWraps);
+    printf(BRACKNAME " Info: destroying RAII primitive.\n");
+    (*b)(mWraps);
+    printf(BRACKNAME " Info: Wrapped val is %p.\n", mWraps);
+    delete b;
   }
 
 };

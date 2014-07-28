@@ -55,10 +55,12 @@ TS_Config::TS_Config(void){
 }
 
 TS_Config::~TS_Config(void){
+
 }
 
-TS_Directories::TS_Directories(void){
-	root = "";
+TS_Directories::TS_Directories(void)
+  : MemH(nullptr){
+    root = "";
     image = "";
     font = "";
     script = "";
@@ -74,10 +76,19 @@ TS_Directories::TS_Directories(void){
     soundfont = "";
     systemshader = "";
     shader = "";
+
+    MemH = realloc(MemH, sizeof(const char *));
+    ((const char **) MemH )[0] = nullptr;
 }
 
 
 TS_Directories::~TS_Directories(void){
+    int i = 0;
+        const char * lP = ((const char **)MemH)[0];
+    while(lP!=nullptr){
+        free((void *)lP);
+        lP = ((const char **)MemH)[i];
+    }
 }
 
 TS_Config TS_confmain;
@@ -94,7 +105,7 @@ TS_Directories *GetDirs(void){
 
 void setDirectories(const char * basedirectory){
 	TS_Directories *TS_dirs = GetDirs();
-	    TS_dirs->image       = STRDUP(string(TS_dirs->root).append("images/").c_str());
+        TS_dirs->image       = STRDUP(string(TS_dirs->root).append("images/").c_str());
         TS_dirs->font        = STRDUP(string(TS_dirs->root).append("fonts/").c_str());
         TS_dirs->script      = STRDUP(string(TS_dirs->root).append("scripts/").c_str());
         TS_dirs->sound       = STRDUP(string(TS_dirs->root).append("sounds/").c_str());
@@ -109,7 +120,30 @@ void setDirectories(const char * basedirectory){
         TS_dirs->system      = "system/";
         TS_dirs->systemscript= "system/scripts/";
         TS_dirs->systemshader= "system/shaders/";
+        TS_dirs->plugin      = "plugin/";
         T5_init(2, "", TS_dirs->root);
+
+        int i = 0;
+        const char * lP = ((const char **)TS_dirs->MemH)[0];
+        while(lP!=nullptr){
+            free((void *)lP);
+            lP = ((const char **)TS_dirs->MemH)[i];
+        }
+
+        TS_dirs->MemH = realloc(TS_dirs->MemH, sizeof(const char *)*12);
+        ((const char **)TS_dirs->MemH )[0 ] = TS_dirs->image;
+        ((const char **)TS_dirs->MemH )[1 ] = TS_dirs->font;
+        ((const char **)TS_dirs->MemH )[2 ] = TS_dirs->script;
+        ((const char **)TS_dirs->MemH )[3 ] = TS_dirs->sound;
+        ((const char **)TS_dirs->MemH )[4 ] = TS_dirs->map;
+        ((const char **)TS_dirs->MemH )[5 ] = TS_dirs->other;
+        ((const char **)TS_dirs->MemH )[6 ] = TS_dirs->save;
+        ((const char **)TS_dirs->MemH )[7 ] = TS_dirs->spriteset;
+        ((const char **)TS_dirs->MemH )[8 ] = TS_dirs->animation;
+        ((const char **)TS_dirs->MemH )[9 ] = TS_dirs->windowstyle;
+        ((const char **)TS_dirs->MemH )[10] = TS_dirs->soundfont;
+        ((const char **)TS_dirs->MemH )[11] = TS_dirs->shader;
+
 }
 
 void setLocalConfig(TS_Config *c){

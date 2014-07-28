@@ -43,7 +43,7 @@ struct TS_Directories {
 public:
 	TS_Directories(void);
 	~TS_Directories(void);
-	const char * root; //!< Holds the root directory for the game, which contains the sgm file.
+	  const char * root; //!< Holds the root directory for the game, which contains the sgm file.
     const char * image; //!< The path to the default images directory.
     const char * font; //!< The path to the default rfn font directory.
     const char * script; //!< The path to the default script directory.
@@ -59,12 +59,14 @@ public:
     const char * system; //!< The path to the system directory.
     const char * systemscript; //!< The path to the default system script directory, used for RequireSystemScript and EvaluateSystemScript.
     const char * systemshader; //!< The path to the default system script directory, used for RequireSystemScript and EvaluateSystemScript.
+    const char * plugin; //!< The path to the directory that contains loaded plugins.
+
+    void * MemH; //!< Private memory handling structure.
 #ifdef _MSC_VER
 } TS_Directories;
 #else
 };
 #endif
-
 
 /*! \fn GetDirs
 *   \brief Returns a pointer to a TS_Directories struct that holds the current game's directory paths.

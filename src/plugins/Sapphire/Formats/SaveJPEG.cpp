@@ -15,7 +15,7 @@ namespace JPEG{
 
   class FreeSurface{
   public:
-    void operator () (SDL_Surface *a) {SDL_FreeSurface(a);}
+    void operator () (SDL_Surface * a) {printf(BRACKNAME " Info: Freeing temporary surface.\n");SDL_FreeSurface(a); a=(SDL_Surface *)0xBADF158;}
   };
 
   static jmp_buf JpegBuf;
@@ -109,8 +109,8 @@ SaveStatus JPEGSaveFunction(SDL_Surface *aToSave, const std::string &aPath){
     printf(BRACKNAME " %s Info: Writing jpeg.\n", __func__);
     // Lock the surface, unlock it when we return.
 
-    std::unique_ptr<GenericHolder<SDL_Surface, JPEG::FreeSurface> >
-        lSurfaceHolder(new GenericHolder<SDL_Surface, JPEG::FreeSurface> (lJPEGFormatSurface));
+    std::unique_ptr<GenericHolder<SDL_Surface, JPEG::FreeSurface > >
+        lSurfaceHolder(new GenericHolder<SDL_Surface, JPEG::FreeSurface > (lJPEGFormatSurface));
     SDL_UnlockSurface(lJPEGFormatSurface);
 
     int err = SDL_SaveBMP(lJPEGFormatSurface, (aPath+std::string("1")).c_str());

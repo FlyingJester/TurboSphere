@@ -19,7 +19,18 @@ void TS_AddMethodToSurface(const char *aName, Turbo::JSCallback aFunc){
     assert(aName!=nullptr);
     assert((*aName)!='\0');
 
-    Sapphire::Script::SurfaceJSObj.AddToProto(aName, aFunc);
+    Sapphire::Script::memberiter_t lIter = Sapphire::Script::CrossPluginSurfaceMembers.begin();
+
+    while(lIter!=Sapphire::Script::CrossPluginSurfaceMembers.end()){
+        if(strcmp((*lIter).first, aName))
+          continue;
+
+        printf(BRACKNAME " TS_AddMethodToSurface Warning: Overwriting cross-plugin Surface member %s.\n", aName);
+        (*lIter).second = aFunc;
+        return;
+    }
+
+    Sapphire::Script::CrossPluginSurfaceMembers.push_back(Sapphire::Script::CallbackWithName(aName, aFunc));
 }
 
 int TS_SaveImage(const char *aPath, uint32_t *aPixels, unsigned aWidth, unsigned aHeight, bool absolute){

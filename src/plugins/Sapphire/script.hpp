@@ -6,6 +6,7 @@
 #include "Image.hpp"
 #include <SDL2/SDL.h>
 #include <array>
+#include <vector>
 
 #include <memory>
 
@@ -21,10 +22,14 @@ void InitScript(int64_t ID);
 static const size_t NumFuncs = 12;
 static const size_t NumVars  = 0;
 
+typedef std::pair<const char *, Turbo::JSCallback> CallbackWithName;
+typedef std::vector<CallbackWithName>::iterator memberiter_t;
+
 extern std::array<Turbo::JSCallback,    NumFuncs> FunctionList;
 extern std::array<Turbo::JSName,        NumFuncs> FunctionNameList;
 extern std::array<Turbo::JSValue,       NumVars>  VariableList;
 extern std::array<Turbo::JSVariableName,NumVars>  VariableNameList;
+extern std::vector<CallbackWithName>     CrossPluginSurfaceMembers;
 
 extern Turbo::JSObj<TS_Color>        ColorJSObj;
 extern Turbo::JSObj<SDL_Surface>     SurfaceJSObj;
