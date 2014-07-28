@@ -4,3 +4,6 @@
 [submodule "v8"]
 	path = src/thirdparty/v8
 	url = https://github.com/v8/v8.git
+[submodule "src/t5"]
+	path = src/t5
+	url = https://github.com/FlyingJester/libt5
