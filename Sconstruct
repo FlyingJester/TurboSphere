@@ -7,7 +7,7 @@ msvc_ccflags = "/O2 /EHsc /Zi"
 msvc_cflags = ""
 msvc_cxxflags = ""
 
-gcc_ccflags = " -Werror=return-type -Wall -Wno-pointer-arith -mtune=native -flto -O2 -Wcast-align -g -pg "
+gcc_ccflags = " -Werror=return-type -Wall -Wno-pointer-arith -flto -mtune=native -O2 -Wcast-align -g "
 gcc_cflags = " -std=c11 "
 gcc_cxxflags = " -std=c++11 "
 
@@ -63,7 +63,7 @@ if compiler == 'msvc':
 if compiler == 'gcc':
   globalenv.Replace(CCFLAGS = gcc_ccflags, CFLAGS = gcc_cflags, CXXFLAGS = gcc_cxxflags)
 if compiler == 'clang':
-  globalenv.Replace(CCFLAGS = clang_ccflags, CFLAGS = clang_cflags, CXXFLAGS = clang_cxxflags)
+  globalenv.Replace(CCFLAGS = clang_ccflags, CFLAGS = clang_cflags, CXXFLAGS = clang_cxxflags, LINKFLAGS = " -g ")
 
 def CheckForHeader(env, conf, header_name, macro_name):
   if conf.CheckCHeader(header_name) or conf.CheckCXXHeader(header_name):

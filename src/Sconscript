@@ -1,4 +1,5 @@
 import os
+import glob
 import sys
 
 full_import_list ="globalenv IsLinux IsWindows IsDarwin LibraryInstall compiler binarydir localenv librarydir "
@@ -56,7 +57,13 @@ corelibtargets = []
 # build T5
 component = "t5"
 
-t5 = SConscript(dirs = [os.path.join(os.getcwd(), "t5")], exports = full_export_list + " component ")
+builddir = os.path.join(librarydir, "t5")
+t5dir = os.path.join(os.getcwd(), "t5/t5")
+t5 = SConscript(dirs = [t5dir], exports = full_export_list + " component builddir")
+
+inst_t5 = Install(os.path.join(builddir, "include"), [glob.glob(os.path.join(t5dir, "*.h"))])
+
+Depends(t5, inst_t5)
 
 component = "core"
 

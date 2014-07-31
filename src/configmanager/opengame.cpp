@@ -1,7 +1,7 @@
-#include <iostream>
-#include <fstream>
 #include <stdlib.h>
-#include <sstream>
+#include <memory>
+#include <cassert>
+#include <string>
 
 #include <screen.h>
 /*! \def CONFIGMGR_INTERNAL
@@ -32,7 +32,24 @@ Redirects to strdup on Linux+GCC and _strdup on MSVC.
 #define STRDUP strdup
 #endif
 
-using namespace std;
+/*
+template<typename T = char *, typename CT = const char *>
+inline T STRDUP(CT a){
+  assert(a!=nullptr);
+
+  size_t s = strlen(a)+1;
+
+  T r = (T)malloc(s);
+  assert(r!=nullptr);
+
+  std::copy(a, (CT)(a+s), r);
+  return r;
+}
+
+*/
+#define FIND_STRING_LAMBDA(X) [&] (const t5::map::Entry *aIter) { return (aIter)->Name == std::string(X); }
+
+using std::string;
 
 TS_Config::TS_Config(void){
 	gamename = "";
@@ -83,23 +100,31 @@ TS_Directories::TS_Directories(void)
 
 
 TS_Directories::~TS_Directories(void){
+  /*
     int i = 0;
-        const char * lP = ((const char **)MemH)[0];
+    const char * lP = ((const char **)MemH)[i];
+
     while(lP!=nullptr){
+        i++;
         free((void *)lP);
         lP = ((const char **)MemH)[i];
     }
+  */
 }
 
 TS_Config TS_confmain;
 
 TS_Config *GetConfig(void){
+
+
 	return &TS_confmain;
 }
 
 TS_Directories TS_dirsmain;
 
 TS_Directories *GetDirs(void){
+
+
 	return &TS_dirsmain;
 }
 
@@ -121,16 +146,18 @@ void setDirectories(const char * basedirectory){
         TS_dirs->systemscript= "system/scripts/";
         TS_dirs->systemshader= "system/shaders/";
         TS_dirs->plugin      = "plugin/";
-        T5_init(2, "", TS_dirs->root);
 
+        /*
         int i = 0;
-        const char * lP = ((const char **)TS_dirs->MemH)[0];
+        const char * lP = ((const char **)TS_dirs->MemH)[i];
         while(lP!=nullptr){
             free((void *)lP);
+            i++;
             lP = ((const char **)TS_dirs->MemH)[i];
         }
-
+        */
         TS_dirs->MemH = realloc(TS_dirs->MemH, sizeof(const char *)*12);
+
         ((const char **)TS_dirs->MemH )[0 ] = TS_dirs->image;
         ((const char **)TS_dirs->MemH )[1 ] = TS_dirs->font;
         ((const char **)TS_dirs->MemH )[2 ] = TS_dirs->script;
@@ -146,15 +173,55 @@ void setDirectories(const char * basedirectory){
 
 }
 
-void setLocalConfig(TS_Config *c){
+void setLocalConfig(TS_Config *c, const char *engine_conf_file, const char *system_conf_file){
 
-    TS_Directories *TS_dirs = GetDirs();
-	T5_file *enginefile = T5_OpenFile("engine.ini");
-    c->fullscreen = (atoi(enginefile->getValueFromSection("fullscreen", "Video"))>0)?true:false;
-    c->scale      = atoi(enginefile->getValueFromSection("scale", "Video"));
-    c->gamefunc   = enginefile->getValueFromSection("gamefunc", "Engine");
-    c->sgmname    = enginefile->getValueFromSection("sgmname", "Engine");
+    assert(engine_conf_file!=nullptr);
+    assert(strlen(engine_conf_file)>0);
 
+    assert(system_conf_file!=nullptr);
+    assert(strlen(system_conf_file)>0);
+
+    std::unique_ptr<t5::DataSource> lEngineConfSource(t5::DataSource::FromPath(t5::DataSource::eRead, engine_conf_file));
+    std::unique_ptr<t5::DataSource> lSystemConfSource(t5::DataSource::FromPath(t5::DataSource::eRead, system_conf_file));
+    assert(lEngineConfSource.get());
+    assert(lSystemConfSource.get());
+
+    assert(t5::IsFile(engine_conf_file) && t5::IsFile(system_conf_file));
+
+    std::unique_ptr<t5::map::Group> lConfigGroup(new t5::map::Group("Engine", nullptr));
+    std::unique_ptr<t5::map::Group> lSystemGroup(new t5::map::Group("System", nullptr));
+    assert(lConfigGroup.get());
+    assert(lSystemGroup.get());
+
+    c->fullscreen = false;
+    c->scale      = 1;
+    c->sgmname    = "game.sgm";
+    c->gamefunc   = "game";
+
+    lConfigGroup->ReadDataSourceJSON(lEngineConfSource.get());
+    lSystemGroup->ReadDataSourceJSON(lSystemConfSource.get());
+
+    std::list<t5::map::Entry *> &lContents = lConfigGroup->Contents;
+
+    std::list<t5::map::Entry *>::iterator lIterVideoGroup = std::find_if(lContents.begin(), lContents.end(),  FIND_STRING_LAMBDA("Video"));
+    std::list<t5::map::Entry *>::iterator lIterEngineGroup = std::find_if(lContents.begin(), lContents.end(), FIND_STRING_LAMBDA("Engine"));
+
+
+    if((lIterEngineGroup!=lContents.end())&&(*lIterEngineGroup)->AsGroup()){
+        const char *lGamefunc = (*lIterEngineGroup)->AsGroup()->GetString("gamefunc");
+        if(lGamefunc) c->gamefunc=STRDUP(lGamefunc);
+        else c->gamefunc= STRDUP(c->gamefunc);
+
+        const char *lSgmname = (*lIterEngineGroup)->AsGroup()->GetString("sgmname");
+        if(lSgmname) c->sgmname=STRDUP(lSgmname);
+        else c->sgmname= STRDUP(c->sgmname);
+    }
+
+    if((lIterVideoGroup!=lContents.end())&&(*lIterVideoGroup)->AsGroup()){
+        c->fullscreen  = (*lIterVideoGroup)->AsGroup()->GetBool("fullscreen", false);
+        c->scale       = (*lIterVideoGroup)->AsGroup()->GetInt( "scale", 1);
+        c->compositing = (*lIterVideoGroup)->AsGroup()->GetInt( "compositing", 1);
+    }
 
     //Negative scale may take on a meaning. Technically I shouldn't even cleanse these values here.
     //But I do want all graphics plugins to be able to both give and recieve something at least slightly standardized.
@@ -166,107 +233,75 @@ void setLocalConfig(TS_Config *c){
         c->scale = 16;
     }
 
-    printf("[ConfigManager] Info: Fixed plugins: %s\n", enginefile->getValue("fixedplugins"));
-    c->fixedplugins        = atoi(enginefile->getValue("fixedplugins"));
-    printf("[ConfigManager] Info: Fixed plugins as recorded: %i\n", c->fixedplugins);
-    T5_file *systemfile = T5_OpenFile(string(TS_dirs->system).append("system.ini").c_str());
+    c->fixedplugins  = 0;
 
-    c->systemfont          = systemfile->getValue("Font");
-    c->systemttffont       = systemfile->getValue("TTFFont");
-    c->systemwindowstyle   = systemfile->getValue("WindowStyle");
-    c->systemarrow         = systemfile->getValue("Arrow");
-    c->systemuparrow       = systemfile->getValue("UpArrow");
-    c->systemdownarrow     = systemfile->getValue("DownArrow");
-    c->systemsoundfont     = systemfile->getValue("SoundFont");
+    c->systemfont          = STRDUP("system.rfn");
+    c->systemttffont       = STRDUP("DejaVuSans.ttf");
+    c->systemwindowstyle   = STRDUP("system.rws");
+    c->systemarrow         = STRDUP("pointer.png");
+    c->systemuparrow       = STRDUP("up_arrow.png");
+    c->systemdownarrow     = STRDUP("down_arrow.png");
+    c->systemsoundfont     = STRDUP("Hollywood.SF2");
 
-    c->plugins             = (const char **)calloc(c->fixedplugins, sizeof(const char *));
+    const char *lVal;
 
-    for(int i = 0; i<c->fixedplugins; i++){
+    lVal = lSystemGroup->GetString("Font");
+    if(lVal) c->systemfont          = STRDUP(lVal);
+    else c->systemfont= STRDUP(c->systemfont);
 
-        std::stringstream s;
-        s << "plugin";
-		s << i;
-        c->plugins[i]=enginefile->getValue(s.str().c_str());
-    }
+    lVal = lSystemGroup->GetString("TTFFont");
+    if(lVal) c->systemttffont       = STRDUP(lVal);
+    else c->systemttffont= STRDUP(c->systemttffont);
 
-    T5_close(enginefile);
-    T5_close(systemfile);
+    lVal = lSystemGroup->GetString("WindowStyle");
+    if(lVal) c->systemwindowstyle   = STRDUP(lVal);
+    else c->systemwindowstyle= STRDUP(c->systemwindowstyle);
+
+    lVal = lSystemGroup->GetString("Arrow");
+    if(lVal) c->systemarrow         = STRDUP(lVal);
+    else c->systemarrow = STRDUP(c->systemarrow);
+
+    lVal = lSystemGroup->GetString("UpArrow");
+    if(lVal) c->systemuparrow       = STRDUP(lVal);
+    else c->systemuparrow = STRDUP(c->systemuparrow);
+
+    lVal = lSystemGroup->GetString("DownArrow");
+    if(lVal) c->systemdownarrow     = STRDUP(lVal);
+    else c->systemdownarrow = STRDUP(c->systemdownarrow);
+
+    lVal = lSystemGroup->GetString("SoundFont");
+    if(lVal) c->systemsoundfont     = STRDUP(lVal);
+    else c->systemsoundfont = STRDUP(c->systemsoundfont);
+
+    c->plugins = nullptr;
 }
 
 void setConfig(const char * basedirectory){
-    TS_Config *TS_conf = GetConfig();
-    TS_Directories *TS_dirs = GetDirs();
-	T5_file *enginefile = T5_OpenFile("engine.ini");
-    TS_conf->fullscreen = (atoi(enginefile->getValueFromSection("fullscreen", "Video"))>0)?true:false;
-    TS_conf->compositing= (atoi(enginefile->getValueFromSection("compositing", "Video"))>0)?true:false;
-    TS_conf->scale      = atoi(enginefile->getValueFromSection("scale", "Video"));
-    if(enginefile->getValueFromSection("gamefunc", "Engine")==NULL)
-        TS_conf->gamefunc = STRDUP("game");
-    else
-        TS_conf->gamefunc   = STRDUP(enginefile->getValueFromSection("gamefunc", "Engine"));
-    if(enginefile->getValueFromSection("sgmname", "Engine")==NULL)
-        TS_conf->sgmname = STRDUP("game.sgm");
-    else
-        TS_conf->sgmname    = STRDUP(enginefile->getValueFromSection("sgmname", "Engine"));
-
-
-
-    //Negative scale may take on a meaning. Technically I shouldn't even cleanse these values here.
-    //But I do want all graphics plugins to be able to both give and recieve something at least slightly standardized.
-    if(TS_conf->scale<0){
-        TS_conf->scale*=-1;
-    }
-
-    if(TS_conf->scale>16){
-        TS_conf->scale = 16;
-    }
-
-    printf("[ConfigManager] Info: Fixed plugins: %s\n", enginefile->getValue("fixedplugins"));
-    TS_conf->fixedplugins        = atoi(enginefile->getValue("fixedplugins"));
-    printf("[ConfigManager] Info: Fixed plugins as recorded: %i\n", TS_conf->fixedplugins);
-    T5_file *systemfile = T5_OpenFile(string(TS_dirs->system).append("system.ini").c_str());
-
-    TS_conf->systemfont          = STRDUP(systemfile->getValue("Font"));
-    TS_conf->systemttffont       = STRDUP(systemfile->getValue("TTFFont"));
-    TS_conf->systemwindowstyle   = STRDUP(systemfile->getValue("WindowStyle"));
-    TS_conf->systemarrow         = STRDUP(systemfile->getValue("Arrow"));
-    TS_conf->systemuparrow       = STRDUP(systemfile->getValue("UpArrow"));
-    TS_conf->systemdownarrow     = STRDUP(systemfile->getValue("DownArrow"));
-    TS_conf->systemsoundfont     = STRDUP(systemfile->getValue("SoundFont"));
-
-    //TS_conf->plugins             = (const char **)calloc(TS_conf->fixedplugins, sizeof(const char *));
-/*
-    for(int i = 0; i<TS_conf->fixedplugins; i++){
-
-        std::stringstream s;
-        s << "plugin";
-		s << i;
-        TS_conf->plugins[i]=enginefile->getValue(s.str().c_str());
-    }
-*/
-    T5_close(enginefile);
-    T5_close(systemfile);
-
+    //GetDirs()->root;
+    setLocalConfig(GetConfig());
 }
 
 int opengameLocal(const char *Rfile, TS_Config *localConf, TS_Directories *localDirs){
 
+    std::unique_ptr<t5::DataSource> lSGMSource(t5::DataSource::FromPath(t5::DataSource::eRead, Rfile));
+    assert(lSGMSource.get());
+
+    std::unique_ptr<t5::map::Group> lSGMGroup(new t5::map::Group("SGM", nullptr));
+    assert(lSGMGroup.get());
+
+    lSGMGroup->ReadDataSourceINI(lSGMSource.get());
+
     localConf->soundchannels = 32;
-	printf("[ConfigManager] Info: Opening SGM file %s\n", Rfile);
-	T5_file *file = T5_OpenFile(Rfile);
 
-    if(file==NULL){
-        return 1;
-    }
+    localConf->gamename = STRDUP(lSGMGroup->GetString("name"));
 
-	localConf->gamename     = STRDUP(file->getValue("name"));
-	printf("[ConfigManager] Info: Reading game configuration for %s\n", localConf->gamename);
+    printf("[ConfigManager] Info: Reading game configuration for %s\n", localConf->gamename);
 
 
-	const char *scriptname  = file->getValue("script");
-	char * mainscriptname =  strcat((char *)calloc(strlen(localDirs->script)+strlen(scriptname)+1, 1), localDirs->script);
+    const char * scriptname = lSGMGroup->GetString("script");
+    char * mainscriptname =  strcat((char *)calloc(strlen(localDirs->script)+strlen(scriptname)+1, 1), localDirs->script);
 
-	mainscriptname =  strcat(mainscriptname, scriptname);
+    mainscriptname =  strcat(mainscriptname, scriptname);
 
     localConf->mainscript   = (char *)calloc(strlen(localDirs->script)+strlen(scriptname)+1, 1);
 
@@ -274,12 +309,10 @@ int opengameLocal(const char *Rfile, TS_Config *localConf, TS_Directories *local
 
     free((void *)mainscriptname);
 
-	localConf->screenwidth  = atoi(file->getValue("screen_width"));
-	localConf->screenheight = atoi(file->getValue("screen_height"));
-	localConf->author       = STRDUP(file->getValue("author"));
-	localConf->description   = STRDUP(file->getValue("description"));
-
-     T5_close(file);
+    localConf->screenwidth  = lSGMGroup->GetInt("screen_width",  640);
+    localConf->screenheight = lSGMGroup->GetInt("screen_height", 480);
+    localConf->author       = STRDUP(lSGMGroup->GetString("author"));
+    localConf->description  = STRDUP(lSGMGroup->GetString("description"));
 
     return 0;
 
