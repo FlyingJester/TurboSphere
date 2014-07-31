@@ -7,18 +7,11 @@ Import(full_import_list)
 
 files = ["opengame.cpp", "openscript.cpp"]
 
-graphicalg = localenv.SharedLibrary('graphicalg', ['structures.cpp', 'circles.c'])
-
-graphicalgStatic = localenv.StaticLibrary('graphicalg', ['structures.cpp', 'circles.c'])
-
-benchmarks = SConscript(dirs = [os.path.join(os.getcwd(), "benchmark")], exports = full_import_list + " graphicalgStatic")
-Depends(benchmarks, graphicalgStatic)
-Depends(graphicalg, benchmarks)
-AlwaysBuild(benchmarks)
+graphicalg = globalenv.SharedLibrary('graphicalg', ['structures.cpp', 'circles.c'])
 
 installdir = os.path.join(os.path.join(librarydir, component))
 
-LibraryInstall(installdir, graphicalg, localenv)
-localenv.Install(os.path.join(installdir, "include"), ["structures.h", "circles.h"])
+LibraryInstall(installdir, graphicalg, globalenv)
+globalenv.Install(os.path.join(installdir, "include"), ["structures.h", "circles.h"])
 
 Return("graphicalg")
