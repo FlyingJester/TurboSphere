@@ -41,17 +41,18 @@ int Group::Draw(void){
 
 int Group::DrawAll(concurrent_queue<GL::Operation *> *aSendTo){
     aSendTo->push(mShader);
+
     auto r = mShader->mUniforms.find(Shader::ShaderOffsetUniformName);
+
     assert(r!=mShader->mUniforms.end());
+
     int lPosition = r->second;
+
     assert(lPosition>=0);
+
     aSendTo->push(new ShaderParamChange(lPosition,
                   1, mOffset, (ShaderParamChange::callback_t)glUniform2fv, sizeof(float)*2));
-/*
-    int loc = mShader->mUniforms[Shader::ShaderPositionName];
-    GL::Operation *lOp = new ShaderParamChange(loc, 1, mOffset, (ShaderParamChange::callback_t)glUniform2fv, sizeof(float)*2);
-    aSendTo->push(lOp);
-*/
+
     for(iterator lIter = begin(); lIter!=end(); lIter++){
         aSendTo->push(*lIter);
     }

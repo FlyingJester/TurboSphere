@@ -59,23 +59,6 @@ namespace GL{
 
 }
 
-/*
-class Image {
-public:
-  union PixelData {
-      uint32_t pixel;
-      unsigned char channel[4];
-  };
-
-protected:
-
-    unsigned w;
-    unsigned h;
-
-   PixelData *RGBA;
-
-public:
-*/
 Image::Image()
   : GL::Image() {
 

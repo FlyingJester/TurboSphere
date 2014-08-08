@@ -9,6 +9,9 @@
 namespace Sapphire{
 namespace Galileo{
 
+void SetFrameRate(int32_t aFramesPerSecond);
+int32_t GetFrameRate(void);
+
 class FlipScreen : public GL::Operation {
     atomic32_t *mRenderFrame;
     SDL_Window *window;

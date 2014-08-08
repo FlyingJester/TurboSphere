@@ -1,4 +1,5 @@
 #pragma once
+#pragma once
 #include <color.h>
 #include <list>
 #include <TSPR/concurrent_queue.h>
@@ -14,6 +15,7 @@ public:
     typedef std::list<GL::Operation *>::reverse_iterator reverse_iterator;
 
 protected:
+    enum eOffset {x, y, d};
     std::list<GL::Operation *> mShapes;
     Shader *mShader;
     float mOffset[2];
@@ -33,13 +35,33 @@ public:
 
     template<typename T>
     void SetOffset(T _x, T _y){
-        mOffset[0] = _x;
-        mOffset[1] = _y;
+        mOffset[eOffset::x] = _x;
+        mOffset[eOffset::y] = _y;
+    }
+
+    template<typename T>
+    void SetX(T _x){
+        mOffset[eOffset::x] = _x;
     }
     template<typename T>
+    void SetY(T _y){
+        mOffset[eOffset::y] = _y;
+    }
+
+    template<typename T = float>
+    T GetX() const{
+        return mOffset[eOffset::x];
+    }
+    template<typename T = float>
+    T GetY() const{
+        return mOffset[eOffset::y];
+    }
+
+
+    template<typename T>
     void SetRotationOffset(T _x, T _y){
-        mRotationOffset[0] = _x;
-        mRotationOffset[1] = _y;
+        mRotationOffset[eOffset::x] = _x;
+        mRotationOffset[eOffset::y] = _y;
     }
     template<typename T>
     void SetRotation(T _a){

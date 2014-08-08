@@ -1,25 +1,10 @@
 #ifndef GRAPHICALG_STRUCURES_HEAD
 #define GRAPHICALG_STRUCURES_HEAD
+
+#include "graphicalg_stub.h"
+
 #include <stdint.h>
 #include <stdlib.h>
-
-#ifndef GRAPHICALG_EXPORT
-  #ifdef _WIN32
-    #ifdef GRAPHICALG_INTERNAL
-      #define GRAPHICALG_EXPORT __declspec(dllexport)
-    #else
-      #define GRAPHICALG_EXPORT __declspec(dllimport)
-    #endif
-  #define GRAPHICALGCALL _cdecl
-  #else
-    #define GRAPHICALGCALL
-    #ifdef __cplusplus
-      #define GRAPHICALG_EXPORT extern "C"
-    #else
-      #define GRAPHICALG_EXPORT
-    #endif
-  #endif
-#endif
 
 #ifndef __cplusplus
 typedef

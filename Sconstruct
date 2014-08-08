@@ -73,15 +73,17 @@ def CheckForHeader(env, conf, header_name, macro_name):
 
 # Linux requires we check if the include files are in X/Open or SysV locations.
 conf = Configure(globalenv.Clone())
-if IsLinux():
+if IsLinux() or (IsDarwin() and ( ARGUMENTS.get('use_unix_apis', 'n') == 'y' )):
   if CheckForHeader(globalenv, conf, 'tbb/concurrent_queue.h', "HAS_INTEL_TBB"):
     # Use Intel Thread Building Blocks whenever available.
     globalenv.Append(CPPDEFINES= "USE_INTEL_TBB")
+  if not IsDarwin():
+    CheckForHeader(globalenv, conf, 'time.h', "HAS_TIME")
   CheckForHeader(globalenv, conf, 'atomic', "HAS_ATOMIC")
   CheckForHeader(globalenv, conf, 'thread', "HAS_THREAD")
   CheckForHeader(globalenv, conf, 'mutex', "HAS_MUTEX")
-  CheckForHeader(globalenv, conf, 'unistd.h', "HAS_UNISTD")
-  CheckForHeader(globalenv, conf, 'sys/unistd.h', "HAS_UNISTD_SYS")
+  if CheckForHeader(globalenv, conf, 'stat.h', "HAS_UNISTD") or CheckForHeader(globalenv, conf, 'sys/stat.h', "HAS_UNISTD_SYS"):
+    globalenv.Append(CPPDEFINES = "USE_UNISTD")
   if CheckForHeader(globalenv, conf, 'stat.h', "HAS_STAT") or CheckForHeader(globalenv, conf, 'sys/stat.h', "HAS_STAT_SYS"):
     globalenv.Append(CPPDEFINES = "USE_STAT")
   CheckForHeader(globalenv, conf, 'types', "HAS_TYPES")

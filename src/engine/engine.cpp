@@ -15,6 +15,11 @@
 
 #include <TSPR/noreturn.h>
 
+#if defined(HAS_UNISTD)
+#include <unistd.h>
+#elif defined(HAS_UNISTD_SYS)
+#include <sys/unistd.h>
+#endif
 
 #include <t5.h>
 
@@ -69,81 +74,6 @@ uint32_t (*TS_GetTime)(void);
 
     #define OS_X 1
 #endif
-
-/*
-inline void TS_OverrideConfig(TS_Config *conf, TS_ConfigOverride *overrideConf){
-    TS_Config *oconf = overrideConf->config;
-    if(overrideConf->gamefunc)
-        conf->gamefunc = oconf->gamefunc;
-
-	if(overrideConf->sgmname)
-        conf->sgmname = oconf->sgmname;
-
-	if(overrideConf->gamename)
-        conf->gamename = oconf->gamename;
-
-	if(overrideConf->mainscript)
-        conf->mainscript = oconf->mainscript;
-
-	if(overrideConf->screenwidth)
-        conf->screenwidth = oconf->screenwidth;
-
-	if(overrideConf->screenheight)
-        conf->screenheight = oconf->screenheight;
-
-	if(overrideConf->fullscreen)
-        conf->fullscreen = oconf->fullscreen;
-
-	if(overrideConf->compositing)
-        conf->compositing = oconf->compositing;
-
-	if(overrideConf->scale)
-        conf->scale = oconf->scale;
-
-	if(overrideConf->systemfont)
-        conf->systemfont = oconf->systemfont;
-
-	if(overrideConf->systemttffont)
-        conf->systemttffont = oconf->systemttffont;
-
-	if(overrideConf->systemwindowstyle)
-        conf->systemwindowstyle = oconf->systemwindowstyle;
-
-	if(overrideConf->systemarrow)
-        conf->systemarrow = oconf->systemarrow;
-
-	if(overrideConf->systemuparrow)
-        conf->systemuparrow = oconf->systemuparrow;
-
-	if(overrideConf->systemsoundfont)
-        conf->systemsoundfont = oconf->systemsoundfont;
-
-	if(overrideConf->fixedplugins)
-        conf->fixedplugins = oconf->fixedplugins;
-
-	if(overrideConf->plugins)
-        conf->plugins = oconf->plugins;
-
-}*/
-
-/*
-int SetScreenWidth(unsigned int w){
-	if(w>MIN_SCREENWIDTH){
-		SCREENWIDTH = w;
-		return 0;
-	}
-	return 1;
-}
-
-int SetScreenHeight(unsigned int h){
-	if(h>MIN_SCREENHEIGHT){
-		SCREENHEIGHT = h;
-		return 0;
-	}
-	return 1;
-}
-*/
-
 
 inline void TS_OverrideConfig(TS_Config *conf, TS_ConfigOverride *overrideConf){
     TS_Config *oconf = overrideConf->config;

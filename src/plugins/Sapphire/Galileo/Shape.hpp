@@ -43,8 +43,10 @@ namespace GL {
           return true;
       }
 
-    virtual void SetShader(Shader *aShader){}
 
+      virtual void SetShader(Shader *aShader){}
+
+      bool mDirty;
   };
 
   class Drawable : public Operation {

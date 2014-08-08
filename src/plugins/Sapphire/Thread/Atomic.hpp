@@ -1,6 +1,6 @@
 #pragma once
 
-
+//Learn to type, Helen Keller!
 
 #include <stdlib.h>
 

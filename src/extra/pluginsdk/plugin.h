@@ -84,6 +84,7 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 #include <forward_list>
 
 #include <string>
+#include <vector>
 #include <cstdarg>
 #include <cassert>
 
@@ -160,18 +161,34 @@ namespace Turbo{
         Turbo::JSNameArray names;
     };
 
-    inline void SetError(JSArguments args, const char *err, v8::Local<v8::Value> (&v8ExceptionType)(v8::Handle<v8::String>) = v8::Exception::Error){
+    template<class T = JSArguments>
+    inline void SetError(T args, const char *err, v8::Local<v8::Value> (&v8ExceptionType)(v8::Handle<v8::String>) = v8::Exception::Error){
         v8::Isolate *iso = v8::Isolate::GetCurrent();
         args.GetReturnValue().Set( v8ExceptionType(v8::String::NewFromUtf8(iso, err)));
     }
 
     enum JSType{Int = 1, Uint, String, Number, Bool, Array, Object};
+/*
     class JSAccessor{
     public:
         JSString name;
         void (*Getter)(JSAccessorProperty, JSAccessorInfo);
         void (*Setter)(JSAccessorProperty, JSValue, JSAccessorInfo);
     };
+*/
+    typedef std::tuple<const char *, v8::AccessorGetterCallback, v8::AccessorSetterCallback> JSAccessor;
+
+    template <class T>
+    void Finalizer(const v8::WeakCallbackData<v8::Object, T> &args) {
+        delete args.GetParameter();
+        args.GetValue().Clear();
+    }
+    template <class T, class F>
+    void FinalizerFunctional(const v8::WeakCallbackData<v8::Object, T> &args) {
+        F f;
+        f(args.GetParameter());
+        args.GetValue().Clear();
+    }
 
     template<class T> class JSObj{
         public:
@@ -179,6 +196,8 @@ namespace Turbo{
         v8::Handle<v8::ObjectTemplate> InstanceTemplate;
         v8::Handle<v8::ObjectTemplate> Prototype;
         v8::Handle<v8::Function> Constructor;
+
+        std::vector<JSAccessor> accessors;
 
         JSObj<T>(){
 
@@ -205,13 +224,10 @@ namespace Turbo{
         bool IsA(v8::Handle<A> Tobj){
             auto obj = v8::Handle<v8::Object>::Cast(Tobj);
             return (ID&&(!((obj->InternalFieldCount()<2)||(ID!=obj->GetInternalField(1)->Uint32Value()))));
-
         }
 
         JSString TypeName;
         void (*Finalize)(const v8::WeakCallbackData<v8::Object, T> &args);
-
-        JSAccessor *accessors; //Null-terminated.
 
         unsigned long long ID;
 
@@ -229,8 +245,12 @@ namespace Turbo{
         }
 
         void AddAccessor(const char *name, v8::AccessorGetterCallback Getter, v8::AccessorSetterCallback Setter){
+            printf("Setting accessor of %s on obj ID %i\n", name, ID);
             InstanceTemplate->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name), Getter, Setter);
             Prototype->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name), Getter, Setter);
+            accessors.push_back(JSAccessor(name, Getter, Setter));
+            //assert(Prototype->Has(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name)));
+
         }
 
     };
@@ -393,22 +413,19 @@ namespace Turbo{
         // Create a JS object that holds an ID number and a pointer to the object
         assert(obj != nullptr);
         //JSo.InstanceTemplate->SetInternalFieldCount(2);
-        v8::Handle<v8::Object> returnobj = JSo.InstanceTemplate->NewInstance();//JSo.Constructor->NewInstance();//v8::Object::New(iso);// = JSo.Constructor->NewInstance();
+        v8::Handle<v8::Object> returnobj = JSo.Template->GetFunction()->NewInstance();//JSo.Constructor->NewInstance();//v8::Object::New(iso);// = JSo.Constructor->NewInstance();
         assert(JSo.Template->HasInstance(returnobj));
+
+        for(std::vector<JSAccessor>::const_iterator lIter = JSo.accessors.begin(); lIter!=JSo.accessors.end(); lIter++){
+            returnobj->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), std::get<0>(*lIter)), std::get<1>(*lIter), std::get<2>(*lIter));
+        }
+
         returnobj->SetAlignedPointerInInternalField(0, obj);
         returnobj->SetInternalField(1, v8::Integer::NewFromUnsigned(iso, JSo.ID));
-        //args.GetReturnValue().Set(returnobj);
-        //return;
-
-        printf("%s\n", *(v8::String::Utf8Value(JSo.TypeName)));
-
-        /////
-        // Set the weak reference callback
 
         v8::Persistent<v8::Object> preturnobj(iso, returnobj);
         preturnobj.SetWeak(obj, JSo.Finalize);
 
-        //
         args.GetReturnValue().Set(preturnobj);
 
     }
