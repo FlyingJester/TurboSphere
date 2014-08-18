@@ -100,6 +100,51 @@ void GroupYSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::J
     mGroup->SetY(aVal->NumberValue());
 }
 
+void GroupRotYGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
+    const Galileo::Group *mGroup = Turbo::GetAccessorSelf<Galileo::Group>(aInfo);
+    assert(mGroup);
+    aInfo.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), mGroup->GetRotY()));
+}
+void GroupRotYSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){
+    if(!aVal->IsNumber()){
+        Turbo::SetError(aInfo, (string(BRACKNAME " ") + string(__func__) + string(" Error: Value is not a number.")).c_str());
+        return;
+    }
+    Galileo::Group *mGroup = Turbo::GetAccessorSelf<Galileo::Group>(aInfo);
+    assert(mGroup);
+    mGroup->SetRotY(aVal->NumberValue());
+}
+
+void GroupRotXGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
+    const Galileo::Group *mGroup = Turbo::GetAccessorSelf<Galileo::Group>(aInfo);
+    assert(mGroup);
+    aInfo.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), mGroup->GetRotX()));
+}
+void GroupRotXSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){
+    if(!aVal->IsNumber()){
+        Turbo::SetError(aInfo, (string(BRACKNAME " ") + string(__func__) + string(" Error: Value is not a number.")).c_str());
+        return;
+    }
+    Galileo::Group *mGroup = Turbo::GetAccessorSelf<Galileo::Group>(aInfo);
+    assert(mGroup);
+    mGroup->SetRotX(aVal->NumberValue());
+}
+
+void GroupAngleGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
+    const Galileo::Group *mGroup = Turbo::GetAccessorSelf<Galileo::Group>(aInfo);
+    assert(mGroup);
+    aInfo.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), mGroup->GetRotation<float>()));
+}
+void GroupAngleSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){
+    if(!aVal->IsNumber()){
+        Turbo::SetError(aInfo, (string(BRACKNAME " ") + string(__func__) + string(" Error: Value is not a number.")).c_str());
+        return;
+    }
+    Galileo::Group *mGroup = Turbo::GetAccessorSelf<Galileo::Group>(aInfo);
+    assert(mGroup);
+    mGroup->SetRotation(aVal->NumberValue());
+}
+
 std::vector<CallbackWithName> CrossPluginSurfaceMembers = std::vector<CallbackWithName>();
 
 const char *JSVertexCode = "\
@@ -175,35 +220,36 @@ namespace Finalizer {
 
 template <class T>
 void Generic(const v8::WeakCallbackData<v8::Object, T> &args) {
-    delete args.GetParameter();
-    args.GetValue().Clear();
+    delete (T *)(args.GetValue()->GetAlignedPointerFromInternalField(0));
+    //args.GetValue().Clear();
 }
 
 template <class T>
 void CGeneric(const v8::WeakCallbackData<v8::Object, T> &args) {
-    free(args.GetParameter());
-    args.GetValue().Clear();
+    free(args.GetValue()->GetAlignedPointerFromInternalField(0));
+    //args.GetValue().Clear();
 }
 
-void NoFree(const v8::WeakCallbackData<v8::Object, void> &args){
-    args.GetValue().Clear();
+template <class T = void>
+void NoFree(const v8::WeakCallbackData<v8::Object, T> &args){
+    //args.GetValue().Clear();
 }
 
 void Surface(const v8::WeakCallbackData<v8::Object, SDL_Surface> &args) {
-    SDL_FreeSurface(args.GetParameter());
-    args.GetValue().Clear();
+    SDL_FreeSurface((SDL_Surface *)(args.GetValue()->GetAlignedPointerFromInternalField(0)));
+    //args.GetValue().Clear();
 }
 
 void Vertex (const v8::WeakCallbackData<v8::Object, Galileo::Vertex>&args){
-    args.GetValue().Clear();
+    //args.GetValue().Clear();
 }
 
 void Shape  (const v8::WeakCallbackData<v8::Object, Galileo::Shape> &args){
-    args.GetValue().Clear();
+    //args.GetValue().Clear();
 }
 
 void Group  (const v8::WeakCallbackData<v8::Object, Galileo::Group> &args){
-    args.GetValue().Clear();
+    //args.GetValue().Clear();
 }
 
 
@@ -264,6 +310,9 @@ void InitScript(int64_t ID){
     ColorJSObj.Finalize             = Finalizer::Generic<TS_Color>;
     ShaderProgramJSObj.Finalize     = Finalizer::Generic<Galileo::Shader>;
     ImageJSObj.Finalize     = Finalizer::Generic<std::shared_ptr<Image> >;
+    SurfaceJSObj.Finalize   = Finalizer::NoFree;
+    VertexJSObj.Finalize    = Finalizer::NoFree;
+    ShapeJSObj.Finalize     = Finalizer::NoFree;
     ImageJSObj.SetTypeName("Image");
 
     SurfaceJSObj.AddToProto("save", SaveSurface);
@@ -301,9 +350,14 @@ void InitScript(int64_t ID){
     GroupJSObj.Finalize     = Finalizer::Generic<Galileo::Group>;
     GroupJSObj.SetTypeName("Group");
     GroupJSObj.AddToProto("Draw", DrawGroup);
+    GroupJSObj.AddToProto("draw", DrawGroup);
     GroupJSObj.AddToProto("setPosition", GroupSetPosition);
+    GroupJSObj.AddToProto("setRotation", GroupSetRotation);
     GroupJSObj.AddAccessor("x",   GroupXGetter,    GroupXSetter);
     GroupJSObj.AddAccessor("y",   GroupYGetter,    GroupYSetter);
+    GroupJSObj.AddAccessor("angle", GroupAngleGetter,  GroupAngleSetter);
+    GroupJSObj.AddAccessor("rotX", GroupRotXGetter,  GroupRotXSetter);
+    GroupJSObj.AddAccessor("rotY", GroupRotYGetter,  GroupRotYSetter);
     GroupJSObj.AddToProto("setX", GroupSetX< MemberSelf<Galileo::Group> >);
     GroupJSObj.AddToProto("setY", GroupSetY< MemberSelf<Galileo::Group> >);
 
@@ -675,6 +729,19 @@ Turbo::JSFunction GroupSetPosition(Turbo::JSArguments args){
     assert(mGroup!=nullptr);
 
     mGroup->SetOffset(args[0]->NumberValue(), args[1]->NumberValue());
+}
+
+Turbo::JSFunction GroupSetRotation(Turbo::JSArguments args){
+
+    const int sig[] = {Turbo::Number, Turbo::Number, Turbo::Number, 0};
+
+    if(!Turbo::CheckArg::CheckSig(args, 3, sig))
+      return;
+
+    Galileo::Group* mGroup = Turbo::GetMemberSelf <Galileo::Group> (args);
+    assert(mGroup!=nullptr);
+
+    mGroup->SetRotationAttr(args[0]->NumberValue(), args[1]->NumberValue(), args[2]->NumberValue());
 }
 
 /////

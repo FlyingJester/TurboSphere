@@ -55,6 +55,7 @@ Turbo::JSFunction GroupCtor(Turbo::JSArguments args);
 
 Turbo::JSFunction DrawGroup(Turbo::JSArguments args);
 Turbo::JSFunction GroupSetPosition(Turbo::JSArguments args);
+Turbo::JSFunction GroupSetRotation(Turbo::JSArguments args);
 
 /////
 // Middle School

@@ -13,12 +13,6 @@
 #include <t5.h>
 #include <v8.h>
 #if defined _WIN32
-/*
-    #include "SDL2/SDL.h"
-    #include "SDL2/SDL_ttf.h"
-    #include "SDL2/SDL_image.h"
-    #include "SDL2/SDL_thread.h"
-*/
 
     //File handling generalization.
     #include <windows.h>
@@ -31,12 +25,6 @@
 
 #ifndef _WIN32
 
-/*
-    #include <SDL2/SDL.h>
-    #include <SDL2/SDL_ttf.h>
-    #include <SDL2/SDL_image.h>
-    #include <SDL2/SDL_thread.h>
-*/
     //File handling generalization.
     #include <dirent.h>
 

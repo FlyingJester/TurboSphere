@@ -11,6 +11,9 @@
 
 namespace Sapphire {
 
+namespace Script{
+}
+
 namespace GL{
 
     void Image::SetTexParameters(){

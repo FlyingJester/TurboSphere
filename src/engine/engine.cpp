@@ -392,19 +392,34 @@ void Delay(const v8::FunctionCallbackInfo<v8::Value> &args){
 
 	#ifdef _WIN32
 
-    #elif defined OS_X
+	SDL_Delay(t);
+
+  #else
+    static uint32_t max = 0;
+
+    if(t>max){
     //If we are delaying for longer than the longest time it ever took to call v8::V8::LowMemoryNotification(),
     //Then we will call it and subtract the time difference it made from the ms to sleep for.
-    static uint32_t max = 0;
-    if(t>max){
 
+    #ifdef OS_X
         uint32_t ot = TS_OSX_GetTime();
+    #else
+        clock_gettime(CLOCK_MONOTONIC, &s);
+        uint32_t ot = (s.tv_sec*1000)+(s.tv_nsec/1000000);
+    #endif
 
-        while(!v8::V8::IdleNotification(1000)){}
+    // Sapphire broke this. Well, actually, Sapphire is broken, and this shows it.
+        //while(!v8::V8::IdleNotification(1000)){}
 
-        v8::V8::LowMemoryNotification();
+        //v8::V8::LowMemoryNotification();
 
+    #ifdef OS_X
         ot = TS_OSX_GetTime()-ot;
+    #else
+        clock_gettime(CLOCK_MONOTONIC, &s);
+        ot = (s.tv_sec*1000)+(s.tv_nsec/1000000)-ot;
+    #endif
+
         t-=ot;
         if(ot>max){
             max=ot;
@@ -413,7 +428,9 @@ void Delay(const v8::FunctionCallbackInfo<v8::Value> &args){
     }
 
     TS_SLEEP(t);
-    #else
+  //  #else
+
+  /*
     //If we are delaying for longer than the longest time it ever took to call v8::V8::LowMemoryNotification(),
     //Then we will call it and subtract the time difference it made from the ms to sleep for.
     static uint32_t max = 0;
@@ -439,6 +456,7 @@ void Delay(const v8::FunctionCallbackInfo<v8::Value> &args){
     }
 
         TS_SLEEP(t);
+        */
     #endif  //_WIN32
 
 	//SDL_Delay(t);
@@ -610,6 +628,7 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
         TS_OverrideConfig(TS_conf, overrideConf);
     }
 
+    v8::V8::AddMessageListener(TS_MessageCallback);
     loadAllPlugins();
 
     printf(ENGINE " Info: All Plugins initialized.\n");
@@ -685,8 +704,6 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
 	context->Global()->Set(v8::String::NewFromUtf8(iso, "GarbageCollect"), E_GarbageCollecttempl->GetFunction());
 
     //v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
-
-    v8::V8::AddMessageListener(TS_MessageCallback);
 
 	ExecuteString(v8::String::NewFromUtf8(iso, ScriptFileText.c_str()), v8::String::NewFromUtf8(iso, script_name), iso, true);
 	//printf(ENGINE " Info: Running Script.\n");

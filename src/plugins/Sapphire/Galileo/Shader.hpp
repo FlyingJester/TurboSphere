@@ -44,6 +44,8 @@ public:
   static const std::string ShaderTextureUVName;
   static const std::string ShaderColorName;
   static const std::string ShaderOffsetUniformName;
+  static const std::string ShaderRotOffsetUniformName;
+  static const std::string ShaderAngleUniformName;
   static const std::string ShaderScreenSizeUniformName;
   typedef std::map<std::string, int> GLSLValueMap;
 protected:

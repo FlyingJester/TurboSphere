@@ -19,8 +19,8 @@ protected:
     std::list<GL::Operation *> mShapes;
     Shader *mShader;
     float mOffset[2];
-    float mRotationOffset[2];
-    float mRotationAngle;
+    float mRotOffset[2];
+    float mAngle;
 public:
 
     Group();
@@ -57,15 +57,44 @@ public:
         return mOffset[eOffset::y];
     }
 
+    template<typename T>
+    void SetRotX(T _x){
+        mRotOffset[eOffset::x] = _x;
+    }
+    template<typename T>
+    void SetRotY(T _y){
+        mRotOffset[eOffset::y] = _y;
+    }
+
+    template<typename T = float>
+    T GetRotX() const{
+        return mRotOffset[eOffset::x];
+    }
+    template<typename T = float>
+    T GetRotY() const{
+        return mRotOffset[eOffset::y];
+    }
 
     template<typename T>
     void SetRotationOffset(T _x, T _y){
-        mRotationOffset[eOffset::x] = _x;
-        mRotationOffset[eOffset::y] = _y;
+        mRotOffset[eOffset::x] = _x;
+        mRotOffset[eOffset::y] = _y;
     }
+
     template<typename T>
     void SetRotation(T _a){
-        mRotationAngle = _a;
+        mAngle = _a;
+    }
+
+    template<typename T>
+    T GetRotation(void) const{
+        return mAngle;
+    }
+
+    template<typename T, typename U>
+    inline void SetRotationAttr(T _a, U _x, U _y){
+        SetRotation<T>(_a);
+        SetRotationOffset<U>(_x, _y);
     }
 
     virtual inline iterator begin(){

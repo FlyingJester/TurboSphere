@@ -32,6 +32,8 @@ namespace Sapphire {
     #version 410\n\
     \
     uniform vec2 TS_Offset;\n\
+    uniform vec2 TS_RotOffset;\n\
+    uniform float TS_RotAngle;\n\
     \
     in vec2 TS_TextureUV;\n\
     in vec4 TS_Position;\n\
@@ -44,9 +46,28 @@ namespace Sapphire {
     \
     void main (void)\n\
     {\n\
+        // Passthroughs.\n\
         tex_v = TS_TextureUV;\n\
         color_v = TS_Color;\n\
-        vec4 TS_NewPos = TS_Position*2.0;\n\
+        \n\
+        // Calculate the rotation.\n\
+        vec4 TS_NewPosition = TS_Position - vec4(TS_RotOffset, 0.0, 0.0);\n\
+        \n\
+        //UGLY! We should really be precomputing this in the Shape.\n\
+        if(TS_NewPosition.x==0){\n\
+          TS_NewPosition.x = 1.0;\n\
+        }\n\
+        \n\
+        float TS_Angle = atan(TS_NewPosition.y/TS_NewPosition.x);\n\
+        float TS_Distance  = length(TS_NewPosition.xy);\n\
+        TS_Angle += TS_RotAngle;\n\
+        \n\
+        TS_NewPosition.x = cos(TS_Angle)*TS_Distance;\n\
+        TS_NewPosition.y = sin(TS_Angle)*TS_Distance;\n\
+        TS_NewPosition += vec4(TS_RotOffset, 0.0, 0.0);\n\
+        \n\
+        // Apply translation and normalize.\n\
+        vec4 TS_NewPos = TS_NewPosition*2.0;\n\
         gl_Position = (vec4(TS_Offset.x*2.0, TS_Offset.y*(-2.0), 0.0, 0.0) +(vec4(TS_NewPos.x - TS_ScreenSize.x, -TS_NewPos.y + (TS_ScreenSize.y), TS_Position.ba)))/vec4(TS_ScreenSize, 1.0, 1.0);\n\
     }\
     ";
@@ -198,6 +219,8 @@ const std::string Shader::ShaderPositionName = "TS_Position";
 const std::string Shader::ShaderTextureUVName= "TS_TextureUV";
 const std::string Shader::ShaderColorName    = "TS_Color";
 const std::string Shader::ShaderOffsetUniformName    = "TS_Offset";
+const std::string Shader::ShaderRotOffsetUniformName    = "TS_RotOffset";
+const std::string Shader::ShaderAngleUniformName    = "TS_RotAngle";
 const std::string Shader::ShaderScreenSizeUniformName    = "TS_ScreenSize";
 __thread std::vector<int> *Shader::EnabledAttributes = nullptr;
 __thread Shader *Shader::BoundShader = nullptr;
@@ -213,6 +236,8 @@ Shader *Shader::GetDefaultShader(void){
         lShader->AddAttribute(ShaderTextureUVName);
         lShader->AddAttribute(ShaderColorName);
         lShader->AddUniform(ShaderOffsetUniformName);
+        lShader->AddUniform(ShaderRotOffsetUniformName);
+        lShader->AddUniform(ShaderAngleUniformName);
 
         return lShader;
     }
@@ -228,6 +253,8 @@ Shader::Shader(int aProgram)
     glUseProgram(mProgram);
     // Add the default uniforms and attribs, if the shader defines them.
     AddUniform(ShaderOffsetUniformName);
+    AddUniform(ShaderRotOffsetUniformName);
+    AddUniform(ShaderAngleUniformName);
     AddUniform(ShaderScreenSizeUniformName);
     AddAttribute(ShaderPositionName);
     AddAttribute(ShaderTextureUVName);

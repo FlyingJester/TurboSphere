@@ -168,25 +168,24 @@ namespace Turbo{
     }
 
     enum JSType{Int = 1, Uint, String, Number, Bool, Array, Object};
-/*
-    class JSAccessor{
-    public:
-        JSString name;
-        void (*Getter)(JSAccessorProperty, JSAccessorInfo);
-        void (*Setter)(JSAccessorProperty, JSValue, JSAccessorInfo);
-    };
-*/
+
     typedef std::tuple<const char *, v8::AccessorGetterCallback, v8::AccessorSetterCallback> JSAccessor;
 
     template <class T>
     void Finalizer(const v8::WeakCallbackData<v8::Object, T> &args) {
-        delete args.GetParameter();
-        args.GetValue().Clear();
+        assert(false);
+        assert(args.GetValue()->GetAlignedPointerFromInternalField(0) == args.GetParemter());
+        delete args.GetParemter();
+        //args.GetValue().Clear();
     }
     template <class T, class F>
     void FinalizerFunctional(const v8::WeakCallbackData<v8::Object, T> &args) {
+
+        //assert(false);
+
         F f;
-        f(args.GetParameter());
+        //assert(args.GetValue()->GetAlignedPointerFromInternalField(0) == args.GetParemter());
+        f(args.GetParemter());
         args.GetValue().Clear();
     }
 
@@ -245,7 +244,7 @@ namespace Turbo{
         }
 
         void AddAccessor(const char *name, v8::AccessorGetterCallback Getter, v8::AccessorSetterCallback Setter){
-            printf("Setting accessor of %s on obj ID %i\n", name, ID);
+            printf("Setting accessor of %s on obj ID %llu\n", name, ID);
             InstanceTemplate->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name), Getter, Setter);
             Prototype->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name), Getter, Setter);
             accessors.push_back(JSAccessor(name, Getter, Setter));
@@ -406,8 +405,7 @@ namespace Turbo{
     template<class T, class A> inline void WrapObject(A args, const JSObj<T> &JSo, T *obj){
 
         //
-        auto iso = v8::Isolate::GetCurrent();
-
+        auto iso = args.GetIsolate();
 
         /////
         // Create a JS object that holds an ID number and a pointer to the object
