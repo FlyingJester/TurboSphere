@@ -44,31 +44,32 @@ namespace Sapphire {
     \
     uniform vec2 TS_ScreenSize;\n\
     \
-    void main (void)\n\
-    {\n\
+    vec2 TS_ApplyRotation(vec2 A_position, vec2 A_offset, float A_angle){\n\
+        vec2 L_offset = (A_position - A_offset);\n\
+        if(L_offset.x==0){\n\
+            L_offset.x=-0.1;\n\
+        }\n\
+        \
+        float L_modangle = atan(L_offset.y, L_offset.x)+A_angle;\n\
+        L_offset *= L_offset;\n\
+        float L_distance = sqrt(L_offset.x+L_offset.y);\n\
+        \
+        return (A_offset+(vec2(cos(L_modangle), sin(L_modangle))*L_distance));\n\
+        \
+    }\n\
+    \n\
+    void main (void){\n\
         // Passthroughs.\n\
         tex_v = TS_TextureUV;\n\
         color_v = TS_Color;\n\
         \n\
         // Calculate the rotation.\n\
-        vec4 TS_NewPosition = TS_Position - vec4(TS_RotOffset, 0.0, 0.0);\n\
-        \n\
-        //UGLY! We should really be precomputing this in the Shape.\n\
-        if(TS_NewPosition.x==0){\n\
-          TS_NewPosition.x = 1.0;\n\
-        }\n\
-        \n\
-        float TS_Angle = atan(TS_NewPosition.y/TS_NewPosition.x);\n\
-        float TS_Distance  = length(TS_NewPosition.xy);\n\
-        TS_Angle += TS_RotAngle;\n\
-        \n\
-        TS_NewPosition.x = cos(TS_Angle)*TS_Distance;\n\
-        TS_NewPosition.y = sin(TS_Angle)*TS_Distance;\n\
-        TS_NewPosition += vec4(TS_RotOffset, 0.0, 0.0);\n\
+        vec4 TS_NewPosition = TS_Position;\n\
+        TS_NewPosition.xy = TS_ApplyRotation(TS_Position.xy, TS_RotOffset, TS_RotAngle);\
         \n\
         // Apply translation and normalize.\n\
         vec4 TS_NewPos = TS_NewPosition*2.0;\n\
-        gl_Position = (vec4(TS_Offset.x*2.0, TS_Offset.y*(-2.0), 0.0, 0.0) +(vec4(TS_NewPos.x - TS_ScreenSize.x, -TS_NewPos.y + (TS_ScreenSize.y), TS_Position.ba)))/vec4(TS_ScreenSize, 1.0, 1.0);\n\
+        gl_Position = (vec4(TS_Offset.x*2.0, TS_Offset.y*(-2.0), 0.0, 0.0) +(vec4(TS_NewPos.x - TS_ScreenSize.x, -TS_NewPos.y + (TS_ScreenSize.y), TS_NewPosition.ba)))/vec4(TS_ScreenSize, 1.0, 1.0);\n\
     }\
     ";
   }

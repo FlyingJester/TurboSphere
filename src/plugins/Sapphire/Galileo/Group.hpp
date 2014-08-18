@@ -92,7 +92,7 @@ public:
     }
 
     template<typename T, typename U>
-    inline void SetRotationAttr(T _a, U _x, U _y){
+    inline void SetRotationAttr(U _x, U _y, T _a){
         SetRotation<T>(_a);
         SetRotationOffset<U>(_x, _y);
     }
