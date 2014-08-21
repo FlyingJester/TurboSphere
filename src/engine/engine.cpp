@@ -367,8 +367,22 @@ void RequireScript(const v8::FunctionCallbackInfo<v8::Value> &args){
     return;
 }
 
-void GetTime(const v8::FunctionCallbackInfo<v8::Value> &args)
-{
+// Gets Time down to Microsecond accuracy.
+void GetSeconds(const v8::FunctionCallbackInfo<v8::Value> &args){
+    #ifdef _WIN32
+    args.GetReturnValue().Set(v8::Number::New(((double)timeGetTime()))/1000.0);
+    #elif defined OS_X
+    args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), ((double)TS_OSX_GetTime(TS_OSX_TimeUnit::TS_OSX_Nanosecond))/1000000000.0));
+    #else
+    struct timespec s;
+
+    clock_gettime(CLOCK_MONOTONIC, &s);
+
+    args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), ((double)((s.tv_sec*1000)+(s.tv_nsec/1000000)))/1000.0));
+    #endif
+}
+
+void GetTime(const v8::FunctionCallbackInfo<v8::Value> &args){
 
     #ifdef _WIN32
 
@@ -522,12 +536,18 @@ void TS_MessageCallback(v8::Handle<v8::Message> message, v8::Handle<v8::Value> d
 
 }
 
-void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *overrideConf = NULL){
+void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *overrideConf){
 
     if(v8Flags!=NULL){
         printf("[Engine] Info: Using v8 flags %s\n", v8Flags);
         v8::V8::SetFlagsFromString(v8Flags, strlen(v8Flags));
     }
+    else{
+
+        printf("[Engine] Info: Using no v8 flags.\n");
+
+    }
+
     v8::ArrayBuffer::Allocator* allocator = new TS_ArrayBufferAllocator();
 
     v8::V8::SetArrayBufferAllocator(allocator);
@@ -665,6 +685,8 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
 
 	v8::Handle<v8::FunctionTemplate> E_GetTimetempl = v8::FunctionTemplate::New(iso, GetTime);
 
+	v8::Handle<v8::FunctionTemplate> E_GetSecondstempl = v8::FunctionTemplate::New(iso, GetSeconds);
+
 	v8::Handle<v8::FunctionTemplate> E_Delaytempl = v8::FunctionTemplate::New(iso, Delay);
 
 	v8::Handle<v8::FunctionTemplate> E_Exittempl = v8::FunctionTemplate::New(iso, ExitGame);
@@ -694,6 +716,8 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
 	context->Global()->Set(v8::String::NewFromUtf8(iso, "GetVersionString"), E_GetVersionStringtempl->GetFunction());
 
 	context->Global()->Set(v8::String::NewFromUtf8(iso, "GetTime"), E_GetTimetempl->GetFunction());
+
+	context->Global()->Set(v8::String::NewFromUtf8(iso, "GetSeconds"), E_GetSecondstempl->GetFunction());
 
 	context->Global()->Set(v8::String::NewFromUtf8(iso, "Delay"), E_Delaytempl->GetFunction());
 
@@ -808,7 +832,11 @@ int main
                 }
             }
         }*/
-        runGame("startup/", (v8args)?v8flags:NULL, &conf);
+        char *lv8args =TS_CMD_ProcessV8Options(argc, argv);
+        if(lv8args!=nullptr)
+          runGame("startup/", lv8args, &conf);
+        else
+          runGame("startup/", (v8args)?v8flags:NULL, &conf);
     }
 
     free(v8flags);

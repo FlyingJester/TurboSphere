@@ -109,18 +109,6 @@ int FlipScreen::Draw(){
 
     SDL_Window *w = SDL_GL_GetCurrentWindow();
 
-    if(sThrottled){
-        const long long lToSleep = -1000+MILLI_TO_MICRO((long long)AtomicGet(sLastFrame)) + AtomicGet(sInterval) - GetMicroTime();
-
-        printf(BRACKNAME "We are %lli microseconds (%lli milliseconds) from the next frame interval\n", lToSleep, MICRO_TO_MILLI(lToSleep));
-
-
-        AtomicSet(sLastFrame, MICRO_TO_MILLI(GetMicroTime()));
-        if(lToSleep>0)
-          SDL_Delay(MICRO_TO_MILLI(lToSleep));
-
-    }
-
     SDL_GL_MakeCurrent(w, SDL_GL_GetCurrentContext());
     SDL_GL_SwapWindow(w);
     glClear(GL_COLOR_BUFFER_BIT);

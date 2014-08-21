@@ -28,15 +28,20 @@ int numerate(bool reset){
 //}
 
 int GetKeyEvent(SDL_Event &aEvent){return aEvent.key.keysym.sym;}
-int GetClickEvent(SDL_Event &aEvent){return aEvent.button.button;}
+int GetClickEvent(SDL_Event &aEvent){return aEvent.button.button+1;}
+int GetWheelEvent(SDL_Event &aEvent){
+    return ((aEvent.wheel.y<<1)-1) + ((aEvent.wheel.x<<1)+1);
+}
 
 Turbo::JSCallback ScriptFunctionList[] = {
     IsKeyPressed,
     IsAnyKeyPressed,
     GetEvent<(int)SDL_KEYDOWN, GetKeyEvent>,
     GetEvent<(int)SDL_MOUSEBUTTONDOWN, GetClickEvent>,
+    GetEvent<(int)SDL_MOUSEWHEEL, GetWheelEvent>,
     AreEventsLeft<(int)SDL_KEYDOWN>,
     AreEventsLeft<(int)SDL_MOUSEBUTTONDOWN>,
+    AreEventsLeft<(int)SDL_MOUSEWHEEL>,
     GetMouseX,
     GetMouseY,
     IsMouseButtonPressed,
@@ -53,8 +58,10 @@ Turbo::JSFunctionName ScriptFunctionNameList[] = {
     "IsAnyKeyPressed",
     "GetKey",
     "GetClick",
+    "GetMouseWheelEvent",
     "AreKeysLeft",
     "AreClicksLeft",
+    "GetNumMouseWheelEvents",
     "GetMouseX",
     "GetMouseY",
     "IsMouseButtonPressed",
@@ -334,8 +341,6 @@ Turbo::JSValueArray GetVariables(void){
 	vars[numerate(false)]=v8::Number::New(iso, SDLK_EURO);
 
 //Mouse Button Constants
-	vars[numerate(false)]=v8::Number::New(iso, 0);
-
 	vars[numerate(false)]=v8::Number::New(iso, 1);
 
 	vars[numerate(false)]=v8::Number::New(iso, 2);
@@ -345,6 +350,18 @@ Turbo::JSValueArray GetVariables(void){
 	vars[numerate(false)]=v8::Number::New(iso, 4);
 
 	vars[numerate(false)]=v8::Number::New(iso, 5);
+
+	vars[numerate(false)]=v8::Number::New(iso, 6);
+
+// Scroll Wheel Constants
+
+	vars[numerate(false)]=v8::Number::New(iso, 1);
+
+	vars[numerate(false)]=v8::Number::New(iso, 2);
+
+	vars[numerate(false)]=v8::Number::New(iso, 3);
+
+	vars[numerate(false)]=v8::Number::New(iso, 4);
 
 	return vars;
 
@@ -575,18 +592,28 @@ Turbo::JSVariableName *GetVariableNames(void){
 
 	varnames[numerate(false)]=(char*)"KEY_EURO";
 
-    //Mouse
-  varnames[numerate(false)]=(char*)"MOUSE_LEFT"; //0
+   // Mouse
+  varnames[numerate(false)]=(char*)"MOUSE_LEFT"; //1
 
-	varnames[numerate(false)]=(char*)"MOUSE_MIDDLE"; //1
+	varnames[numerate(false)]=(char*)"MOUSE_MIDDLE"; //2
 
-	varnames[numerate(false)]=(char*)"MOUSE_RIGHT"; //2
+	varnames[numerate(false)]=(char*)"MOUSE_RIGHT"; //3
 
-	varnames[numerate(false)]=(char*)"MOUSE_SUP"; //3
+	varnames[numerate(false)]=(char*)"MOUSE_SUP"; //4
 
-	varnames[numerate(false)]=(char*)"MOUSE_SDOWN"; //4
+	varnames[numerate(false)]=(char*)"MOUSE_SDOWN"; //5
 
-	varnames[numerate(false)]=(char*)"MOUSE_SDIS"; //5
+	varnames[numerate(false)]=(char*)"MOUSE_SDIS"; //6
+
+   // Scroll Wheel Events
+
+  varnames[numerate(false)]=(char*)"MOUSE_WHEEL_UP"; //1
+
+	varnames[numerate(false)]=(char*)"MOUSE_WHEEL_DOWN"; //2
+
+  varnames[numerate(false)]=(char*)"MOUSE_WHEEL_LEFT"; //3
+
+	varnames[numerate(false)]=(char*)"MOUSE_WHEEL_RIGHT"; //4
 
     return varnames;
 

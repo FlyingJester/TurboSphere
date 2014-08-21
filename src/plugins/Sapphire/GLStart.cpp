@@ -2,6 +2,13 @@
 #include <cassert>
 #include "Sapphire.hpp"
 
+#ifdef OS_X
+
+#include "RetinaCheck.h"
+#include <SDL2/SDL_syswm.h>
+
+#endif
+
 using Sapphire::Galileo::GL::Operation;
 
 namespace Sapphire{
@@ -17,8 +24,6 @@ ThreadKitP &GetSystemThreadkit(void){
 void EngineFlipScreenDelay(){
 
     while(AtomicGet(GetSystemThreadkit()->RenderFrame) + 32 < AtomicGet(GetSystemThreadkit()->EngineFrame)){
-
-        SDL_Delay(0);
     }
 
 
@@ -95,6 +100,44 @@ namespace RenderThread{
         glDisable(GL_DEPTH_TEST);
 
         //glEnable(GL_TEXTURE_2D);
+        {
+            SDL_SysWMinfo info;
+            SDL_GetWindowWMInfo(lKit->mWindow->screen, &info);
+            const char *subsystem = "?";
+            switch(info.subsystem) {
+                case SDL_SYSWM_UNKNOWN:   subsystem = "Unkown";  break;
+                case SDL_SYSWM_WINDOWS:   subsystem = "Windows";  break;
+                case SDL_SYSWM_X11:       subsystem = "X11";        break;
+                case SDL_SYSWM_DIRECTFB:  subsystem = "DirectFB";               break;
+                case SDL_SYSWM_COCOA:     subsystem = "Cocoa";             break;
+                case SDL_SYSWM_UIKIT:     subsystem = "UIKit";                  break;
+                case SDL_SYSWM_WAYLAND:   subsystem = "Wayland";                break;
+                case SDL_SYSWM_MIR:       subsystem = "Mir";                    break;
+            }
+                printf(BRACKNAME " Info: Running on subsystem %s.\n", subsystem);
+
+        }
+
+
+        #ifdef OS_X
+
+        {
+            SDL_SysWMinfo info;
+            SDL_GetWindowWMInfo(lKit->mWindow->screen, &info);
+            if(info.subsystem==SDL_SYSWM_COCOA){
+                float _f = TS_GetScalingFactor(info.info.cocoa.window);
+                float _m = 1.0f;
+                glGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, &_m);
+
+                printf(BRACKNAME " Info: Running on Cocoa. Scaling factor of main window is %f. Maximum OpenGL raster scaling reported is %f.\n", _f, _m);
+
+
+
+                glLineWidth(fmin(_f, _m));
+            }
+        }
+        #endif
+
 
         SDL_GL_SetSwapInterval(0);
 
@@ -149,7 +192,6 @@ namespace RenderThread{
         lKit->DidDie      = CreateAtomic(0);
 
         lKit->Thread =CreateThread(RenderThread, lKit);
-
     }
 
     void StopThread(){

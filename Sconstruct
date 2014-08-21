@@ -3,6 +3,11 @@ import sys
 
 defaultenv = Environment(ENV = os.environ)
 
+explicit_cc = ARGUMENTS.get('CC', '')
+
+if explicit_cc:
+  defaultenv.Replace(CC=explicit_cc)
+
 msvc_ccflags = "/O2 /EHsc /Zi"
 msvc_cflags = ""
 msvc_cxxflags = ""
