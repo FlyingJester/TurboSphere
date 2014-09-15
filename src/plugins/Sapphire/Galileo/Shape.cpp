@@ -3,7 +3,9 @@
 
 #ifdef OS_X
 #include <OpenGL/gl3.h>
-#endif // OS_X
+#else
+#include <GL/gl.h>
+#endif
 
 #include "../Sapphire.hpp"
 
@@ -37,7 +39,6 @@ template<typename T>
 inline float lNormalizeChannel(T aIn){float f = aIn; return f/255.0f;}
 
 void Drawable::BindBuffer(){
-    //glBindBuffer(GL_ARRAY_BUFFER, mBuffer);
 }
 void Drawable::BindArray(){
     glBindVertexArray(mVertexArray);
@@ -53,6 +54,7 @@ Shape::Shape(std::vector<Vertex> &aVertices, Image *aImage)
 
 void Shape::FillGL(void){
     assert(sizeof(float)*8 == sizeof(GL::VertexU));
+    assert(sizeof(float)==4);
 
     // Buffers
     float *Vertex  = (float*)alloca(sizeof(float)*mVertices.size()*2);
@@ -74,13 +76,13 @@ void Shape::FillGL(void){
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, mBuffer[0]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*mVertices.size()*2,
+    glBufferData(GL_ARRAY_BUFFER, 4*mVertices.size()*2,
                  Vertex, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, mBuffer[1]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*mVertices.size()*2,
+    glBufferData(GL_ARRAY_BUFFER, 4*mVertices.size()*2,
                  Texcoord, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, mBuffer[2]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*mVertices.size()*4,
+    glBufferData(GL_ARRAY_BUFFER, 4*mVertices.size()*4,
                  Color, GL_STATIC_DRAW);
 
 }
@@ -149,7 +151,7 @@ int Shape::Draw(){
     GLenum lmode = GL_TRIANGLE_FAN;
     if(mVertices.size()==2)
       lmode = GL_LINE_STRIP;
-    if(mVertices.size()==1)
+    else if(mVertices.size()==1)
       lmode = GL_POINTS;
 
     glDrawArrays(lmode, 0, mVertices.size());

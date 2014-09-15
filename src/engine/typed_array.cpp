@@ -1,17 +1,23 @@
 #include "typed_array.h"
 #include <cstdlib>
+#include <v8-platform.h>
+#include <TSPR/concurrent_queue.h>
 
-void * TS_ArrayBufferAllocator::Allocate(size_t length){
+namespace Turbo {
+
+void * ArrayBufferAllocator::Allocate(size_t length){
 	return malloc(length);
 }
-void TS_ArrayBufferAllocator::Free(void *data){
+void ArrayBufferAllocator::Free(void *data){
 	free(data);
 }
 
-void *TS_ArrayBufferAllocator::AllocateUninitialized(size_t length){
+void *ArrayBufferAllocator::AllocateUninitialized(size_t length){
     return calloc(length, 1);
 }
 
-void TS_ArrayBufferAllocator::Free(void *data, size_t unused){
+void ArrayBufferAllocator::Free(void *data, size_t unused){
     free(data);
+}
+
 }

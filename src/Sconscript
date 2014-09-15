@@ -62,6 +62,7 @@ t5dir = os.path.join(os.getcwd(), "t5/t5")
 t5 = SConscript(dirs = [t5dir], exports = full_export_list + " component builddir")
 
 inst_t5 = Install(os.path.join(builddir, "include"), [glob.glob(os.path.join(t5dir, "*.h"))])
+inst_t5 = Install(os.path.join(builddir, "include"), [glob.glob(os.path.join(t5dir, "*.h"))])
 
 Depends(t5, inst_t5)
 

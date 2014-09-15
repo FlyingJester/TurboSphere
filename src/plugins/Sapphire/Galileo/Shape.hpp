@@ -33,6 +33,7 @@ namespace GL {
 
   protected:
       Shader *mShader;
+      bool mDirty;
   public:
 
       virtual ~Operation();
@@ -46,10 +47,16 @@ namespace GL {
 
       virtual void SetShader(Shader *aShader){}
 
-      bool mDirty;
+      inline void MarkDirty(){mDirty = true;}
+      inline bool IsDirty(){return mDirty;}
+
   };
 
   class Drawable : public Operation {
+  public:
+    typedef std::vector<Vertex>::const_iterator const_iterator;
+    typedef std::vector<Vertex>::const_reverse_iterator const_reverse_iterator;
+
   protected:
 
       void InitGL(void); //Initializes the OpenGL components.
@@ -102,6 +109,36 @@ namespace GL {
       virtual void BindBuffer();
       virtual void BindArray();
       virtual void Bind() {BindBuffer(); BindArray(); mImage->Bind();}
+
+      virtual inline const_iterator begin() const{
+          return mVertices.begin();
+      }
+
+      virtual inline const_iterator end() const{
+          return mVertices.end();
+      }
+
+      virtual inline const_reverse_iterator rbegin() const{
+          return mVertices.rbegin();
+      }
+
+      virtual inline const_reverse_iterator rend() const{
+          return mVertices.rend();
+      }
+
+      virtual inline size_t size() const{
+          return mVertices.size();
+      }
+
+      virtual inline void push(const Vertex &aToPush){
+          mVertices.push_back(aToPush);
+          MarkDirty();
+      }
+
+      inline bool empty(void) const {
+          return mVertices.empty();
+      }
+
   };
 }
 

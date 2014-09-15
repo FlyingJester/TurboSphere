@@ -2,11 +2,6 @@
 #include <cstdio>
 
 #include <cassert>
-#ifdef OS_X
-#include <OpenGL/gl3.h>
-#else
-#include <GL/gl.h>
-#endif // OS_X
 
 #include <screen.h>
 

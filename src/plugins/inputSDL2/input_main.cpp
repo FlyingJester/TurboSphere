@@ -73,7 +73,7 @@ Turbo::JSFunctionName ScriptFunctionNameList[] = {
     "GetJoystickAxis"
 };
 
-const char * Init(void){
+const char * Init(int ID){
 
     iso = v8::Isolate::GetCurrent();
 
@@ -84,13 +84,10 @@ const char * Init(void){
     else if(SDL_WasInit(SDL_INIT_JOYSTICK)==0){
         SDL_InitSubSystem(SDL_INIT_JOYSTICK);
     }
-    //SDL_EnableUNICODE(SDL_ENABLE);
-//    SDL_EventState(SDL_KEYUP, SDL_IGNORE);
+
     SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
-    SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_IGNORE);
-    SDL_EventState(SDL_MOUSEBUTTONUP, SDL_IGNORE);
     SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
-    //SDL_EventState(SDL_VIDEOEXPOSE, SDL_IGNORE);
+
     InitJoystick();
 
     printf("[" PLUGINNAME "] Info: Event state setup succeeded.\n");

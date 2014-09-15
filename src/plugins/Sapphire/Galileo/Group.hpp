@@ -5,6 +5,7 @@
 #include <TSPR/concurrent_queue.h>
 #include "Shape.hpp"
 #include "Shader.hpp"
+#include <memory>
 
 namespace Sapphire{
 namespace Galileo {
@@ -12,15 +13,24 @@ namespace Galileo {
 class Group : public GL::Operation {
 public:
     typedef std::list<GL::Operation *>::iterator iterator;
+    typedef std::list<GL::Operation *>::const_iterator const_iterator;
     typedef std::list<GL::Operation *>::reverse_iterator reverse_iterator;
+    typedef std::list<GL::Operation *>::const_reverse_iterator const_reverse_iterator;
 
 protected:
     enum eOffset {x, y, d};
+
     std::list<GL::Operation *> mShapes;
-    Shader *mShader;
+
+    std::shared_ptr<Shader> mShader;
     float mOffset[2];
     float mRotOffset[2];
     float mAngle;
+
+    int ShaderOffsetUniformName, ShaderRotOffsetUniformName, ShaderAngleUniformName;
+
+    int mLastDrawnShader;
+
 public:
 
     Group();
@@ -105,6 +115,14 @@ public:
         return mShapes.end();
     }
 
+    virtual inline const_iterator begin() const{
+        return mShapes.begin();
+    }
+
+    virtual inline const_iterator end() const{
+        return mShapes.end();
+    }
+
     virtual inline reverse_iterator rbegin(){
         return mShapes.rbegin();
     }
@@ -113,20 +131,32 @@ public:
         return mShapes.rend();
     }
 
-    virtual inline size_t size(){
+    virtual inline const_reverse_iterator rbegin() const{
+        return mShapes.rbegin();
+    }
+
+    virtual inline const_reverse_iterator rend() const{
+        return mShapes.rend();
+    }
+
+    virtual inline size_t size() const{
         return mShapes.size();
     }
 
     virtual inline void push(GL::Operation *aToPush){
         mShapes.push_back(aToPush);
-        aToPush->SetShader(mShader);
+        aToPush->SetShader(mShader.get());
+    }
+
+    inline bool empty(void) const {
+        return mShapes.empty();
     }
 
     virtual int Draw(void);
     virtual int DrawAll(concurrent_queue<GL::Operation *> *aSendTo);
     virtual int DrawRange(concurrent_queue<GL::Operation *> *aSendTo, iterator aFrom, iterator aTo);
 
-    void SetShader(Shader *aShader){mShader = aShader;}
+    void SetShader(Shader *aShader){mShader = std::shared_ptr<Shader>(aShader);}
 
 };
 

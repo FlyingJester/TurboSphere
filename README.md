@@ -10,11 +10,11 @@ TurboSphere uses plugins for all its functionality.
 
 TurboSphere uses [SDL2](http://www.libsdl.org/) and [Google's V8](http://code.google.com/p/v8/). This combination allows for simple or complex games to be created easily using JavaScript.
 
-TurboSphere also uses the T5 key/value file reading library, and can optionally use AMD's libm instead of the system libm.
+TurboSphere also uses the T5 file I/O library.
 
 Want to ask a question? TurboSphere is supported on the [Sphere forums](http://forums.spheredev.org/). Be sure to mention you are using TurboSphere, as the original Sphere is also supported there.
 
-For building instructions, see the docs/INSTALL files. The Linux file includes instructions for getting and building the 
+For building instructions, see the docs/INSTALL files. The Linux file includes instructions for getting and building the
 right version of V8. Scons is the only current build system used for TurboSphere.
 
 Installation
@@ -33,38 +33,34 @@ Compiling
 * Bass, V8, and SDL2. More on how to get these later.
 * Windows or a Unix-based OS.
 * Windows or X11.
-* OpenGL 2.1 or greater
+* OpenGL 3.2 or greater
 * Windows DirectSound, ALSA, or Mac OS X.
 
 ####Verified Compilers
 
 TurboSphere is known and tested to compile using the following compilers:
 
-* GCC 4.6-4.8 on Linux
-* MSVC 2010
+* GCC 4.8
 * Windows SDK 7.1 64-bit
+* Clang 3.1
 
 It is suspected, but unverified or not tested to work on the following compilers:
 
-* GCC 4.3-4.5 on Linux
-* GCC 4.6-4.8 on OS X
-* Android NDK 64-bit
+* GCC 4.3-4.7 on Linux
+* GCC 4.6-4.7 on OS X
 * MSVC 2008
+* MSVC 2010
 * MSVC 2013
 
 In addition, it is theoretically possible, but completely untested to work on the following compilers (here be dragons!):
 
-* LLVM+Clang 3.1 on OS X and Linux
 * MingW
+* Android NDK 64-bit
 
 Notes:
 MingW is known to compile Google V8, but seems unable to compile it as a shared library. It also has some issues the plugin loading code.
 
-Clang is verified to compile T5. Nothing else has been tested with it.
-
-TurboSphere has been compiled using GCC 4.6 on OS X in the past (ca. TS 0.2.1), but was extremely buggy.
-
-Android-specific and OpenGL ES-specific code exists in TurboSphere, although actually testing an Android build would require the Android Emulator and more knowledge of Java than I have. I have compiled a majority of the engine and plugin code, but was stopped when I needed to compile against OpenGL ES, and needed an Android build of Bass. Bass, V8, and SDL2 are all known to work on Android ARM and Android x86. There's theoretically nothing stopping this from working.
+Android-specific and OpenGL ES-specific code previously existed in TurboSphere, although actually testing an Android build would require the Android Emulator and more knowledge of Java than I have. I have compiled a majority of the engine and plugin code, but was stopped when I needed to compile against OpenGL ES, and needed an Android build of Bass. Bass, V8, and SDL2 are all known to work on Android ARM and Android x86. There's theoretically nothing stopping this from working.
 
 ####How To Compile TurboSphere
 
@@ -85,9 +81,7 @@ Get SDL2 from [LibSDL.org](http://libsdl.org/). You can get SDL2_ttf [here](http
 
 V8 is the most troublesome component used by TurboSphere to get working. I would recommend tackling this first!
 
-To begin, you need to get a copy of V8. Specifically, starting with TurboSphere 0.3.1, a copy of V8 3.19. You can get it using subversion with the command `svn checkout http://v8.googlecode.com/svn/branches/3.19 v8`. You can also use the git repository for V8 to get a zipped copy of any release you want.
-
-If you are on OS X, GCC is the recommended compiler. TurboSphere is most thoroughly tested to compile using GCC.
+To begin, you need to get a copy of V8. Specifically, starting with TurboSphere 0.4.0, a copy of V8 3.24. It is recommended you get it using the git submodule included in the TurboSphere repo.  You can get it without git using subversion with the command `svn checkout http://v8.googlecode.com/svn/branches/3. v8`.
 
 On OS X or Linux (or anywhere `make` is supported), you can build V8 with the following commands:
 
@@ -127,42 +121,19 @@ Finally, to compile TurboSphere:
 
 On Windows, run:
 
-`scons --build_plugins=all buildplugins --install_libs=y libinstall --useamdlibm=n`
+`scons`
 
 On Linux, you will need to compile the engine and install the core TurboSphere libraries first.
 
-As root, run:
+As root, run `scons`. Then, you probably will want to compile the plugins (TurboSphere does little without them). As a normal user, run `scons`.
 
-`scons --install_libs=y confwrite`
-
-Then, you probably will want to compile the plugins (TurboSphere does little without them).
-
-As a normal user, run:
-
-`scons --build_plugins=all buildplugins`
-
-This will install the plugins and engine to bin/Release. You will probably need to run `ldconfig` after this, since the TurboSphere core libraries are installed to sub-directory of the standard library location (to make it easier to wipe out TurboSphere if you don't want it around anymore).
+This will install the plugins and engine to the TurboSphere root's bin directory. You will probably need to run `ldconfig` after this, since the TurboSphere core libraries are installed to sub-directory of the standard library location (to make it easier to wipe out TurboSphere if you don't want it around anymore).
 
 To use TurboSphere, just navigate to bin/Release and try `./turbosphere`. It _should_ run the test script, which demonstrates some of its abilities. If it crashes be sure to let us know!
 
 ####Things to Note
 
-* On Windows, always append `--useamdlibm=n` to `scons`.
 * Remember that bassmidi goes in the same directory as TurboSphere's executable on Linux, unlike the other libraries.
-
-####Using AMD LibM
-
-Firstly, you don't need to recompile TurboSphere to use AMD's libm with it!
-
-Secondly, this only works on Linux and Windows, and only in 64-bit builds. That's just how AMD's libM is.
-
-Profiling TurboSphere has shown performance improvements of up to 6 percent on Linux 64-bit when using AMD's libm instead of the GNU libm. TurboSphere is designed to make it very simple to switch, even _after it has been compiled_.
-
-Just download AMDlibM from AMD (I can't link dirctly to the page for it...legal reasons), copy the shared library into the bin/Release folder, and start TurboSphere. You should get a message in the terminal saying that it is using amd libm. There you are, 1-5 percent performance improvement just by copying a file!
-
-Note that it seems to be legal to redistribute the shared library with TurboSphere, but this isn't done because I am not a laywer. I can't say for certain if it is legal for a copy of amdlibm to be distributed with TurboSphere. The license seems to allow all this, but I will not risk it.
-
-You probably will want to review the license for AMD's libM before distributing it with any game made for TurboSphere.
 
 Getting Help
 ------------
@@ -180,7 +151,7 @@ TurboSphere is dually licensed under the BSD 3-Clause License (aka Modified BSD 
 
 License Text:
 
-   Copyright (c) 2012-2013 Martin McDonough.
+   Copyright (c) 2012-2014 Martin McDonough.
 
    All rights reserved.
 
@@ -188,7 +159,7 @@ License Text:
 
    1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
 
-   2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.  
+   2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 
    3. The name of the author may not be used to endorse or promote products derived from this software without specific prior written permission.
 

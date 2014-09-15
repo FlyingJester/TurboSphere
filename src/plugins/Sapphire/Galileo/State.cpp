@@ -1,6 +1,12 @@
 #include "State.hpp"
 #include "../Sapphire.hpp"
+
+#ifdef OS_X
 #include <OpenGL/gl3.h>
+#else
+#include <GL/gl.h>
+#endif
+
 #include "../Thread/Atomic.hpp"
 
 /////

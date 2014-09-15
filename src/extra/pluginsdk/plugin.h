@@ -80,6 +80,7 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 /////
 // Containers for JSAccessors
 //
+
 #include <tuple>
 #include <forward_list>
 
@@ -89,7 +90,7 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 #include <cassert>
 
 ///////////////////////////////////////////////////////////////////////////////
-// New and shiny stuff
+// Plugin SDK
 
 namespace Turbo{
 
@@ -167,36 +168,39 @@ namespace Turbo{
         args.GetReturnValue().Set( v8ExceptionType(v8::String::NewFromUtf8(iso, err)));
     }
 
-    enum JSType{Int = 1, Uint, String, Number, Bool, Array, Object};
+    template<class T = JSArguments>
+    inline void SetError(T args, std::string err, v8::Local<v8::Value> (&v8ExceptionType)(v8::Handle<v8::String>) = v8::Exception::Error){
+        SetError(args, err.c_str(), v8ExceptionType);
+    }
+
+    enum JSType{Int = 1, Uint, String, Number, Bool, Array, TypedArray, ArrayBuffer, Object};
 
     typedef std::tuple<const char *, v8::AccessorGetterCallback, v8::AccessorSetterCallback> JSAccessor;
 
     template <class T>
     void Finalizer(const v8::WeakCallbackData<v8::Object, T> &args) {
-        assert(false);
-        assert(args.GetValue()->GetAlignedPointerFromInternalField(0) == args.GetParemter());
-        delete args.GetParemter();
-        //args.GetValue().Clear();
+        assert(args.GetValue()->GetAlignedPointerFromInternalField(0) == args.GetParameter());
+        delete args.GetParameter();
     }
     template <class T, class F>
     void FinalizerFunctional(const v8::WeakCallbackData<v8::Object, T> &args) {
-
-        //assert(false);
-
         F f;
-        //assert(args.GetValue()->GetAlignedPointerFromInternalField(0) == args.GetParemter());
         f(args.GetParemter());
         args.GetValue().Clear();
     }
 
     template<class T> class JSObj{
         public:
+
+        typedef void(*JSWrapFunction)(v8::Handle<v8::Object> &, const T*, v8::Isolate *);
+
         v8::Handle<v8::FunctionTemplate> Template;
         v8::Handle<v8::ObjectTemplate> InstanceTemplate;
         v8::Handle<v8::ObjectTemplate> Prototype;
         v8::Handle<v8::Function> Constructor;
 
         std::vector<JSAccessor> accessors;
+        std::vector<JSWrapFunction> wrappingfuncs;
 
         JSObj<T>(){
 
@@ -230,26 +234,33 @@ namespace Turbo{
 
         unsigned long long ID;
 
-        void SetTypeName(const char *name){
+        inline void SetTypeName(const char *name){
             if(!TypeName.IsEmpty())
                 TypeName.Clear();
             TypeName = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name);
             Template->SetClassName(TypeName);
         }
 
-        void AddToProto(const char *name , v8::FunctionCallback call){
+        inline void AddToProto(const char *name , v8::FunctionCallback call){
             auto iso = v8::Isolate::GetCurrent();
             InstanceTemplate->Set(v8::String::NewFromUtf8(iso, name), v8::FunctionTemplate::New(iso, call));
             Prototype->Set(v8::String::NewFromUtf8(iso, name), v8::FunctionTemplate::New(iso, call));
         }
 
-        void AddAccessor(const char *name, v8::AccessorGetterCallback Getter, v8::AccessorSetterCallback Setter){
-            printf("Setting accessor of %s on obj ID %llu\n", name, ID);
+        inline void AddAccessor(const char *name, v8::AccessorGetterCallback Getter, v8::AccessorSetterCallback Setter){
             InstanceTemplate->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name), Getter, Setter);
             Prototype->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name), Getter, Setter);
             accessors.push_back(JSAccessor(name, Getter, Setter));
-            //assert(Prototype->Has(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name)));
+        }
 
+        inline void AddWrappingFunc(JSWrapFunction aFunc){
+            assert(aFunc);
+            wrappingfuncs.push_back(aFunc);
+        }
+
+        template<class A>
+        static T *Unwrap(A a){
+            return static_cast<T *>(v8::Local<v8::Object>::Cast(a)->GetAlignedPointerFromInternalField(0));
         }
 
     };
@@ -381,6 +392,28 @@ namespace Turbo{
                             args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
                     return false;
 
+                    case ArrayBuffer:
+                        if (args[i]->IsArrayBuffer())
+                            break;
+                        TS_Stack_PreviousFunctionName(prevF);
+
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an ArrayBuffer.");
+
+                        if(error)
+                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                    return false;
+
+                    case TypedArray:
+                        if (args[i]->IsTypedArray())
+                            break;
+                        TS_Stack_PreviousFunctionName(prevF);
+
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an TypedArray.");
+
+                        if(error)
+                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                    return false;
+
                     case Object:
                         if (!args[i]->IsUndefined())
                             break;
@@ -402,6 +435,24 @@ namespace Turbo{
     ///////////////////////////////////////////////////////////////////////////////
     // Wrapping Objects
 
+    // Designed for when the yet-to-be-wrapped object needs to be inspected or modified.
+    template<class T> inline v8::Handle<v8::Object> CreateObject(const JSObj<T> &JSo, T *obj, v8::Isolate *iso){
+        v8::Handle<v8::Object> returnobj = JSo.Template->GetFunction()->NewInstance();
+
+        for(std::vector<JSAccessor>::const_iterator lIter = JSo.accessors.begin(); lIter!=JSo.accessors.end(); lIter++){
+            returnobj->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), std::get<0>(*lIter)), std::get<1>(*lIter), std::get<2>(*lIter));
+        }
+
+        for(typename std::vector<typename JSObj<T>::JSWrapFunction>::const_iterator lIter = JSo.wrappingfuncs.begin(); lIter!=JSo.wrappingfuncs.end(); lIter++){
+            (*lIter)(returnobj, obj, iso);
+        }
+
+        returnobj->SetAlignedPointerInInternalField(0, obj);
+        returnobj->SetInternalField(1, v8::Integer::NewFromUnsigned(iso, JSo.ID));
+
+        return returnobj;
+    }
+
     template<class T, class A> inline void WrapObject(A args, const JSObj<T> &JSo, T *obj){
 
         //
@@ -411,17 +462,8 @@ namespace Turbo{
         // Create a JS object that holds an ID number and a pointer to the object
         assert(obj != nullptr);
         //JSo.InstanceTemplate->SetInternalFieldCount(2);
-        v8::Handle<v8::Object> returnobj = JSo.Template->GetFunction()->NewInstance();//JSo.Constructor->NewInstance();//v8::Object::New(iso);// = JSo.Constructor->NewInstance();
-        assert(JSo.Template->HasInstance(returnobj));
 
-        for(std::vector<JSAccessor>::const_iterator lIter = JSo.accessors.begin(); lIter!=JSo.accessors.end(); lIter++){
-            returnobj->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), std::get<0>(*lIter)), std::get<1>(*lIter), std::get<2>(*lIter));
-        }
-
-        returnobj->SetAlignedPointerInInternalField(0, obj);
-        returnobj->SetInternalField(1, v8::Integer::NewFromUnsigned(iso, JSo.ID));
-
-        v8::Persistent<v8::Object> preturnobj(iso, returnobj);
+        v8::Persistent<v8::Object> preturnobj(iso, CreateObject(JSo, obj, iso));
         preturnobj.SetWeak(obj, JSo.Finalize);
 
         args.GetReturnValue().Set(preturnobj);

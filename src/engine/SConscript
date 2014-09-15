@@ -1,5 +1,6 @@
 import os
 import sys
+import glob
 
 full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin compiler librarydir binarydir"
 
@@ -9,8 +10,8 @@ files = [
   "engine.cpp",
   "functionload.cpp",
   "loadplugins.cpp",
-  "variableregister.cpp",
   "typed_array.cpp",
+  "variableregister.cpp",
   "version.cpp",
   "options.c",
 ]

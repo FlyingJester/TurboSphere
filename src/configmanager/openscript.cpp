@@ -64,7 +64,8 @@ bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::String> name, v8
     }
 
     v8::TryCatch try_catch;
-    v8::Handle<v8::Script> script = v8::Script::Compile(source, name);
+    v8::ScriptOrigin origin(name);
+    v8::Handle<v8::Script> script = v8::Script::Compile(source, &origin);
 
 
     if (script.IsEmpty())

@@ -37,7 +37,7 @@ extern Turbo::JSObj<std::shared_ptr<Image> >           ImageJSObj;
 extern Turbo::JSObj<Galileo::Vertex> VertexJSObj;
 extern Turbo::JSObj<Galileo::Shape>  ShapeJSObj;
 extern Turbo::JSObj<Galileo::Group>  GroupJSObj;
-extern Turbo::JSObj<Galileo::Shader> ShaderProgramJSObj;
+extern Turbo::JSObj<std::shared_ptr<Galileo::Shader> > ShaderProgramJSObj;
 
 /////
 // Old School
@@ -47,6 +47,7 @@ Turbo::JSFunction SurfaceCtor(Turbo::JSArguments args);
 
 Turbo::JSFunction SaveSurface(Turbo::JSArguments args);
 Turbo::JSFunction SaveImage(Turbo::JSArguments args);
+Turbo::JSFunction ImageCreateSurface(Turbo::JSArguments args);
 /////
 // New School!
 Turbo::JSFunction VertexCtor(Turbo::JSArguments args);

@@ -25,6 +25,11 @@ using std::string;
 namespace Sapphire {
 namespace Script {
 
+struct JSProps {
+    static v8::Handle<v8::Value> X;
+    static v8::Handle<v8::Value> Y;
+};
+
 template <class T, class A>
 class AccessorSelf {
   public:
@@ -145,6 +150,41 @@ void GroupAngleSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turb
     mGroup->SetRotation(aVal->NumberValue());
 }
 
+class GroupExtraWrapCall {
+public:
+    static v8::Handle<v8::Object> Wrap (Galileo::Group::const_iterator &lIter, v8::Isolate *aIso){
+        return Turbo::CreateObject<Galileo::Shape>(ShapeJSObj, static_cast<Galileo::Shape*>(*lIter), aIso);
+    }
+
+    constexpr static const char * const wrapname = "shapes";
+};
+class ShapeExtraWrapCall {
+public:
+    static v8::Handle<v8::Object> Wrap (Galileo::Shape::const_iterator &lIter, v8::Isolate *aIso){
+        v8::Handle<v8::Object> lObj = v8::Object::New(aIso);
+        lObj->Set(JSProps::X, v8::Integer::New(aIso, lIter->x));
+        lObj->Set(JSProps::Y, v8::Integer::New(aIso, lIter->y));
+        return lObj;
+    }
+
+    constexpr static const char * const wrapname = "vertices";
+};
+
+
+template <class T, class W>
+void ExtraWrapperArrayPopulator(v8::Handle<v8::Object> &aObj, const T *a, v8::Isolate *aIso){
+    assert(a);
+    auto lArray = v8::Array::New(aIso, a->size());
+
+    unsigned i = 0;
+    for(typename T::const_iterator lIter = a->begin(); lIter!=a->end(); lIter++){
+        lArray->Set(i++, W::Wrap(lIter, aIso));
+    }
+
+    aObj->Set(v8::String::NewFromUtf8(aIso, W::wrapname), lArray);
+
+}
+
 std::vector<CallbackWithName> CrossPluginSurfaceMembers = std::vector<CallbackWithName>();
 
 const char *JSVertexCode = "\
@@ -201,11 +241,6 @@ const float *FixedUVCoord[FIXEDUVCOORD_SIZE] = { // Known to be disproportionate
   FixedUV8
 };
 
-struct JSProps {
-    static v8::Handle<v8::Value> X;
-    static v8::Handle<v8::Value> Y;
-};
-
 Turbo::JSObj<TS_Color>        ColorJSObj;
 Turbo::JSObj<SDL_Surface>     SurfaceJSObj;
 Turbo::JSObj<std::shared_ptr<Image> > ImageJSObj;
@@ -213,7 +248,7 @@ Turbo::JSObj<Galileo::Vertex> VertexJSObj;
 Turbo::JSObj<Galileo::Shape>  ShapeJSObj;
 Turbo::JSObj<Galileo::Group>  GroupJSObj;
 
-Turbo::JSObj<Galileo::Shader>  ShaderProgramJSObj;
+Turbo::JSObj<std::shared_ptr<Galileo::Shader> >  ShaderProgramJSObj;
 //Turbo::JSObj<Galileo::Group>  GroupJSObj;
 
 namespace Finalizer {
@@ -305,10 +340,10 @@ void InitScript(int64_t ID){
     VertexJSObj  = Turbo::JSObj<Galileo::Vertex>();
     ShapeJSObj   = Turbo::JSObj<Galileo::Shape> ();
     GroupJSObj   = Turbo::JSObj<Galileo::Group> ();
-    ShaderProgramJSObj   = Turbo::JSObj<Galileo::Shader> ();
+    ShaderProgramJSObj   = Turbo::JSObj<std::shared_ptr<Galileo::Shader> > ();
 
     ColorJSObj.Finalize             = Finalizer::Generic<TS_Color>;
-    ShaderProgramJSObj.Finalize     = Finalizer::Generic<Galileo::Shader>;
+    ShaderProgramJSObj.Finalize     = Finalizer::Generic<std::shared_ptr<Galileo::Shader> >;
     ImageJSObj.Finalize     = Finalizer::Generic<std::shared_ptr<Image> >;
     SurfaceJSObj.Finalize   = Finalizer::NoFree;
     VertexJSObj.Finalize    = Finalizer::NoFree;
@@ -345,7 +380,7 @@ void InitScript(int64_t ID){
     GroupJSObj.ID              = (ID<<16)|(0x0221u);
     ShaderProgramJSObj.ID      = (ID<<16)|(0x0144u);
 
-    printf(BRACKNAME " Info: Group is ID %i\n", GroupJSObj.ID);
+    printf(BRACKNAME " Info: Group is ID %llu\n", GroupJSObj.ID);
 
     GroupJSObj.Finalize     = Finalizer::Generic<Galileo::Group>;
     GroupJSObj.SetTypeName("Group");
@@ -360,6 +395,10 @@ void InitScript(int64_t ID){
     GroupJSObj.AddAccessor("rotY", GroupRotYGetter,  GroupRotYSetter);
     GroupJSObj.AddToProto("setX", GroupSetX< MemberSelf<Galileo::Group> >);
     GroupJSObj.AddToProto("setY", GroupSetY< MemberSelf<Galileo::Group> >);
+    GroupJSObj.AddWrappingFunc(ExtraWrapperArrayPopulator<Galileo::Group, GroupExtraWrapCall>);
+    ShapeJSObj.AddWrappingFunc(ExtraWrapperArrayPopulator<Galileo::Shape, ShapeExtraWrapCall>);
+
+    ImageJSObj.AddToProto("createSurface", ImageCreateSurface);
 
     auto lIso = v8::Isolate::GetCurrent();
 
@@ -614,10 +653,10 @@ Turbo::JSFunction GroupCtor(Turbo::JSArguments args){
     if(ShapeJSObj.IsA(args[0])){
 
         Sapphire::Galileo::Group *lGroup = new Galileo::Group();
-        lGroup->SetShader(
-          static_cast<Galileo::Shader*>(v8::Local<v8::Object>::Cast(args[1])->GetAlignedPointerFromInternalField(0)));
+        lGroup->SetShader(ShaderProgramJSObj.Unwrap(args[1])->get());
 
-        lGroup->push(static_cast<Galileo::Shape*>(v8::Local<v8::Object>::Cast(args[0])->GetAlignedPointerFromInternalField(0)));
+        lGroup->push(ShapeJSObj.Unwrap(args[0]));
+//                     static_cast<Galileo::Shape*>(v8::Local<v8::Object>::Cast(args[0])->GetAlignedPointerFromInternalField(0)));
 
         Turbo::WrapObject(args, GroupJSObj, lGroup);
         return;
@@ -634,11 +673,10 @@ Turbo::JSFunction GroupCtor(Turbo::JSArguments args){
         }
 
         Sapphire::Galileo::Group *lGroup = new Galileo::Group();
-        lGroup->SetShader(
-          static_cast<Galileo::Shader*>(v8::Local<v8::Object>::Cast(args[1])->GetAlignedPointerFromInternalField(0)));
+        lGroup->SetShader(ShaderProgramJSObj.Unwrap(args[1])->get());
 
         for(int i = 0; i<shapearray->Length(); i++){
-            lGroup->push(static_cast<Galileo::Shader*>(v8::Local<v8::Object>::Cast(shapearray->Get(i)->ToObject())->GetAlignedPointerFromInternalField(0)));
+            lGroup->push(ShapeJSObj.Unwrap(shapearray->Get(i)->ToObject()));
         }
 
         Turbo::WrapObject(args, GroupJSObj, lGroup);
@@ -718,6 +756,26 @@ Turbo::JSFunction SaveSurface(Turbo::JSArguments args){
 
 Turbo::JSFunction SaveImage(Turbo::JSArguments args);
 
+Turbo::JSFunction ImageCreateSurface(Turbo::JSArguments args){
+    std::shared_ptr<Image> *mImage = Turbo::GetMemberSelf <std::shared_ptr<Image> > (args);
+    assert(mImage);
+    assert(mImage->get());
+
+    printf(BRACKNAME " Info: Creating a surface of size %i, %i\n", (*mImage)->Width(), (*mImage)->Height());
+
+    SDL_Surface *rSurf = GenerateSurface((*mImage)->Width(), (*mImage)->Height());
+    assert(rSurf);
+
+    SDL_LockSurface(rSurf);
+
+    assert(rSurf->pixels);
+    (*mImage)->CopyData(rSurf->pixels);
+
+    SDL_UnlockSurface(rSurf);
+
+    Turbo::WrapObject(args, SurfaceJSObj, rSurf);
+}
+
 Turbo::JSFunction GroupSetPosition(Turbo::JSArguments args){
 
     const int sig[] = {Turbo::Number, Turbo::Number, 0};
@@ -757,7 +815,9 @@ Turbo::JSFunction ShaderProgramCtor(Turbo::JSArguments args){
 Turbo::JSFunction GetDefaultShaderProgram(Turbo::JSArguments args){
 
     Sapphire::Galileo::Shader *lShader = Sapphire::Galileo::Shader::GetDefaultShader();
-    Turbo::WrapObject(args, ShaderProgramJSObj, lShader);
+    assert(lShader);
+
+    Turbo::WrapObject(args, ShaderProgramJSObj, new std::shared_ptr<Galileo::Shader> (lShader));
 
 }
 

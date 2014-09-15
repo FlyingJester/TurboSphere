@@ -308,6 +308,7 @@ void GetVersionString(const v8::FunctionCallbackInfo<v8::Value> &args){
 }
 
 void GarbageCollect(const v8::FunctionCallbackInfo<v8::Value> &args){
+  /*
     int collected = 0;
     while(!v8::V8::IdleNotification(1000)){
             if(collected==1)
@@ -320,7 +321,7 @@ void GarbageCollect(const v8::FunctionCallbackInfo<v8::Value> &args){
     v8::V8::LowMemoryNotification();
     if(collected>1)
         printf("\n");
-
+*/
 }
 
 TS_NORETURN void ExitGame(const v8::FunctionCallbackInfo<v8::Value> &args){
@@ -503,10 +504,6 @@ void TS_MessageCallback(v8::Handle<v8::Message> message, v8::Handle<v8::Value> d
     char *LineNumChar = LineNumCharl;
     fprintf(stderr, "Fatal Error\n");
 
-    //auto CurrentTrace =  v8::StackTrace::CurrentStackTrace(0x0FFFFFFF);
-    //auto CurrentFrame = CurrentTrace->GetFrame(CurrentTrace->GetFrameCount()-1);
-    //v8::String::Utf8Value FuncName(CurrentFrame->GetFunctionName());
-    //v8::String::Utf8Value ScriptName(CurrentFrame->GetScriptName());
     v8::String::Utf8Value LineContents(message->GetSourceLine());
 
     v8::String::Utf8Value Reason(message->Get());
@@ -547,10 +544,6 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
         printf("[Engine] Info: Using no v8 flags.\n");
 
     }
-
-    v8::ArrayBuffer::Allocator* allocator = new TS_ArrayBufferAllocator();
-
-    v8::V8::SetArrayBufferAllocator(allocator);
 
     char * dir;
 
@@ -625,9 +618,18 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
     LoadMessageBoxFunctions();
 
-    v8::Isolate *iso = v8::Isolate::GetCurrent();
-    v8::HandleScope mainscope(v8::Isolate::GetCurrent());
-    auto  context = v8::Context::New(iso);
+    v8::Isolate *iso = v8::Isolate::New();
+    if(!iso){
+      printf("[Engine] Fatal Error: Could not initialize Isolate.\n");
+      return;
+    }
+    else
+      printf("[Engine] Info: Created Isolate.\n");
+    v8::Isolate::Scope isolateScope(iso);
+    v8::HandleScope mainScope(iso);
+
+    v8::Local<v8::Context> context = v8::Context::New(iso);
+    printf("[Engine] Info: Created engine context.\n");
 
     context->Enter();
 
@@ -648,8 +650,8 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
         TS_OverrideConfig(TS_conf, overrideConf);
     }
 
-    v8::V8::AddMessageListener(TS_MessageCallback);
     loadAllPlugins();
+    v8::V8::AddMessageListener(TS_MessageCallback);
 
     printf(ENGINE " Info: All Plugins initialized.\n");
     printf(ENGINE " Info: The main script is %s\n", TS_conf->mainscript);
@@ -659,8 +661,6 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
 	const char *script_name = TS_conf->mainscript;
 
-    /////
-    // Hooray for Unicode.
 //    v8::V8::InitializeICU();
 
 
@@ -670,66 +670,60 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
     v8::HandleScope scope(iso);
 
-    //v8::Persistent<v8::Context> context(v8::Isolate::GetCurrent(), v8::Context::New(v8::Isolate::GetCurrent()));
-    //v8::Persistent<v8::Context> context(v8::Isolate::GetCurrent(), v8::Context::New(v8::Isolate::GetCurrent()));
+    v8::ArrayBuffer::Allocator* allocator = new Turbo::ArrayBufferAllocator();
 
-	v8::Handle<v8::FunctionTemplate> E_EvaluateScripttempl = v8::FunctionTemplate::New(iso, TS_LoadScript);
-
-	v8::Handle<v8::FunctionTemplate> E_RequireScripttempl = v8::FunctionTemplate::New(iso, RequireScript);
-
-	v8::Handle<v8::FunctionTemplate> E_RequireSystemScripttempl = v8::FunctionTemplate::New(iso, TS_LoadSystemScript);
-
-	v8::Handle<v8::FunctionTemplate> E_GetVersionNumbertempl = v8::FunctionTemplate::New(iso, GetVersionNumber);
-
-	v8::Handle<v8::FunctionTemplate> E_GetVersionStringtempl = v8::FunctionTemplate::New(iso, GetVersionString);
-
-	v8::Handle<v8::FunctionTemplate> E_GetTimetempl = v8::FunctionTemplate::New(iso, GetTime);
-
-	v8::Handle<v8::FunctionTemplate> E_GetSecondstempl = v8::FunctionTemplate::New(iso, GetSeconds);
-
-	v8::Handle<v8::FunctionTemplate> E_Delaytempl = v8::FunctionTemplate::New(iso, Delay);
-
-	v8::Handle<v8::FunctionTemplate> E_Exittempl = v8::FunctionTemplate::New(iso, ExitGame);
-
-	v8::Handle<v8::FunctionTemplate> E_Aborttempl = v8::FunctionTemplate::New(iso, AbortGame);
-
-	v8::Handle<v8::FunctionTemplate> E_GarbageCollecttempl = v8::FunctionTemplate::New(iso, GarbageCollect);
-
-
-    //v8::Context::Scope context_scope(context);
+    v8::V8::SetArrayBufferAllocator(allocator);
 
     registerAllFunctions(context, iso);
     registerAllVariables(context, iso);
 
+    v8::Handle<v8::FunctionTemplate> E_EvaluateScripttempl = v8::FunctionTemplate::New(iso, TS_LoadScript);
 
+    v8::Handle<v8::FunctionTemplate> E_RequireScripttempl = v8::FunctionTemplate::New(iso, RequireScript);
 
-    //v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate);
+    v8::Handle<v8::FunctionTemplate> E_RequireSystemScripttempl = v8::FunctionTemplate::New(iso, TS_LoadSystemScript);
 
-	context->Global()->Set(v8::String::NewFromOneByte(iso, (const uint8_t*)"EvaulateScript"), E_EvaluateScripttempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_GetVersionNumbertempl = v8::FunctionTemplate::New(iso, GetVersionNumber);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "RequireScript"), E_RequireScripttempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_GetVersionStringtempl = v8::FunctionTemplate::New(iso, GetVersionString);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "RequireSystemScript"), E_RequireSystemScripttempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_GetTimetempl = v8::FunctionTemplate::New(iso, GetTime);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "GetVersion"), E_GetVersionNumbertempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_GetSecondstempl = v8::FunctionTemplate::New(iso, GetSeconds);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "GetVersionString"), E_GetVersionStringtempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_Delaytempl = v8::FunctionTemplate::New(iso, Delay);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "GetTime"), E_GetTimetempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_Exittempl = v8::FunctionTemplate::New(iso, ExitGame);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "GetSeconds"), E_GetSecondstempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_Aborttempl = v8::FunctionTemplate::New(iso, AbortGame);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "Delay"), E_Delaytempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_GarbageCollecttempl = v8::FunctionTemplate::New(iso, GarbageCollect);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "Exit"), E_Exittempl->GetFunction());
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "EvaulateScript"), E_EvaluateScripttempl->GetFunction());
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "Abort"), E_Aborttempl->GetFunction());
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "RequireScript"), E_RequireScripttempl->GetFunction());
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "GarbageCollect"), E_GarbageCollecttempl->GetFunction());
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "RequireSystemScript"), E_RequireSystemScripttempl->GetFunction());
 
-    //v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "GetVersion"), E_GetVersionNumbertempl->GetFunction());
 
-	ExecuteString(v8::String::NewFromUtf8(iso, ScriptFileText.c_str()), v8::String::NewFromUtf8(iso, script_name), iso, true);
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "GetVersionString"), E_GetVersionStringtempl->GetFunction());
+
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "GetTime"), E_GetTimetempl->GetFunction());
+
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "GetSeconds"), E_GetSecondstempl->GetFunction());
+
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "Delay"), E_Delaytempl->GetFunction());
+
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "Exit"), E_Exittempl->GetFunction());
+
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "Abort"), E_Aborttempl->GetFunction());
+
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "GarbageCollect"), E_GarbageCollecttempl->GetFunction());
+
+    v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
+
+    ExecuteString(v8::String::NewFromUtf8(iso, ScriptFileText.c_str()), v8::String::NewFromUtf8(iso, script_name), iso, true);
 	//printf(ENGINE " Info: Running Script.\n");
 
     //printf(ENGINE " Info: Optimizing JS Stack before calling Game Function ");
@@ -742,8 +736,9 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
     //v8::V8::LowMemoryNotification();
 	//mainscope.Close();
-    exitContext(context);
-	v8::V8::TerminateExecution();
+  exitContext(context);
+
+	v8::V8::Dispose();
 	CloseAllPlugins();
 	CloseMessageBoxFunctions();
 	TS_FreeLoadedScripts();
@@ -771,8 +766,8 @@ int main
     int gamearg = 1;
     TS_ConfigOverride conf;
     conf.config = (TS_Config*)malloc(sizeof(TS_Config));
-    printf("\n\t%i\n", argc);
 
+    printf("TurboSphere %s\n", TS_GetLongVersion());
 
     if(argc<3)
         gamearg = 1;
