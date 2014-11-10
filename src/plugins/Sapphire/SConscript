@@ -44,8 +44,8 @@ if int(Uselibjpg) or int(Uselibjpeg):
     elibs+=['jpeg']
 
 Sapphire     = currentenv.SharedLibrary("Sapphire", Sapphire_files,
-  LIBS = ['t5', 'graphiccommon', 'graphicalg', 'configmanager', 'v8'] + elibs,
-  FRAMEWORKS = ['SDL2', 'SDL2_image', 'OpenGL'] + eframeworks,
+  LIBS = ['t5', 'graphiccommon', 'graphicalg', 'configmanager', 'SDL2', 'SDL2_image', 'v8'] + elibs,
+  FRAMEWORKS = ['OpenGL'] + eframeworks,
   CCFLAGS = " -g " )
 
 Depends(Sapphire, corelibtargets)

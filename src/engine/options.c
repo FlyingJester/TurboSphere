@@ -29,7 +29,7 @@ TS_NORETURN void print_version(void) {
 
 // Note that this does NOT mean that the option is really a short  option,
 // just that it can be interpreted as one. It may in fact be a long option.
-inline int IsShort(char *opt) {
+int IsShort(char *opt) {
     for(size_t e = 0; e<sizeof(option_marks); e++) {
         if(opt[0] == option_marks[e]) {
             return 1;
@@ -39,7 +39,7 @@ inline int IsShort(char *opt) {
 }
 
 // Returns how far in the actual option starts, or zero if it is not an option.
-inline int IsLong(char *opt) {
+int IsLong(char *opt) {
 #ifdef _WIN32
     if(opt[0]=='/')
         return 1;

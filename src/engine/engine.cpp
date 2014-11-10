@@ -615,6 +615,7 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
         exit(0);
     }
 
+    v8::V8::Initialize();
 
     LoadMessageBoxFunctions();
 

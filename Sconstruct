@@ -12,7 +12,7 @@ msvc_ccflags = "/O2 /EHsc /Zi"
 msvc_cflags = ""
 msvc_cxxflags = ""
 
-gcc_ccflags = " -Werror=return-type -Wall -Wno-pointer-arith -flto -mtune=native -O3 -Wcast-align -g "
+gcc_ccflags = " -Werror=return-type -Wall -Wno-pointer-arith -mtune=native -O1 -Wcast-align -g "
 gcc_cflags = " -std=c11 "
 gcc_cxxflags = " -std=c++11 "
 

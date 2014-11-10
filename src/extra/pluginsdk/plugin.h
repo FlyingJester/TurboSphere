@@ -453,7 +453,7 @@ namespace Turbo{
         return returnobj;
     }
 
-    template<class T, class A> inline void WrapObject(A args, const JSObj<T> &JSo, T *obj){
+    template<class T, class A> void WrapObject(A args, const JSObj<T> &JSo, T *obj){
 
         //
         auto iso = args.GetIsolate();
