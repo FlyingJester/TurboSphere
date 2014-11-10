@@ -100,6 +100,7 @@ conf.Finish()
 if IsDarwin():
     globalenv.Append(CPPDEFINES = ["HAS_UNISTD", "HAS_STAT_SYS", "USE_STAT"])
     globalenv.Append(CPPDEFINES = ["OS_X"]) # We could probably just trust __APPLE__ or __MACH__.
+    globalenv.Append(LIBPATH = "/usr/local/lib", CPPPATH = "/usr/local/include")
 
 # Because Windows requires different functions entirely, it is implemented as a unique code path in
 # the source code proper.
