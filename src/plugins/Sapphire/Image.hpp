@@ -8,6 +8,7 @@ namespace Sapphire {
   /////
   // Namespace GL contains the strongly OpenGL components.
 namespace GL{
+
   class Image {
   protected:
 
@@ -55,8 +56,8 @@ public:
     inline unsigned Width() const  {return w;}
     inline unsigned Height() const {return h;}
 
-    PixelData *LockImage();
-    void UnlockImage();
+    PixelData *Lock();
+    void Unlock();
 
     size_t BufferSize() const {
       return w*h*4; //4 color channels.

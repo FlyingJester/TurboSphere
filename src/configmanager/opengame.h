@@ -27,6 +27,8 @@ Defines exported functions' calling convention on the platform.
     #define CONFIGMGRCALL  //
 #endif
 
+#include <v8.h>
+
 using namespace std;
 
 
@@ -122,6 +124,15 @@ public:
 */
 CONFIGMGR_EXPORT TS_Config *GetConfig(void);
 
+/*!Register the ArrayBuffer allocator.
+* This should only be called by the engine.
+*/
+CONFIGMGR_EXPORT void RegisterArrayBufferAllocator(v8::ArrayBuffer::Allocator* a);
+
+/*!Get the ArrayBuffer allocator.
+* This is necessary because V8 refuses to
+*/
+CONFIGMGR_EXPORT v8::ArrayBuffer::Allocator* RetrieveArrayBufferAllocator(void);
 
 /*!Reads data from a specified game.sgm file and sets the current configuration based on those values.
 *

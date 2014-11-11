@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <memory>
 #include <stdio.h>
 #include <v8.h>
 #define CONFIGMGR_INTERNAL
@@ -20,8 +21,7 @@ using namespace std;
 #define STRDUP strdup
 #endif
 
-std::string openfile(const char *Rfile)
-{
+char *openfile(const char *Rfile){
     std::stringstream filetext;
     filetext.str("");
 
@@ -49,22 +49,20 @@ std::string openfile(const char *Rfile)
     file.close();
 
 
-
-    std::string STR_filetext = filetext.str();
-
-    return STR_filetext;
+    return STRDUP(filetext.str().c_str());
 }
 
 
 bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::String> name, v8::Isolate *isolate ,bool print_result) {
 
     if(!isolate){
-        fprintf(stderr, "[ConfigManager] ExecuteString Error: isolate was NULL.");
+        fprintf(stderr, "[ConfigManager] ExecuteString Error: isolate was null.");
         return false;
     }
 
     v8::TryCatch try_catch;
-    v8::Handle<v8::Script> script = v8::Script::Compile(source, name);
+    v8::ScriptOrigin origin(name);
+    v8::Handle<v8::Script> script = v8::Script::Compile(source, &origin);
 
 
     if (script.IsEmpty())
@@ -101,10 +99,22 @@ bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::String> name, v8
     return true;
 }
 
-void TS_LoadScript(const v8::FunctionCallbackInfo<v8::Value> &args) {
-    TS_Directories *TS_dirs = GetDirs();
+template<class T>
+void OpenAndRunScript(const std::string &file, const char *origin, const T& args){
+    std::unique_ptr<char, void(*)(void *)> ScriptStr(openfile(file.c_str()), free);
+    if(ScriptStr.get()[0]=='\0') {
+        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), (std::string("[ConfigManager] ") + origin + " Error: Could not load script.").c_str())));
+        return;
+    }
+    if(!ExecuteString(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ScriptStr.get()), v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), file.c_str()), v8::Isolate::GetCurrent(), true)){
+        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ((string)"[ConfigManager] Error in script "+file).c_str())));
+    }
+}
+
+
+static void LoadScriptWithPrefix(const v8::FunctionCallbackInfo<v8::Value> &args, const char *origin, const char *prefix){
     if(args.Length()<1) {
-        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "[ConfigManager] TS_LoadScript Error: No arguments given.\n")));
+        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), (std::string("[ConfigManager] ") + origin + " Error: No arguments given.\n").c_str())));
         return;
     }
 
@@ -112,43 +122,16 @@ void TS_LoadScript(const v8::FunctionCallbackInfo<v8::Value> &args) {
 
     Turbo::CheckArg::String(args, 0, __func__);
 
-    //CHECK_ARG_STR(0, "[ConfigManager] TS_LoadScript Error: could not parse arg 0 to string.");
-
     v8::String::Utf8Value str(args[0]);
-    const char *scriptname = *str;
-    const char *scriptpath = STRDUP(string(TS_dirs->script).append(scriptname).c_str());
-    string ScriptStr = openfile(scriptpath).c_str();
-    if(ScriptStr.empty()) {
-        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(isolate, "[ConfigManager] TS_LoadScript Error: Could not load script.")));
-        return;
-    }
-    if(!ExecuteString(v8::String::NewFromUtf8(isolate, ScriptStr.c_str()), v8::String::NewFromUtf8(isolate, scriptname), isolate, true)) {
-        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(isolate, ((string)"Error in script "+string(scriptname)).c_str())));
-        return;
-    }
+    string scriptpath = string(prefix) + (*str);
+    OpenAndRunScript(scriptpath, __func__, args);
+}
+
+
+void TS_LoadScript(const v8::FunctionCallbackInfo<v8::Value> &args){
+    LoadScriptWithPrefix(args, __func__, GetDirs()->script);
 }
 
 void TS_LoadSystemScript(const v8::FunctionCallbackInfo<v8::Value> &args) {
-    TS_Directories *TS_dirs = GetDirs();
-    if(args.Length()<1) {
-        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "[ConfigManager] TS_LoadSystemScript Error: No arguments given.\n")));
-        return;
-    }
-
-
-    Turbo::CheckArg::String(args, 0, __func__);
-
-    //CHECK_ARG_STR(0, "[ConfigManager] TS_LoadSystemScript Error: could not parse arg 0 to string.");
-
-    v8::String::Utf8Value str(args[0]);
-    const char *scriptname = *str;
-    const char *scriptpath = STRDUP(string(TS_dirs->systemscript).append(scriptname).c_str());
-    string ScriptStr = openfile(scriptpath).c_str();
-    if(ScriptStr.empty()) {
-        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "[ConfigManager] TS_LoadSystemScript Error: Could not load script.")));
-        return;
-    }
-    if(!ExecuteString(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ScriptStr.c_str()), v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), scriptname), v8::Isolate::GetCurrent(), true)) {
-        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ((string)"[ConfigManager] Error in script "+string(scriptname)).c_str())));
-    }
+    LoadScriptWithPrefix(args, __func__, GetDirs()->systemscript);
 }

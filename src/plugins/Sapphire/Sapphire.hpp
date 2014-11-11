@@ -32,7 +32,15 @@
 #define CHANNEL_MASKS Frmask, Fgmask, Fbmask, Famask
 #define IMAGE_DEPTH 32
 
+// This should ONLY be used in C and when T5 can't be used directly.
 #ifdef __cplusplus
+extern "C"{
+#endif
+int T5_StdOut_Write(const char *aToWrite);
+int T5_StdErr_Write(const char *aToWrite);
+#ifdef __cplusplus
+}
+
 
 namespace Sapphire {
 

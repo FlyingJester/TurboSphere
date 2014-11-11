@@ -5,8 +5,8 @@ import glob
 
 bmpfont_files	 = glob.glob("*.cpp")  #['frontend.cpp', 'bass_backend.cpp', 'script.cpp']
 
-bmpfontCore = currentenv.StaticLibrary('bmpfontCore', ['bmpfontCore.c'], LIBS = ['t5', 'configmanager', 'v8'], FRAMEWORKS = ['SDL2'])
-bmpfont     = currentenv.SharedLibrary('bmpfont', bmpfont_files, LIBS = ['t5', 'configmanager', 'v8', bmpfontCore], FRAMEWORKS = ['SDL2'])
+bmpfontCore = currentenv.StaticLibrary('bmpfontCore', ['bmpfontCore.c'], LIBS = ['t5', 'configmanager', 'v8', 'SDL2'])
+bmpfont     = currentenv.SharedLibrary('bmpfont', bmpfont_files, LIBS = ['t5', 'configmanager', 'v8', 'SDL2', bmpfontCore])
 Depends(bmpfont, corelibtargets)
 
 LibraryInstall(os.path.join(binarydir, 'plugin'), bmpfont, currentenv)
