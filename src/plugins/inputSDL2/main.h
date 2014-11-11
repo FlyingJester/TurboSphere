@@ -47,7 +47,7 @@ extern v8::Isolate *iso;
 	extern "C" {
 #endif
 INPUTSDL2_EXPORT void                   CCALL Close(void);
-INPUTSDL2_EXPORT const char *           CCALL Init(void);
+INPUTSDL2_EXPORT const char *           CCALL Init(int ID);
 INPUTSDL2_EXPORT int                    CCALL GetNumFunctions(void);
 INPUTSDL2_EXPORT Turbo::JSFunctionArray CCALL GetFunctions(void);
 INPUTSDL2_EXPORT Turbo::JSNameArray     CCALL GetFunctionNames(void);

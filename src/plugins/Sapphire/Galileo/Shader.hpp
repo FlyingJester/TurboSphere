@@ -5,7 +5,12 @@
 #include <map>
 #include <color.h>
 #include "Shape.hpp"
-#include <Opengl/gl3.h>
+
+#ifdef OS_X
+#include <OpenGL/gl3.h>
+#else
+#include <GL/gl.h>
+#endif
 
 namespace Sapphire {
 namespace Galileo{
@@ -44,6 +49,8 @@ public:
   static const std::string ShaderTextureUVName;
   static const std::string ShaderColorName;
   static const std::string ShaderOffsetUniformName;
+  static const std::string ShaderRotOffsetUniformName;
+  static const std::string ShaderAngleUniformName;
   static const std::string ShaderScreenSizeUniformName;
   typedef std::map<std::string, int> GLSLValueMap;
 protected:

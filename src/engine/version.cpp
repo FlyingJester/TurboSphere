@@ -21,14 +21,14 @@
 
 using std::string;
 
-static const char * short_version_string = "0.4.0";
+static const char * short_version_string = "0.4.1b";
 static const char * compiler_string =
 #ifdef _MSC_VER
-    "Microsoft Visual C++ "
+    "Microsoft Visual C++"
 #elif defined __GNUC__
-    "GCC "
+    "GCC"
 #else
-    "Clang/LLVM "
+    "Clang/LLVM"
 #endif
 ;
 

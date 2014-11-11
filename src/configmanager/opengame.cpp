@@ -47,6 +47,17 @@ inline T STRDUP(CT a){
 }
 
 */
+
+static v8::ArrayBuffer::Allocator* cm_static_allocator = nullptr;
+
+void RegisterArrayBufferAllocator(v8::ArrayBuffer::Allocator* a){
+    cm_static_allocator = a;
+}
+
+v8::ArrayBuffer::Allocator* RetrieveArrayBufferAllocator(void){
+    return cm_static_allocator;
+}
+
 #define FIND_STRING_LAMBDA(X) [&] (const t5::map::Entry *aIter) { return (aIter)->Name == std::string(X); }
 
 using std::string;

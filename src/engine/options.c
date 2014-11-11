@@ -29,7 +29,7 @@ TS_NORETURN void print_version(void) {
 
 // Note that this does NOT mean that the option is really a short  option,
 // just that it can be interpreted as one. It may in fact be a long option.
-inline int IsShort(char *opt) {
+int IsShort(char *opt) {
     for(size_t e = 0; e<sizeof(option_marks); e++) {
         if(opt[0] == option_marks[e]) {
             return 1;
@@ -39,7 +39,7 @@ inline int IsShort(char *opt) {
 }
 
 // Returns how far in the actual option starts, or zero if it is not an option.
-inline int IsLong(char *opt) {
+int IsLong(char *opt) {
 #ifdef _WIN32
     if(opt[0]=='/')
         return 1;
@@ -86,6 +86,11 @@ void TS_CMD_ProcessStubbingOptions(int argc, char *argv[]) {
 unsigned TS_CMD_GetNumV8Options(int argc, char *argv[]) {
     int v8args = 0;
     for(int i = 0; i<argc; i++) {
+
+        if(strcmp(argv[i], "--turbo")==0){
+            return 1;
+        }
+
         int isshort = IsShort(argv[i]);
         int islong  = IsLong(argv[i]);
 
@@ -169,6 +174,18 @@ unsigned TS_CMD_GetNumV8Options(int argc, char *argv[]) {
 
 char *TS_CMD_ProcessV8Options(int argc, char *argv[]) {
     for(int i = 0; i<argc; i++){
+
+
+        if(strcmp(argv[i], "--turbo")==0){
+            char *opt = strdup("--harmony --use-strict --compiled_keyed_generic_loads --turbo_types --turbo_inlining --context_specialization --cpu_profiler_sampling_interval=10 --print_turbo_replay ");
+            /*
+            char * opt = malloc(strlen("--harmony --use-strict")+1);
+            memcpy(opt, " --harmony --use-strict", strlen("--harmony --use-strict")+1);
+            */
+            printf("[Engine] Info: Using turbo preset options.\n");
+            return opt;
+        }
+
         int isshort = IsShort(argv[i]);
         int islong  = IsLong(argv[i]);
 

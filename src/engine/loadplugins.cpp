@@ -229,7 +229,7 @@ int loadAllPlugins(){
             grabFuncsFromLibrary(handle);
         }
         else{
-            printf("[Engine] Error: Plugin %s is not open.\n", plugins[i]);
+            //printf("[Engine] Error: Plugin %s is not open.\n", plugins[i]);
             printf("[Engine] Error: %s\n", dlerror());
         }
         #endif
@@ -381,7 +381,7 @@ void grabFuncsFromLibrary(void *handle){
     const char * repname = dlInit(PluginNum);
     //DEBUG_VERBOSE
     if(repname==NULL){
-        printf("Problem Loading Plugin: %s\n", error);
+        printf("Problem Loading Plugin: %s\n", dlerror());
         return;
     }
 

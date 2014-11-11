@@ -15,6 +15,11 @@
 
 #include <TSPR/noreturn.h>
 
+#if defined(HAS_UNISTD)
+#include <unistd.h>
+#elif defined(HAS_UNISTD_SYS)
+#include <sys/unistd.h>
+#endif
 
 #include <t5.h>
 
@@ -69,81 +74,6 @@ uint32_t (*TS_GetTime)(void);
 
     #define OS_X 1
 #endif
-
-/*
-inline void TS_OverrideConfig(TS_Config *conf, TS_ConfigOverride *overrideConf){
-    TS_Config *oconf = overrideConf->config;
-    if(overrideConf->gamefunc)
-        conf->gamefunc = oconf->gamefunc;
-
-	if(overrideConf->sgmname)
-        conf->sgmname = oconf->sgmname;
-
-	if(overrideConf->gamename)
-        conf->gamename = oconf->gamename;
-
-	if(overrideConf->mainscript)
-        conf->mainscript = oconf->mainscript;
-
-	if(overrideConf->screenwidth)
-        conf->screenwidth = oconf->screenwidth;
-
-	if(overrideConf->screenheight)
-        conf->screenheight = oconf->screenheight;
-
-	if(overrideConf->fullscreen)
-        conf->fullscreen = oconf->fullscreen;
-
-	if(overrideConf->compositing)
-        conf->compositing = oconf->compositing;
-
-	if(overrideConf->scale)
-        conf->scale = oconf->scale;
-
-	if(overrideConf->systemfont)
-        conf->systemfont = oconf->systemfont;
-
-	if(overrideConf->systemttffont)
-        conf->systemttffont = oconf->systemttffont;
-
-	if(overrideConf->systemwindowstyle)
-        conf->systemwindowstyle = oconf->systemwindowstyle;
-
-	if(overrideConf->systemarrow)
-        conf->systemarrow = oconf->systemarrow;
-
-	if(overrideConf->systemuparrow)
-        conf->systemuparrow = oconf->systemuparrow;
-
-	if(overrideConf->systemsoundfont)
-        conf->systemsoundfont = oconf->systemsoundfont;
-
-	if(overrideConf->fixedplugins)
-        conf->fixedplugins = oconf->fixedplugins;
-
-	if(overrideConf->plugins)
-        conf->plugins = oconf->plugins;
-
-}*/
-
-/*
-int SetScreenWidth(unsigned int w){
-	if(w>MIN_SCREENWIDTH){
-		SCREENWIDTH = w;
-		return 0;
-	}
-	return 1;
-}
-
-int SetScreenHeight(unsigned int h){
-	if(h>MIN_SCREENHEIGHT){
-		SCREENHEIGHT = h;
-		return 0;
-	}
-	return 1;
-}
-*/
-
 
 inline void TS_OverrideConfig(TS_Config *conf, TS_ConfigOverride *overrideConf){
     TS_Config *oconf = overrideConf->config;
@@ -378,6 +308,7 @@ void GetVersionString(const v8::FunctionCallbackInfo<v8::Value> &args){
 }
 
 void GarbageCollect(const v8::FunctionCallbackInfo<v8::Value> &args){
+  /*
     int collected = 0;
     while(!v8::V8::IdleNotification(1000)){
             if(collected==1)
@@ -390,7 +321,7 @@ void GarbageCollect(const v8::FunctionCallbackInfo<v8::Value> &args){
     v8::V8::LowMemoryNotification();
     if(collected>1)
         printf("\n");
-
+*/
 }
 
 TS_NORETURN void ExitGame(const v8::FunctionCallbackInfo<v8::Value> &args){
@@ -437,8 +368,22 @@ void RequireScript(const v8::FunctionCallbackInfo<v8::Value> &args){
     return;
 }
 
-void GetTime(const v8::FunctionCallbackInfo<v8::Value> &args)
-{
+// Gets Time down to Microsecond accuracy.
+void GetSeconds(const v8::FunctionCallbackInfo<v8::Value> &args){
+    #ifdef _WIN32
+    args.GetReturnValue().Set(v8::Number::New(((double)timeGetTime()))/1000.0);
+    #elif defined OS_X
+    args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), ((double)TS_OSX_GetTime(TS_OSX_TimeUnit::TS_OSX_Nanosecond))/1000000000.0));
+    #else
+    struct timespec s;
+
+    clock_gettime(CLOCK_MONOTONIC, &s);
+
+    args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), ((double)((s.tv_sec*1000)+(s.tv_nsec/1000000)))/1000.0));
+    #endif
+}
+
+void GetTime(const v8::FunctionCallbackInfo<v8::Value> &args){
 
     #ifdef _WIN32
 
@@ -462,19 +407,34 @@ void Delay(const v8::FunctionCallbackInfo<v8::Value> &args){
 
 	#ifdef _WIN32
 
-    #elif defined OS_X
+	SDL_Delay(t);
+
+  #else
+    static uint32_t max = 0;
+
+    if(t>max){
     //If we are delaying for longer than the longest time it ever took to call v8::V8::LowMemoryNotification(),
     //Then we will call it and subtract the time difference it made from the ms to sleep for.
-    static uint32_t max = 0;
-    if(t>max){
 
+    #ifdef OS_X
         uint32_t ot = TS_OSX_GetTime();
+    #else
+        clock_gettime(CLOCK_MONOTONIC, &s);
+        uint32_t ot = (s.tv_sec*1000)+(s.tv_nsec/1000000);
+    #endif
 
-        while(!v8::V8::IdleNotification(1000)){}
+    // Sapphire broke this. Well, actually, Sapphire is broken, and this shows it.
+        //while(!v8::V8::IdleNotification(1000)){}
 
-        v8::V8::LowMemoryNotification();
+        //v8::V8::LowMemoryNotification();
 
+    #ifdef OS_X
         ot = TS_OSX_GetTime()-ot;
+    #else
+        clock_gettime(CLOCK_MONOTONIC, &s);
+        ot = (s.tv_sec*1000)+(s.tv_nsec/1000000)-ot;
+    #endif
+
         t-=ot;
         if(ot>max){
             max=ot;
@@ -483,7 +443,9 @@ void Delay(const v8::FunctionCallbackInfo<v8::Value> &args){
     }
 
     TS_SLEEP(t);
-    #else
+  //  #else
+
+  /*
     //If we are delaying for longer than the longest time it ever took to call v8::V8::LowMemoryNotification(),
     //Then we will call it and subtract the time difference it made from the ms to sleep for.
     static uint32_t max = 0;
@@ -509,6 +471,7 @@ void Delay(const v8::FunctionCallbackInfo<v8::Value> &args){
     }
 
         TS_SLEEP(t);
+        */
     #endif  //_WIN32
 
 	//SDL_Delay(t);
@@ -541,10 +504,6 @@ void TS_MessageCallback(v8::Handle<v8::Message> message, v8::Handle<v8::Value> d
     char *LineNumChar = LineNumCharl;
     fprintf(stderr, "Fatal Error\n");
 
-    //auto CurrentTrace =  v8::StackTrace::CurrentStackTrace(0x0FFFFFFF);
-    //auto CurrentFrame = CurrentTrace->GetFrame(CurrentTrace->GetFrameCount()-1);
-    //v8::String::Utf8Value FuncName(CurrentFrame->GetFunctionName());
-    //v8::String::Utf8Value ScriptName(CurrentFrame->GetScriptName());
     v8::String::Utf8Value LineContents(message->GetSourceLine());
 
     v8::String::Utf8Value Reason(message->Get());
@@ -574,15 +533,17 @@ void TS_MessageCallback(v8::Handle<v8::Message> message, v8::Handle<v8::Value> d
 
 }
 
-void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *overrideConf = NULL){
+void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *overrideConf){
 
     if(v8Flags!=NULL){
         printf("[Engine] Info: Using v8 flags %s\n", v8Flags);
         v8::V8::SetFlagsFromString(v8Flags, strlen(v8Flags));
     }
-    v8::ArrayBuffer::Allocator* allocator = new TS_ArrayBufferAllocator();
+    else{
 
-    v8::V8::SetArrayBufferAllocator(allocator);
+        printf("[Engine] Info: Using no v8 flags.\n");
+
+    }
 
     char * dir;
 
@@ -654,12 +615,22 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
         exit(0);
     }
 
+    v8::V8::Initialize();
 
     LoadMessageBoxFunctions();
 
-    v8::Isolate *iso = v8::Isolate::GetCurrent();
-    v8::HandleScope mainscope(v8::Isolate::GetCurrent());
-    auto  context = v8::Context::New(iso);
+    v8::Isolate *iso = v8::Isolate::New();
+    if(!iso){
+      printf("[Engine] Fatal Error: Could not initialize Isolate.\n");
+      return;
+    }
+    else
+      printf("[Engine] Info: Created Isolate.\n");
+    v8::Isolate::Scope isolateScope(iso);
+    v8::HandleScope mainScope(iso);
+
+    v8::Local<v8::Context> context = v8::Context::New(iso);
+    printf("[Engine] Info: Created engine context.\n");
 
     context->Enter();
 
@@ -681,6 +652,7 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
     }
 
     loadAllPlugins();
+    v8::V8::AddMessageListener(TS_MessageCallback);
 
     printf(ENGINE " Info: All Plugins initialized.\n");
     printf(ENGINE " Info: The main script is %s\n", TS_conf->mainscript);
@@ -690,8 +662,6 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
 
 	const char *script_name = TS_conf->mainscript;
 
-    /////
-    // Hooray for Unicode.
 //    v8::V8::InitializeICU();
 
 
@@ -701,64 +671,60 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
 
     v8::HandleScope scope(iso);
 
-    //v8::Persistent<v8::Context> context(v8::Isolate::GetCurrent(), v8::Context::New(v8::Isolate::GetCurrent()));
-    //v8::Persistent<v8::Context> context(v8::Isolate::GetCurrent(), v8::Context::New(v8::Isolate::GetCurrent()));
+    v8::ArrayBuffer::Allocator* allocator = new Turbo::ArrayBufferAllocator();
 
-	v8::Handle<v8::FunctionTemplate> E_EvaluateScripttempl = v8::FunctionTemplate::New(iso, TS_LoadScript);
-
-	v8::Handle<v8::FunctionTemplate> E_RequireScripttempl = v8::FunctionTemplate::New(iso, RequireScript);
-
-	v8::Handle<v8::FunctionTemplate> E_RequireSystemScripttempl = v8::FunctionTemplate::New(iso, TS_LoadSystemScript);
-
-	v8::Handle<v8::FunctionTemplate> E_GetVersionNumbertempl = v8::FunctionTemplate::New(iso, GetVersionNumber);
-
-	v8::Handle<v8::FunctionTemplate> E_GetVersionStringtempl = v8::FunctionTemplate::New(iso, GetVersionString);
-
-	v8::Handle<v8::FunctionTemplate> E_GetTimetempl = v8::FunctionTemplate::New(iso, GetTime);
-
-	v8::Handle<v8::FunctionTemplate> E_Delaytempl = v8::FunctionTemplate::New(iso, Delay);
-
-	v8::Handle<v8::FunctionTemplate> E_Exittempl = v8::FunctionTemplate::New(iso, ExitGame);
-
-	v8::Handle<v8::FunctionTemplate> E_Aborttempl = v8::FunctionTemplate::New(iso, AbortGame);
-
-	v8::Handle<v8::FunctionTemplate> E_GarbageCollecttempl = v8::FunctionTemplate::New(iso, GarbageCollect);
-
-
-    //v8::Context::Scope context_scope(context);
+    v8::V8::SetArrayBufferAllocator(allocator);
 
     registerAllFunctions(context, iso);
     registerAllVariables(context, iso);
 
+    v8::Handle<v8::FunctionTemplate> E_EvaluateScripttempl = v8::FunctionTemplate::New(iso, TS_LoadScript);
 
+    v8::Handle<v8::FunctionTemplate> E_RequireScripttempl = v8::FunctionTemplate::New(iso, RequireScript);
 
-    //v8::Handle<v8::ObjectTemplate> global = v8::ObjectTemplate::New(isolate);
+    v8::Handle<v8::FunctionTemplate> E_RequireSystemScripttempl = v8::FunctionTemplate::New(iso, TS_LoadSystemScript);
 
-	context->Global()->Set(v8::String::NewFromOneByte(iso, (const uint8_t*)"EvaulateScript"), E_EvaluateScripttempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_GetVersionNumbertempl = v8::FunctionTemplate::New(iso, GetVersionNumber);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "RequireScript"), E_RequireScripttempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_GetVersionStringtempl = v8::FunctionTemplate::New(iso, GetVersionString);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "RequireSystemScript"), E_RequireSystemScripttempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_GetTimetempl = v8::FunctionTemplate::New(iso, GetTime);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "GetVersion"), E_GetVersionNumbertempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_GetSecondstempl = v8::FunctionTemplate::New(iso, GetSeconds);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "GetVersionString"), E_GetVersionStringtempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_Delaytempl = v8::FunctionTemplate::New(iso, Delay);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "GetTime"), E_GetTimetempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_Exittempl = v8::FunctionTemplate::New(iso, ExitGame);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "Delay"), E_Delaytempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_Aborttempl = v8::FunctionTemplate::New(iso, AbortGame);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "Exit"), E_Exittempl->GetFunction());
+    v8::Handle<v8::FunctionTemplate> E_GarbageCollecttempl = v8::FunctionTemplate::New(iso, GarbageCollect);
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "Abort"), E_Aborttempl->GetFunction());
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "EvaulateScript"), E_EvaluateScripttempl->GetFunction());
 
-	context->Global()->Set(v8::String::NewFromUtf8(iso, "GarbageCollect"), E_GarbageCollecttempl->GetFunction());
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "RequireScript"), E_RequireScripttempl->GetFunction());
 
-    //v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "RequireSystemScript"), E_RequireSystemScripttempl->GetFunction());
 
-    v8::V8::AddMessageListener(TS_MessageCallback);
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "GetVersion"), E_GetVersionNumbertempl->GetFunction());
 
-	ExecuteString(v8::String::NewFromUtf8(iso, ScriptFileText.c_str()), v8::String::NewFromUtf8(iso, script_name), iso, true);
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "GetVersionString"), E_GetVersionStringtempl->GetFunction());
+
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "GetTime"), E_GetTimetempl->GetFunction());
+
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "GetSeconds"), E_GetSecondstempl->GetFunction());
+
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "Delay"), E_Delaytempl->GetFunction());
+
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "Exit"), E_Exittempl->GetFunction());
+
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "Abort"), E_Aborttempl->GetFunction());
+
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "GarbageCollect"), E_GarbageCollecttempl->GetFunction());
+
+    v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
+
+    ExecuteString(v8::String::NewFromUtf8(iso, ScriptFileText.c_str()), v8::String::NewFromUtf8(iso, script_name), iso, true);
 	//printf(ENGINE " Info: Running Script.\n");
 
     //printf(ENGINE " Info: Optimizing JS Stack before calling Game Function ");
@@ -771,8 +737,9 @@ void runGame(const char * path, const char *v8Flags = NULL, TS_ConfigOverride *o
 
     //v8::V8::LowMemoryNotification();
 	//mainscope.Close();
-    exitContext(context);
-	v8::V8::TerminateExecution();
+  exitContext(context);
+
+	v8::V8::Dispose();
 	CloseAllPlugins();
 	CloseMessageBoxFunctions();
 	TS_FreeLoadedScripts();
@@ -800,8 +767,8 @@ int main
     int gamearg = 1;
     TS_ConfigOverride conf;
     conf.config = (TS_Config*)malloc(sizeof(TS_Config));
-    printf("\n\t%i\n", argc);
 
+    printf("TurboSphere %s\n", TS_GetLongVersion());
 
     if(argc<3)
         gamearg = 1;
@@ -861,7 +828,11 @@ int main
                 }
             }
         }*/
-        runGame("startup/", (v8args)?v8flags:NULL, &conf);
+        char *lv8args =TS_CMD_ProcessV8Options(argc, argv);
+        if(lv8args!=nullptr)
+          runGame("startup/", lv8args, &conf);
+        else
+          runGame("startup/", (v8args)?v8flags:NULL, &conf);
     }
 
     free(v8flags);

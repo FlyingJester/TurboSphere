@@ -3,6 +3,8 @@
 
 #ifdef OS_X
 #include <OpenGL/gl3.h>
+#else
+#include <GL/gl.h>
 #endif
 
 #include <color.h>
@@ -11,7 +13,19 @@
 
 namespace Sapphire {
 
+namespace Script{
+}
+
 namespace GL{
+
+    inline void UploadTexture(unsigned w, unsigned h, void *pix){
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pix);
+        #ifdef OS_X
+        glFinish(); //Janky OS X OpenGL 4.
+        #endif
+    }
+    template <typename T>
+    inline void UploadTexture(T a, void *pix){UploadTexture(a->w, a->h, pix);}
 
     void Image::SetTexParameters(){
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -34,10 +48,7 @@ namespace GL{
         Bind();
         SetTexParameters();
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, aFrom->w, aFrom->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, aFrom->pixels);
-        #ifdef OS_X
-        glFinish(); //Janky OS X OpenGL 4.
-        #endif
+        UploadTexture(aFrom, aFrom->pixels);
 
     }
 
@@ -48,7 +59,6 @@ namespace GL{
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
-        //glCopyImageSubData(aTexture, GL_TEXTURE_2D, 0, 0, 0, 0, mTexture, GL_TEXTURE_2D, 0, 0, 0, 0, w, h, 1);
     }
 
     void Image::GetBuffer(void *aTo) const{
@@ -59,23 +69,6 @@ namespace GL{
 
 }
 
-/*
-class Image {
-public:
-  union PixelData {
-      uint32_t pixel;
-      unsigned char channel[4];
-  };
-
-protected:
-
-    unsigned w;
-    unsigned h;
-
-   PixelData *RGBA;
-
-public:
-*/
 Image::Image()
   : GL::Image() {
 
@@ -107,7 +100,9 @@ Image::Image(Image *aFrom)
 
     assert( sizeof(PixelData) == sizeof (int32_t) );
 
-    memcpy(RGBA, aFrom->RGBA, aFrom->BufferSize());
+    aFrom->GetBuffer(RGBA);
+
+//    memcpy(RGBA, aFrom->RGBA, aFrom->BufferSize());
 
 }
 
@@ -115,12 +110,19 @@ Image::~Image(){
     delete[] RGBA;
 }
 
-Image::PixelData *Image::LockImage(){
+Image::PixelData *Image::Lock(){
+
+    if(RGBA==nullptr){
+        RGBA = new PixelData[w*h];
+        GetBuffer(RGBA);
+    }
+
     return RGBA;
 }
 
-void UnlockImage(){
-
+void Image::Unlock(){
+        Bind();
+        GL::UploadTexture(w, h, RGBA);
 }
 
 void Image::CopyData(void *aTo){ //Fills a buffer with a copy of the color data.
