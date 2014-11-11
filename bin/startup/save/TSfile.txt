@@ -1,0 +1,6 @@
+I thought what I’d do is I’d pretend I was one of those deaf mutes.
+
+key1=100
+key2=what am I seeing?
+key3=1.0
+key4=this is text \n and a new line.
