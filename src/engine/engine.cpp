@@ -723,8 +723,24 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
     context->Global()->Set(v8::String::NewFromUtf8(iso, "GarbageCollect"), E_GarbageCollecttempl->GetFunction());
 
     v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
+    {
 
-    ExecuteString(v8::String::NewFromUtf8(iso, ScriptFileText.c_str()), v8::String::NewFromUtf8(iso, script_name), iso, true);
+        v8::TryCatch try_catch;
+
+        v8::Local<v8::String> name = v8::String::NewFromUtf8(iso, script_name);
+        v8::ScriptOrigin origin(name);
+        v8::Handle<v8::Script> script = v8::Script::Compile(v8::String::NewFromUtf8(iso, ScriptFileText.c_str()), &origin);
+
+        v8::Handle<v8::Value> result = script->Run();
+        if (result.IsEmpty()){
+            v8::String::Utf8Value error(try_catch.Exception());
+            printf("%s\n", *error);
+            printf("JS did not run successfully.\n");
+            TS_MessageCallback(try_catch.Message(), v8::String::NewFromUtf8(iso, script_name));
+            goto end;
+        }
+
+    }
 	//printf(ENGINE " Info: Running Script.\n");
 
     //printf(ENGINE " Info: Optimizing JS Stack before calling Game Function ");
@@ -737,7 +753,9 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
     //v8::V8::LowMemoryNotification();
 	//mainscope.Close();
-  exitContext(context);
+end:
+
+    exitContext(context);
 
 	v8::V8::Dispose();
 	CloseAllPlugins();

@@ -1,7 +1,8 @@
 RequireSystemScript("colors.js");
+RequireSystemScript("turbo/map.js");
+RequireSystemScript("turbo/bytearray.js");
 
 var s = new Surface(64, 64, Black);
-var Fonty = GetSystemFont();
 var BlankIm = new Image(new Surface(1, 1, White));
 var BlankIm2 = new Image(BlankIm.createSurface());
 var DefaultShader = GetDefaultShaderProgram();

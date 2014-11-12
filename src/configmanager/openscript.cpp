@@ -65,8 +65,7 @@ bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::String> name, v8
     v8::Handle<v8::Script> script = v8::Script::Compile(source, &origin);
 
 
-    if (script.IsEmpty())
-    {
+    if (script.IsEmpty()){
         v8::String::Utf8Value error(try_catch.Exception());
         v8::String::Utf8Value pname(name);
         string namestr = std::string(*pname);
@@ -75,8 +74,7 @@ bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::String> name, v8
         printf("\nCould not compile script %s\n", namestr.c_str());
         return false;
     }
-    else
-    {
+    else{
         v8::Handle<v8::Value> result = script->Run();
         if (result.IsEmpty())
         {
@@ -85,8 +83,7 @@ bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::String> name, v8
             printf("JS did not run successfully.\n");
             return false;
         }
-        else
-        {
+        else{
 
             if (print_result && !result->IsUndefined())
             {

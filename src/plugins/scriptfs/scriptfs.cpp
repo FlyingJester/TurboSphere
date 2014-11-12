@@ -31,19 +31,6 @@ void Close(void){
 const char * Init(int ID){
     InitRawFile(ID);
 
-    {
-        TS_Directories *TS_dirs = GetDirs();
-        std::string scriptpath = std::string(TS_dirs->systemscript).append("turbo/arraybuffer_bytearray.js");
-        std::string ScriptStr = openfile(scriptpath.c_str());
-
-        if(ScriptStr.empty()) {
-            printf(BRACKNAME " Error: Could not load system script turbo/arraybuffer_bytearray.js\n");
-        }
-        if(!ExecuteString(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ScriptStr.c_str()), v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "turbo/arraybuffer_bytearray.js"), v8::Isolate::GetCurrent(), true)) {
-            printf(BRACKNAME " Error in turbo/arraybuffer_bytearray.js\n");
-        }
-    }
-
     return "ScriptFS";
 }
 

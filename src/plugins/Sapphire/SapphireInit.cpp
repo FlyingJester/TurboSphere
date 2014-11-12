@@ -1,5 +1,4 @@
 #include "SapphireInit.hpp"
-#include "EmbeddedJS.hpp"
 
 #include "GLStart.hpp"
 
@@ -73,8 +72,6 @@ void Init(uint64_t ID){
     glEnable(GL_SCISSOR_TEST);
 
     GL::RenderThread::StartThread(lWindow);
-
-    Embed::ExecuteEmbdeddedJS(v8::Isolate::GetCurrent());
 
 }
 
