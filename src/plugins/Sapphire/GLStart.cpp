@@ -21,25 +21,21 @@ ThreadKitP &GetSystemThreadkit(void){
     return s;
 }
 
-void EngineFlipScreenDelay(){
-
-    while(AtomicGet(GetSystemThreadkit()->RenderFrame) + 32 < AtomicGet(GetSystemThreadkit()->EngineFrame)){
-    }
-
-
-
-}
-
 concurrent_queue<Sapphire::Galileo::GL::Operation *> *RenderQueue(){
-    return &(GetSystemThreadkit()->DrawQueue);
+    ThreadKitP kit = GetSystemThreadkit();
+    return &(kit->Queues[AtomicGet(kit->index)]);
 }
 
-atomic32_t *GetRenderFrame(){
-    return GetSystemThreadkit()->RenderFrame;
-}
+void SwapQueues(){
+    ThreadKitP kit = GetSystemThreadkit();
+    AtomicSet(kit->index, (AtomicGet(kit->index)+1)%NUM_BUFFERS);
 
-atomic32_t *GetEngineFrame(){
-    return GetSystemThreadkit()->EngineFrame;
+//    unsigned s = AtomicGet(kit->index);
+//    unsigned r = AtomicGet(kit->lastIndex);
+
+//    AtomicCAS(kit->index, r, (s+1)%3);
+
+//    AtomicSet(kit->lastIndex, s);
 }
 
 inline void SetSDL_GL_Attributes(void){
@@ -143,10 +139,11 @@ namespace RenderThread{
 
         Operation *Op = nullptr;
 
-        //glUseProgram(3);
+        concurrent_queue<Sapphire::Galileo::GL::Operation *> &queue = lKit->Queues[AtomicGet(lKit->index)];
 
         while(AtomicGet(lKit->ShouldDie)==0){
-            if(lKit->DrawQueue.try_pop(Op)==false){
+
+            if(queue.try_pop(Op)==false){
                 SDL_Delay(10);
                 continue;
             }
@@ -154,6 +151,11 @@ namespace RenderThread{
             assert(Op);
 
             Op->Draw();
+
+            if(Op->EndsScene()){
+                queue = lKit->Queues[AtomicGet(lKit->index)];
+            }
+
             if(!Op->IsPersistent()){
                 delete Op;
                 Op=nullptr;
@@ -167,6 +169,8 @@ namespace RenderThread{
 
     void StartThread(Window *aWindow){
         ThreadKit *lKit = new ThreadKit();
+        lKit->index = CreateAtomic(0);
+        lKit->lastIndex = CreateAtomic(0);
 
         GetSystemThreadkit() = lKit;
 
@@ -186,8 +190,6 @@ namespace RenderThread{
         lKit->mWindow->context= CreateContextFor(aWindow, {3, 3});
         ClaimWindow(aWindow);
 
-        lKit->EngineFrame = CreateAtomic(0);
-        lKit->RenderFrame = CreateAtomic(0);
         lKit->ShouldDie   = CreateAtomic(0);
         lKit->DidDie      = CreateAtomic(0);
 

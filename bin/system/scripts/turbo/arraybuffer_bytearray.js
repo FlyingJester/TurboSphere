@@ -36,12 +36,7 @@ function ByteArrayFromTypedArray(buffer){
 
     Object.defineProperty(byteview, "slice", {
         value:function(a, e){
-            var thisArray = Array.apply([], this);
-            var sArray = thisArray.slice(a, e);
-            var r = CreateByteArray(sArray.length);
-            for(var i = 0;i<sArray.length; i++)
-              r[i] = sArray[i];
-            return r;
+            return ByteArrayFromTypedArray(new Uint8Array(this.buffer, a, e));
         }
     });
 

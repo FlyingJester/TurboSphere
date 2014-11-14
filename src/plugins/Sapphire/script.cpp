@@ -254,37 +254,31 @@ Turbo::JSObj<std::shared_ptr<Galileo::Shader> >  ShaderProgramJSObj;
 namespace Finalizer {
 
 template <class T>
-void Generic(const v8::WeakCallbackData<v8::Object, T> &args) {
-    delete (T *)(args.GetValue()->GetAlignedPointerFromInternalField(0));
-    //args.GetValue().Clear();
-}
-
-template <class T>
 void CGeneric(const v8::WeakCallbackData<v8::Object, T> &args) {
     free(args.GetValue()->GetAlignedPointerFromInternalField(0));
-    //args.GetValue().Clear();
+    args.GetValue().Clear();
 }
 
 template <class T = void>
 void NoFree(const v8::WeakCallbackData<v8::Object, T> &args){
-    //args.GetValue().Clear();
+    args.GetValue().Clear();
 }
 
 void Surface(const v8::WeakCallbackData<v8::Object, SDL_Surface> &args) {
     SDL_FreeSurface((SDL_Surface *)(args.GetValue()->GetAlignedPointerFromInternalField(0)));
-    //args.GetValue().Clear();
+    args.GetValue().Clear();
 }
 
 void Vertex (const v8::WeakCallbackData<v8::Object, Galileo::Vertex>&args){
-    //args.GetValue().Clear();
+
 }
 
 void Shape  (const v8::WeakCallbackData<v8::Object, Galileo::Shape> &args){
-    //args.GetValue().Clear();
+
 }
 
 void Group  (const v8::WeakCallbackData<v8::Object, Galileo::Group> &args){
-    //args.GetValue().Clear();
+
 }
 
 
@@ -342,9 +336,9 @@ void InitScript(int64_t ID){
     GroupJSObj   = Turbo::JSObj<Galileo::Group> ();
     ShaderProgramJSObj   = Turbo::JSObj<std::shared_ptr<Galileo::Shader> > ();
 
-    ColorJSObj.Finalize             = Finalizer::Generic<TS_Color>;
-    ShaderProgramJSObj.Finalize     = Finalizer::Generic<std::shared_ptr<Galileo::Shader> >;
-    ImageJSObj.Finalize     = Finalizer::Generic<std::shared_ptr<Image> >;
+    ColorJSObj.Finalize             = Turbo::Finalizer<TS_Color>;
+    ShaderProgramJSObj.Finalize     = Turbo::Finalizer<std::shared_ptr<Galileo::Shader> >;
+    ImageJSObj.Finalize     = Turbo::Finalizer<std::shared_ptr<Image> >;
     SurfaceJSObj.Finalize   = Finalizer::NoFree;
     VertexJSObj.Finalize    = Finalizer::NoFree;
     ShapeJSObj.Finalize     = Finalizer::NoFree;
@@ -382,7 +376,7 @@ void InitScript(int64_t ID){
 
     printf(BRACKNAME " Info: Group is ID %llu\n", GroupJSObj.ID);
 
-    GroupJSObj.Finalize     = Finalizer::Generic<Galileo::Group>;
+    GroupJSObj.Finalize     = Turbo::Finalizer<Galileo::Group>;
     GroupJSObj.SetTypeName("Group");
     GroupJSObj.AddToProto("Draw", DrawGroup);
     GroupJSObj.AddToProto("draw", DrawGroup);
@@ -407,9 +401,10 @@ void InitScript(int64_t ID){
 }
 
 Turbo::JSFunction FlipScreen(Turbo::JSArguments args){
-    Sapphire::GL::EngineFlipScreenDelay();
-    Sapphire::GL::RenderQueue()->push(new Sapphire::Galileo::FlipScreen(Sapphire::GL::GetRenderFrame()));
-    AtomicInc(Sapphire::GL::GetEngineFrame());
+    Sapphire::GL::RenderQueue()->push(new Sapphire::Galileo::FlipScreen());
+    Sapphire::GL::SwapQueues();
+    Sapphire::GL::RenderQueue()->clear();
+//    AtomicInc(Sapphire::GL::GetEngineFrame());
 }
 
 /////

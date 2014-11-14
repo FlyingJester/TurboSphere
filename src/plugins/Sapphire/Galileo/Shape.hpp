@@ -49,6 +49,7 @@ namespace GL {
 
       inline void MarkDirty(){mDirty = true;}
       inline bool IsDirty(){return mDirty;}
+      virtual bool EndsScene(){return false;}
 
   };
 

@@ -7,19 +7,16 @@
 #include "Galileo/Shape.hpp"
 #include <TSPR/concurrent_queue.h>
 
+#define NUM_BUFFERS 16
+
 #define SDL2_VIDEO_FLAGS SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS|SDL_WINDOW_ALLOW_HIGHDPI
 
 namespace Sapphire{
 namespace GL{
 
-//This functions ensures that the Engine respects the framerate, and doesn't vastly outrun the renderer.
-void EngineFlipScreenDelay();
-
 concurrent_queue<Sapphire::Galileo::GL::Operation *> *RenderQueue();
-atomic32_t *GetRenderFrame();
-atomic32_t *GetEngineFrame();
 
-
+void SwapQueues();
 
 template<int T>
 class DummyOperation : public Sapphire::Galileo::GL::Operation {
@@ -32,14 +29,15 @@ struct Window {
 };
 
 struct ThreadKit{ // A recursive structure that describes and controls a renderthread.
+
     Window *mWindow; // Includes the destined context, not the creating thread's context.
-    atomic32_t *EngineFrame;
-    atomic32_t *RenderFrame;
     atomic32_t *ShouldDie;
     atomic32_t *DidDie;
     TS_Thread  *Thread;
 
-    concurrent_queue<Sapphire::Galileo::GL::Operation *> DrawQueue;
+    concurrent_queue<Sapphire::Galileo::GL::Operation *> Queues[NUM_BUFFERS];
+    TS_Atomic32 *index;
+    TS_Atomic32 *lastIndex;
 };
 
 // OpenGL version.

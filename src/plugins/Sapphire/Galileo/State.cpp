@@ -95,23 +95,12 @@ int32_t GetFrameRate(void){
   return AtomicGet(sFPS);
 }
 
-FlipScreen::FlipScreen(atomic32_t *aRenderFrame)
-  : mRenderFrame(aRenderFrame)
-  , window(nullptr)
-{
-
-}
-
-FlipScreen::FlipScreen(atomic32_t *aRenderFrame, SDL_Window *aWindow)
-  : mRenderFrame(aRenderFrame)
-  , window(aWindow)
-{
+FlipScreen::FlipScreen(SDL_Window *aWindow)
+  : window(aWindow){
 
 }
 
 int FlipScreen::Draw(){
-
-    AtomicInc(mRenderFrame);
 
     SDL_Window *w = SDL_GL_GetCurrentWindow();
 

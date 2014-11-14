@@ -16,20 +16,36 @@ files = [
   "options.c",
 ]
 
+environment = localenv
+
+libyyymonitor = SConscript(dirs = ["platform/libyyymonitor"], exports = ["environment"])
+
 enginelibs = [
   "t5",
   "graphiccommon",
   "graphicalg",
   "configmanager",
   "v8",
+  libyyymonitor,
 ]
+
+platformfiles = [
+    "platform/platform.cpp",
+    "platform/time.cpp",
+    "platform/background.cpp"
+
+]
+
+if IsDarwin():
+  platformfiles += ["platform/osx_time.m", "platform/osx_messagebox.m"]
+
+enginelibs += [globalenv.StaticLibrary("turbo_patform", platformfiles)]
 
 if not IsWindows():
   enginelibs+= ["dl"]
   enginelibs+= ["z"]
 
 if IsDarwin():
-  files += ["osx_time.m", "osx_messagebox.m"]
   enginelibs += ["objc"]
   localenv.Append(FRAMEWORKS=['Cocoa', 'CoreFoundation'])
   globalenv.Append(FRAMEWORKS=['CoreFoundation'])

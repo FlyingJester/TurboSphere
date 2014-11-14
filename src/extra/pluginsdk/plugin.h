@@ -186,7 +186,6 @@ namespace Turbo{
     void FinalizerFunctional(const v8::WeakCallbackData<v8::Object, T> &args) {
         F f;
         f(args.GetParemter());
-        args.GetValue().Clear();
     }
 
     template<class T> class JSObj{
@@ -207,7 +206,7 @@ namespace Turbo{
             Template         = v8::FunctionTemplate::New(v8::Isolate::GetCurrent());
             Prototype        = Template->PrototypeTemplate();
             InstanceTemplate = Template->InstanceTemplate();
-            InstanceTemplate->SetInternalFieldCount(2);
+            InstanceTemplate->SetInternalFieldCount(4);
             Constructor      = Template->GetFunction();
 
         };
@@ -455,18 +454,18 @@ namespace Turbo{
 
     template<class T, class A> void WrapObject(A args, const JSObj<T> &JSo, T *obj){
 
-        //
         auto iso = args.GetIsolate();
 
         /////
         // Create a JS object that holds an ID number and a pointer to the object
         assert(obj != nullptr);
-        //JSo.InstanceTemplate->SetInternalFieldCount(2);
 
         v8::Persistent<v8::Object> preturnobj(iso, CreateObject(JSo, obj, iso));
         preturnobj.SetWeak(obj, JSo.Finalize);
 
         args.GetReturnValue().Set(preturnobj);
+
+        preturnobj.Reset();
 
     }
 

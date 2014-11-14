@@ -13,16 +13,15 @@ void SetFrameRate(int32_t aFramesPerSecond);
 int32_t GetFrameRate(void);
 
 class FlipScreen : public GL::Operation {
-    atomic32_t *mRenderFrame;
     SDL_Window *window;
 
 public:
-    FlipScreen(atomic32_t *aRenderFrame);
-    FlipScreen(atomic32_t *aRenderFrame, SDL_Window *aWindow);
+    FlipScreen(SDL_Window *aWindow = nullptr);
     virtual int Draw();
     virtual bool IsPersistent(void){
         return false;
     }
+    virtual bool EndsScene(){return true;}
 };
 
 }

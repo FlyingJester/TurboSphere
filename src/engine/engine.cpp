@@ -14,6 +14,8 @@
 #include "typed_array.h"
 
 #include <TSPR/noreturn.h>
+#include "platform/time.hpp"
+#include "platform/platform.hpp"
 
 #if defined(HAS_UNISTD)
 #include <unistd.h>
@@ -31,46 +33,20 @@ using std::pair;
 
 #define ENGINE "[Engine]"
 
-#include <ctime>
+#ifdef _WIN32
+#define STRDUP _strdup
+#else
+#define STRDUP strdup
+#endif
 
 void (*TS_MessageBox)(const char * title, const char *content);
 int (*SDL_ShowSimpleMessageBox)(uint32_t flags, const char *title, const char *message, void *window);
 void (*TS_Sleep)(uint32_t milliseconds);
 uint32_t (*TS_GetTime)(void);
 
-#ifdef _WIN32
-
-#include <mmsystem.h>
-
-//Get Sleep function
-#if NTDDI_VERSION == NTDDI_WIN8 //As much as I am loathe to do this.
-    #include <Synchapi.h>
-#else
-    #include <WinBase.h>
-#endif
-
-#define STRDUP _strdup
-#define snprintf _snprintf
-#if _MSC_VER <= 1600
-	#define isblank(x) ((x==0x9)||(x==0x20))
-	#define isprint(x) ((x>=0x20)&&(x<0x7F))
-#endif
-#else
-
-#ifdef HAS_UNISTD_SYS
-#include <sys/unistd.h>
-    #define TS_SLEEP(x) usleep(x*1000)
-#elif defined HAS_UNISTD
-#include <unistd.h>
-    #define TS_SLEEP(x) usleep(x*1000)
-#endif
-
-#include <sys/time.h>
-#define STRDUP strdup
-#endif
+#include "platform/time.hpp"
 
 #if ( defined __MACH__ ) && (defined __APPLE__ )
-    #include "osx_time.h"
 
     #define OS_X 1
 #endif
@@ -230,7 +206,7 @@ void TS_TerminalMessageBox(const char *title, const char *content){
 void * SDLhandle = NULL;
 
 #ifdef OS_X
-#include "osx_messagebox.h"
+#include "platform/osx_messagebox.h"
 #endif
 
 void LoadMessageBoxFunctions(void){
@@ -368,115 +344,6 @@ void RequireScript(const v8::FunctionCallbackInfo<v8::Value> &args){
     return;
 }
 
-// Gets Time down to Microsecond accuracy.
-void GetSeconds(const v8::FunctionCallbackInfo<v8::Value> &args){
-    #ifdef _WIN32
-    args.GetReturnValue().Set(v8::Number::New(((double)timeGetTime()))/1000.0);
-    #elif defined OS_X
-    args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), ((double)TS_OSX_GetTime(TS_OSX_TimeUnit::TS_OSX_Nanosecond))/1000000000.0));
-    #else
-    struct timespec s;
-
-    clock_gettime(CLOCK_MONOTONIC, &s);
-
-    args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), ((double)((s.tv_sec*1000)+(s.tv_nsec/1000000)))/1000.0));
-    #endif
-}
-
-void GetTime(const v8::FunctionCallbackInfo<v8::Value> &args){
-
-    #ifdef _WIN32
-
-    args.GetReturnValue().Set(v8::Number::New(timeGetTime()));
-
-    #elif defined OS_X
-
-    args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), TS_OSX_GetTime()));
-
-    #else
-    struct timespec s;
-
-    clock_gettime(CLOCK_MONOTONIC, &s);
-
-    args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), (s.tv_sec*1000)+(s.tv_nsec/1000000)));
-    #endif
-}
-
-void Delay(const v8::FunctionCallbackInfo<v8::Value> &args){
-	unsigned int t = args[0]->Uint32Value();
-
-	#ifdef _WIN32
-
-	SDL_Delay(t);
-
-  #else
-    static uint32_t max = 0;
-
-    if(t>max){
-    //If we are delaying for longer than the longest time it ever took to call v8::V8::LowMemoryNotification(),
-    //Then we will call it and subtract the time difference it made from the ms to sleep for.
-
-    #ifdef OS_X
-        uint32_t ot = TS_OSX_GetTime();
-    #else
-        clock_gettime(CLOCK_MONOTONIC, &s);
-        uint32_t ot = (s.tv_sec*1000)+(s.tv_nsec/1000000);
-    #endif
-
-    // Sapphire broke this. Well, actually, Sapphire is broken, and this shows it.
-        //while(!v8::V8::IdleNotification(1000)){}
-
-        //v8::V8::LowMemoryNotification();
-
-    #ifdef OS_X
-        ot = TS_OSX_GetTime()-ot;
-    #else
-        clock_gettime(CLOCK_MONOTONIC, &s);
-        ot = (s.tv_sec*1000)+(s.tv_nsec/1000000)-ot;
-    #endif
-
-        t-=ot;
-        if(ot>max){
-            max=ot;
-            printf(ENGINE " Info: Increased minimum time threshold to %i.\n", max);
-        }
-    }
-
-    TS_SLEEP(t);
-  //  #else
-
-  /*
-    //If we are delaying for longer than the longest time it ever took to call v8::V8::LowMemoryNotification(),
-    //Then we will call it and subtract the time difference it made from the ms to sleep for.
-    static uint32_t max = 0;
-    if(t>max){
-
-        struct timespec s;
-
-        clock_gettime(CLOCK_MONOTONIC, &s);
-        uint32_t ot = (s.tv_sec*1000)+(s.tv_nsec/1000000);
-
-        while(!v8::V8::IdleNotification(1000)){}
-
-        v8::V8::LowMemoryNotification();
-
-
-        clock_gettime(CLOCK_MONOTONIC, &s);
-        ot = (s.tv_sec*1000)+(s.tv_nsec/1000000)-ot;
-        t-=ot;
-        if(ot>max){
-            max=ot;
-            printf(ENGINE " Info: Increased minimum time threshold to %i.\n", max);
-        }
-    }
-
-        TS_SLEEP(t);
-        */
-    #endif  //_WIN32
-
-	//SDL_Delay(t);
-	//return v8::Undefined(v8::Isolate::GetCurrent());
-}
 
 void notationCallback(v8::GCType type, v8::GCCallbackFlags flags){
     printf(ENGINE " GC was performed.\n");
@@ -527,6 +394,25 @@ void TS_MessageCallback(v8::Handle<v8::Message> message, v8::Handle<v8::Value> d
     str+= LineNumChar;
     str+= ":\n";
     str+= LineContentsl;
+
+    str+= "\n\nStack Trace:\n";
+
+    v8::Local<v8::StackTrace> trace = message->GetStackTrace();
+
+    for(int i = 0; i<trace->GetFrameCount(); i++){
+        v8::Local<v8::StackFrame> frame = trace->GetFrame(i);
+        str+= *(v8::String::Utf8Value(frame->GetFunctionName()));
+
+        {
+            char lLineNumCharl[LINE_NUM_CHAR_SIZE+1] = {LINE_NUM_FILL};
+            snprintf(LineNumCharl, LINE_NUM_CHAR_SIZE, "%6i", frame->GetLineNumber());
+            char *lLineNumChar = LineNumCharl;
+            lLineNumChar = destructiveTrim(lLineNumChar);
+            str+=", line ";
+            str+= lLineNumChar;
+        }
+        str+="\n";
+    }
 
     fprintf(stderr, "%s\n", str.c_str());
     TS_MessageBox(Name, str.c_str());
@@ -688,11 +574,11 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
     v8::Handle<v8::FunctionTemplate> E_GetVersionStringtempl = v8::FunctionTemplate::New(iso, GetVersionString);
 
-    v8::Handle<v8::FunctionTemplate> E_GetTimetempl = v8::FunctionTemplate::New(iso, GetTime);
+    v8::Handle<v8::FunctionTemplate> E_GetTimetempl = v8::FunctionTemplate::New(iso, Turbo::GetTime);
 
-    v8::Handle<v8::FunctionTemplate> E_GetSecondstempl = v8::FunctionTemplate::New(iso, GetSeconds);
+    v8::Handle<v8::FunctionTemplate> E_GetSecondstempl = v8::FunctionTemplate::New(iso, Turbo::GetSeconds);
 
-    v8::Handle<v8::FunctionTemplate> E_Delaytempl = v8::FunctionTemplate::New(iso, Delay);
+    v8::Handle<v8::FunctionTemplate> E_Delaytempl = v8::FunctionTemplate::New(iso, Turbo::Delay);
 
     v8::Handle<v8::FunctionTemplate> E_Exittempl = v8::FunctionTemplate::New(iso, ExitGame);
 
@@ -771,6 +657,10 @@ int wmain
 int main
 #endif
 (int argc, char* argv[]){
+
+    std::unique_ptr<v8::Platform> platform(new Turbo::Platform());
+
+    v8::V8::InitializePlatform(platform.get());
 
     TS_CMD_ProcessStubbingOptions(argc, argv);
 
