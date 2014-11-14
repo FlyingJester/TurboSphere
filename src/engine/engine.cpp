@@ -627,18 +627,11 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
         }
 
     }
-	//printf(ENGINE " Info: Running Script.\n");
-
-    //printf(ENGINE " Info: Optimizing JS Stack before calling Game Function ");
-    //while(!v8::V8::IdleNotification(1000)){printf("."); v8::V8::LowMemoryNotification();}
-    //printf("\n");
 
     TS_CallFunc("game", context, iso);
 
 	printf(ENGINE " Info: Game function done running.\n");
 
-    //v8::V8::LowMemoryNotification();
-	//mainscope.Close();
 end:
 
     exitContext(context);

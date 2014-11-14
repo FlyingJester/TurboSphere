@@ -36,7 +36,7 @@ function ByteArrayFromTypedArray(buffer){
 
     Object.defineProperty(byteview, "slice", {
         value:function(a, e){
-            return ByteArrayFromTypedArray(new Uint8Array(this.buffer, a, e));
+            return ByteArrayFromTypedArray(new Uint8Array(this.buffer.slice(a, e)));
         }
     });
 

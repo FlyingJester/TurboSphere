@@ -95,14 +95,18 @@ Turbo.Map = function(bytearray, offset){
         var size = {w:bytearray[at++], h:bytearray[at++]};
         var flags= bytearray[at++];
 
+        var segmentbuffer = new Float32Array(bytearray.buffer.slice(at, at+16));
+
         var parallax = {
-            x: Turbo.qByteCat(bytearray[at++], bytearray[at++], bytearray[at++], bytearray[at++]),
-            y: Turbo.qByteCat(bytearray[at++], bytearray[at++], bytearray[at++], bytearray[at++])
+            x:segmentbuffer[0],
+            y:segmentbuffer[1]
         };
         var scrolling= {
-            x: Turbo.qByteCat(bytearray[at++], bytearray[at++], bytearray[at++], bytearray[at++]),
-            y: Turbo.qByteCat(bytearray[at++], bytearray[at++], bytearray[at++], bytearray[at++])
+            x:segmentbuffer[2],
+            y:segmentbuffer[3]
         };
+
+        at+=16;
 
         var segments = new Array(Turbo.qByteCat(bytearray[at++], bytearray[at++], bytearray[at++], bytearray[at++]));
 
@@ -122,8 +126,12 @@ Turbo.Map = function(bytearray, offset){
             if(bytearray.length<at+8)
               throw "Unexpected end of file.";
 
-            segments[e] = [{x:Turbo.QByteCat(bytearray[at++], bytearray[at++], bytearray[at++], bytearray[at++]), y:Turbo.qByteCat(bytearray[at++], bytearray[at++], bytearray[at++], bytearray[at++])},
-                           {x:Turbo.qByteCat(bytearray[at++], bytearray[at++], bytearray[at++], bytearray[at++]), y:Turbo.qByteCat(bytearray[at++], bytearray[at++], bytearray[at++], bytearray[at++])}];
+            var segmentbuffer = new Uint32Array(bytearray.buffer.slice(at, at+16));
+
+            segments[e] = [{x:segmentbuffer[0], y:segmentbuffer[1]},
+                           {x:segmentbuffer[2], y:segmentbuffer[3]}];
+
+            at+=16;
         }
 
         this.layers[i] = {size:size, flags:flags, parallax:parallax, scrolling:scrolling, name:name, segments:segments, field:data};
@@ -183,13 +191,16 @@ Turbo.Map = function(bytearray, offset){
         if(bytearray.length < at+12+4)
           throw "Unexpected end of file.";
 
-        this.zones[i] = {location:[{x:Turbo.dByteCat(bytearray[at++], bytearray[at++]),
-                               y:Turbo.dByteCat(bytearray[at++], bytearray[at++])},
-                              {x:Turbo.dByteCat(bytearray[at++], bytearray[at++]),
-                               y:Turbo.dByteCat(bytearray[at++], bytearray[at++])}],
-                               layer:Turbo.dByteCat(bytearray[at++], bytearray[at++]),
-                               steps:Turbo.dByteCat(bytearray[at++], bytearray[at++])};
-        at+=4;
+        zonebuffer = new Uint16Array(bytearray.buffer.slice(at, at+12));
+
+        this.zones[i] = {location:[{x:zonebuffer[0],
+                               y:zonebuffer[1]},
+                              {x:zonebuffer[2],
+                               y:zonebuffer[3]}],
+                               layer:zonebuffer[4],
+                               steps:zonebuffer[5]};
+
+        /*Reserved[4], and the twelve we pulled from the zonebuffer.*/at+=4+12;
 
         var string = Turbo.Classic.readString(bytearray, at);
         at+=string.length;

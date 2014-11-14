@@ -181,6 +181,7 @@ namespace Turbo{
     void Finalizer(const v8::WeakCallbackData<v8::Object, T> &args) {
         assert(args.GetValue()->GetAlignedPointerFromInternalField(0) == args.GetParameter());
         delete args.GetParameter();
+        args.GetValue().Clear();
     }
     template <class T, class F>
     void FinalizerFunctional(const v8::WeakCallbackData<v8::Object, T> &args) {
@@ -465,7 +466,7 @@ namespace Turbo{
 
         args.GetReturnValue().Set(preturnobj);
 
-        preturnobj.Reset();
+        preturnobj.ClearWeak();
 
     }
 

@@ -2,8 +2,6 @@
 #include <t5.h>
 #include <string>
 
-#include "v8-hack.hpp"
-
 #include <opengame.h>
 
 #define TURBO_TRYRAWFILE_ISERROR(err) (err!=RawFileError::RF_NoError)
@@ -95,16 +93,25 @@ namespace scriptfs {
         {
             v8::HandleScope scope(args.GetIsolate());
 
-            char *r_buffer = (char *)malloc(len);
+            static void *r_buffer = nullptr;
+            r_buffer = realloc(r_buffer, len);
             err = rawfile_read(mRawFile->A, r_buffer, len);
 
-            printf("Reading %i bytes. Buffer holds %s.\n", len, r_buffer);
+            printf("Reading %i bytes.\n", len);
 
-            v8::Local<v8::Uint8Array> typed_buffer = v8::Uint8Array::New(buffer, 0, len);
+            int to = len/4;
+            v8::Local<v8::Uint32Array> typed_buffer = v8::Uint32Array::New(buffer, 0, to);
 
-            for(int i = 0; i<len; i++){
-                typed_buffer->Set(i, v8::Uint32::New(args.GetIsolate(), r_buffer[i]));
+            for(int i = 0; i<to; i++){
+                typed_buffer->Set(i, v8::Uint32::New(args.GetIsolate(), static_cast<uint32_t *>(r_buffer)[i]));
             }
+
+            v8::Local<v8::Uint8Array> typed_buffer_2 = v8::Uint8Array::New(buffer, 0, len);
+            for(int i = to*4; i<len; i++){
+                typed_buffer_2->Set(i, v8::Uint32::New(args.GetIsolate(), static_cast<uint8_t *>(r_buffer)[i]));
+            }
+
+            printf("Copied %i bytes.\n", len, r_buffer);
 
             free(r_buffer);
 

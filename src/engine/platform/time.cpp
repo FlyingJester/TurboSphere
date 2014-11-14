@@ -132,8 +132,6 @@ void Delay(const v8::FunctionCallbackInfo<v8::Value> &args){
         */
     #endif  //_WIN32
 
-	//SDL_Delay(t);
-	//return v8::Undefined(v8::Isolate::GetCurrent());
 }
 
 

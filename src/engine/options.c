@@ -177,7 +177,7 @@ char *TS_CMD_ProcessV8Options(int argc, char *argv[]) {
 
 
         if(strcmp(argv[i], "--turbo")==0){
-            char *opt = strdup("--harmony --use-strict --compiled_keyed_generic_loads --turbo_types --turbo_inlining --context_specialization --cpu_profiler_sampling_interval=10 --print_turbo_replay ");
+            char *opt = strdup("--harmony --use-strict --compiled_keyed_generic_loads --turbo_types --turbo_inlining --context_specialization --cpu_profiler_sampling_interval=10 --print_turbo_replay");
             /*
             char * opt = malloc(strlen("--harmony --use-strict")+1);
             memcpy(opt, " --harmony --use-strict", strlen("--harmony --use-strict")+1);
