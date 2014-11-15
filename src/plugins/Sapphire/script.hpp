@@ -19,7 +19,7 @@ namespace Script {
 
 void InitScript(int64_t ID);
 
-static const size_t NumFuncs = 12;
+static const size_t NumFuncs = 13;
 static const size_t NumVars  = 0;
 
 typedef std::pair<const char *, Turbo::JSCallback> CallbackWithName;
@@ -44,8 +44,10 @@ extern Turbo::JSObj<std::shared_ptr<Galileo::Shader> > ShaderProgramJSObj;
 Turbo::JSFunction ColorCtor(Turbo::JSArguments args);
 Turbo::JSFunction ImageCtor(Turbo::JSArguments args);
 Turbo::JSFunction SurfaceCtor(Turbo::JSArguments args);
+Turbo::JSFunction ArrayBufferToSurface(Turbo::JSArguments args);
 
 Turbo::JSFunction SaveSurface(Turbo::JSArguments args);
+Turbo::JSFunction SetPixelSurface(Turbo::JSArguments args);
 Turbo::JSFunction SaveImage(Turbo::JSArguments args);
 Turbo::JSFunction ImageCreateSurface(Turbo::JSArguments args);
 /////

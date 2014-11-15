@@ -54,17 +54,19 @@ Turbo.Map = function(bytearray, offset){
 
     var at = 0x04;
 
+
     this.version = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
     this.type    = bytearray[at++];
     this.layers  = new Array(bytearray[at++]);
     /*reserved*/ at++;
-    this.entities= new Array(bytearray[at++]);
+    this.entities= new Array(Turbo.dByteCat(bytearray[at++], bytearray[at++]));
+
     this.startx  = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
     this.starty  = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
     this.start_layer     = bytearray[at++];
     this.start_direction = bytearray[at++];
     this.strings = new Array(Turbo.dByteCat(bytearray[at++], bytearray[at++]));
-    this.function = new Array(this.strings.length-3);
+    this.functions = new Array(this.strings.length-3);
     this.zones   = new Array(bytearray[at++]);
 
     while(at<0x100){
@@ -75,13 +77,13 @@ Turbo.Map = function(bytearray, offset){
 
     at = 0x100;
 
-    for(var i in this.strings){
+    for(var i = 0; i< this.strings.length; i++){
         var string = Turbo.Classic.readString(bytearray, at);
         at+=string.length;
         this.strings[i] = string.string;
     }
 
-    for(var i in this.functions){
+    for(var i = 0; i< this.functions.length; i++){
         this.functions[i] = function(){eval(this.strings[i+3]);};
     }
 
@@ -89,11 +91,13 @@ Turbo.Map = function(bytearray, offset){
 
     for(var i = 0; i< this.layers.length; i++){
 
+        var from = at;
+
         if(bytearray.length<at+29) // Up to the first byte of the name string.
           throw "Unexpected end of file.";
 
-        var size = {w:bytearray[at++], h:bytearray[at++]};
-        var flags= bytearray[at++];
+        var size = {w:Turbo.dByteCat(bytearray[at++], bytearray[at++]), h:Turbo.dByteCat(bytearray[at++], bytearray[at++])};
+        var flags= Turbo.dByteCat(bytearray[at++], bytearray[at++])
 
         var segmentbuffer = new Float32Array(bytearray.buffer.slice(at, at+16));
 
@@ -186,12 +190,12 @@ Turbo.Map = function(bytearray, offset){
 
     }
 
-    for(var i = 0; i< this.zones.length; i++){
+    for(var i = 0; i<this.zones.length; i++){
 
         if(bytearray.length < at+12+4)
           throw "Unexpected end of file.";
 
-        zonebuffer = new Uint16Array(bytearray.buffer.slice(at, at+12));
+        var zonebuffer = new Uint16Array(bytearray.buffer.slice(at, at+12));
 
         this.zones[i] = {location:[{x:zonebuffer[0],
                                y:zonebuffer[1]},

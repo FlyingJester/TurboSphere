@@ -24,30 +24,31 @@ Turbo.Tile = function(array, index, surface){
 
     var at = index++;
     this.animated = array[at++];
+
     this.animated = Turbo.dByteCat(array[at++], array[at++]);
     this.delay    = Turbo.dByteCat(array[at++], array[at++]);
     /* reserved[1] */at++;
 
     var obstruction_type = array[at++];
     if(obstruction_type==2){
-        segments = new Array(array[at++]);
+        this.segments = new Array(array[at++]);
     }
     else
-      segments = [];
+      this.segments = [];
 
     switch(obstruction_type){
     case 2:
         this.loadObstructions =  function(bytearray, index){
-            if(bytearray.length < index+(8*segments.length))
+            if(bytearray.length < index+(8*this.segments.length))
               throw "Unexpected end of file.";
 
             var at = index;
-            for(var i in segments){
-                segments[i] = [{x:Turbo.dByteCat(array[at++], array[at++]), y:Turbo.dByteCat(array[at++], array[at++])},
+            for(var i = 0; i< this.segments.length; i++){
+                this.segments[i] = [{x:Turbo.dByteCat(array[at++], array[at++]), y:Turbo.dByteCat(array[at++], array[at++])},
                                {x:Turbo.dByteCat(array[at++], array[at++]), y:Turbo.dByteCat(array[at++], array[at++])}];
             }
 
-            return 8*segments.length;
+            return 8*this.segments.length;
 
         }
     case 1:
@@ -85,21 +86,25 @@ Turbo.Tileset = function(bytearray, offset){
     var sig_array = bytearray.slice(offset+0x00, offset+0x04);
     var sig_string = CreateStringFromByteArray(sig_array);
 
-    if((sig_string!=this.signature) && (offset==0))
+    if(sig_string!=this.signature)
       throw "Signature is invalid. Expected " + this.signature + " at " +at+ ", found " + sig_string;
 
     var at = offset+0x04;
 
-    this.version = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
-    this.tiles   = new Array(Turbo.dByteCat(bytearray[at++], bytearray[at++]));
-    this.tile_surfaces = new Array(this.tiles.length);
-    this.width   = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
-    this.height  = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
-    this.BPP     = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
+    var headerbuffer = new Uint16Array(bytearray.buffer.slice(at, at+10));
 
-    // The WxEditor did this in 1.4, and it SUCKS.
+    this.version = headerbuffer[0];
+    this.tiles   = new Array(headerbuffer[1]);
+    this.tile_surfaces = new Array(this.tiles.length);
+    this.width   = headerbuffer[2];
+    this.height  = headerbuffer[3];
+    this.BPP     = headerbuffer[4];
+
+    if(headerbuffer[1]==0)
+      throw "Zero tiles in tileset";
+
     if(this.BPP==0)
-      this.BPP=32;
+      throw "BPP of 0";
 
     this.compression = bytearray[at++];
     this.obstructions = bytearray[at++];
@@ -199,11 +204,18 @@ Turbo.Tileset = function(bytearray, offset){
       throw "Unexpected end of file.";
 
     for(var i = 0; i<this.tile_surfaces.length; i++){
-        this.tile_surfaces[i] = new Surface(width, height, Black);
-        for(var y = 0; y < this.height; y++){
-            for(var x = 0; x < this.width; x++){
-                this.tile_surfaces.setPixel(x, y, this.colorEquation(bytearray, at));
-                at+=this.BPP/8;
+        if(this.BPP==32){
+            this.tile_surfaces[i] = SurfaceFromArrayBuffer(this.width, this.height, bytearray.buffer.slice(at, (this.BPP/8)*this.width*this.height));
+            at+=(this.BPP/8)*this.width*this.height;
+        }
+        else{
+            this.tile_surfaces[i] = new Surface(this.width, this.height, Black);
+            for(var y = 0; y < this.height; y++){
+                for(var x = 0; x < this.width; x++){
+                    var color_int =  this.colorEquation(bytearray, at);
+                    this.tile_surfaces[i].setPixel(x, y, color_int);
+                    at+=this.BPP/8;
+                }
             }
         }
     }

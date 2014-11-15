@@ -58,6 +58,18 @@ SDL_Surface *CreateSurface(unsigned aWidth, unsigned aHeight, TS_Color *color){
     return rSurface;
 }
 
+SDL_Surface *CreateSurface(unsigned aWidth, unsigned aHeight, const void *aData,
+                           unsigned long long aRedMask, unsigned long long aGreenMask,
+                           unsigned long long aBlueMask, unsigned long long aAlphaMask,
+                           char aPixelSize){
+
+    SDL_Surface *surface = SDL_CreateRGBSurface(0, aWidth, aHeight, aPixelSize*8,
+                                                aRedMask, aGreenMask, aBlueMask, aAlphaMask);
+    memcpy(surface->pixels, aData, aPixelSize*aWidth*aHeight);
+    return surface;
+
+}
+
 SDL_Surface *FromImage(Image *aFrom){
     SDL_Surface* rSurface =  GenerateSurface(aFrom->Width(), aFrom->Height());
 
