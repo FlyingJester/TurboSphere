@@ -28,6 +28,7 @@ namespace Script {
 struct JSProps {
     static v8::Handle<v8::Value> X;
     static v8::Handle<v8::Value> Y;
+    static v8::Handle<v8::Value> Color;
 };
 
 template <class T, class A>
@@ -288,6 +289,7 @@ std::array<Turbo::JSCallback, NumFuncs> FunctionList = {
     FlipScreen,
     ColorCtor,
     SurfaceCtor,
+    ArrayBufferToSurface,
     ImageCtor,
     VertexCtor,
     ShapeCtor,
@@ -304,6 +306,7 @@ std::array<Turbo::JSName, NumFuncs> FunctionNameList = {
     "FlipScreen",
     "Color",
     "Surface",
+    "SurfaceFromArrayBuffer",
     "Image",
     "VertexNative",
     "Shape",
@@ -319,12 +322,14 @@ std::array<Turbo::JSValue,       NumVars>  VariableList = {};
 std::array<Turbo::JSVariableName,NumVars>  VariableNameList = {};
 v8::Handle<v8::Value> JSProps::X;
 v8::Handle<v8::Value> JSProps::Y;
+v8::Handle<v8::Value> JSProps::Color;
 
 void InitScript(int64_t ID){
 
 
     JSProps::X = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "x");
     JSProps::Y = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "y");
+    JSProps::Color = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "color");
 
     printf(BRACKNAME " Info: ID is %llx!\n", ID);
 
@@ -345,6 +350,7 @@ void InitScript(int64_t ID){
     ImageJSObj.SetTypeName("Image");
 
     SurfaceJSObj.AddToProto("save", SaveSurface);
+    SurfaceJSObj.AddToProto("setPixel", SetPixelSurface);
 
     memberiter_t lIter = CrossPluginSurfaceMembers.begin();
 
@@ -590,20 +596,33 @@ Turbo::JSFunction ShapeCtor(Turbo::JSArguments args){
         std::vector<Sapphire::Galileo::Vertex> Vertices; Vertices.resize(num_vertices);
 
         if(!ImageJSObj.IsA(args[1])){
-            Turbo::SetError(args, BRACKNAME " ShapeCtor Error: Argument 1 is not an Image.");
+            Turbo::SetError(args, BRACKNAME " ShapeCtor Error: Argument 1 is not an Image.", v8::Exception::TypeError);
             return;
         }
         // Validate and encode all the vertices to x and y point arrays.
         for(int i = 0; i<num_vertices; i++){
             const v8::Local<v8::Object> vertex = (vertexarray->Get(i))->ToObject();
             if(!ValidateVertex(vertex)){
-                Turbo::SetError(args, (std::string(BRACKNAME " ShapeCtor Error: Argument 0, element ")+std::to_string(i)+std::string(" does not have a 'x' and a 'y' property.")).c_str());
+                Turbo::SetError(args, (std::string(BRACKNAME " ShapeCtor Error: Argument 0, element ")+std::to_string(i)+" does not have a 'x' and a 'y' property.").c_str(), v8::Exception::TypeError);
                 return;
             }
 
             Vertices[i].x = vertex->Get(JSProps::X)->NumberValue();// - (::GetScreenWidth());
             Vertices[i].y = vertex->Get(JSProps::Y)->NumberValue();// + (::GetScreenHeight()/2);
-            Vertices[i].color = TS_Color(0xFF, 0xFF, 0xFF, 0xFF);
+
+            TS_Color lColor(0xFF, 0xFF, 0xFF, 0xFF);
+
+            if(vertex->Has(JSProps::Color)){
+                if(!ColorJSObj.IsA(vertex->Get(JSProps::Color))){
+                    Turbo::SetError(args, (std::string(BRACKNAME " ShapeCtor Error: Property 'color' of argument 0, element ")+std::to_string(i)+" is not a Color.").c_str(), v8::Exception::TypeError);
+                    return;
+                }
+
+                lColor = *ColorJSObj.Unwrap(vertex->Get(JSProps::Color));
+            }
+
+            Vertices[i].color = lColor;
+
             if(num_vertices<FIXEDUVCOORD_SIZE){
                 switch(num_vertices){
                 case 4:
@@ -625,23 +644,23 @@ Turbo::JSFunction ShapeCtor(Turbo::JSArguments args){
         Turbo::WrapObject(args, ShapeJSObj, rShape);
     }
     else{
-            Turbo::SetError(args, BRACKNAME " ShapeCtor Error: Called with fewer than 2 arguments.");
+            Turbo::SetError(args, BRACKNAME " ShapeCtor Error: Called with fewer than 2 arguments.", v8::Exception::SyntaxError);
     }
 }
 
 Turbo::JSFunction GroupCtor(Turbo::JSArguments args){
 
     if(args.Length()<2){
-        Turbo::SetError(args, BRACKNAME " GroupCtor Error: Called with fewer than 2 arguments.");
+        Turbo::SetError(args, BRACKNAME " GroupCtor Error: Called with fewer than 2 arguments.", v8::Exception::SyntaxError);
         return;
     }
     if((!args[0]->IsArray())&&(!ShapeJSObj.IsA(args[0]))){
-        Turbo::SetError(args, BRACKNAME " GroupCtor Error: Argument 0 must either be a Shape or an array of Shapes.");
+        Turbo::SetError(args, BRACKNAME " GroupCtor Error: Argument 0 must either be a Shape or an array of Shapes.", v8::Exception::TypeError);
         return;
     }
 
     if(!ShaderProgramJSObj.IsA(args[1])){
-        Turbo::SetError(args, BRACKNAME " GroupCtor Error: Argument 1 must be a ShaderProgram.");
+        Turbo::SetError(args, BRACKNAME " GroupCtor Error: Argument 1 is not a ShaderProgram.", v8::Exception::TypeError);
         return;
     }
 
@@ -662,7 +681,7 @@ Turbo::JSFunction GroupCtor(Turbo::JSArguments args){
         const v8::Local<v8::Array> shapearray = v8::Local<v8::Array>::Cast(args[0]);
         for(int i = 0; i<shapearray->Length(); i++){
             if(!ShapeJSObj.IsA(shapearray->Get(i)->ToObject())){
-                Turbo::SetError(args, (std::string(BRACKNAME " GroupCtor Error: Argument 0, element ")+std::to_string(i)+std::string(" is not a Shape.")).c_str());
+                Turbo::SetError(args, (std::string(BRACKNAME " GroupCtor Error: Argument 0, element ")+std::to_string(i)+std::string(" is not a Shape.")).c_str(), v8::Exception::TypeError);
                 return;
             }
         }
@@ -746,6 +765,62 @@ Turbo::JSFunction SaveSurface(Turbo::JSArguments args){
                                  BRACKNAME " SaveSurface Error: Argument 0 is not a string.")));
       return;
     }
+
+}
+
+Turbo::JSFunction SetPixelSurface(Turbo::JSArguments args){
+    SDL_Surface* mSurf = Turbo::GetMemberSelf <SDL_Surface> (args);
+    assert(mSurf);
+
+    int sig[4] = {Turbo::Number, Turbo::Number, Turbo::Object, 0};
+
+    if(!Turbo::CheckArg::CheckSig(args, 3, sig))
+      return;
+
+    if(!ColorJSObj.IsA(args[2])){
+        Turbo::SetError(args, " Argument 2 is not a Color.");
+        return;
+    }
+
+    const TS_Color *lColor =
+      (TS_Color*)(v8::Local<v8::Object>::Cast(args[2]))->GetAlignedPointerFromInternalField(0);
+
+    SDL_LockSurface(mSurf);
+    static_cast<uint32_t *>(mSurf->pixels)[args[0]->Int32Value() + (args[1]->Int32Value()*mSurf->w)] = lColor->toInt();
+    SDL_UnlockSurface(mSurf);
+
+}
+
+Turbo::JSFunction ArrayBufferToSurface(Turbo::JSArguments args){
+    int sig[4] = {Turbo::Number, Turbo::Number, Turbo::ArrayBuffer, 0};
+
+    if(!Turbo::CheckArg::CheckSig(args, 3, sig))
+      return;
+
+    int w = args[0]->Uint32Value(), h = args[1]->Uint32Value();
+    const size_t length = w*h*4;
+
+    v8::Local<v8::ArrayBuffer> buffer = v8::Local<v8::ArrayBuffer>::Cast(args[2]);
+
+    v8::ArrayBuffer::Contents contents = buffer->Externalize();
+
+    if(contents.ByteLength()<length){
+        Turbo::SetError(args, "ArrayBuffer too small", v8::Exception::RangeError);
+        return;
+    }
+
+    SDL_Surface *rSurf = GenerateSurface(w, h);
+
+    SDL_LockSurface(rSurf);
+
+    memcpy(rSurf->pixels, contents.Data(), length);
+
+    SDL_UnlockSurface(rSurf);
+
+    Turbo::WrapObject(args, SurfaceJSObj, rSurf);
+
+    free(contents.Data());
+    buffer->Neuter();
 
 }
 
