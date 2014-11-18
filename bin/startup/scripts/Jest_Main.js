@@ -253,7 +253,6 @@ function game(){
 
     var Astral = Turbo.LoadMapFile("astral.rmp");
 
-
     /*
     var F = new RawFile("TSfile.txt");
 

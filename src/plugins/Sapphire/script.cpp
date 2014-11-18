@@ -25,6 +25,12 @@ using std::string;
 namespace Sapphire {
 namespace Script {
 
+class ScriptGroup : public Galileo::Group {
+public:
+    virtual ~ScriptGroup() {}
+    v8::Persistent<v8::Array> mScriptShapes;
+};
+
 struct JSProps {
     static v8::Handle<v8::Value> X;
     static v8::Handle<v8::Value> Y;
@@ -75,10 +81,40 @@ Turbo::JSFunction GroupSetY(Turbo::JSArguments args){
     mGroup->SetY(args[0]->NumberValue());
 }
 
+void ShapeImageGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorInfo aInfo){
+    const Galileo::Shape *mShape = Turbo::GetAccessorSelf<Galileo::Shape>(aInfo);
+    assert(mShape);
+
+    Turbo::WrapObject(aInfo, ImageJSObj, new std::shared_ptr<Image>(mShape->GetImage()));
+}
+
+void ShapeImageSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){
+
+    // Hold a shared pointer of the image just in case.
+    // We should technically be fine, since we are inside an accessor.
+    std::shared_ptr<Image> image(nullptr);
+
+    if(ImageJSObj.IsA(aVal)){
+        image = *ImageJSObj.Unwrap(aVal);
+    }
+    else if(SurfaceJSObj.IsA(aVal)){
+        image.reset(new Image(SurfaceJSObj.Unwrap(aVal)));
+    }
+    else {
+        Turbo::SetError(aInfo, (string(BRACKNAME " ") + string(__func__) + string(" Error: Value is not a Surface or Image.")).c_str(), v8::Exception::TypeError);
+        return;
+    }
+
+    assert(image);
+
+    Turbo::GetAccessorSelf<Galileo::Shape>(aInfo)->ReplaceImage(image.get());
+
+}
+
 void GroupXGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
     const Galileo::Group *mGroup = Turbo::GetAccessorSelf<Galileo::Group>(aInfo);
     assert(mGroup);
-    aInfo.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), mGroup->GetX()));
+    aInfo.GetReturnValue().Set(v8::Number::New(aInfo.GetIsolate(), mGroup->GetX()));
 }
 
 void GroupXSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){
@@ -88,7 +124,7 @@ void GroupXSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::J
     }
     Galileo::Group *mGroup = Turbo::GetAccessorSelf<Galileo::Group>(aInfo);
     assert(mGroup);
-    mGroup->SetY(aVal->NumberValue());
+    mGroup->SetX(aVal->NumberValue());
 }
 
 void GroupYGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
@@ -111,6 +147,7 @@ void GroupRotYGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInf
     assert(mGroup);
     aInfo.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), mGroup->GetRotY()));
 }
+
 void GroupRotYSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){
     if(!aVal->IsNumber()){
         Turbo::SetError(aInfo, (string(BRACKNAME " ") + string(__func__) + string(" Error: Value is not a number.")).c_str());
@@ -126,6 +163,7 @@ void GroupRotXGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInf
     assert(mGroup);
     aInfo.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), mGroup->GetRotX()));
 }
+
 void GroupRotXSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){
     if(!aVal->IsNumber()){
         Turbo::SetError(aInfo, (string(BRACKNAME " ") + string(__func__) + string(" Error: Value is not a number.")).c_str());
@@ -141,6 +179,7 @@ void GroupAngleGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterIn
     assert(mGroup);
     aInfo.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), mGroup->GetRotation<float>()));
 }
+
 void GroupAngleSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){
     if(!aVal->IsNumber()){
         Turbo::SetError(aInfo, (string(BRACKNAME " ") + string(__func__) + string(" Error: Value is not a number.")).c_str());
@@ -399,6 +438,7 @@ void InitScript(int64_t ID){
     ShapeJSObj.AddWrappingFunc(ExtraWrapperArrayPopulator<Galileo::Shape, ShapeExtraWrapCall>);
 
     ImageJSObj.AddToProto("createSurface", ImageCreateSurface);
+    ImageJSObj.AddAccessor("image", ShapeImageGetter, ShapeImageSetter);
 
     auto lIso = v8::Isolate::GetCurrent();
 
@@ -666,13 +706,17 @@ Turbo::JSFunction GroupCtor(Turbo::JSArguments args){
 
     if(ShapeJSObj.IsA(args[0])){
 
-        Sapphire::Galileo::Group *lGroup = new Galileo::Group();
+        ScriptGroup *lGroup = new ScriptGroup();
         lGroup->SetShader(ShaderProgramJSObj.Unwrap(args[1])->get());
 
         lGroup->push(ShapeJSObj.Unwrap(args[0]));
 //                     static_cast<Galileo::Shape*>(v8::Local<v8::Object>::Cast(args[0])->GetAlignedPointerFromInternalField(0)));
 
-        Turbo::WrapObject(args, GroupJSObj, lGroup);
+        v8::Local<v8::Array> shapearray = v8::Array::New(args.GetIsolate(), 1);
+        shapearray->Set(0, args[0]);
+
+        lGroup->mScriptShapes.Reset(args.GetIsolate(), shapearray);
+        Turbo::WrapObject(args, GroupJSObj, static_cast<Galileo::Group *>(lGroup));
         return;
 
     }
@@ -686,14 +730,16 @@ Turbo::JSFunction GroupCtor(Turbo::JSArguments args){
             }
         }
 
-        Sapphire::Galileo::Group *lGroup = new Galileo::Group();
+        ScriptGroup *lGroup = new ScriptGroup();
         lGroup->SetShader(ShaderProgramJSObj.Unwrap(args[1])->get());
 
         for(int i = 0; i<shapearray->Length(); i++){
             lGroup->push(ShapeJSObj.Unwrap(shapearray->Get(i)->ToObject()));
         }
 
-        Turbo::WrapObject(args, GroupJSObj, lGroup);
+        lGroup->mScriptShapes.Reset(args.GetIsolate(), shapearray);
+
+        Turbo::WrapObject(args, GroupJSObj, static_cast<Galileo::Group *>(lGroup));
         return;
 
     }

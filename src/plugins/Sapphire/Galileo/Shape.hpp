@@ -140,6 +140,14 @@ namespace GL {
           return mVertices.empty();
       }
 
+      virtual void ReplaceImage(Image *im){
+          mImage.reset(im);
+      }
+
+      virtual Image *GetImage() const {
+          return mImage.get();
+      }
+
   };
 }
 
@@ -150,12 +158,12 @@ public:
     Shape(std::vector<Vertex> &aVertices, Image *aImage);
 
     virtual ~Shape() {}
-    virtual bool CanUse(Shader *aShader);
-    virtual void SetShader(Shader *aShader);
+    bool CanUse(Shader *aShader) override;
+    void SetShader(Shader *aShader) override;
 
-    virtual void FillGL();
+    void FillGL() override;
 
-    virtual int Draw();
+    int Draw() override;
 
 };
 

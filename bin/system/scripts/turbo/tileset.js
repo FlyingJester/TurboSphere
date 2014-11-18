@@ -25,7 +25,7 @@ Turbo.Tile = function(array, index, surface){
     var at = index++;
     this.animated = array[at++];
 
-    this.animated = Turbo.dByteCat(array[at++], array[at++]);
+    this.animated_next = Turbo.dByteCat(array[at++], array[at++]);
     this.delay    = Turbo.dByteCat(array[at++], array[at++]);
     /* reserved[1] */at++;
 
@@ -229,6 +229,13 @@ Turbo.Tileset = function(bytearray, offset){
     // Load tile obstructions
     for(var i = 0; i<this.tiles.length; i++){
         at+=this.tiles[i].loadObstructions(bytearray, at);
+    }
+
+    this.RedrawTiles = function(){
+        for(var i in this.tiles){
+            this.tile_surfaces[i] = this.tiles[i].surface;
+            this.tile[i].image = new Image(this.tiles[i].surface);
+        }
     }
 
 }

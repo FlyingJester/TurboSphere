@@ -3,5 +3,5 @@ description=
 name=TS Test
 screen_height=640
 screen_width=1280
-script=box2d_demo.js
+script=Jest_Main.js
 version=2

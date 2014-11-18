@@ -1,5 +1,6 @@
 RequireSystemScript('turbo/tileset.js');
 RequireSystemScript('turbo/bytearray.js');
+RequireSystemScript('turbo/for_each.js');
 
 if(typeof Turbo == "undefined")
     var Turbo = {};
@@ -14,6 +15,7 @@ Turbo.LoadMapFile = function(path){
 
     return new Turbo.Map(map_bytearray);
 }
+
 
 // Remember to increment the cursor by length.
 // Length includes the size value.
@@ -36,10 +38,13 @@ Turbo.Classic.readString = function(bytearray, at){
 }
 
 
-Turbo.Map = function(bytearray, offset){
+Turbo.Map = function(bytearray, offset, compat){
 
     if(typeof offset == "undefined")
       offset = 0;
+
+    if(typeof compat == "undefined")
+      compat = true;
 
     this.signature = ".rmp";
 
@@ -55,6 +60,10 @@ Turbo.Map = function(bytearray, offset){
     var at = 0x04;
 
 
+    this.render_script = function(){}
+    this.update_script = function(){}
+
+
     this.version = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
     this.type    = bytearray[at++];
     this.layers  = new Array(bytearray[at++]);
@@ -68,6 +77,22 @@ Turbo.Map = function(bytearray, offset){
     this.strings = new Array(Turbo.dByteCat(bytearray[at++], bytearray[at++]));
     this.functions = new Array(this.strings.length-3);
     this.zones   = new Array(bytearray[at++]);
+    this.shader = GetDefaultShaderProgram();
+
+    // This is the actual blitting coordinates for the upper-left most part of the screen.
+    //  The results of all camera location calculations goes in here.
+    this.camera = {x:0, y:0};
+
+    this.unsetCamera = function(){
+        this.camera_person = null;
+    }
+
+    this.unsetInput = function(){
+        this.input_person = null;
+    }
+
+    this.unsetCamera();
+    this.unsetInput();
 
     while(at<0x100){
         if(bytearray[++at]!=0){
@@ -138,14 +163,18 @@ Turbo.Map = function(bytearray, offset){
             at+=16;
         }
 
-        this.layers[i] = {size:size, flags:flags, parallax:parallax, scrolling:scrolling, name:name, segments:segments, field:data};
+        this.layers[i] = {size:size, flags:flags, parallax:parallax,
+            scrolling:scrolling, name:name, segments:segments, field:data,
+            surface:new Surface(this.width, this.height, new Color(0,0,0,0)),
+            shader:this.shader, visibile:true, reflective:false, mask:new Color(0xFF, 0xFF, 0xFF)};
 
     }
 
     for(var i = 0; i< this.entities.length; i++){
         this.entities[i] = {x:Turbo.dByteCat(bytearray[at++], bytearray[at++]),
                        y:Turbo.dByteCat(bytearray[at++], bytearray[at++]),
-                       layer:Turbo.dByteCat(bytearray[at++], bytearray[at++])};
+                       layer:Turbo.dByteCat(bytearray[at++], bytearray[at++]),
+                       isTrigger:false};
 
         var type = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
 
@@ -179,6 +208,7 @@ Turbo.Map = function(bytearray, offset){
                 at+=string.length;
                 this.entities[i][script_names[j]] = function(){};
             }
+            this.entities[i].isTrigger = true;
 
         }
 
@@ -215,6 +245,7 @@ Turbo.Map = function(bytearray, offset){
             this.cursor++;
             if(this.cursor==this.steps){
                 this.cursor=0;
+                this.current_zone = this.zones[i];
                 this.on_touch();
             }
         }
@@ -236,4 +267,46 @@ Turbo.Map = function(bytearray, offset){
         this.tileset = new Turbo.Tileset(bytearray, at);
     }
 
+    this.calculateLayer = function(i){
+        var shapes = [];
+
+        for(var x = 0; x<this.width; x++){
+            for(var y = 0; y<this.height; y++){
+                at = x+(y*this.width);
+
+                shapes.push(new Shape([
+                    {x:(x+0)*this.width, y:(y+0)*this.height},
+                    {x:(x+1)*this.width, y:(y+0)*this.height},
+                    {x:(x+1)*this.width, y:(y+1)*this.height},
+                    {x:(x+0)*this.width, y:(y+1)*this.height}],
+                  this.tileset.tiles[this.layers[i].field[at]].image)
+                );
+
+            }
+        }
+
+        this.layers[i].group = new Group(shapes, this.layers[i].shader);
+
+    }
+
+    this.calculateMap = function(){
+        for(var i in this.layers){
+            this.calculateLayer(i);
+        }
+    }
+
+    this.calculateCamera = function(){
+        this.camera.x = camera_person.x;
+        this.camera.y = camera_person.y;
+    }
+
+    this.drawLayer = function(i){
+        this.calculateCamera();
+        this.layer[i].group.x = this.camera.x;
+        this.layer[i].group.y = this.camera.y;
+        this.layer[i].group.draw();
+    }
+
 }
+
+

@@ -67,6 +67,13 @@ public:
         return mOffset[eOffset::y];
     }
 
+    double GetX_d(){
+        return mOffset[eOffset::x];
+    }
+    double GetY_d(){
+        return mOffset[eOffset::y];
+    }
+
     template<typename T>
     void SetRotX(T _x){
         mRotOffset[eOffset::x] = _x;
@@ -150,6 +157,16 @@ public:
 
     inline bool empty(void) const {
         return mShapes.empty();
+    }
+
+    template<typename i=iterator>
+    i erase(i at){
+        return mShapes.erase(at);
+    }
+
+    template<typename i=iterator>
+    i erase(i at) const {
+        return mShapes.erase(at);
     }
 
     virtual int Draw(void);

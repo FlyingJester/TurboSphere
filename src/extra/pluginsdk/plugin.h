@@ -492,6 +492,7 @@ namespace Turbo{
     void *GetSelf(const A &container){
         return container.Holder()->GetAlignedPointerFromInternalField(0);
     }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
