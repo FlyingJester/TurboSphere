@@ -1,0 +1,7 @@
+author=Flying Jester
+description=Demonstrates using Coffeescript
+name=TS Test
+screen_width=640
+screen_height=480
+script=game.js
+version=2
