@@ -1,5 +1,5 @@
 RequireSystemScript("colors.js");
-RequireSystemScript("turbo/map.js");
+RequireSystemScript("turbo/map_engine.js");
 RequireSystemScript("turbo/bytearray.js");
 
 var s = new Surface(64, 64, Black);

@@ -79,6 +79,11 @@ Turbo.Map = function(bytearray, offset, compat){
     this.zones   = new Array(bytearray[at++]);
     this.shader = GetDefaultShaderProgram();
 
+    this.default_scripts = new Array(6);
+    this.default_scripts.forEach(function(i){i = function(){}});
+
+    this.fps = 60;
+
     // This is the actual blitting coordinates for the upper-left most part of the screen.
     //  The results of all camera location calculations goes in here.
     this.camera = {x:0, y:0};
