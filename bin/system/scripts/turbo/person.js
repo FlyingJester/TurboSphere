@@ -3,6 +3,35 @@ if(typeof Turbo == "undefined")
     var Turbo = {};
 Turbo.Classic = Turbo.Classic || {};
 
+Turbo.Entity = function(x, y, layer, name, destroy){
+    this.x = x; this.y = y;
+    this.layer = layer;
+    this.name = name;
+    this.destroy_on_map_change = destroy;
+
+    this.onCreate  = function(){};
+    this.onDestroy = function(){};
+    this.onTalk    = function(){};
+    this.onTouch   = function(){};
+    this.onGenerate= function(){};
+}
+
+Turbo.Person = function(x, y, layer, name, spriteset, destroy){
+
+    if(typeof destroy == "undefined")
+        destroy = true;
+
+    this.speed = 1.0;
+    this.spriteset = spriteset;
+
+    this.__proto__ = new Turbo.Entity (x, y, layer, name, destroy);
+
+}
+
+Turbo.Trigger = function(x, y, layer, name){
+    this.__proto__ = new Turbo.Entity(x, y, layer, name, true);
+}
+
 // Remember to increment the cursor by length.
 // Length includes the size value.
 Turbo.Classic.readString = Turbo.Classic.readString || function(bytearray, at){

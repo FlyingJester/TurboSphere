@@ -158,12 +158,12 @@ public:
     Shape(std::vector<Vertex> &aVertices, Image *aImage);
 
     virtual ~Shape() {}
-    bool CanUse(Shader *aShader) override;
-    void SetShader(Shader *aShader) override;
+    virtual bool CanUse(Shader *aShader);
+    virtual void SetShader(Shader *aShader);
 
-    void FillGL() override;
+    virtual void FillGL();
 
-    int Draw() override;
+    virtual int Draw();
 
 };
 
