@@ -243,16 +243,19 @@ void CloseMessageBoxFunctions(void){
 }
 
 static char ** loadedScripts = NULL;
+static char ** loadedSystemScripts = NULL;
 static int numUniqueScriptsLoaded = 0;
+static int numUniqueSystemScriptsLoaded = 0;
 
+template<char ***ScriptArray, int *Num>
 void TS_FreeLoadedScripts(void){
-    for(int i = 0; i<numUniqueScriptsLoaded; i++){
-        free((void *)loadedScripts[i]);
-        loadedScripts[i] = NULL;
+    for(int i = 0; i<(*Num); i++){
+        free((void *)(*ScriptArray)[i]);
+        (*ScriptArray)[i] = NULL;
     }
-    free(loadedScripts);
-    loadedScripts = NULL;
-    numUniqueScriptsLoaded = 0;
+    free(*ScriptArray);
+    (*ScriptArray) = NULL;
+    (*Num) = 0;
 }
 
 void exitContext(v8::Handle<v8::Context> context){
@@ -313,6 +316,7 @@ TS_NORETURN void AbortGame(const v8::FunctionCallbackInfo<v8::Value> &args){
     ExitGame(args);
 }
 
+template<void (*LoadScript)(const v8::FunctionCallbackInfo<v8::Value>& args), char ***ScriptList, int *NumScripts>
 void RequireScript(const v8::FunctionCallbackInfo<v8::Value> &args){
     if(args.Length()<1){
         args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ENGINE " RequireScript Error: Called with no arguments.")));
@@ -323,24 +327,26 @@ void RequireScript(const v8::FunctionCallbackInfo<v8::Value> &args){
         return;
     }
     v8::String::Utf8Value str(args[0]);
-    const char *scriptname = *str;
 
-    for(int i = 0; i< numUniqueScriptsLoaded; i++){
-        if(strcmp(scriptname, loadedScripts[i])==0){
-            printf(ENGINE " RequireScript Info: Did not load script %s, same as script number %i.\n", scriptname, i);
+
+    for(int i = 0; i< (*NumScripts); i++){
+        if(strcmp(*str, (*ScriptList)[i])==0){
+            printf(ENGINE " RequireScript Info: Did not load script %s, same as script number %i.\n", *str, i);
 
             return;
         }
     }
 
-    numUniqueScriptsLoaded++;
-    loadedScripts = (char **)realloc(loadedScripts, numUniqueScriptsLoaded*(sizeof(char *)));
+    printf(ENGINE " RequireScript Info: Loading script %s for the first time.\n", *str);
 
-    loadedScripts[numUniqueScriptsLoaded-1] = STRDUP(scriptname);
+    (*NumScripts)++;
+    *ScriptList = (char **)realloc(*ScriptList, (*NumScripts)*(sizeof(char *)));
+
+    (*ScriptList)[(*NumScripts)-1] = STRDUP(*str);
 
     //printf("[Engine] RequireScript Info: Loaded script %s as script number %i.\n", loadedScripts[numUniqueScriptsLoaded-1], numUniqueScriptsLoaded-1);
 
-    TS_LoadScript(args);
+    LoadScript(args);
     return;
 }
 
@@ -566,9 +572,9 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
     v8::Handle<v8::FunctionTemplate> E_EvaluateScripttempl = v8::FunctionTemplate::New(iso, TS_LoadScript);
 
-    v8::Handle<v8::FunctionTemplate> E_RequireScripttempl = v8::FunctionTemplate::New(iso, RequireScript);
+    v8::Handle<v8::FunctionTemplate> E_RequireScripttempl = v8::FunctionTemplate::New(iso, RequireScript<TS_LoadScript, &loadedScripts, &numUniqueScriptsLoaded>);
 
-    v8::Handle<v8::FunctionTemplate> E_RequireSystemScripttempl = v8::FunctionTemplate::New(iso, TS_LoadSystemScript);
+    v8::Handle<v8::FunctionTemplate> E_RequireSystemScripttempl = v8::FunctionTemplate::New(iso, RequireScript<TS_LoadSystemScript, &loadedSystemScripts, &numUniqueSystemScriptsLoaded>);
 
     v8::Handle<v8::FunctionTemplate> E_GetVersionNumbertempl = v8::FunctionTemplate::New(iso, GetVersionNumber);
 
@@ -639,7 +645,8 @@ end:
 	v8::V8::Dispose();
 	CloseAllPlugins();
 	CloseMessageBoxFunctions();
-	TS_FreeLoadedScripts();
+	TS_FreeLoadedScripts<&loadedScripts, &numUniqueScriptsLoaded>();
+	TS_FreeLoadedScripts<&loadedSystemScripts, &numUniqueSystemScriptsLoaded>();
 	free((void *)dir);
 	delete allocator;
 }
