@@ -1,5 +1,6 @@
 RequireSystemScript('turbo/for_each.js');
 RequireSystemScript('turbo/bytearray.js');
+RequireSystemScript('turbo/json2.js');
 
 if(typeof Turbo == "undefined")
     var Turbo = {};
@@ -41,7 +42,7 @@ Turbo.Classic.readString = Turbo.Classic.readString || function(array, at){
 
 Turbo.LoadSystemScheme = function(name){
 
-    var scheme_file = new RawFile(FILESYSTEM_SYSTEM+"/formats/"+name);
+    var scheme_file = new RawFile("#~/formats/"+name);
     var scheme_buffer = scheme_file.read(scheme_file.size);
 
     var scheme_byteview = new Uint8Array(scheme_buffer);
@@ -58,42 +59,52 @@ Turbo.GetSchemeLength = function(scheme){
 
 Turbo.ReadBinaryObject = function(array, offset, scheme){
 
-    if(!(array.length-offset > Turbo.GetSchemeLength(scheme)))
+    var scheme_length = Turbo.GetSchemeLength(scheme);
+    if(!(array.length-offset > scheme_length))
         throw "Unexpected end of input.";
 
     var obj = {};
 
-    scheme.forEach(function(element){
-        element_size =element.size;
-        switch(element.type){
-        case "number":
-            switch(element.size){
-            case 1:
-                obj[element.name] = array[offset];
-                break;
-            case 2:
-                obj[element.name] = Turbo.dByteCat(array[offset], array[offset+1]);
-                break;
-            case 4:
-                obj[element.name] = Turbo.qByteCat(array[offset], array[offset+1], array[offset+2], array[offset+3]);
-                break;
-            default:
+    var at = offset;
+
+    for(var i in scheme){
+        var element = scheme[i];
+        if(element.type=="number"){
+            if(element.size==1)
+                obj[element.name] = array[at++];
+            else if(element.size==2)
+                obj[element.name] = Turbo.dByteCat(array[at++], array[at++]);
+            else if(element.size==4)
+                obj[element.name] = Turbo.qByteCat(array[at++], array[at++], array[at++], array[at++]);
+            else
                 throw "Invalid number size of " + element.size + " for element '" + element.name + "'";
-            }
-        break;
-        case "flag":
+        }
+        else if(element.type=="flag"){
             if(element.size!=1)
                 throw "Flag of size " + element.size + ", only flags of size 1 supported.";
-            obj[element.name] = (array[offset] && true);
-        break;
-        case "string":
-            var string = Turbo.Classic.readString(array, offset);
-            element_size = string.length; // Adjust the size to match the string.
-            obj[element.name] = string.string;
-        break;
+            obj[element.name] = !(!(array[at++]));
         }
-        offset += element_size;
-    });
+        else if(element.type=="string"){
+            var string = Turbo.Classic.readString(array, offset);
+            at += string.length; // Adjust the size to match the string.
+            obj[element.name] = string.string;
+        }
+        else if(element.type=="fixed_string"){
+            var element_str_buffer = array.slice(at, at+element.size);
+            obj[element.name] = CreateStringFromByteArray(element_str_buffer);
+            at+=element.size;
+
+            if(element.size!=obj[element.name].length)
+                throw "Bad math, doofus. Should be " + element.size + ", was " + obj[element.name].length;
+
+        }
+        else{
+            at+=element.size;
+        }
+    }
+
+    if(at-offset!=scheme_length)
+        throw "Bad math, doofus. Should be " + scheme_length + ", was " + (at-offset);
 
     return obj;
 

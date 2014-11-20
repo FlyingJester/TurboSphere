@@ -1,3 +1,7 @@
+RequireSystemScript("turbo/bytearray.js");
+RequireSystemScript("turbo/format.js");
+RequireSystemScript("turbo/map.js");
+RequireSystemScript("turbo/tileset.js");
 
 if(typeof Turbo == "undefined")
     var Turbo = {};
@@ -20,7 +24,6 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
 
     this.__proto__ = new Turbo.Entity (x, y, layer, name, destroy);
 
-
     this.onCreate  = function(){};
     this.onDestroy = function(){};
     this.onTalk    = function(){};
@@ -38,7 +41,7 @@ Turbo.Trigger = function(x, y, layer, name){
 Turbo.Classic.readString = Turbo.Classic.readString || function(bytearray, at){
 
     if(bytearray.length<at)
-      throw "Unexpected end of file."
+      throw "Unexpected end of file.";
 
     var len = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
 
@@ -53,7 +56,7 @@ Turbo.Classic.readString = Turbo.Classic.readString || function(bytearray, at){
 
 }
 
-Turbo.LoadEntity = function(array, i entity){
+Turbo.LoadEntity = function(array, i, entity){
     var at = i;
 
     var type = Turbo.dByteCat(array[at++], array[at++]);

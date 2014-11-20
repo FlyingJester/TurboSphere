@@ -26,7 +26,7 @@ Turbo.Map = function(bytearray, offset, compat){
 
     if(typeof compat == "undefined")
       compat = true;
-
+/*
     this.signature = ".rmp";
 
     if(bytearray.length<0x100) // Header plus the first string byte.
@@ -48,7 +48,7 @@ Turbo.Map = function(bytearray, offset, compat){
     this.version = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
     this.type    = bytearray[at++];
     this.layers  = new Array(bytearray[at++]);
-    /*reserved*/ at++;
+    at++; //reserved
     this.entities= new Array(Turbo.dByteCat(bytearray[at++], bytearray[at++]));
 
     this.startx  = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
@@ -62,6 +62,11 @@ Turbo.Map = function(bytearray, offset, compat){
 
     this.default_scripts = new Array(6);
     this.default_scripts.forEach(function(i){i = function(){}});
+*/
+
+
+    this.__proto__ = Turbo.ReadBinaryObject(bytearray, offset, Turbo.MapScheme.header);
+    var at = offset + Turbo.GetSchemeLength(Turbo.TilesetScheme.header);
 
     this.fps = 60;
 

@@ -60,7 +60,7 @@ function CreateByteArrayFromString(a){
 
 // Create a string from a TypedArray
 function CreateStringFromByteArray(a){
-    if((!(a instanceof Uint8Array)) && (!(typeof a == "array")))
+    if((!(a instanceof Uint8Array)) && (!Array.isArray(a)))
         throw "Argument 0 is not a ByteArray, JS Array, or a Harmony Typed Array.";
 
     var r = "";

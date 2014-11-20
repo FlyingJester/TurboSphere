@@ -15,31 +15,17 @@ Turbo.LoadTilesetFile = function(path){
     return new Turbo.Map(tileset_bytearray);
 }
 
-Turbo.TileScheme = Turbo.LoadSystemScheme("tile.js");
+Turbo.TileScheme = Turbo.LoadSystemScheme("tile.json");
+Turbo.TilesetScheme = Turbo.LoadSystemScheme("tileset.json");
 
 Turbo.Tile = function(array, index, surface){
 
-    if(array.length < index+32)
-      throw "Unexpected end of file.";
+    this.__proto__ = Turbo.ReadBinaryObject(array, index, Turbo.TileScheme.header);
+    index += Turbo.GetSchemeLength(Turbo.TileScheme.header);
 
-    this.surface = surface;
-    this.image = new Image(surface);
+    this.segments = new Array(this.num_segments);
 
-    var at = index++;
-    this.animated = array[at++];
-
-    this.animated_next = Turbo.dByteCat(array[at++], array[at++]);
-    this.delay    = Turbo.dByteCat(array[at++], array[at++]);
-    /* reserved[1] */at++;
-
-    var obstruction_type = array[at++];
-    if(obstruction_type==2){
-        this.segments = new Array(array[at++]);
-    }
-    else
-      this.segments = [];
-
-    switch(obstruction_type){
+    switch(this.obstruction_type){
     case 2:
         this.loadObstructions =  function(bytearray, index){
             if(bytearray.length < index+(8*this.segments.length))
@@ -81,44 +67,20 @@ Turbo.Tileset = function(bytearray, offset){
     if(typeof offset == "undefined")
       offset = 0;
 
-    this.signature = ".rts";
+    this.__proto__ = Turbo.ReadBinaryObject(bytearray, offset, Turbo.TilesetScheme.header);
+    var at = offset + Turbo.GetSchemeLength(Turbo.TilesetScheme.header);
 
-    if(bytearray.length<offset+0xFF) // Size of the header
-      throw "Argument 0 is to short to be a tileset.";
+    if(this.signature!=".rts")
+      throw "Signature must be .rts, was " + this.signature;
 
-    var sig_array = bytearray.slice(offset+0x00, offset+0x04);
-    var sig_string = CreateStringFromByteArray(sig_array);
-
-    if(sig_string!=this.signature)
-      throw "Signature is invalid. Expected " + this.signature + " at " +at+ ", found " + sig_string;
-
-    var at = offset+0x04;
-
-    var headerbuffer = new Uint16Array(bytearray.buffer.slice(at, at+10));
-
-    this.version = headerbuffer[0];
-    this.tiles   = new Array(headerbuffer[1]);
-    this.tile_surfaces = new Array(this.tiles.length);
-    this.width   = headerbuffer[2];
-    this.height  = headerbuffer[3];
-    this.BPP     = headerbuffer[4];
-
-    if(headerbuffer[1]==0)
+    if(this.num_tiles==0)
       throw "Zero tiles in tileset";
 
     if(this.BPP==0)
       throw "BPP of 0";
 
-    this.compression = bytearray[at++];
-    this.obstructions = bytearray[at++];
-
-    while(at<0x100){
-        if(bytearray[++at]!=0){
-            throw "Expected clear data at header offset " + at;
-        }
-    }
-
-    at= 0x100;
+    this.tiles   = new Array(this.num_tiles);
+    this.tile_surfaces = new Array(this.num_tiles);
 
     switch(this.BPP){ // Determine how to parse color information.
         case 8:
@@ -213,7 +175,7 @@ Turbo.Tileset = function(bytearray, offset){
     for(var i = 0; i<this.tile_surfaces.length; i++){
         if(this.BPP==32){
             this.tile_surfaces[i] = SurfaceFromArrayBuffer(this.width, this.height, bytearray.buffer.slice(at, (this.BPP/8)*this.width*this.height));
-            at+=(this.BPP/8)*this.width*this.height;
+            at+=4*this.width*this.height;
         }
         else{
             this.tile_surfaces[i] = new Surface(this.width, this.height, Black);
@@ -221,7 +183,7 @@ Turbo.Tileset = function(bytearray, offset){
                 for(var x = 0; x < this.width; x++){
                     var color_int =  this.colorEquation(bytearray, at);
                     this.tile_surfaces[i].setPixel(x, y, color_int);
-                    at+=this.BPP/8;
+                    at+=this.BPP>>3;
                 }
             }
         }
