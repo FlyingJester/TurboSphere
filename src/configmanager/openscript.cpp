@@ -103,7 +103,7 @@ void OpenAndRunScript(const std::string &file, const char *origin, const T& args
         args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), (std::string("[ConfigManager] ") + origin + " Error: Could not load script.").c_str())));
         return;
     }
-    if(!ExecuteString(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ScriptStr.get()), v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), file.c_str()), v8::Isolate::GetCurrent(), true)){
+    if(!ExecuteString(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ScriptStr.get()), v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), file.c_str()), v8::Isolate::GetCurrent(), false)){
         args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ((string)"[ConfigManager] Error in script "+file).c_str())));
     }
 }
