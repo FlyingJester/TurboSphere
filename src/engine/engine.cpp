@@ -331,20 +331,18 @@ void RequireScript(const v8::FunctionCallbackInfo<v8::Value> &args){
 
     for(int i = 0; i< (*NumScripts); i++){
         if(strcmp(*str, (*ScriptList)[i])==0){
-            printf(ENGINE " RequireScript Info: Did not load script %s, same as script number %i.\n", *str, i);
+            printf(ENGINE " %s Info: Did not load script %s, same as script number %i.\n", __func__, *str, i);
 
             return;
         }
     }
-
-    printf(ENGINE " RequireScript Info: Loading script %s for the first time.\n", *str);
 
     (*NumScripts)++;
     *ScriptList = (char **)realloc(*ScriptList, (*NumScripts)*(sizeof(char *)));
 
     (*ScriptList)[(*NumScripts)-1] = STRDUP(*str);
 
-    //printf("[Engine] RequireScript Info: Loaded script %s as script number %i.\n", loadedScripts[numUniqueScriptsLoaded-1], numUniqueScriptsLoaded-1);
+    printf(ENGINE " %s Info: Loaded script %s as script number %i.\n", __func__, (*ScriptList)[(*NumScripts)-1], (*NumScripts)-1);
 
     LoadScript(args);
     return;
