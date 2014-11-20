@@ -1,1 +1,14 @@
-
+{
+    "signature":".rts",
+    "header":[
+        {"size":4, "type":"fixed_string", "name":"signature"},
+        {"size":2, "type":"number", "name":"version"},
+        {"size":2, "type":"number", "name":"num_tiles"},
+        {"size":2, "type":"number", "name":"width"},
+        {"size":2, "type":"number", "name":"height"},
+        {"size":2, "type":"number", "name":"BPP"},
+        {"size":1, "type":"flag",   "name":"compressed"},
+        {"size":1, "type":"flag",   "name":"has_obstructions"},
+        {"size":240, "type":"reserved"}
+    ]
+}

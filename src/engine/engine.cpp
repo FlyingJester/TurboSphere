@@ -331,8 +331,6 @@ void RequireScript(const v8::FunctionCallbackInfo<v8::Value> &args){
 
     for(int i = 0; i< (*NumScripts); i++){
         if(strcmp(*str, (*ScriptList)[i])==0){
-            printf(ENGINE " %s Info: Did not load script %s, same as script number %i.\n", __func__, *str, i);
-
             return;
         }
     }
@@ -341,8 +339,6 @@ void RequireScript(const v8::FunctionCallbackInfo<v8::Value> &args){
     *ScriptList = (char **)realloc(*ScriptList, (*NumScripts)*(sizeof(char *)));
 
     (*ScriptList)[(*NumScripts)-1] = STRDUP(*str);
-
-    printf(ENGINE " %s Info: Loaded script %s as script number %i.\n", __func__, (*ScriptList)[(*NumScripts)-1], (*NumScripts)-1);
 
     LoadScript(args);
     return;
@@ -409,8 +405,8 @@ void TS_MessageCallback(v8::Handle<v8::Message> message, v8::Handle<v8::Value> d
 
         {
             char lLineNumCharl[LINE_NUM_CHAR_SIZE+1] = {LINE_NUM_FILL};
-            snprintf(LineNumCharl, LINE_NUM_CHAR_SIZE, "%6i", frame->GetLineNumber());
-            char *lLineNumChar = LineNumCharl;
+            snprintf(lLineNumCharl, LINE_NUM_CHAR_SIZE, "%6i", frame->GetLineNumber());
+            char *lLineNumChar = lLineNumCharl;
             lLineNumChar = destructiveTrim(lLineNumChar);
             str+=", line ";
             str+= lLineNumChar;
@@ -445,7 +441,7 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
     dir = STRDUP(path);
     size_t path_size_chr = strlen(dir);
 
-    if(T5_IsDir(path)){
+    if(t5::IsDir(path)){
 
         if(dir[path_size_chr-1]=='/'){
             TS_dirs->root = STRDUP(dir);
@@ -472,7 +468,7 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
             gameSGMfile = STRDUP((string(TS_dirs->root)).append(TS_conf->sgmname).c_str());
         }
     }
-    else if (T5_IsFile(path)){
+    else if (t5::IsFile(path)){
 
         //If the path ends in a slash, we need to remove it so that we can use just the filename.
 
@@ -694,7 +690,7 @@ int main
                     strcat(v8flags, argv[i]+4);
                     v8args++;
                 }
-                else if((T5_IsDir(argv[i]))||(T5_IsFile(argv[i]))){
+                else if((t5::IsDir(argv[i]))||(t5::IsFile(argv[i]))){
                     gamearg = i;
                 }
                 else{
@@ -707,7 +703,7 @@ int main
         }
     }
 
-    if(argc>1&&(strnlen(argv[gamearg], 2)>0)&&((T5_IsDir(argv[gamearg]))||(T5_IsFile(argv[gamearg])))){
+    if(argc>1&&(strnlen(argv[gamearg], 2)>0)&&((t5::IsDir(argv[gamearg]))||(t5::IsFile(argv[gamearg])))){
         printf(ENGINE " Info: We are running in given-path mode.\n");
         runGame(argv[1], (v8args)?v8flags:NULL, &conf);
     }

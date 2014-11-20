@@ -4,11 +4,11 @@
 
 #include <opengame.h>
 
-#define TURBO_TRYRAWFILE_ISERROR(err) (err!=RawFileError::RF_NoError)
+#define TURBO_TRYRAWFILE_ISERROR(ERR) (ERR!=RawFileError::RF_NoError)
 
-#define TURBO_TRYRAWFILE_ERROR(err)\
-     if(TURBO_TRYRAWFILE_ISERROR(err)){\
-        const char *err_s = (std::string(__func__) + std::string(" Error: Could not open file: ") + std::string(ExplainRawFileError(err)) ).c_str();\
+#define TURBO_TRYRAWFILE_ERROR(ARGS, ERR)\
+     if(TURBO_TRYRAWFILE_ISERROR(ERR)){\
+        Turbo::SetError(ARGS, (std::string(__func__) + std::string(" Error: Could not open file: ") + std::string(ExplainRawFileError(ERR)) ).c_str());\
     }
 
 
@@ -73,13 +73,13 @@ namespace scriptfs {
 
         err = rawfile_getPosition(mRawFile->A, &at);
         if(TURBO_TRYRAWFILE_ISERROR(err)){
-          TURBO_TRYRAWFILE_ERROR(err);
+          TURBO_TRYRAWFILE_ERROR(args, err);
           return;
         }
 
         err = rawfile_getSize(mRawFile->A, &total);
         if(TURBO_TRYRAWFILE_ISERROR(err)){
-          TURBO_TRYRAWFILE_ERROR(err);
+          TURBO_TRYRAWFILE_ERROR(args, err);
           return;
         }
 
@@ -93,8 +93,7 @@ namespace scriptfs {
         {
             v8::HandleScope scope(args.GetIsolate());
 
-            static void *r_buffer = nullptr;
-            r_buffer = realloc(r_buffer, len);
+            void *r_buffer = malloc(len);
             err = rawfile_read(mRawFile->A, r_buffer, len);
 
             printf("Reading %i bytes.\n", len);
@@ -160,6 +159,24 @@ namespace scriptfs {
 
 }
 
+inline bool IsPathSeperator(char c){
+    return (c=='/')
+#ifdef _WIN32
+    || (c=='\\')
+#endif
+    ;
+}
+
+bool ReplacePathStringIfFound(std::string &in, std::string replace, const char *with){
+    size_t c = in.rfind(replace);
+    if(c!=std::string::npos){
+        in = std::string(with) + in.substr(c+replace.size()+1);
+        return true;
+    }
+
+    return false;
+}
+
 Turbo::JSFunction scriptfs::OpenRawFile(Turbo::JSArguments args){
 
     const int sig[3] = {Turbo::String, Turbo::Bool, 0};
@@ -179,13 +196,19 @@ Turbo::JSFunction scriptfs::OpenRawFile(Turbo::JSArguments args){
 
     v8::String::Utf8Value lPath(args[0]);
 
-    const std::string lCombinedPath = scriptfs::sRawfilePath + std::string(*lPath);
+    std::string lCombinedPath = scriptfs::sRawfilePath + std::string(*lPath);
+
+    if(ReplacePathStringIfFound(lCombinedPath, "#~", GetDirs()->system))
+        printf(BRACKNAME " %s Info: Replaced #~, with %s. Now we have %s.\n", __func__, GetDirs()->system, lCombinedPath.c_str());
+    if(ReplacePathStringIfFound(lCombinedPath, "~", GetDirs()->root))
+        printf(BRACKNAME " %s Info: Replaced ~ with %s. Now we have %s.\n", __func__, GetDirs()->root, lCombinedPath.c_str());
 
     struct RawFile *rFile = AllocRawFile();
     err = ::OpenRawFile(rFile, lCombinedPath.c_str(), writeable);
 
     if(TURBO_TRYRAWFILE_ISERROR(err)){
-      TURBO_TRYRAWFILE_ERROR(err);
+      TURBO_TRYRAWFILE_ERROR(args, err);
+      return;
     }
     else
       Turbo::WrapObject(args, scriptfs::RawFileObj, new RawFileHolder(rFile));
