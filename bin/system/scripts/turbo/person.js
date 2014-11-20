@@ -8,15 +8,9 @@ Turbo.Entity = function(x, y, layer, name, destroy){
     this.layer = layer;
     this.name = name;
     this.destroy_on_map_change = destroy;
-
-    this.onCreate  = function(){};
-    this.onDestroy = function(){};
-    this.onTalk    = function(){};
-    this.onTouch   = function(){};
-    this.onGenerate= function(){};
 }
 
-Turbo.Person = function(x, y, layer, name, spriteset, destroy){
+Turbo.Person = function(x, y, layer, name, destroy, spriteset){
 
     if(typeof destroy == "undefined")
         destroy = true;
@@ -26,10 +20,17 @@ Turbo.Person = function(x, y, layer, name, spriteset, destroy){
 
     this.__proto__ = new Turbo.Entity (x, y, layer, name, destroy);
 
+
+    this.onCreate  = function(){};
+    this.onDestroy = function(){};
+    this.onTalk    = function(){};
+    this.onTouch   = function(){};
+    this.onGenerate= function(){};
 }
 
 Turbo.Trigger = function(x, y, layer, name){
     this.__proto__ = new Turbo.Entity(x, y, layer, name, true);
+    this.onTrigger = function(){};
 }
 
 // Remember to increment the cursor by length.
@@ -54,51 +55,47 @@ Turbo.Classic.readString = Turbo.Classic.readString || function(bytearray, at){
 
 Turbo.LoadEntity = function(array, i entity){
     var at = i;
-    entitiy = {x:Turbo.dByteCat(array[at++], array[at++]),
-                   y:Turbo.dByteCat(array[at++], array[at++]),
-                   layer:Turbo.dByteCat(array[at++], array[at++]),
-                   isTrigger:false};
 
     var type = Turbo.dByteCat(array[at++], array[at++]);
 
+    var data = {x:Turbo.dByteCat(array[at++], array[at++]),
+                   y:Turbo.dByteCat(array[at++], array[at++]),
+                   layer:Turbo.dByteCat(array[at++], array[at++])};
+
     /*reserved[8]*/ at+=8;
 
-    var script_names = ['on_create', 'on_destroy', 'on_talk', 'on_touch', 'on_generate'];
+    var script_names = ['onCreate', 'onDestroy', 'onTalk', 'onTouch', 'onGenerate'];
 
     var string = Turbo.Classic.readString(array, at);
     at+=string.length;
-    entitiy.name = string.string;
+    var name = string.string;
 
     var string = Turbo.Classic.readString(array, at);
     at+=string.length;
-    entitiy.spriteset = string.string;
+    var spriteset = string.string;
 
-    switch(type){
-    case 1:
+    if(type==1){
+        entity = new Turbo.Person(data.x, data.y, data.layer, name, true, spriteset);
 
         for(var j in script_names){
             var string = Turbo.Classic.readString(array, at);
             at+=string.length;
-            entitiy[script_names[j]] = function(){eval(string.string);};
+            entity[script_names[j]] = function(){eval(string.string);};
         }
 
-    break;
-    case 2:
+        /*reserved[16]*/ at+=16;
+    }
+    else{
+        entity = new Turbo.Person(data.x, data.y, data.layer, name, true, spriteset);
 
-        for(var j in script_names){
-            var string = Turbo.Classic.readString(array, at);
-            at+=string.length;
-            entitiy[script_names[j]] = function(){};
-        }
-        entitiy.isTrigger = true;
+        var string = Turbo.Classic.readString(array, at);
+        at+=string.length;
+        entity.onTrigger = function(){eval(string.string);};
+        entity.onTrigger = function(){eval(string.string);};
 
     }
 
-    /*reserved[16]*/ at+=16;
 
-    var string = Turbo.Classic.readString(array, at);
-    at+=string.length;
-    entitiy.trigger_script = function(){eval(string.string);};
 
     return i-at;
 }

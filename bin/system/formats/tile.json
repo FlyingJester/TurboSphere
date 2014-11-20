@@ -1,0 +1,12 @@
+{
+    header:[
+        {"size":1, "type"":"reserved"},
+        {"size":1, "type":"flag",   "name":"animated"},
+        {"size":2, "type":"number", "name":"next_tile"},
+        {"size":2, "type":"number", "name":"delay"},
+        {"size":1, "type":"reserved"},
+        {"size":1, "type":"flag",   "name":"obstruction_"type""},
+        {"size":2, "type":"number", "name":"num_segments"},
+        {"size":22,"type":"reserved"}
+    ]
+}

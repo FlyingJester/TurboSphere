@@ -1,5 +1,6 @@
 RequireSystemScript('turbo/bytearray.js');
 RequireSystemScript('colors.js');
+RequireSystemScript('turbo/format.js');
 
 if(typeof Turbo == "undefined")
     var Turbo = {};
@@ -14,8 +15,10 @@ Turbo.LoadTilesetFile = function(path){
     return new Turbo.Map(tileset_bytearray);
 }
 
+Turbo.TileScheme = Turbo.LoadSystemScheme("tile.js");
 
 Turbo.Tile = function(array, index, surface){
+
     if(array.length < index+32)
       throw "Unexpected end of file.";
 

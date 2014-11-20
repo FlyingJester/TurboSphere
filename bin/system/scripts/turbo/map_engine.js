@@ -1,3 +1,4 @@
+RequireSystemScript('turbo/format.js');
 RequireSystemScript('turbo/map.js');
 RequireSystemScript('turbo/tileset.js');
 RequireSystemScript('turbo/bytearray.js');

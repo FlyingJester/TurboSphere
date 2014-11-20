@@ -1,3 +1,4 @@
+RequireSystemScript('turbo/format.js');
 RequireSystemScript('turbo/tileset.js');
 RequireSystemScript('turbo/person.js');
 RequireSystemScript('turbo/bytearray.js');
@@ -5,7 +6,8 @@ RequireSystemScript('turbo/for_each.js');
 
 if(typeof Turbo == "undefined")
     var Turbo = {};
-Turbo.Classic = Turbo.Classic || {};
+if(typeof Turbo == "undefined")
+    Turbo.Classic = {};
 
 Turbo.LoadMapFile = function(path){
     var map_file = new RawFile("../maps/"+path);
@@ -16,28 +18,6 @@ Turbo.LoadMapFile = function(path){
 
     return new Turbo.Map(map_bytearray);
 }
-
-
-// Remember to increment the cursor by length.
-// Length includes the size value.
-Turbo.Classic.readString = Turbo.Classic.readString || function(bytearray, at){
-
-    if(bytearray.length<at)
-      throw "Unexpected end of file."
-
-    var len = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
-
-    if(bytearray.length<at+len)
-      throw "Unexpected end of file.";
-
-    var str = bytearray.slice(at, at+len);
-
-    var string = CreateStringFromByteArray(str);
-
-    return {length:len+2, string:string};
-
-}
-
 
 Turbo.Map = function(bytearray, offset, compat){
 
