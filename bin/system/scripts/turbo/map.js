@@ -1,4 +1,5 @@
 RequireSystemScript('turbo/tileset.js');
+RequireSystemScript('turbo/person.js');
 RequireSystemScript('turbo/bytearray.js');
 RequireSystemScript('turbo/for_each.js');
 
@@ -19,7 +20,7 @@ Turbo.LoadMapFile = function(path){
 
 // Remember to increment the cursor by length.
 // Length includes the size value.
-Turbo.Classic.readString = function(bytearray, at){
+Turbo.Classic.readString = Turbo.Classic.readString || function(bytearray, at){
 
     if(bytearray.length<at)
       throw "Unexpected end of file."
@@ -176,53 +177,7 @@ Turbo.Map = function(bytearray, offset, compat){
     }
 
     for(var i = 0; i< this.entities.length; i++){
-        this.entities[i] = {x:Turbo.dByteCat(bytearray[at++], bytearray[at++]),
-                       y:Turbo.dByteCat(bytearray[at++], bytearray[at++]),
-                       layer:Turbo.dByteCat(bytearray[at++], bytearray[at++]),
-                       isTrigger:false};
-
-        var type = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
-
-        /*reserved[8]*/ at+=8;
-
-
-        var script_names = ['on_create', 'on_destroy', 'on_talk', 'on_touch', 'on_generate'];
-
-        var string = Turbo.Classic.readString(bytearray, at);
-        at+=string.length;
-        this.entities[i].name = string.string;
-
-        var string = Turbo.Classic.readString(bytearray, at);
-        at+=string.length;
-        this.entities[i].spriteset = string.string;
-
-        switch(type){
-        case 1:
-
-            for(var j in script_names){
-                var string = Turbo.Classic.readString(bytearray, at);
-                at+=string.length;
-                this.entities[i][script_names[j]] = function(){eval(string.string);};
-            }
-
-        break;
-        case 2:
-
-            for(var j in script_names){
-                var string = Turbo.Classic.readString(bytearray, at);
-                at+=string.length;
-                this.entities[i][script_names[j]] = function(){};
-            }
-            this.entities[i].isTrigger = true;
-
-        }
-
-        /*reserved[16]*/ at+=16;
-
-        var string = Turbo.Classic.readString(bytearray, at);
-        at+=string.length;
-        this.entities[i].trigger_script = function(){eval(string.string);};
-
+        at += Turbo.LoadEntity(bytearray, at, this.entities[i]);
     }
 
     for(var i = 0; i<this.zones.length; i++){

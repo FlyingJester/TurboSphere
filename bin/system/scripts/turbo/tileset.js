@@ -134,6 +134,10 @@ Turbo.Tileset = function(bytearray, offset){
             this.colorEquation = function(array, i){
                 return new Color(array[i], array[i+1], array[i+2], 0xFF);
             }
+        case 32:
+            this.colorEquation = function(array, i){
+                return new Color(array[i++],array[i++],array[i++],array[i++]);
+            }
         default:
 
         if((this.BPP>32) && (this.BPP%32==0)){
@@ -157,18 +161,18 @@ Turbo.Tileset = function(bytearray, offset){
                 return new Color(red, blue, green, alpha);
             }
         }
-        else if((this.BPP>=32)&&((this.BPP-32)%32==0)){ // Handles BPP==32.
+        else if((this.BPP>=32)&&((this.BPP-32)%32==0)){
             this.colorEquation = function(array, i){
                 var e = 0;
-                var red   = array[e++];
-                var green = array[e++];
-                var blue  = array[e++];
-                var alpha = array[e++];
+                var red   = array[i+e++];
+                var green = array[i+e++];
+                var blue  = array[i+e++];
+                var alpha = array[i+e++];
 
                 for(; e < this.BPP/8; e+=3){
-                    red   |= array[e];
-                    blue  |= array[e+1];
-                    green |= array[e+2];
+                    red   |= array[i+e];
+                    blue  |= array[i+e+1];
+                    green |= array[i+e+2];
 
                     red<<=8;
                     green<<=8;
