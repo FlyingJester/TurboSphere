@@ -9,19 +9,22 @@
 namespace scriptfs {
 
     std::array<Turbo::JSCallback, NUM_FUNCS> Functions = {
-        {scriptfs::OpenRawFile},
+        {scriptfs::OpenRawFile}
     };
 
     std::array<Turbo::JSName, NUM_FUNCS> FunctionNames = {
-        {"RawFile"},
+        {"RawFile"}
     };
 
-    #if !(NUM_VARS == 0)
+    std::array<Turbo::JSValue, NUM_VARS> Variables = {
+        v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), GetDirs()->root),
+        v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), GetDirs()->system)
+    };
+    std::array<Turbo::JSName, NUM_VARS> VariableNames = {
+        "FILESYSTEM_ROOT",
+        "FILESYSTEM_SYSTEM"
+    };
 
-        std::array<Turbo::JSValue, NUM_VARS> Variables;
-        std::array<Turbo::JSName, NUM_VARS> VariableNames;
-
-    #endif
 }
 
 void Close(void){
@@ -51,18 +54,10 @@ return NUM_VARS;
 }
 
 Turbo::JSValueArray GetVariables(void){
-    #if NUM_VARS == 0
-    return nullptr;
-    #else
     return scriptfs::Variables.data();
-    #endif
 
 }
 
 Turbo::JSNameArray GetVariableNames(void){
-    #if NUM_VARS == 0
-    return nullptr;
-    #else
     return scriptfs::VariableNames.data();
-    #endif
 }
