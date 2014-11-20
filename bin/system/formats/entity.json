@@ -1,0 +1,24 @@
+{
+    "header":[
+        {"size":2, "type":"number", "name":"map_x"},
+        {"size":2, "type":"number", "name":"map_y"},
+        {"size":2, "type":"number", "name":"layer"},
+        {"size":2, "type":"number", "name":"type"},
+        {"size":8, "type":"reserved"}
+    ],
+    "person":[
+        {"size":2, "type":"string", "name":"name"},
+        {"size":2, "type":"string", "name":"spriteset_file"},
+        {"size":2, "type":"number", "name":"num_scripts"},
+        {"size":2, "type":"string", "name":"on_create"},
+        {"size":2, "type":"string", "name":"on_destroy"},
+        {"size":2, "type":"string", "name":"on_touch"},
+        {"size":2, "type":"string", "name":"on_talk"},
+        {"size":2, "type":"string", "name":"on_create"},
+        {"size":16, "type":"reserved"}
+    ],
+    "trigger":[
+        {"size":2, "type":"string", "name":"trigger_function"}
+    ]
+
+}
