@@ -35,7 +35,7 @@ char *openfile(const char *filename){
 }
 
 
-bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::String> name, v8::Isolate *isolate ,bool print_result) {
+bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::String> name, v8::Isolate *isolate, bool print_result) {
 
     if(!isolate){
         fprintf(stderr, "[ConfigManager] ExecuteString Error: isolate was null.");
@@ -50,10 +50,9 @@ bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::String> name, v8
     if (script.IsEmpty()){
         v8::String::Utf8Value error(try_catch.Exception());
         v8::String::Utf8Value pname(name);
-        string namestr = std::string(*pname);
 
         printf("%s\n", *error);
-        printf("\nCould not compile script %s\n", namestr.c_str());
+        printf("\nCould not compile script %s\n", *pname);
         return false;
     }
     else{
