@@ -13,7 +13,7 @@
         {"size":1, "type":"number", "name":"start_direction"},
         {"size":2, "type":"number", "name":"num_strings"},
         {"size":2, "type":"number", "name":"num_zones"},
-        {"size":235, "type":"reserved"},
+        {"size":235, "type":"reserved"}
     ],
     "strings":[
         {"size":2, "type":"string", "name":"tileset_file"},
@@ -24,6 +24,25 @@
         {"size":2, "type":"string", "name":"north_script"},
         {"size":2, "type":"string", "name":"east_script"},
         {"size":2, "type":"string", "name":"south_script"},
-        {"size":2, "type":"string", "name":"west_script"},
+        {"size":2, "type":"string", "name":"west_script"}
+    ],
+    "layer":[
+        {"size":2, "type":"number", "name":"width"},
+        {"size":2, "type":"number", "name":"height"},
+        {"size":2, "type":"number", "name":"flags"},
+        {"size":4, "type":"float",  "name":"parallax_x"},
+        {"size":4, "type":"float",  "name":"parallax_y"},
+        {"size":4, "type":"float",  "name":"scrolling_x"},
+        {"size":4, "type":"float",  "name":"scrolling_y"},
+        {"size":4, "type":"number", "name":"num_segments"},
+        {"size":1, "type":"flag",   "name":"reflective"},
+        {"size":3, "type":"reserved"},
+        {"size":2, "type":"string", "name":"name"}
+    ],
+    "zone":[
+        {"size":2, "type":"number", "name":"layer"},
+        {"size":2, "type":"number", "name":"num_steps"},
+        {"size":4, "type":"reserved"},
+        {"size":2, "type":"string", "name":"script"}
     ]
 }
