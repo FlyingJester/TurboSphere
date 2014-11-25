@@ -556,6 +556,7 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
     printf("[Engine] info Isolate created at %p\n", iso);
 
     v8::HandleScope scope(iso);
+    v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
 
     v8::ArrayBuffer::Allocator* allocator = new Turbo::ArrayBufferAllocator();
 
@@ -608,7 +609,6 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
     context->Global()->Set(v8::String::NewFromUtf8(iso, "GarbageCollect"), E_GarbageCollecttempl->GetFunction());
 
-    v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
     {
 
         v8::TryCatch try_catch;

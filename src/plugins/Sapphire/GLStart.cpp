@@ -30,19 +30,15 @@ void SwapQueues(){
     ThreadKitP kit = GetSystemThreadkit();
     AtomicSet(kit->index, (AtomicGet(kit->index)+1)%NUM_BUFFERS);
 
-//    unsigned s = AtomicGet(kit->index);
-//    unsigned r = AtomicGet(kit->lastIndex);
-
-//    AtomicCAS(kit->index, r, (s+1)%3);
-
-//    AtomicSet(kit->lastIndex, s);
 }
 
 inline void SetSDL_GL_Attributes(void){
-    SDL_GL_SetAttribute(SDL_GL_RED_SIZE,8);
-    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,8);
-    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,8);
-    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE,8);
+//    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE,0);
+//    SDL_GL_SetAttribute(SDL_GL_RED_SIZE,8);
+//    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,8);
+//    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,8);
+//    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE,8);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 }
 

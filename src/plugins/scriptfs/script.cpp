@@ -57,6 +57,34 @@ namespace scriptfs {
         args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), s));
     }
 
+    Turbo::JSFunction RawFileGetPosition(Turbo::JSArguments args){
+        const RawFileHolder *mRawFile = Turbo::GetMemberSelf<RawFileHolder>(args);
+        assert(mRawFile!=nullptr);
+
+        unsigned long s = 0;
+
+        rawfile_getPosition(mRawFile->A, &s);
+
+        args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), s));
+    }
+
+    Turbo::JSFunction RawFileSetPosition(Turbo::JSArguments args){
+        const RawFileHolder *mRawFile = Turbo::GetMemberSelf<RawFileHolder>(args);
+        assert(mRawFile!=nullptr);
+
+        int sig[] = {Turbo::Int, 0};
+
+        if(!Turbo::CheckArg::CheckSig(args, 1, sig))
+          return;
+
+        unsigned long s = (unsigned long)args[0]->IntegerValue();
+
+        rawfile_setPosition(mRawFile->A,  s);
+        rawfile_getPosition(mRawFile->A, &s);
+
+        args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), s));
+    }
+
 
     Turbo::JSFunction RawFileRead(Turbo::JSArguments args){
 
@@ -204,6 +232,8 @@ Turbo::JSFunction scriptfs::OpenRawFile(Turbo::JSArguments args){
         printf(BRACKNAME " %s Info: Replaced ~ with %s. Now we have %s.\n", __func__, GetDirs()->root, lCombinedPath.c_str());
 
     struct RawFile *rFile = AllocRawFile();
+    assert(rFile);
+
     err = ::OpenRawFile(rFile, lCombinedPath.c_str(), writeable);
 
     if(TURBO_TRYRAWFILE_ISERROR(err)){
@@ -219,9 +249,11 @@ void InitRawFile(int ID){
     scriptfs::RawFileObj.ID = ID << 16;
     scriptfs::RawFileObj.Finalize = Turbo::Finalizer<RawFileHolder>;
     scriptfs::RawFileObj.SetTypeName("RawFile");
-    scriptfs::RawFileObj.AddAccessor("size",   scriptfs::RawFileSize, nullptr);
     scriptfs::RawFileObj.AddToProto("getSize", scriptfs::RawFileGetSize);
+    scriptfs::RawFileObj.AddToProto("getPosition", scriptfs::RawFileGetPosition);
+    scriptfs::RawFileObj.AddToProto("setPosition", scriptfs::RawFileSetPosition);
     scriptfs::RawFileObj.AddToProto("read", scriptfs::RawFileRead);
+    scriptfs::RawFileObj.AddAccessor("size",   scriptfs::RawFileSize, nullptr);
 
     scriptfs::sRawfilePath = GetDirs()->save;
 
