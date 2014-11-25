@@ -13,6 +13,9 @@ if(typeof Turbo == "undefined")
 if(typeof Turbo == "undefined")
     Turbo.Classic = {};
 
+Turbo.MapScheme   = Turbo.LoadSystemScheme("map.json");
+Turbo.EntityScheme= Turbo.LoadSystemScheme("entity.json");
+
 Turbo.LoadMapFile = function(path){
     var map_file = new RawFile("../maps/"+path);
     var map_buffer = map_file.read(map_file.size);
@@ -22,9 +25,6 @@ Turbo.LoadMapFile = function(path){
 
     return new Turbo.Map(map_bytearray);
 }
-
-Turbo.MapScheme   = Turbo.LoadSystemScheme("map.json");
-Turbo.EntityScheme= Turbo.LoadSystemScheme("entity.json");
 
 Turbo.Map = function(bytearray, offset, compat){
 
@@ -52,7 +52,7 @@ Turbo.Map = function(bytearray, offset, compat){
     this.unsetCamera();
     this.unsetInput();
 
-    var stream = new Turbo.ArrayReader(bytearray, offset);
+    var stream = new Turbo.Stream(bytearray, offset);
 
     // Load map header as base.
     this.__proto__ = Turbo.ReadBinaryDataWithReader(stream, Turbo.MapScheme.header);

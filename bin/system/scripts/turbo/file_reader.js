@@ -50,9 +50,9 @@ Turbo.ArrayReader = function(input, offset){
 
     // Implement this.read(num); // Can return a ByteArray or an Array
     this.read = function(num){
-        var to = at+num;
-        return this.guts.slice(at, to);
-        at = to;
+        var to = this.at+num;
+        return this.guts.slice(this.at, to);
+        this.at = to;
     }
 
     // Implement this.getByte();
@@ -66,12 +66,16 @@ Turbo.ArrayReader = function(input, offset){
     }
 
     // Implement this.getDWord();
-    this.getWord = function(){
+    this.getDWord = function(){
         return Turbo.qByteCat(this.guts[this.at++], this.guts[this.at++], this.guts[this.at++], this.guts[this.at++]);
     }
 
     // Implement this.seek(to, whence);
     this.seek = function(to, whence){
+
+        if(typeof whence == "undefined")
+            whence = Turbo.SEEK_SET;
+
         switch(whence){
         case Turbo.SEEK_SET:
                 if(to>this.size())
@@ -183,6 +187,10 @@ Turbo.FileReader = function(raw, offset){
 
     // Implement this.seek(to, whence);
     this.seek = function(to, whence){
+
+        if(typeof whence == "undefined")
+            whence = Turbo.SEEK_SET;
+
         switch(whence){
         case Turbo.SEEK_SET:
                 if(to>this.size())
@@ -215,7 +223,6 @@ Turbo.FileReader = function(raw, offset){
         }
 
         this.moveChunkTo(from);
-        if(typeof )
         return new Uint8Array(this.chunk.data.buffer.slice(to-this.chunk.offset));
 
     }
@@ -244,6 +251,15 @@ Turbo.Stream = function(input, offset){
         this.__proto__ = new Turbo.FileReader( input, offset);
     }
 
+    if(!((typeof this.size == "function")
+     &&  (typeof this.read == "function")
+     &&  (typeof this.getByte == "function")
+     &&  (typeof this.getWord == "function")
+     &&  (typeof this.getDWord == "function")
+     &&  (typeof this.seek == "function")
+     &&  (typeof this.tell == "function")
+     &&  (typeof this.slice == "function")))
+        throw "Did not create a working Reader object. Types :" + typeof this.size + typeof this.read + typeof this.getByte + typeof this.getWord + typeof this.getDWord + typeof this.seek + typeof this.tell + typeof this.slice;
 
 
 }

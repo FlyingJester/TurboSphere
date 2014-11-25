@@ -58,51 +58,48 @@ Turbo.GetSchemeLength = function(scheme){
     return s;
 }
 
-Turbo.AddSchemeElementToObject = function(element, object, buffer){
+Turbo.AddSchemeElementToObject = function(element, object, array){
     var at = 0;
-    for(var i in scheme){
-        var element = scheme[i];
 
-        if(at+element.size > array.length)
-            throw "Unexpected end of file. Element " + i + " (" + element.name + ") needs " + element.size + " bytes at offset " + at + ", but the file is only " + array.length + " bytes long.";
+    if(at+element.size > array.length)
+        throw "Unexpected end of file. Element " + element + " (" + element.name + ") needs " + element.size + " bytes at offset " + at + ", but the file is only " + array.length + " bytes long.";
 
-        if(element.type=="number"){
-            if(element.size==1)
-                object[element.name] = array[at++];
-            else if(element.size==2)
-                object[element.name] = Turbo.dByteCat(array[at++], array[at++]);
-            else if(element.size==4)
-                object[element.name] = Turbo.qByteCat(array[at++], array[at++], array[at++], array[at++]);
-            else
-                throw "Invalid number size of " + element.size + " for element '" + element.name + "'";
-        }
-        else if(element.type=="flag"){
-            if(element.size!=1)
-                throw "Flag of size " + element.size + ", only flags of size 1 supported.";
-            object[element.name] = !(!(array[at++]));
-        }
-        else if(element.type=="string"){
-            var string = Turbo.Classic.readString(array, at);
-            at += string.length; // Adjust the size to match the string.
-            object.string_length += string.string.length;
-            if(string.length>0xFF)
-                throw "This is a temporary warning. " + "Unexpected end of file. Element " + i + " (" + element.name + ") needs " + (element.size+string.length) + " bytes at offset " + at + ", but the file is only " + array.length + " bytes long.";
-            object[element.name] = string.string;
-        }
-        else if(element.type=="fixed_string"){
-            var element_str_buffer = array.slice(at, at+element.size);
-            object[element.name] = CreateStringFromByteArray(element_str_buffer);
-            at+=element.size;
-            if(element.size!=object[element.name].length)
-                throw "Bad math, doofus. Should be " + element.size + ", was " + object[element.name].length;
-        }
-        else if(element.type=="float"){
-            object[element.name] = ieee754.read(array, at, false /* <= Is this right? */, (element.size*6)-1, element.size);
-            at+=element.size;
-        }
-        else{
-            at+=element.size;
-        }
+    if(element.type=="number"){
+        if(element.size==1)
+            object[element.name] = array[at++];
+        else if(element.size==2)
+            object[element.name] = Turbo.dByteCat(array[at++], array[at++]);
+        else if(element.size==4)
+            object[element.name] = Turbo.qByteCat(array[at++], array[at++], array[at++], array[at++]);
+        else
+            throw "Invalid number size of " + element.size + " for element '" + element.name + "'";
+    }
+    else if(element.type=="flag"){
+        if(element.size!=1)
+            throw "Flag of size " + element.size + ", only flags of size 1 supported.";
+        object[element.name] = !(!(array[at++]));
+    }
+    else if(element.type=="string"){
+        var string = Turbo.Classic.readString(array, at);
+        object.string_length += string.string.length;
+        if(string.length>0xFF)
+            throw "This is a temporary warning. " + "Unexpected end of file. Element " + element.name + " needs " + string.length + " bytes at offset " + at + ", but the file is only " + array.length + " bytes long.";
+        object[element.name] = string.string;
+        at += string.length; // Adjust the size to match the string.
+    }
+    else if(element.type=="fixed_string"){
+        var element_str_buffer = array.slice(at, at+element.size);
+        object[element.name] = CreateStringFromByteArray(element_str_buffer);
+        at+=element.size;
+        if(element.size!=object[element.name].length)
+            throw "Bad math, doofus. Should be " + element.size + ", was " + object[element.name].length;
+    }
+    else if(element.type=="float"){
+        object[element.name] = ieee754.read(array, at, false /* <= Is this right? */, (element.size*6)-1, element.size);
+        at+=element.size;
+    }
+    else{
+        at+=element.size;
     }
 
     return at;
@@ -113,19 +110,19 @@ Turbo.ReadBinaryObject = function(from, offset, scheme){
 
     var scheme_length = Turbo.GetSchemeLength(scheme);
 
-    var length = from.length || from.size;
+    var length = from.length || from.size();
 
     if(!(length-offset > scheme_length))
         throw "Unexpected end of input.";
 
     var SliceArray;
 
-    // If we don't need to jump through ByteArray/TypedArray hoops, just slice it.
-    if((typeof from.buffer == "undefined") || (typeof from.buffer.slice != "function")){
-        SliceArray = function(from_, to){return from.slice(from_, to);}
+    if (typeof from.read == "function"){
+        SliceArray = function(from_, to){if(typeof to == "undefined") to = from.size(); if(from.tell()!=from_) from.seek(offset+from_); return from.read(to-from_);}
     }
-    else if (typeof from.read == "function"){
-        SliceArray = function(from_, to){if(typeof to == "undefined") to = from.size; from.seek(offset+from_); return from.read(to-from_);}
+    // If we don't need to jump through ByteArray/TypedArray hoops, just slice it.
+    else if((typeof from.buffer == "undefined") || (typeof from.buffer.slice != "function")){
+        SliceArray = function(from_, to){return from.slice(from_, to);}
     }
     else {
         SliceArray = function(from_, to){return from.buffer.slice(from_, to);}
@@ -137,7 +134,7 @@ Turbo.ReadBinaryObject = function(from, offset, scheme){
 
     for(var i in scheme){
         var element = scheme[i];
-        at+=AddSchemeElementToObject(element, obj, SliceArray(at));
+        at+=Turbo.AddSchemeElementToObject(element, obj, SliceArray(at));
     }
 
     if(at-offset-obj.string_length!=scheme_length)
@@ -148,6 +145,5 @@ Turbo.ReadBinaryObject = function(from, offset, scheme){
 }
 
 Turbo.ReadBinaryDataWithReader = function(reader, scheme){
-    var data = Turbo.ReadBinaryObject(reader, reader.tell(), Turbo.EntityScheme.header);
-    at += Turbo.GetSchemeLength(Turbo.EntityScheme.header) + this.entities[i].string_length;
+    return Turbo.ReadBinaryObject(reader, reader.tell(), scheme);
 }

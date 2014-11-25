@@ -5,6 +5,7 @@
 #include <memory>
 #include <stdio.h>
 #include <v8.h>
+#include <t5_datasource.h>
 #define CONFIGMGR_INTERNAL
 #include "openscript.h"
 #include "opengame.h"
@@ -21,35 +22,16 @@ using namespace std;
 #define STRDUP strdup
 #endif
 
-char *openfile(const char *Rfile){
-    std::stringstream filetext;
-    filetext.str("");
+char *openfile(const char *filename){
 
-    string txt;
-    ifstream file(Rfile);
+    std::unique_ptr<t5::DataSource> source (t5::DataSource::FromPath(t5::DataSource::eRead, filename));
 
-    if(!file) {
-        printf("[ConfigManager] Error: Could not open script %s\n", Rfile);
-    }
-    else {
-        printf("[ConfigManager] Info: Successfully opened script %s\n", Rfile);
-    }
+    char *filetext = (char *)malloc(source->Length()+1);
+    filetext[source->Length()] = '\0';
 
-    if (file.is_open()) {
-        while (file.good()) {
-            getline(file, txt);
+    source->Read(filetext, source->Length());
 
-            filetext<<txt;
-            filetext<<std::endl;
-        }
-    }
-    else {
-        printf("[ConfigManager] Error: File not readable.\n");
-    }
-    file.close();
-
-
-    return STRDUP(filetext.str().c_str());
+    return filetext;
 }
 
 
