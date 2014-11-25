@@ -12,12 +12,12 @@ Turbo.Classic = Turbo.Classic || {};
 //                       Sphere 1.5 Compatibility Layer                      //
 /*///////////////////////////////////////////////////////////////////////////*/
 
-const SCRIPT_ON_ENTER_MAP = 0;
-const SCRIPT_ON_LEAVE_MAP = 1;
-const SCRIPT_ON_LEAVE_MAP_NORTH = 2;
-const SCRIPT_ON_LEAVE_MAP_EAST  = 3;
-const SCRIPT_ON_LEAVE_MAP_SOUTH = 4;
-const SCRIPT_ON_LEAVE_MAP_WEST  = 5;
+const SCRIPT_ON_ENTER_MAP       = 0;
+const SCRIPT_ON_LEAVE_MAP       = 10;
+const SCRIPT_ON_LEAVE_MAP_NORTH = 20;
+const SCRIPT_ON_LEAVE_MAP_EAST  = 30;
+const SCRIPT_ON_LEAVE_MAP_SOUTH = 40;
+const SCRIPT_ON_LEAVE_MAP_WEST  = 50;
 
 // These variables are the ONLY global state of the map engine.
 //   Everything else is represented inside a map and transferred when the map

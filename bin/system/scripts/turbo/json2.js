@@ -8,14 +8,6 @@
 
     See http://www.JSON.org/js.html
 
-
-    This code should be minified before deployment.
-    See http://javascript.crockford.com/jsmin.html
-
-    USE YOUR OWN COPY. IT IS EXTREMELY UNWISE TO LOAD CODE FROM SERVERS YOU DO
-    NOT CONTROL.
-
-
     This file creates a global JSON object containing two methods: stringify
     and parse.
 

@@ -15,11 +15,13 @@ Namespace.StreamType = function(input, offset){
         offset = 0;
 
     // Implement this.size();
+    // Implement this.read(num); // Can return a ByteArray or an Array
     // Implement this.getByte();
     // Implement this.getWord();
     // Implement this.getDWord();
     // Implement this.seek(to, whence);
     // Implement this.tell();
+    // Implement this.slice(from, to); // Can return a ByteArray or an Array
 
     this.getChar = this.getByte;
     this.getShort = this.getWord;
@@ -45,6 +47,13 @@ Turbo.ArrayReader = function(input, offset){
         this.size = function(){return this.guts.byteLength;};
     else
         throw "No known way to determine length of input.";
+
+    // Implement this.read(num); // Can return a ByteArray or an Array
+    this.read = function(num){
+        var to = at+num;
+        return this.guts.slice(at, to);
+        at = to;
+    }
 
     // Implement this.getByte();
     this.getByte = function(){
@@ -85,6 +94,10 @@ Turbo.ArrayReader = function(input, offset){
         return this.tell();
     }
 
+
+    // Implement this.slice(from, to); //< Return value must have [] operator.
+    this.slice = function(from, to){return this.guts.slice(from, to);};
+
     // Implement this.tell();
     this.tell = function(){return this.at;};
 
@@ -98,13 +111,14 @@ Turbo.ArrayReader = function(input, offset){
 
 // Constructs a stream from a RawFile.
 // Takes ownership of the RawFile it is passed.
+// Attempts to work around V8 having poor ArrayBuffer implementation.
 Turbo.FileReader = function(raw, offset){
 
     if(typeof offset == "undefined")
         offset = 0;
 
     this.guts = input;
-    this.guts.seek(offset);
+    this.guts.setPosition(offset);
     this.at = offset;
     // Implement this.size();
     this.size = function(){return this.guts.size;};
@@ -113,16 +127,38 @@ Turbo.FileReader = function(raw, offset){
     this.chunk_sizes = 1024; // This may grow at some point in flight.
     this.chunk = {size:0, offset:offset, data:null};
 
+    this.chunkReset = function(to){
+        this.chunk.size = this.chunk_sizes;
+        this.chunk.offset = (to>>8)<<8;
+        this.guts.seek(this.chunk.offset);
+        this.chunk.data = this.guts.read(this.chunk.size);
+        this.at = this.chunk.offset+this.chunk.size;
+
+        if(typeof GarbageCollect == "function")
+            GarbageCollect();
+    }
+
     this.moveChunkTo = function(to){
         if(!((this.chunk.offset <= this.at) &&
            (this.chunk.offset+this.chunk.size < to))){
-
-            this.chunk.size = this.chunk_sizes;
-            this.chunk.offset = (to>>8)<<8;
-            this.file.seek(this.chunk.offset);
-            this.chunk.data = this.file.read(this.chunk.size);
-            this.at = this.chunk.offset+this.chunk.size;
+            this.chunkReset(to);
         }
+    }
+
+    // Implement this.read(num); // Can return a ByteArray or an Array
+    this.read = function(num){
+
+        this.mover = this.moveChunkTo;
+
+        while(this.chunk_sizes-255<num){
+            this.chunk_sizes<<=1;
+            this.mover = this.chunkReset;
+        }
+
+        this.chunkReset(this.at);
+        var data = this.guts.read(num);
+        this.tell();
+        return data;
     }
 
     // Implement this.getByte();
@@ -167,13 +203,26 @@ Turbo.FileReader = function(raw, offset){
                 throw "Argument two must be Turbo.SEEK_SET, Turbo.SEEK_CUR, or Turbo.SEEK_END.";
         }
         this.moveChunkTo(this.at);
-        this.guts.seek(this.at);
+        this.guts.setPosition(this.at);
         return this.tell();
+    }
+
+    // Implement this.slice(from, to); //< Return value must have [] operator.
+    this.slice = function(from, to){
+        // Minus 255 to account for alignment.
+        while(this.chunk_sizes-0xFF<to-from){
+            this.chunk_sizes<<1;
+        }
+
+        this.moveChunkTo(from);
+        if(typeof )
+        return new Uint8Array(this.chunk.data.buffer.slice(to-this.chunk.offset));
+
     }
 
 
     // Implement this.tell();
-    this.tell = function(){return this.at;};
+    this.tell = function(){this.at = this.guts.getPosition(); return this.guts.getPosition();};
 
     this.getChar = this.getByte;
     this.getShort = this.getWord;
@@ -188,7 +237,7 @@ Turbo.Stream = function(input, offset){
     if(typeof offset == "undefined")
         offset = 0;
 
-    if((this.guts instanceof Uint8Array) || (Array.isArray(this.guts))){
+    if((input instanceof Uint8Array) || (Array.isArray(input))){
         this.__proto__ = new Turbo.ArrayReader(input, offset);
     }
     else{

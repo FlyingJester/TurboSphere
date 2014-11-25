@@ -1,3 +1,4 @@
+RequireSystemScript('turbo/segment.js');
 RequireSystemScript('turbo/bytearray.js');
 RequireSystemScript('colors.js');
 RequireSystemScript('turbo/format.js');
@@ -20,58 +21,57 @@ Turbo.TilesetScheme = Turbo.LoadSystemScheme("tileset.json");
 
 Turbo.Tile = function(array, index, surface){
 
-    this.__proto__ = Turbo.ReadBinaryObject(array, index, Turbo.TileScheme.header);
-    index += Turbo.GetSchemeLength(Turbo.TileScheme.header);
+    this.__proto__ = Turbo.ReadBinaryDataWithReader(stream, Turbo.TileScheme.header);
 
-    this.segments = new Array(this.num_segments);
+    this.surface = surface;
 
+    // this.segments is initialized depending on the Obstruction type, since we already know its
+    // length with obs type 2, but we need to fully iterate the bytemap for type 1.
     switch(this.obstruction_type){
     case 2:
-        this.loadObstructions =  function(bytearray, index){
-            if(bytearray.length < index+(8*this.segments.length))
-              throw "Unexpected end of file.";
-
-            var at = index;
+        this.segments = new Array(this.num_segments);
+        this.loadObstructions = function(stream){
             for(var i = 0; i< this.segments.length; i++){
-                this.segments[i] = [{x:Turbo.dByteCat(array[at++], array[at++]), y:Turbo.dByteCat(array[at++], array[at++])},
-                               {x:Turbo.dByteCat(array[at++], array[at++]), y:Turbo.dByteCat(array[at++], array[at++])}];
+                this.segments[i] = Turbo.ReadBinaryDataWithReader(stream, Turbo.SegmentScheme.header);
             }
-
-            return 8*this.segments.length;
-
         }
-    case 1:
-        this.loadObstructions =  function(bytearray, index){
-            if(bytearray.length < index+(this.surface.width*this.surface.height))
+    case 1: // Bytemapped obstructions
+        this.segments = [];
+        this.loadObstructions = function(stream){
+
+            // Ensure that the stream is big enough.
+            if(stream.size() - stream.tell() < index+(this.surface.width*this.surface.height))
               throw "Unexpected end of file.";
-            var at = index;
+
             for(var y = 0; y < this.surface.height; y++){
                 for(var x = 0; x < this.surface.width; x++){
-                    if(bytearray[at++]==1)
+                // A value other than 0 indicates that this point (1px by 1px) is obstructed.
+                // This is an ugly way to represent it, but this is a very deprecated feature
+                // to begin with.
+                    if(stream.readByte())
                       this.segments.push([{x:x, y:y}, {x:x, y:y}]);
                 }
             }
-            return this.surface.width*this.surface.height;
+        }
+    case 0:
+        this.segments = [];
+        this.loadObstructions = function(stream){
+
         }
     default:
-        this.loadObstructions =  function(bytearray, index){
-            return 0;
-        }
+        throw "Unknown obstruction type number " + this.obstruction_type;
     }
 
 }
 
 
-Turbo.Tileset = function(bytearray, offset){
+Turbo.Tileset = function(stream){
 
-    if(typeof offset == "undefined")
-      offset = 0;
+    // Load tileset header as base.
+    this.__proto__ = Turbo.ReadBinaryDataWithReader(stream, Turbo.TilesetScheme.header);
 
-    this.__proto__ = Turbo.ReadBinaryObject(bytearray, offset, Turbo.TilesetScheme.header);
-    var at = offset + Turbo.GetSchemeLength(Turbo.TilesetScheme.header);
-
-    if(this.signature!=".rts")
-      throw "Signature must be .rts, was " + this.signature;
+    if(this.signature!=Turbo.TilesetScheme.signature)
+      throw "Signature must be .rts instead of " + this.signature;
 
     if(this.num_tiles==0)
       throw "Zero tiles in tileset";
@@ -79,111 +79,74 @@ Turbo.Tileset = function(bytearray, offset){
     if(this.BPP==0)
       throw "BPP of 0";
 
-    this.tiles   = new Array(this.num_tiles);
+    this.tiles         = new Array(this.num_tiles);
     this.tile_surfaces = new Array(this.num_tiles);
 
     switch(this.BPP){ // Determine how to parse color information.
+        case 32: // Technically this is the only thing we need to support
+            this.colorEquation = function(stream){
+                return new Color(stream.readByte(), stream.readByte(), stream.readByte(), stream.readByte());
+            }
+        break;
         case 8:
-            this.colorEquation = function(array, i){
-                var cbyte = array[i];
+            this.colorEquation = function(stream){ // R3G2B3
+                var cbyte = stream.readByte();
                 return new Color(cbyte & 0x7, cbyte & 0x18, cbyte &  0xE0, 0xFF);
             }
         break;
         case 16:
-            this.colorEquation = function(array, i){
-                var cshort = Turbo.dByteCat(bytearray[i], bytearray[i+1]);
-                return new Color(cshort & 0x001F, cshort & 0x03E0, cshort & 0x7C00, cshort & 0x7000);
+            this.colorEquation = function(stream){ // R5G5B5A1
+                var cshort = stream.readShort();
+
+                // Bit shift 0x01F (Which is 0b00011111, five 1's) over so that it lines up with component n.
+                // Bitwise and it with the value.
+                // Shift it back to put it at the least-significant 5 bits. This is the component value.
+                // Multiply by eight (aka bitshift left by 3) to convert to RGBA32-style.
+                var el_calc = function(n){return (cshort & ((0x001F << (n*5)))>>(n*5))<<3;}  // v Check if the sixteenth bit is set. This is the one-bit alpha channel.
+                return new Color(el_calc(1), el_calc(2), el_calc(3), (cshort & 0x8000)?0xFF:0);
             }
         break;
         case 24:
-            this.colorEquation = function(array, i){
-                return new Color(array[i], array[i+1], array[i+2], 0xFF);
+            this.colorEquation = function(stream){
+                return new Color(stream.readByte(), stream.readByte(), stream.readByte(), 0xFF);
             }
-        case 32:
-            this.colorEquation = function(array, i){
-                return new Color(array[i++],array[i++],array[i++],array[i++]);
-            }
+        break;
         default:
 
-        if((this.BPP>32) && (this.BPP%32==0)){
-            this.colorEquation = function(array, i){
-                var red   = 0;
-                var green = 0;
-                var blue  = 0;
-                var alpha = 0;
-                for(var e = 0; e < this.BPP/8; e+=4){
-                    red   |= array[e];
-                    blue  |= array[e+1];
-                    green |= array[e+2];
-                    alpha |= array[e+3];
-
-                    red<<=8;
-                    green<<=8;
-                    blue<<=8;
-                    alpha<<=8;
-
-                }
-                return new Color(red, blue, green, alpha);
-            }
-        }
-        else if((this.BPP>=32)&&((this.BPP-32)%32==0)){
-            this.colorEquation = function(array, i){
-                var e = 0;
-                var red   = array[i+e++];
-                var green = array[i+e++];
-                var blue  = array[i+e++];
-                var alpha = array[i+e++];
-
-                for(; e < this.BPP/8; e+=3){
-                    red   |= array[i+e];
-                    blue  |= array[i+e+1];
-                    green |= array[i+e+2];
-
-                    red<<=8;
-                    green<<=8;
-                    blue<<=8;
-
-                }
-            }
-        }
-        else if((this.BPP > 24) &&(this.BPP%24==0)){
-            this.colorEquation = function(array, i){
-                var e = 0;
-                var red   = array[e++];
-                var green = array[e++];
-                var blue  = array[e++];
-                var alpha = 0xFF;
-                for(; e < this.BPP/8; e+=3){
-                    red   |= array[e];
-                    blue  |= array[e+1];
-                    green |= array[e+2];
-
-                    red<<=8;
-                    green<<=8;
-                    blue<<=8;
-
-                }
+        if((this.BPP>32) && (this.BPP%32==0)){ // Balanced multibyte RGBA.
+            this.colorEquation = function(stream){
+                var components = [0, 0, 0, 0];
+                for(var i in components)
+                  for(var e = 0; e< (this.BPP>>5); e++){
+                      components[i] = stream.readByte();
+                      components[i] <<= 8;
+                  }
+                return new Color(components[0], components[1], components[2], components[3]);
             }
         }
         else
           throw "Unhandled BPP of "+this.BPP;
     } // /Determine how to parse color information.
 
-    if(bytearray.length < this.tiles.length*(this.BPP/8)*this.width*this.height)
+    if(stream.size() - stream.tell() < this.tiles.length*(this.BPP/8)*this.width*this.height)
       throw "Unexpected end of file.";
 
+    // Slight performance drain while the nested conditinal gets spun up, but it's less verbose.
     for(var i = 0; i<this.tile_surfaces.length; i++){
-        if(this.BPP==32){
-            this.tile_surfaces[i] = SurfaceFromArrayBuffer(this.width, this.height, bytearray.buffer.slice(at, (this.BPP/8)*this.width*this.height));
-            at+=4*this.width*this.height;
+        if((this.BPP==32) && (typeof SurfaceFromArrayBuffer=="function")){
+            var data = stream.read(at, (this.BPP/8)*this.width*this.height);
+
+            // SurfaceFromArrayBuffer is evil, and you should not use it outside the Turbo runtime.
+            // If you MUST (or are just a jerk and just don't want to listen), remember that it
+            //   poisons the ArrayBuffer you give it.
+            this.tile_surfaces[i] = SurfaceFromArrayBuffer(this.width, this.height, data);
         }
-        else{
+        else{ // Fall back to slow (but effective) methods since we can't hotwire the surface.
             this.tile_surfaces[i] = new Surface(this.width, this.height, Black);
             for(var y = 0; y < this.height; y++){
                 for(var x = 0; x < this.width; x++){
-                    var color_int =  this.colorEquation(bytearray, at);
-                    this.tile_surfaces[i].setPixel(x, y, color_int);
-                    at+=this.BPP>>3;
+                    var color =  this.colorEquation(stream);
+                    this.tile_surfaces[i].setPixel(x, y, color);
                 }
             }
         }
@@ -191,13 +154,12 @@ Turbo.Tileset = function(bytearray, offset){
 
     // Load tile headers
     for(var i = 0; i<this.tiles.length; i++){
-        this.tiles[i] = new Turbo.Tile(bytearray, at, this.tile_surfaces[i]);
-        at+=32;
+        this.tiles[i] = new Turbo.Tile(stream, this.tile_surfaces[i]);
     }
 
     // Load tile obstructions
     for(var i = 0; i<this.tiles.length; i++){
-        at+=this.tiles[i].loadObstructions(bytearray, at);
+        this.tiles[i].loadObstructions(stream);
     }
 
     this.RedrawTiles = function(){
