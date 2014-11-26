@@ -55,14 +55,14 @@ Turbo.Map = function(bytearray, offset, compat){
     var stream = new Turbo.Stream(bytearray, offset);
 
     // Load map header as base.
-    this.__proto__ = Turbo.ReadBinaryDataWithReader(stream, Turbo.MapScheme.header);
+    this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.MapScheme.header);
 
     // The stream should at least _say_ that it's a Sphere map.
     if(this.signature != Turbo.MapScheme.signature)
         throw "Bad signature. Should be " + Turbo.MapScheme.signature + " instead of " + this.signature;
 
     // Load map strings.
-    this.strings = Turbo.ReadBinaryDataWithReader(stream, Turbo.MapScheme.strings);
+    this.strings = Turbo.ReadBinaryObject(stream, Turbo.MapScheme.strings);
 
     // Load functions from strings.
     this.functions = [];
@@ -77,7 +77,7 @@ Turbo.Map = function(bytearray, offset, compat){
     for(var i = 0; i< this.num_layers; i++){
 
         // Load the layer header.
-        this.layers[i] = Turbo.ReadBinaryDataWithReader(stream, Turbo.MapScheme.layer);
+        this.layers[i] = Turbo.ReadBinaryObject(stream, Turbo.MapScheme.layer);
 
         // Load layer tile data.
         // *2 because layer elements are 16-bits long.
