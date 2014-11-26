@@ -113,10 +113,83 @@ Turbo.ArrayReader = function(input, offset){
 
 }
 
+Turbo.FileReader = function(input, offset){
+
+    if(typeof offset == "undefined")
+        offset = 0;
+
+    this.guts = input;
+    this.guts.setPosition(offset);
+
+    // Implement this.size();
+    this.size = function(){return this.guts.size;}
+
+    // Implement this.read(num); // Can return a ByteArray or an Array
+    this.read = function(n){return ByteArrayFromTypedArray(this.guts.read(n));}
+    // Implement this.getByte();
+    this.getByte = function(){return (new Int8Array(this.guts.read(1)))[0];}
+    // Implement this.getWord();
+    this.getWord = function(){return (new Int16Array(this.guts.read(2)))[0];}
+    // Implement this.getDWord();
+    this.getDWord = function(){return (new Int32Array(this.guts.read(4)))[0];}
+    // Implement this.seek(to, whence);
+    this.seek = function(to, whence){
+
+        if(typeof whence == "undefined")
+            whence = Turbo.SEEK_SET;
+
+        var at = this.guts.getPosition();
+
+        switch(whence){
+        case Turbo.SEEK_SET:
+                if(to>this.size())
+                    throw "Invalid seek. Tried to seek to " + to + ", maximum possible is " + this.size();
+                at = to;
+            break;
+            case Turbo.SEEK_CUR:
+                if(to>this.size()-this.at)
+                    throw "Invalid seek. Tried to seek to " + to + ", maximum possible is " + this.size()-at;
+                at += to;
+            break;
+            case Turbo.SEEK_END:
+                if(to>this.size())
+                    throw "Invalid seek. Tried to seek to " + to + ", maximum possible is " + this.size();
+                this.at = this.size()-to;
+            break;
+            default:
+                throw "Argument two must be Turbo.SEEK_SET, Turbo.SEEK_CUR, or Turbo.SEEK_END.";
+        }
+        this.guts.setPosition(at);
+        return this.tell();
+    }
+    // Implement this.tell();
+    this.tell = function(){
+        return this.guts.getPosition();
+    }
+    // Implement this.slice(from, to); // Can return a ByteArray or an Array
+    this.slice = function(from, to){
+        var len = to-from;
+        var at = this.guts.getPosition();
+
+        this.guts.setPosition(from);
+        var data = this.read(len);
+
+        this.guts.setPosition(at);
+
+        return data;
+    }
+
+    this.getChar = this.getByte;
+    this.getShort = this.getWord;
+    this.getInt   = this.getDWord;
+    this.getLongLong = this.getQWord;
+
+}
+
 // Constructs a stream from a RawFile.
 // Takes ownership of the RawFile it is passed.
 // Attempts to work around V8 having poor ArrayBuffer implementation.
-Turbo.FileReader = function(raw, offset){
+Turbo.BrokenFileReader = function(input, offset){
 
     if(typeof offset == "undefined")
         offset = 0;
@@ -132,11 +205,12 @@ Turbo.FileReader = function(raw, offset){
     this.chunk = {size:0, offset:offset, data:null};
 
     this.chunkReset = function(to){
+        this.at = this.guts.getPosition();
         this.chunk.size = this.chunk_sizes;
         this.chunk.offset = (to>>8)<<8;
-        this.guts.seek(this.chunk.offset);
+        this.guts.setPosition(this.chunk.offset);
         this.chunk.data = this.guts.read(this.chunk.size);
-        this.at = this.chunk.offset+this.chunk.size;
+        this.guts.setPosition(this.at);
 
         if(typeof GarbageCollect == "function")
             GarbageCollect();
@@ -152,6 +226,13 @@ Turbo.FileReader = function(raw, offset){
     // Implement this.read(num); // Can return a ByteArray or an Array
     this.read = function(num){
 
+        if(this.chunk.offset>this.at)
+            throw "Illegal state.";
+
+        if(num+this.chunk.offset < this.chunk.size + this.tell()){
+            return new Uint8Array(this.chunk.data.slice((this.at - this.chunk.offset), (this.at - this.chunk.offset)+num));
+        }
+
         this.mover = this.moveChunkTo;
 
         while(this.chunk_sizes-255<num){
@@ -159,26 +240,42 @@ Turbo.FileReader = function(raw, offset){
             this.mover = this.chunkReset;
         }
 
-        this.chunkReset(this.at);
-        var data = this.guts.read(num);
+        if(this.chunk.offset>this.at)
+            throw "Illegal state.";
+
+        this.mover(this.at);
+        var data = new Uint8Array(this.guts.read(num));
         this.tell();
+
+        if(data.length!=num)
+            throw "Error creating buffer. Should have been " + num + " bytes long but was " + data.length;
+
         return data;
     }
 
     // Implement this.getByte();
     this.getByte = function(){
+
         this.moveChunkTo(this.at);
         return this.chunk.data[this.at-this.chunk.offset];
     }
     // Implement this.getWord();
     this.getWord = function(){
         this.moveChunkTo(this.at);
+
+        if(this.chunk.offset>this.at)
+            throw "Illegal state.";
+
         return Turbo.dByteCat(this.chunk.data[this.at-this.chunk.offset+0],
                               this.chunk.data[this.at-this.chunk.offset+1]);
     }
     // Implement this.getDWord();
     this.getDWord = function(){
         this.moveChunkTo(this.at);
+
+        if(this.chunk.offset>this.at)
+            throw "Illegal state.";
+
         return Turbo.qByteCat(this.chunk.data[this.at-this.chunk.offset+0],
                               this.chunk.data[this.at-this.chunk.offset+1],
                               this.chunk.data[this.at-this.chunk.offset+2],
@@ -223,6 +320,10 @@ Turbo.FileReader = function(raw, offset){
         }
 
         this.moveChunkTo(from);
+
+        if(this.chunk.offset>this.at)
+            throw "Illegal state.";
+
         return new Uint8Array(this.chunk.data.buffer.slice(to-this.chunk.offset));
 
     }
@@ -235,6 +336,8 @@ Turbo.FileReader = function(raw, offset){
     this.getShort = this.getWord;
     this.getInt   = this.getDWord;
     this.getLongLong = this.getQWord;
+
+    this.chunkReset(this.at);
 
 }
 

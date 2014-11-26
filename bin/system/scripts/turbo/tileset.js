@@ -7,21 +7,17 @@ if(typeof Turbo == "undefined")
     var Turbo = {};
 
 Turbo.LoadTilesetFile = function(path){
-    var tileset_file = new RawFile("../map/"+path);
-    var tileset_buffer = tileset_file.read(tileset_file.size);
 
-    var tileset_byteview = new Uint8Array(tileset_buffer);
-    var tileset_bytearray = ByteArrayFromTypedArray(tileset_byteview);
+    return new Turbo.Tileset(new Turbo.FileReader(new RawFile("../maps/"+path)));
 
-    return new Turbo.Map(tileset_bytearray);
 }
 
 Turbo.TileScheme = Turbo.LoadSystemScheme("tile.json");
 Turbo.TilesetScheme = Turbo.LoadSystemScheme("tileset.json");
 
-Turbo.Tile = function(array, index, surface){
+Turbo.Tile = function(stream, surface){
 
-    this.__proto__ = Turbo.ReadBinaryDataWithReader(stream, Turbo.TileScheme.header);
+    this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.TileScheme.header);
 
     this.surface = surface;
 
@@ -32,7 +28,7 @@ Turbo.Tile = function(array, index, surface){
         this.segments = new Array(this.num_segments);
         this.loadObstructions = function(stream){
             for(var i = 0; i< this.segments.length; i++){
-                this.segments[i] = Turbo.ReadBinaryDataWithReader(stream, Turbo.SegmentScheme.header);
+                this.segments[i] = Turbo.ReadBinaryObject(stream, Turbo.SegmentScheme.header);
             }
         }
     case 1: // Bytemapped obstructions
@@ -40,7 +36,7 @@ Turbo.Tile = function(array, index, surface){
         this.loadObstructions = function(stream){
 
             // Ensure that the stream is big enough.
-            if(stream.size() - stream.tell() < index+(this.surface.width*this.surface.height))
+            if(stream.size() - stream.tell() < (this.surface.width*this.surface.height))
               throw "Unexpected end of file.";
 
             for(var y = 0; y < this.surface.height; y++){
@@ -68,10 +64,10 @@ Turbo.Tile = function(array, index, surface){
 Turbo.Tileset = function(stream){
 
     // Load tileset header as base.
-    this.__proto__ = Turbo.ReadBinaryDataWithReader(stream, Turbo.TilesetScheme.header);
+    this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.TilesetScheme.header);
 
     if(this.signature!=Turbo.TilesetScheme.signature)
-      throw "Signature must be .rts instead of " + this.signature;
+      throw "Signature must be "+Turbo.TilesetScheme.signature+" instead of " + this.signature;
 
     if(this.num_tiles==0)
       throw "Zero tiles in tileset";

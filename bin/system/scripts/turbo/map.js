@@ -17,19 +17,11 @@ Turbo.MapScheme   = Turbo.LoadSystemScheme("map.json");
 Turbo.EntityScheme= Turbo.LoadSystemScheme("entity.json");
 
 Turbo.LoadMapFile = function(path){
-    var map_file = new RawFile("../maps/"+path);
-    var map_buffer = map_file.read(map_file.size);
 
-    var map_byteview = new Uint8Array(map_buffer);
-    var map_bytearray = ByteArrayFromTypedArray(map_byteview);
-
-    return new Turbo.Map(map_bytearray);
+    return new Turbo.Map(new Turbo.FileReader(new RawFile("../maps/"+path)));
 }
 
-Turbo.Map = function(bytearray, offset, compat){
-
-    if(typeof offset == "undefined")
-      offset = 0;
+Turbo.Map = function(stream, compat){
 
     if(typeof compat == "undefined")
       compat = true;
@@ -52,8 +44,6 @@ Turbo.Map = function(bytearray, offset, compat){
     this.unsetCamera();
     this.unsetInput();
 
-    var stream = new Turbo.Stream(bytearray, offset);
-
     // Load map header as base.
     this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.MapScheme.header);
 
@@ -73,6 +63,15 @@ Turbo.Map = function(bytearray, offset, compat){
         this.functions.push(function(){eval(this.strings[Turbo.MapScheme.strings[i].name]);});
     }
 
+    var str = "";
+    for(var i in Turbo.MapScheme.header){
+        str+=Turbo.MapScheme.header[i].name + ", ";
+        if(typeof Turbo.MapScheme.header[i].name!="undefined")
+            str+=this[Turbo.MapScheme.header[i].name] + ", ";
+    }
+
+    throw str;
+
     this.layers = new Array(this.num_layers);
     for(var i = 0; i< this.num_layers; i++){
 
@@ -82,6 +81,7 @@ Turbo.Map = function(bytearray, offset, compat){
         // Load layer tile data.
         // *2 because layer elements are 16-bits long.
         this.layers[i].field = stream.read(this.layers[i].width*this.layers[i].height*2);
+        throw this.layers[i].field.length;
 
         // Parse flags so we can kill the messenger.
         //   Magic equations from sphere/docs/internal/map.rmp.txt
@@ -95,7 +95,7 @@ Turbo.Map = function(bytearray, offset, compat){
         // Load all segments.
         this.layers[i].segments = new Array(this.layers[i].num_segments);
         for(var e = 0; e < this.layers[i].num_segments; e++){
-            this.layers[i].segments[e] = Turbo.ReadBinaryDataWithReader(stream, Turbo.SegmentScheme.Data);
+            this.layers[i].segments[e] = Turbo.ReadBinaryObject(stream, Turbo.SegmentScheme.data);
         } // For var e ... layers[i].segments
     } // For var i ... layers
 
@@ -103,16 +103,17 @@ Turbo.Map = function(bytearray, offset, compat){
     for(var i = 0; i< this.entities.length; i++){
 
         // Load the layer header.
-        this.entities[i] = Turbo.ReadBinaryObject(bytearray, at, Turbo.EntityScheme.header);
-        at += Turbo.GetSchemeLength(Turbo.EntityScheme.header) + this.entities[i].string_length;
+        this.entities[i] = Turbo.ReadBinaryObject(stream, Turbo.EntityScheme.header);
 
     } // For var i ... entities
 
+    this.zones = new Array(this.num_zones);
+
     for(var i = 0; i<this.zones.length; i++){
 
-        this.zones[i] = Turbo.ReadBinaryDataWithReader(stream, Turbo.ZoneScheme.Data);
+        this.zones[i] = Turbo.ReadBinaryObject(stream, Turbo.ZoneScheme.Data);
         // Composite the segment into the zone.
-        Object.assign(this.zones[i], position)
+        Object.assign(this.zones[i], position);
 
         // Set up the script for the zone.
         this.zones[i].onActivate = function(){eval(zones[i].scripts);};
@@ -143,7 +144,7 @@ Turbo.Map = function(bytearray, offset, compat){
         this.tileset = Turbo.LoadTilesetFile(this.strings.tileset_file);
     }
     else{
-        this.tileset = new Turbo.Tileset(bytearray, at);
+        this.tileset = new Turbo.Tileset(stream);
     }
 
     this.calculateLayer = function(i){

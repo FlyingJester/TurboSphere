@@ -67,9 +67,9 @@ Turbo.AddSchemeElementToObject = function(element, object, reader){
         if(element.size==1)
             object[element.name] = reader.getByte();
         else if(element.size==2)
-            object[element.name] = reader.getWord();//Turbo.dByteCat(array[at++], array[at++]);
+            object[element.name] = reader.getWord();
         else if(element.size==4)
-            object[element.name] = reader.getDWord();//Turbo.qByteCat(array[at++], array[at++], array[at++], array[at++]);
+            object[element.name] = reader.getDWord();
         else
             throw "Invalid number size of " + element.size + " for element '" + element.name + "'";
     }
@@ -95,6 +95,8 @@ Turbo.AddSchemeElementToObject = function(element, object, reader){
     else{
         reader.seek(element.size, Turbo.SEEK_CUR);
     }
+   // if(element.name=="num_layers")
+   //     throw object[element.name] + ": num_layers " + element.type +" "+element.size+ " "+  " " + reader.tell();
 
 
 }
@@ -114,4 +116,3 @@ Turbo.ReadBinaryObject = function(from, scheme){
 
 }
 
-Turbo.ReadBinaryDataWithReader = Turbo.ReadBinaryObject;
