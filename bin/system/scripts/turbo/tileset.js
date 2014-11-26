@@ -31,6 +31,7 @@ Turbo.Tile = function(stream, surface){
                 this.segments[i] = Turbo.ReadBinaryObject(stream, Turbo.SegmentScheme.header);
             }
         }
+    break;
     case 1: // Bytemapped obstructions
         this.segments = [];
         this.loadObstructions = function(stream){
@@ -49,11 +50,13 @@ Turbo.Tile = function(stream, surface){
                 }
             }
         }
+    break;
     case 0:
         this.segments = [];
         this.loadObstructions = function(stream){
 
         }
+    break;
     default:
         throw "Unknown obstruction type number " + this.obstruction_type;
     }
@@ -130,7 +133,7 @@ Turbo.Tileset = function(stream){
     // Slight performance drain while the nested conditinal gets spun up, but it's less verbose.
     for(var i = 0; i<this.tile_surfaces.length; i++){
         if((this.BPP==32) && (typeof SurfaceFromArrayBuffer=="function")){
-            var data = stream.read(at, (this.BPP/8)*this.width*this.height);
+            var data = stream.read((this.BPP/8)*this.width*this.height);
 
             // SurfaceFromArrayBuffer is evil, and you should not use it outside the Turbo runtime.
             // If you MUST (or are just a jerk and just don't want to listen), remember that it

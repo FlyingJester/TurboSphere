@@ -63,15 +63,6 @@ Turbo.Map = function(stream, compat){
         this.functions.push(function(){eval(this.strings[Turbo.MapScheme.strings[i].name]);});
     }
 
-    var str = "";
-    for(var i in Turbo.MapScheme.header){
-        str+=Turbo.MapScheme.header[i].name + ", ";
-        if(typeof Turbo.MapScheme.header[i].name!="undefined")
-            str+=this[Turbo.MapScheme.header[i].name] + ", ";
-    }
-
-    throw str;
-
     this.layers = new Array(this.num_layers);
     for(var i = 0; i< this.num_layers; i++){
 
@@ -81,7 +72,6 @@ Turbo.Map = function(stream, compat){
         // Load layer tile data.
         // *2 because layer elements are 16-bits long.
         this.layers[i].field = stream.read(this.layers[i].width*this.layers[i].height*2);
-        throw this.layers[i].field.length;
 
         // Parse flags so we can kill the messenger.
         //   Magic equations from sphere/docs/internal/map.rmp.txt
@@ -111,7 +101,8 @@ Turbo.Map = function(stream, compat){
 
     for(var i = 0; i<this.zones.length; i++){
 
-        this.zones[i] = Turbo.ReadBinaryObject(stream, Turbo.ZoneScheme.Data);
+        var position = Turbo.ReadBinaryObject(stream, Turbo.SegmentScheme.data)
+        this.zones[i] = Turbo.ReadBinaryObject(stream, Turbo.ZoneScheme.header);
         // Composite the segment into the zone.
         Object.assign(this.zones[i], position);
 

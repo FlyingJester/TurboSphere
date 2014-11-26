@@ -111,45 +111,55 @@ namespace scriptfs {
           return;
         }
 
-        left = total-at;
 
-        len = std::min<unsigned long>(left, len);
+        left = total-at;
+        if(len>left){
+            Turbo::SetError(args, " Tried to read past end of RawFile", v8::Exception::RangeError);
+            return;
+        }
+
 
         v8::Local<v8::ArrayBuffer> buffer = v8::ArrayBuffer::New(args.GetIsolate(), len);
-
-
-        {
-            v8::HandleScope scope(args.GetIsolate());
-
-            void *r_buffer = malloc(len);
-            err = rawfile_read(mRawFile->A, r_buffer, len);
-
-            printf("Reading %i bytes.\n", len);
-
+        if(len!=0){
             int to = len/4;
             v8::Local<v8::Uint32Array> typed_buffer = v8::Uint32Array::New(buffer, 0, to);
+            if(typed_buffer->HasIndexedPropertiesInExternalArrayData() && typed_buffer->GetIndexedPropertiesExternalArrayData()){
+                   // An ugly hack to work around a poorly designed API.
+                   //   I blame violent video games.
+                void *data = typed_buffer->GetIndexedPropertiesExternalArrayData();
 
-            for(int i = 0; i<to; i++){
-                typed_buffer->Set(i, v8::Uint32::New(args.GetIsolate(), static_cast<uint32_t *>(r_buffer)[i]));
+                assert(data!=nullptr);
+
+                err = rawfile_read(mRawFile->A, data, len);
             }
+            else{
+                v8::HandleScope scope(args.GetIsolate());
 
-            v8::Local<v8::Uint8Array> typed_buffer_2 = v8::Uint8Array::New(buffer, 0, len);
-            for(int i = to*4; i<len; i++){
-                typed_buffer_2->Set(i, v8::Uint32::New(args.GetIsolate(), static_cast<uint8_t *>(r_buffer)[i]));
+                void *r_buffer = malloc(len);
+                err = rawfile_read(mRawFile->A, r_buffer, len);
+
+                for(int i = 0; i<to; i++){
+                    typed_buffer->Set(i, v8::Uint32::New(args.GetIsolate(), static_cast<uint32_t *>(r_buffer)[i]));
+                }
+
+                v8::Local<v8::Uint8Array> typed_buffer_2 = v8::Uint8Array::New(buffer, 0, len);
+                for(int i = to*4; i<len; i++){
+                    typed_buffer_2->Set(i, v8::Uint32::New(args.GetIsolate(), static_cast<uint8_t *>(r_buffer)[i]));
+                }
+
+                printf("Copied %lu bytes the slow way.\n", len);
+
+                free(r_buffer);
+
+            /*
+                v8::ArrayBuffer::Contents contents = buffer->Externalize();
+
+                assert(contents.ByteLength()==len);
+                err = rawfile_read(mRawFile->A, contents.Data(), len);
+
+                buffer->Reinternalize(contents);
+            */
             }
-
-            printf("Copied %i bytes.\n", len, r_buffer);
-
-            free(r_buffer);
-
-        /*
-            v8::ArrayBuffer::Contents contents = buffer->Externalize();
-
-            assert(contents.ByteLength()==len);
-            err = rawfile_read(mRawFile->A, contents.Data(), len);
-
-            buffer->Reinternalize(contents);
-        */
         }
 
         args.GetReturnValue().Set(buffer);
