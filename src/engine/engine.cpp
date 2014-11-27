@@ -139,13 +139,12 @@ void TS_SetConfigOverrideFromParameter(const char *param, TS_ConfigOverride &con
         TS_ConfVal("fixedplugins",TS_Int)
     };
     */
-    printf("[Engine] Info: Checking arg %s.\n", param);
 
     const char *paramStart = param;
     while(*paramStart=='-')
         paramStart++;
 
-    printf("[Engine] Info: Checking arg %s.\n", paramStart);
+    printf("[Engine] Info: Checking arg %s.\n", param);
 
 
 
@@ -287,27 +286,26 @@ void GetVersionString(const v8::FunctionCallbackInfo<v8::Value> &args){
 }
 
 void GarbageCollect(const v8::FunctionCallbackInfo<v8::Value> &args){
-  /*
+
     int collected = 0;
-    while(!v8::V8::IdleNotification(1000)){
-            if(collected==1)
-                printf(ENGINE " Info: Garbage Collecting ");
-            if(collected>1)
-                printf(".");
-            collected++;
-            v8::V8::LowMemoryNotification();
+    while(args.GetIsolate()->IdleNotification(1)){
+        if(collected==1)
+            printf(ENGINE " Info: Garbage Collecting ");
+        if(collected>1)
+            printf(".");
+        collected++;
     }
-    v8::V8::LowMemoryNotification();
     if(collected>1)
         printf("\n");
-*/
+
 }
 
-TS_NORETURN void ExitGame(const v8::FunctionCallbackInfo<v8::Value> &args){
-    exit(0);
+void ExitGame(const v8::FunctionCallbackInfo<v8::Value> &args){
+    args.GetIsolate()->TerminateExecution();
+
 }
 
-TS_NORETURN void AbortGame(const v8::FunctionCallbackInfo<v8::Value> &args){
+void AbortGame(const v8::FunctionCallbackInfo<v8::Value> &args){
     if(args.Length()<1){
         ExitGame(args);
     }
@@ -645,6 +643,33 @@ end:
 	delete allocator;
 }
 
+static void TS_CheckArg(int argc, char *argv[], TS_ConfigOverride &conf){
+        printf(ENGINE " %s Info: checking arg %s (%i)\n", __func__, argv[argc], argc);
+
+        TS_SetConfigOverrideFromParameter(argv[argc], conf);
+        if(!(--argc))
+            return;
+
+        TS_CheckArg(argc, argv, conf);
+}
+
+static void TS_CheckArgForGame(int argc, char *argv[], int &gamearg, TS_ConfigOverride &conf){
+
+        printf(ENGINE " %s Info: checking arg %s (%i)\n", __func__, argv[argc], argc);
+
+        TS_SetConfigOverrideFromParameter(argv[argc], conf);
+        gamearg =argc;
+        if(!(--argc))
+            return;
+
+        if(t5::IsFile(argv[gamearg])||t5::IsDir(argv[gamearg])){
+            printf(ENGINE " Info: Using %s (%i) for gamearg.\n", argv[gamearg], gamearg);
+            TS_CheckArg(argc, argv, conf);
+        }
+        else
+            TS_CheckArgForGame(argc, argv, gamearg, conf);
+}
+
 #ifdef _WIN32
 int wmain
 #else
@@ -652,92 +677,30 @@ int main
 #endif
 (int argc, char* argv[]){
 
+    TS_CMD_ProcessStubbingOptions(argc, argv);
+
     std::unique_ptr<v8::Platform> platform(new Turbo::Platform());
 
     v8::V8::InitializePlatform(platform.get());
 
-    TS_CMD_ProcessStubbingOptions(argc, argv);
-
-    const char * flagprefix = " --";
-
-    char *v8flags = (char *)malloc(1);
-
-    *v8flags = '\0';
-
-    int v8args = 0;
-
-    int gamearg = 1;
     TS_ConfigOverride conf;
     conf.config = (TS_Config*)malloc(sizeof(TS_Config));
 
     printf("TurboSphere %s\n", TS_GetLongVersion());
 
-    if(argc<3)
-        gamearg = 1;
-    else{
-        for(int i = 1; i<argc; i++){
-            if((argv[i][0]=='-')&&(argv[i][1]=='-')){
+    char *v8args = TS_CMD_ProcessV8Options(argc, argv);
 
-                if(((argv[i][2]=='V')||(argv[i][2]=='v'))&&(argv[i][3]=='8')){
+    int gamearg = 0;
 
-                    if(strlen(argv[i])<=4)
-                        continue;
+    TS_CheckArgForGame(argc-1, argv, gamearg, conf);
 
-                    size_t oldsize = strlen(v8flags);
-                                                                    //-4 for "--v8", +3 for " --" at the start, +1 for NULL.
-                    v8flags = (char *)realloc(v8flags, (oldsize+strlen(argv[i])));
-                    strcat(v8flags, flagprefix);
-                    strcat(v8flags, argv[i]+4);
-                    v8args++;
-                }
-                else if((t5::IsDir(argv[i]))||(t5::IsFile(argv[i]))){
-                    gamearg = i;
-                }
-                else{
-                    if(i==1)
-                        continue;
-
-                    TS_SetConfigOverrideFromParameter(argv[i], conf);
-                }
-            }
-        }
-    }
-
-    if(argc>1&&(strnlen(argv[gamearg], 2)>0)&&((t5::IsDir(argv[gamearg]))||(t5::IsFile(argv[gamearg])))){
+    if((argc>1) && (gamearg) && (*(argv[gamearg])!='\0')){
         printf(ENGINE " Info: We are running in given-path mode.\n");
-        runGame(argv[1], (v8args)?v8flags:NULL, &conf);
+        runGame(argv[gamearg], v8args, &conf);
     }
     else{
-        /*
-        TS_ConfigOverride conf2;
-        for(int i = 1; i<argc; i++){
-            if((argv[i][0]=='-')&&(argv[i][1]=='-')){
-//                TS_SetConfigOverrideFromParameter(argv[i], conf2);
-
-                if(((argv[i][2]=='V')||(argv[i][2]=='v'))&&(argv[i][3]=='8')){
-                */
-                /*
-                    size_t oldsize = strlen(v8flags);
-                                                                    //-4 for "--v8", +3 for " --" at the start.
-                    v8flags = (char *)realloc(v8flags, (oldsize+strlen(argv[i])-1));
-                    strcat(v8flags, flagprefix);
-                    strcat(v8flags, argv[i]+4);
-                    v8args++;*/
-                    /*
-                }
-                else{
-                    TS_SetConfigOverrideFromParameter(argv[i], conf2);
-                }
-            }
-        }*/
-        char *lv8args =TS_CMD_ProcessV8Options(argc, argv);
-        if(lv8args!=nullptr)
-          runGame("startup/", lv8args, &conf);
-        else
-          runGame("startup/", (v8args)?v8flags:NULL, &conf);
+        runGame("startup/", v8args, &conf);
     }
-
-    free(v8flags);
 
     free(conf.config);
 }
