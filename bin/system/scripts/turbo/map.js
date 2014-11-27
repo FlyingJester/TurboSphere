@@ -94,12 +94,12 @@ Turbo.Map = function(stream, compat){
 
         // Load the layer header.
         this.entities[i] = Turbo.ReadBinaryObject(stream, Turbo.EntityScheme.header);
-
     } // For var i ... entities
 
     this.zones = new Array(this.num_zones);
 
     for(var i = 0; i<this.zones.length; i++){
+        Abort(i);
 
         var position = Turbo.ReadBinaryObject(stream, Turbo.SegmentScheme.data)
         this.zones[i] = Turbo.ReadBinaryObject(stream, Turbo.ZoneScheme.header);

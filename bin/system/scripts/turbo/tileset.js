@@ -28,7 +28,7 @@ Turbo.Tile = function(stream, surface){
         this.segments = new Array(this.num_segments);
         this.loadObstructions = function(stream){
             for(var i = 0; i< this.segments.length; i++){
-                this.segments[i] = Turbo.ReadBinaryObject(stream, Turbo.SegmentScheme.header);
+                this.segments[i] = Turbo.ReadBinaryObject(stream, Turbo.SegmentScheme.data);
             }
         }
     break;

@@ -2,6 +2,9 @@
 #ifdef __cplusplus
 #include <v8.h>
 
+// Defined in the engine proper.
+void GarbageCollect(const v8::FunctionCallbackInfo<v8::Value> &args);
+
 namespace Turbo {
 // Gets Time down to Microsecond accuracy.
 void GetSeconds(const v8::FunctionCallbackInfo<v8::Value> &args);

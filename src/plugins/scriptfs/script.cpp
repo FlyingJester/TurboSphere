@@ -118,7 +118,6 @@ namespace scriptfs {
             return;
         }
 
-
         v8::Local<v8::ArrayBuffer> buffer = v8::ArrayBuffer::New(args.GetIsolate(), len);
         if(len!=0){
             int to = len/4;
