@@ -114,7 +114,7 @@ void ShapeImageSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turb
 void GroupXGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
     const Galileo::Group *mGroup = Turbo::GetAccessorSelf<Galileo::Group>(aInfo);
     assert(mGroup);
-    aInfo.GetReturnValue().Set(v8::Number::New(aInfo.GetIsolate(), mGroup->GetX()));
+    aInfo.GetReturnValue().Set(mGroup->GetX());
 }
 
 void GroupXSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){
@@ -130,8 +130,9 @@ void GroupXSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::J
 void GroupYGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
     const Galileo::Group *mGroup = Turbo::GetAccessorSelf<Galileo::Group>(aInfo);
     assert(mGroup);
-    aInfo.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), mGroup->GetY()));
+    aInfo.GetReturnValue().Set(mGroup->GetY());
 }
+
 void GroupYSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){
     if(!aVal->IsNumber()){
         Turbo::SetError(aInfo, (string(BRACKNAME " ") + string(__func__) + string(" Error: Value is not a number.")).c_str());
@@ -145,7 +146,7 @@ void GroupYSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::J
 void GroupRotYGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
     const Galileo::Group *mGroup = Turbo::GetAccessorSelf<Galileo::Group>(aInfo);
     assert(mGroup);
-    aInfo.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), mGroup->GetRotY()));
+    aInfo.GetReturnValue().Set(mGroup->GetRotY());
 }
 
 void GroupRotYSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){
@@ -161,7 +162,7 @@ void GroupRotYSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo
 void GroupRotXGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
     const Galileo::Group *mGroup = Turbo::GetAccessorSelf<Galileo::Group>(aInfo);
     assert(mGroup);
-    aInfo.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), mGroup->GetRotX()));
+    aInfo.GetReturnValue().Set(mGroup->GetRotX());
 }
 
 void GroupRotXSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){
@@ -177,7 +178,7 @@ void GroupRotXSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo
 void GroupAngleGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
     const Galileo::Group *mGroup = Turbo::GetAccessorSelf<Galileo::Group>(aInfo);
     assert(mGroup);
-    aInfo.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), mGroup->GetRotation<float>()));
+    aInfo.GetReturnValue().Set(mGroup->GetRotation<double>());
 }
 
 void GroupAngleSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){
@@ -209,7 +210,6 @@ public:
 
     constexpr static const char * const wrapname = "vertices";
 };
-
 
 template <class T, class W>
 void ExtraWrapperArrayPopulator(v8::Handle<v8::Object> &aObj, const T *a, v8::Isolate *aIso){
@@ -440,6 +440,8 @@ void InitScript(int64_t ID){
     ImageJSObj.AddToProto("createSurface", ImageCreateSurface);
     ImageJSObj.AddAccessor("image", ShapeImageGetter, ShapeImageSetter);
 
+    SurfaceJSObj.AddAccessor("width",  Turbo::GenericPropertyGetter<int, SDL_Surface, &SDL_Surface::w>, nullptr);
+    SurfaceJSObj.AddAccessor("height", Turbo::GenericPropertyGetter<int, SDL_Surface, &SDL_Surface::h>, nullptr);
     auto lIso = v8::Isolate::GetCurrent();
 
     ExecuteString(v8::String::NewFromUtf8(lIso, JSVertexCode), v8::String::NewFromUtf8(lIso, "Sapphire_Internal"), lIso, true);
@@ -486,9 +488,7 @@ Turbo::JSFunction ImageCtor(Turbo::JSArguments args){
             Image *rImage = new Image(lSurf);
             Turbo::WrapObject(args, ImageJSObj, new std::shared_ptr<Image> (rImage) );
             return;
-        }
-
-        if(Turbo::CheckArg::String(args, 0, __func__)){ // From Path
+        }else if(Turbo::CheckArg::String(args, 0, __func__)){ // From Path
             v8::String::Utf8Value lStr(args[0]);
             SDL_Surface *lSurf = LoadSurface(*lStr);
             if(!lSurf){
@@ -788,8 +788,8 @@ Turbo::JSFunction SaveSurface(Turbo::JSArguments args){
 
               fprintf(stderr, BRACKNAME " %s Error: Could not save surface.\n", __func__);
 
-              args.GetReturnValue().Set(
-                v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(),
+              args.GetIsolate()->ThrowException(
+                v8::Exception::Error(v8::String::NewFromUtf8(args.GetIsolate(),
                 (
                   std::string(BRACKNAME " SaveSurface Error: Could not save surface")
                 + std::string(lSaveName)
@@ -806,7 +806,7 @@ Turbo::JSFunction SaveSurface(Turbo::JSArguments args){
 
     }
     else{
-      args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(),
+      args.GetIsolate()->ThrowException( v8::Exception::Error(v8::String::NewFromUtf8(args.GetIsolate(),
                                  BRACKNAME " SaveSurface Error: Argument 0 is not a string.")));
       return;
     }
@@ -949,11 +949,11 @@ Turbo::JSFunction GetDefaultShaderProgram(Turbo::JSArguments args){
 }
 
 Turbo::JSFunction GetScreenWidth(Turbo::JSArguments args){
-    args.GetReturnValue().Set(v8::Integer::New(v8::Isolate::GetCurrent(), ::GetScreenWidth()));
+    args.GetReturnValue().Set(::GetScreenWidth());
 }
 
 Turbo::JSFunction GetScreenHeight(Turbo::JSArguments args){
-    args.GetReturnValue().Set(v8::Integer::New(v8::Isolate::GetCurrent(), ::GetScreenHeight()));
+    args.GetReturnValue().Set(::GetScreenHeight());
 }
 
 }

@@ -50,6 +50,33 @@ Turbo::JSFunction GetNumJoysticks(Turbo::JSArguments args) {
     args.GetReturnValue().Set(v8::Number::New(iso, SDL_NumJoysticks()));
 }
 
+template<typename T, T (*callback)(SDL_Joystick*)>
+void TS_JS_ReturnWrapper(Turbo::JSArguments args, SDL_Joystick *js){
+    args.GetReturnValue().Set(callback(js));
+}
+
+template<>
+void TS_JS_ReturnWrapper<const char *, SDL_JoystickName>(Turbo::JSArguments args, SDL_Joystick *js){
+    args.GetReturnValue().Set(v8::String::NewFromUtf8(args.GetIsolate(), SDL_JoystickName(js)));
+}
+
+template<typename T, T (*callback)(SDL_Joystick*)>
+void TS_HandleJoystickError(Turbo::JSArguments args, SDL_Joystick *js, int err, const char *ret, const std::string func){
+    switch(err){
+        case(JOY_NO_JOYSTICKS):
+            Turbo::SetError(args, (string)(("[" PLUGINNAME "] "+ func + " Error: " ))+string(ret), v8::Exception::RangeError);
+            break;
+        case(JOY_OUT_OF_RANGE):
+            Turbo::SetError(args, (string)("[" PLUGINNAME "] "+ func + "  Error: Argument 0 is ")+string(ret), v8::Exception::RangeError);
+            break;
+        case(JOY_GOOD):
+            TS_JS_ReturnWrapper<T, callback>(args, js);
+            break;
+        default:
+            Turbo::SetError(args, "[" PLUGINNAME "] "+ func + " Internal Error.");
+    }
+}
+
 Turbo::JSFunction GetJoystickName(Turbo::JSArguments args) {
 
     int sig[] = {Turbo::Int, 0};
@@ -61,19 +88,8 @@ Turbo::JSFunction GetJoystickName(Turbo::JSArguments args) {
     const char *ret = NULL;
     int good = checkJoystick(n, &ret);
 
-    switch(good){
-        case(JOY_NO_JOYSTICKS):
-            args.GetReturnValue().Set(v8::Exception::RangeError(v8::String::NewFromUtf8(iso, ((string)(("[" PLUGINNAME "] GetJoystickName Error: " ))+string(ret)).c_str())));
-            break;
-        case(JOY_OUT_OF_RANGE):
-            args.GetReturnValue().Set(v8::Exception::RangeError(v8::String::NewFromUtf8(iso, ((string)("[" PLUGINNAME "] GetJoystickName  Error: Argument 0 is ")+string(ret)).c_str())));
-            break;
-        case(JOY_GOOD):
-            args.GetReturnValue().Set(  v8::String::NewFromUtf8(iso, SDL_JoystickName(OpenJoysticks[n])));
-            break;
-        default:
-            args.GetReturnValue().Set(v8::Exception::Error(v8::String::NewFromUtf8(iso, "[" PLUGINNAME "] GetJoystickName Internal Error.")));
-    }
+    TS_HandleJoystickError<const char *, SDL_JoystickName>(args, OpenJoysticks[n], good, ret, __func__);
+
 
 }
 
@@ -88,19 +104,8 @@ Turbo::JSFunction GetNumJoystickButtons(Turbo::JSArguments args) {
     const char *ret = NULL;
     int good = checkJoystick(n, &ret);
 
-    switch(good){
-        case(JOY_NO_JOYSTICKS):
-            args.GetReturnValue().Set(v8::Exception::RangeError(v8::String::NewFromUtf8(iso, (((string)("[" PLUGINNAME "] GetNumJoystickButtons Error: " )+string(ret)).c_str()))));
-            break;
-        case(JOY_OUT_OF_RANGE):
-            args.GetReturnValue().Set(v8::Exception::RangeError(v8::String::NewFromUtf8(iso, ((string)("[" PLUGINNAME "] GetNumJoystickButtons  Error: Argument 0 is ")+string(ret)).c_str())));
-            break;
-        case(JOY_GOOD):
-            args.GetReturnValue().Set(  v8::Integer::New(iso, SDL_JoystickNumButtons(OpenJoysticks[n])));
-            break;
-        default:
-            args.GetReturnValue().Set(v8::Exception::Error(v8::String::NewFromUtf8(iso, "[" PLUGINNAME "] GetNumJoystickButtons Internal Error.")));
-    }
+    TS_HandleJoystickError<int, SDL_JoystickNumButtons>(args, OpenJoysticks[n], good, ret, __func__);
+
 }
 
 
@@ -114,19 +119,8 @@ Turbo::JSFunction GetNumJoystickAxes(Turbo::JSArguments args) {
     const char *ret = NULL;
     int good = checkJoystick(n, &ret);
 
-    switch(good){
-        case(JOY_NO_JOYSTICKS):
-            args.GetReturnValue().Set(v8::Exception::RangeError(v8::String::NewFromUtf8(iso, (((string)("[" PLUGINNAME "] GetNumJoystickAxes Error: " )+string(ret)).c_str()))));
-            break;
-        case(JOY_OUT_OF_RANGE):
-            args.GetReturnValue().Set(v8::Exception::RangeError(v8::String::NewFromUtf8(iso, ((string)("[" PLUGINNAME "] GetNumJoystickAxes  Error: Argument 0 is ")+string(ret)).c_str())));
-            break;
-        case(JOY_GOOD):
-            args.GetReturnValue().Set(  v8::Integer::New(iso, SDL_JoystickNumAxes(OpenJoysticks[n])));
-            break;
-        default:
-            args.GetReturnValue().Set(v8::Exception::Error(v8::String::NewFromUtf8(iso, "[" PLUGINNAME "] GetNumJoystickAxes Internal Error.")));
-    }
+    TS_HandleJoystickError<int, SDL_JoystickNumAxes>(args, OpenJoysticks[n], good, ret, __func__);
+
 }
 
 
@@ -142,24 +136,19 @@ Turbo::JSFunction IsJoystickButtonPressed(Turbo::JSArguments args) {
     const char *ret = NULL;
     int good = checkJoystick(n, &ret);
 
-    switch(good){
-        case(JOY_NO_JOYSTICKS):
-            args.GetReturnValue().Set(v8::Exception::RangeError(v8::String::NewFromUtf8(iso, (((string)("[" PLUGINNAME "] IsJoystickButtonPressed Error: " )+string(ret)).c_str()))));
-            break;
-        case(JOY_OUT_OF_RANGE):
-            args.GetReturnValue().Set(v8::Exception::RangeError(v8::String::NewFromUtf8(iso, ((string)("[" PLUGINNAME "] IsJoystickButtonPressed  Error: Argument 0 is ")+string(ret)).c_str())));
-            break;
-        case(JOY_GOOD):
-            if(b>SDL_JoystickNumButtons(OpenJoysticks[n])){
-                args.GetReturnValue().Set(v8::Exception::RangeError(v8::String::NewFromUtf8(iso, "[" PLUGINNAME "] IsJoystickButtonPressed Error: Argument 1 is not a valid button number.")));
-                return;
-            }
-            SDL_JoystickUpdate();
-            args.GetReturnValue().Set(  v8::Boolean::New(iso, SDL_JoystickGetButton(OpenJoysticks[n], b)));
-            break;
-        default:
-            args.GetReturnValue().Set(v8::Exception::Error(v8::String::NewFromUtf8(iso, "[" PLUGINNAME "] IsJoystickButtonPressed Internal Error.")));
+
+    if(good==JOY_GOOD){
+        if(b>SDL_JoystickNumButtons(OpenJoysticks[n])){
+            Turbo::SetError(args, "[" PLUGINNAME "] IsJoystickButtonPressed Error: Argument 1 is not a valid button number.", v8::Exception::RangeError);
+            return;
+        }
+        SDL_JoystickUpdate();
+        args.GetReturnValue().Set( v8::Boolean::New(iso, SDL_JoystickGetButton(OpenJoysticks[n], b)));
+        return;
     }
+
+    TS_HandleJoystickError<int, nullptr>(args, nullptr, good, ret, __func__);
+
 }
 
 Turbo::JSFunction GetJoystickAxis(Turbo::JSArguments args) {
@@ -173,23 +162,19 @@ Turbo::JSFunction GetJoystickAxis(Turbo::JSArguments args) {
     const char *ret = NULL;
     int good = checkJoystick(n, &ret);
 
-    switch(good){
-        case(JOY_NO_JOYSTICKS):
-            args.GetReturnValue().Set(v8::Exception::RangeError(v8::String::NewFromUtf8(iso, (((string)("[" PLUGINNAME "] GetJoystickAxis Error: " )+string(ret)).c_str()))));
-            break;
-        case(JOY_OUT_OF_RANGE):
-            args.GetReturnValue().Set(v8::Exception::RangeError(v8::String::NewFromUtf8(iso, ((string)("[" PLUGINNAME "] GetJoystickAxis  Error: Argument 0 is ")+string(ret)).c_str())));
-            break;
-        case(JOY_GOOD):
-            if(a>SDL_JoystickNumAxes(OpenJoysticks[n])){
-                args.GetReturnValue().Set(v8::Exception::RangeError(v8::String::NewFromUtf8(iso, "[" PLUGINNAME "] GetJoystickAxis Error: Argument 1 is not a valid axis number.")));
-                return;
-            }
-            SDL_JoystickUpdate();
-            args.GetReturnValue().Set( v8::Integer::New(iso, SDL_JoystickGetAxis(OpenJoysticks[n], a)));
-            break;
-        default:
-            args.GetReturnValue().Set(v8::Exception::Error(v8::String::NewFromUtf8(iso, "[" PLUGINNAME "] GetJoystickAxis Internal Error.")));
+
+
+    if(good==JOY_GOOD){
+        if(a>SDL_JoystickNumAxes(OpenJoysticks[n])){
+            Turbo::SetError(args, "[" PLUGINNAME "] GetJoystickAxis Error: Argument 1 is not a valid button number.", v8::Exception::RangeError);
+            return;
+        }
+        SDL_JoystickUpdate();
+        args.GetReturnValue().Set(v8::Integer::New(args.GetIsolate(), SDL_JoystickGetAxis(OpenJoysticks[n], a)));
+        return;
     }
+
+    TS_HandleJoystickError<int, nullptr>(args, nullptr, good, ret, __func__);
+
 }
 

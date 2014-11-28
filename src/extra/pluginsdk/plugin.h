@@ -164,7 +164,7 @@ namespace Turbo{
 
     template<class T = JSArguments>
     inline void SetError(T args, const char *err, v8::Local<v8::Value> (&v8ExceptionType)(v8::Handle<v8::String>) = v8::Exception::Error){
-        args.GetReturnValue().Set( v8ExceptionType(v8::String::NewFromUtf8(args.GetIsolate(), err)));
+        args.GetIsolate()->ThrowException(v8ExceptionType(v8::String::NewFromUtf8(args.GetIsolate(), err)));
     }
 
     template<class T = JSArguments>
@@ -490,6 +490,20 @@ namespace Turbo{
     template<class A>
     void *GetSelf(const A &container){
         return container.Holder()->GetAlignedPointerFromInternalField(0);
+    }
+
+    template<typename T, class C, T C::*M>
+    void GenericPropertyGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
+        const C *that = Turbo::GetAccessorSelf<C>(aInfo);
+        assert(that);
+        aInfo.GetReturnValue().Set(that->*M);
+    }
+
+    template<typename T, class C, T C::*M>
+    void GenericPropertyGetterCallback(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
+        const C *that = Turbo::GetAccessorSelf<C>(aInfo);
+        assert(that);
+        aInfo.GetReturnValue().Set(that->*M());
     }
 
 }

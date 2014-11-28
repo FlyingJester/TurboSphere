@@ -46,7 +46,8 @@ namespace Turbo {
     }
 
     void  Platform::CallOnForegroundThread(v8::Isolate* isolate, v8::Task* task){
-        Thread::AddTask(group, task);
+        Thread::AddShortRunningTask(task);
+       // Thread::AddTask(group, task);
     }
 
 }

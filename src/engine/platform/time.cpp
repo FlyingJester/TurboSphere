@@ -63,6 +63,9 @@ namespace Turbo {
 void Delay(const v8::FunctionCallbackInfo<v8::Value> &args){
 	unsigned int t = args[0]->Uint32Value();
 
+    if(t>1000)
+        printf("[Engine] Info: Delaying for %i.\n", t);
+
 	#ifdef _WIN32
 
 	SDL_Delay(t);
@@ -81,7 +84,7 @@ void Delay(const v8::FunctionCallbackInfo<v8::Value> &args){
         uint32_t ot = (s.tv_sec*1000)+(s.tv_nsec/1000000);
     #endif
 
-    GarbageCollect(args);
+    //GarbageCollect(args);
 
     // Sapphire broke this. Well, actually, Sapphire is broken, and this shows it.
         //while(!v8::V8::IdleNotification(1000)){}

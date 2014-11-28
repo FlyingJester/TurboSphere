@@ -3,13 +3,12 @@
 
 if(typeof BlackMamba == "undefined")
     var BlackMamba = {};
+/* Check if the default shader exists, create it if it doesn't. */
  if(typeof BlackMamba.DefaultShader == "undefined")
      BlackMamba.DefaultShader = GetDefaultShaderProgram();
 
 /* Create the old Image prototype. */
 BlackMamba.Image = function(surface){
-    /* Check if the default shader exists, create it if it doesn't. */
-     surface.width = 32; surface.height = 32;
      this.width = surface.width; this.height = surface.height;
      this.image = new Image(surface);
      this.shape = new Shape([{x:0, y:0}, {x:surface.width, y:0}, {x:surface.width, y:surface.height}, {x:0, y:surface.height}], this.image);

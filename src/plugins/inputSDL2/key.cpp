@@ -16,9 +16,9 @@ Turbo::JSFunction IsKeyPressed(Turbo::JSArguments args){
 	int key = args[0]->Int32Value();
 	const Uint8 *keystate = SDL_GetKeyboardState(NULL);
 	if(keystate[SDL_GetScancodeFromKey(key)])
-        args.GetReturnValue().Set(v8::True(iso));
+        args.GetReturnValue().Set(true);
 	else
-        args.GetReturnValue().Set(v8::False(iso));
+        args.GetReturnValue().Set(false);
 }
 
 Turbo::JSFunction IsAnyKeyPressed(Turbo::JSArguments args){
@@ -28,7 +28,7 @@ Turbo::JSFunction IsAnyKeyPressed(Turbo::JSArguments args){
 	const Uint8 *keystate = SDL_GetKeyboardState(keys);
 	for(int i = 0; i<numkeys; i++){
 		if(keystate[i])
-            args.GetReturnValue().Set(v8::True(iso));
+            args.GetReturnValue().Set(true);
 	}
-    args.GetReturnValue().Set(v8::False(iso));
+    args.GetReturnValue().Set(false);
 }

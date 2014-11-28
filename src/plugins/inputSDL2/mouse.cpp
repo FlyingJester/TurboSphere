@@ -5,15 +5,15 @@
 Turbo::JSFunction GetMouseX(Turbo::JSArguments args){
 	SDL_PumpEvents();
 	int x = 0;
-	SDL_GetMouseState(&x, NULL);
-	args.GetReturnValue().Set(v8::Int32::New(iso, x));
+	SDL_GetMouseState(&x, nullptr);
+	args.GetReturnValue().Set(x);
 }
 
 Turbo::JSFunction GetMouseY(Turbo::JSArguments args){
 	SDL_PumpEvents();
 	int	y = 0;
-	SDL_GetMouseState(NULL, &y);
-	args.GetReturnValue().Set( v8::Int32::New(iso, y));
+	SDL_GetMouseState(nullptr, &y);
+	args.GetReturnValue().Set(y);
 }
 
 Turbo::JSFunction IsMouseButtonPressed(Turbo::JSArguments args){
@@ -22,5 +22,5 @@ Turbo::JSFunction IsMouseButtonPressed(Turbo::JSArguments args){
     if(!Turbo::CheckArg::CheckSig(args, 1, sig, true))
         return;
     //Just inline it to death.
-	args.GetReturnValue().Set(v8::Boolean::New(iso, SDL_GetMouseState(NULL, NULL)&(1<<args[0]->Int32Value())));
+	args.GetReturnValue().Set((bool)(SDL_GetMouseState(nullptr, nullptr)&(1<<args[0]->Int32Value())));
 }
