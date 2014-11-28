@@ -108,6 +108,9 @@ inline void TS_OverrideConfig(TS_Config *conf, TS_ConfigOverride *overrideConf){
 
 }
 
+// A value of nullptr indicates no new game.
+static std::string next_game;
+
 enum TS_ConfigType {TS_Int, TS_Float, TS_String, TS_Bool};
 typedef pair<const char *, TS_ConfigType> TS_ConfVal;
 
@@ -188,13 +191,13 @@ TS_ConfigOverride::TS_ConfigOverride(){
 	description = false;
 	fixedplugins = false;
     plugins = false;
-    config = NULL;
+    config = nullptr;
 }
 
 TS_ConfigOverride::~TS_ConfigOverride(){
 }
 void TS_SDLMessageBox(const char *title, const char *content){
-    SDL_ShowSimpleMessageBox(0x00000040, title, content, NULL);
+    SDL_ShowSimpleMessageBox(0x00000040, title, content, nullptr);
 }
 
 void TS_TerminalMessageBox(const char *title, const char *content){
@@ -202,7 +205,7 @@ void TS_TerminalMessageBox(const char *title, const char *content){
     printf("\t%s\n", content);
 }
 
-void * SDLhandle = NULL;
+void * SDLhandle = nullptr;
 
 #ifdef OS_X
 #include "platform/osx_messagebox.h"
@@ -210,14 +213,14 @@ void * SDLhandle = NULL;
 
 void LoadMessageBoxFunctions(void){
     SDLhandle = dlopen("libSDL2.so", RTLD_GLOBAL|RTLD_NOW);
-    if(SDLhandle!=NULL){
+    if(SDLhandle!=nullptr){
         SDL_ShowSimpleMessageBox = (int(*)(uint32_t, const char *, const char *, void *))dlsym(SDLhandle, "SDL_ShowSimpleMessageBox");
         TS_MessageBox = TS_SDLMessageBox;
         TS_Sleep = (void(*)(uint32_t))dlsym(SDLhandle, "SDL_Delay");
         TS_GetTime = (uint32_t(*)(void))dlsym(SDLhandle, "SDL_GetTicks");
     }
 
-    if(SDL_ShowSimpleMessageBox==NULL){
+    if(SDL_ShowSimpleMessageBox==nullptr){
         #ifdef OS_X
           TS_MessageBox = TS_OSX_MessageBox;
           return;
@@ -232,17 +235,17 @@ void LoadMessageBoxFunctions(void){
 }
 
 void CloseMessageBoxFunctions(void){
-    if(SDLhandle==NULL){
+    if(SDLhandle==nullptr){
         dlclose(SDLhandle);
-        SDLhandle = NULL;
-        TS_Sleep = NULL;
-        SDL_ShowSimpleMessageBox=NULL;
+        SDLhandle = nullptr;
+        TS_Sleep = nullptr;
+        SDL_ShowSimpleMessageBox=nullptr;
     }
-    TS_MessageBox=NULL;
+    TS_MessageBox=nullptr;
 }
 
-static char ** loadedScripts = NULL;
-static char ** loadedSystemScripts = NULL;
+static char ** loadedScripts = nullptr;
+static char ** loadedSystemScripts = nullptr;
 static int numUniqueScriptsLoaded = 0;
 static int numUniqueSystemScriptsLoaded = 0;
 
@@ -250,15 +253,39 @@ template<char ***ScriptArray, int *Num>
 void TS_FreeLoadedScripts(void){
     for(int i = 0; i<(*Num); i++){
         free((void *)(*ScriptArray)[i]);
-        (*ScriptArray)[i] = NULL;
+        (*ScriptArray)[i] = nullptr;
     }
     free(*ScriptArray);
-    (*ScriptArray) = NULL;
+    (*ScriptArray) = nullptr;
     (*Num) = 0;
 }
 
-void exitContext(v8::Handle<v8::Context> context){
-    //ncontext.Reset();
+void ExitGame(const v8::FunctionCallbackInfo<v8::Value> &args){
+    args.GetIsolate()->TerminateExecution();
+}
+
+void ChangeGame(const v8::FunctionCallbackInfo<v8::Value> &args){
+    if(args.Length()<1){
+        args.GetReturnValue().Set(v8::Exception::Error(v8::String::NewFromUtf8(args.GetIsolate(), ENGINE " ChangeGame Error: Called with no arguments.")));
+        return;
+    }
+    v8::String::Utf8Value str(args[0]);
+
+    if(!(t5::IsDir(*str)||t5::IsFile(*str))){
+        args.GetReturnValue().Set(v8::Exception::Error(v8::String::NewFromUtf8(args.GetIsolate(), ENGINE " ChangeGame Error: Target game does not exist.")));
+        return;
+    }
+
+    next_game = *str;
+
+    ExitGame(args);
+}
+
+void RestartGame(const v8::FunctionCallbackInfo<v8::Value> &args){
+
+    next_game = GetDirs()->root;
+
+    ExitGame(args);
 }
 
 void TS_CallFunc(const char *name, v8::Handle<v8::Context> context, v8::Isolate *iso){
@@ -273,7 +300,7 @@ void TS_CallFunc(const char *name, v8::Handle<v8::Context> context, v8::Isolate 
         }
 
         v8::Handle<v8::Function> gameFunc = v8::Handle<v8::Function>::Cast(gameValue);
-        gameFunc->Call(context->Global(), 0, NULL);
+        gameFunc->Call(context->Global(), 0, nullptr);
 }
 
 
@@ -300,11 +327,6 @@ void GarbageCollect(const v8::FunctionCallbackInfo<v8::Value> &args){
 
 }
 
-void ExitGame(const v8::FunctionCallbackInfo<v8::Value> &args){
-    args.GetIsolate()->TerminateExecution();
-
-}
-
 void AbortGame(const v8::FunctionCallbackInfo<v8::Value> &args){
     if(args.Length()<1){
         ExitGame(args);
@@ -317,11 +339,11 @@ void AbortGame(const v8::FunctionCallbackInfo<v8::Value> &args){
 template<void (*LoadScript)(const v8::FunctionCallbackInfo<v8::Value>& args), char ***ScriptList, int *NumScripts>
 void RequireScript(const v8::FunctionCallbackInfo<v8::Value> &args){
     if(args.Length()<1){
-        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ENGINE " RequireScript Error: Called with no arguments.")));
+        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(args.GetIsolate(), ENGINE " RequireScript Error: Called with no arguments.")));
         return;
     }
     if(!args[0]->IsString()) {
-        args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ENGINE " RequireScript Error: Argument 0 is not a string.")));
+        args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(args.GetIsolate(), ENGINE " RequireScript Error: Argument 0 is not a string.")));
         return;
     }
     v8::String::Utf8Value str(args[0]);
@@ -342,13 +364,7 @@ void RequireScript(const v8::FunctionCallbackInfo<v8::Value> &args){
     return;
 }
 
-
-void notationCallback(v8::GCType type, v8::GCCallbackFlags flags){
-    printf(ENGINE " GC was performed.\n");
-}
-
 inline char * destructiveTrim(char * c){
-
     while(*c!='\0'){
         if((!isprint(*c))||(isblank(*c))){
             c++;
@@ -357,7 +373,6 @@ inline char * destructiveTrim(char * c){
             break;
         }
     }
-
     return c;
 }
 
@@ -419,7 +434,7 @@ void TS_MessageCallback(v8::Handle<v8::Message> message, v8::Handle<v8::Value> d
 
 void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *overrideConf){
 
-    if(v8Flags!=NULL){
+    if(v8Flags!=nullptr){
         printf("[Engine] Info: Using v8 flags %s\n", v8Flags);
         v8::V8::SetFlagsFromString(v8Flags, strlen(v8Flags));
     }
@@ -446,7 +461,7 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
             setDirectories(TS_dirs->root);
             setConfig(TS_dirs->root);
 
-            if((overrideConf!=NULL)&&(overrideConf->config!=NULL)){
+            if((overrideConf!=nullptr)&&(overrideConf->config!=nullptr)){
                 TS_OverrideConfig(TS_conf, overrideConf);
             }
 
@@ -458,7 +473,7 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
             setDirectories(TS_dirs->root);
             setConfig(TS_dirs->root);
 
-            if((overrideConf!=NULL)&&(overrideConf->config!=NULL)){
+            if((overrideConf!=nullptr)&&(overrideConf->config!=nullptr)){
                 TS_OverrideConfig(TS_conf, overrideConf);
             }
 
@@ -485,7 +500,7 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
         TS_dirs->root = STRDUP(string(dir).append("/").c_str());
         setDirectories(TS_dirs->root);
         setConfig(TS_dirs->root);
-        if((overrideConf!=NULL)&&(overrideConf->config!=NULL)){
+        if((overrideConf!=nullptr)&&(overrideConf->config!=nullptr)){
             TS_OverrideConfig(TS_conf, overrideConf);
         }
     }
@@ -503,15 +518,18 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
     LoadMessageBoxFunctions();
 
-    v8::Isolate *iso = v8::Isolate::New();
+    static v8::Isolate *iso = v8::Isolate::New();
     if(!iso){
       printf("[Engine] Fatal Error: Could not initialize Isolate.\n");
       return;
     }
     else
       printf("[Engine] Info: Created Isolate.\n");
-    v8::Isolate::Scope isolateScope(iso);
-    v8::HandleScope mainScope(iso);
+
+
+    static v8::Isolate::Scope isolateScope(iso);
+
+    static v8::HandleScope mainScope(iso);
 
     v8::Local<v8::Context> context = v8::Context::New(iso);
     printf("[Engine] Info: Created engine context.\n");
@@ -520,18 +538,18 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
     opengame(gameSGMfile);
     free((void *)gameSGMfile);
-    if((TS_conf->mainscript==NULL)||TS_conf->mainscript[0]=='\0'){
+    if((TS_conf->mainscript==nullptr)||TS_conf->mainscript[0]=='\0'){
         printf("\n");
         exit(10);
 
     }
 
-    if((overrideConf!=NULL)&&(overrideConf->config!=NULL)){
+    if((overrideConf!=nullptr)&&(overrideConf->config!=nullptr)){
         TS_OverrideConfig(TS_conf, overrideConf);
     }
     setDirectories(TS_dirs->root);
 
-    if((overrideConf!=NULL)&&(overrideConf->config!=NULL)){
+    if((overrideConf!=nullptr)&&(overrideConf->config!=nullptr)){
         TS_OverrideConfig(TS_conf, overrideConf);
     }
 
@@ -546,14 +564,10 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
 	const char *script_name = TS_conf->mainscript;
 
-//    v8::V8::InitializeICU();
-
-
     iso->Enter();
 
     printf("[Engine] info Isolate created at %p\n", iso);
 
-    v8::HandleScope scope(iso);
     v8::V8::SetCaptureStackTraceForUncaughtExceptions(true);
 
     v8::ArrayBuffer::Allocator* allocator = new Turbo::ArrayBufferAllocator();
@@ -585,6 +599,8 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
     v8::Handle<v8::FunctionTemplate> E_GarbageCollecttempl = v8::FunctionTemplate::New(iso, GarbageCollect);
 
+    v8::Handle<v8::FunctionTemplate> E_RestartGametempl = v8::FunctionTemplate::New(iso, RestartGame);
+
     context->Global()->Set(v8::String::NewFromUtf8(iso, "EvaulateScript"), E_EvaluateScripttempl->GetFunction());
 
     context->Global()->Set(v8::String::NewFromUtf8(iso, "RequireScript"), E_RequireScripttempl->GetFunction());
@@ -607,35 +623,28 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
     context->Global()->Set(v8::String::NewFromUtf8(iso, "GarbageCollect"), E_GarbageCollecttempl->GetFunction());
 
-    {
+    context->Global()->Set(v8::String::NewFromUtf8(iso, "RestartGame"), E_RestartGametempl->GetFunction());
 
-        v8::TryCatch try_catch;
+    v8::Handle<v8::Value> result;
+
+    {
 
         v8::Local<v8::String> name = v8::String::NewFromUtf8(iso, script_name);
         v8::ScriptOrigin origin(name);
         v8::Handle<v8::Script> script = v8::Script::Compile(v8::String::NewFromUtf8(iso, ScriptFileText.c_str()), &origin);
 
-        v8::Handle<v8::Value> result = script->Run();
-        if (result.IsEmpty()){
-            v8::String::Utf8Value error(try_catch.Exception());
-            printf("%s\n", *error);
-            printf("JS did not run successfully.\n");
-            TS_MessageCallback(try_catch.Message(), v8::String::NewFromUtf8(iso, script_name));
-            goto end;
+        if(!script->Run().IsEmpty()){
+            TS_CallFunc("game", context, iso);
+            printf(ENGINE " Info: Game function done running.\n");
         }
-
     }
 
-    TS_CallFunc("game", context, iso);
-
-	printf(ENGINE " Info: Game function done running.\n");
-
-end:
-
-    exitContext(context);
-
-	v8::V8::Dispose();
 	CloseAllPlugins();
+
+    context->Exit();
+    iso->Exit();
+
+	//v8::V8::Dispose();
 	CloseMessageBoxFunctions();
 	TS_FreeLoadedScripts<&loadedScripts, &numUniqueScriptsLoaded>();
 	TS_FreeLoadedScripts<&loadedSystemScripts, &numUniqueSystemScriptsLoaded>();
@@ -647,7 +656,7 @@ static void TS_CheckArg(int argc, char *argv[], TS_ConfigOverride &conf){
         printf(ENGINE " %s Info: checking arg %s (%i)\n", __func__, argv[argc], argc);
 
         TS_SetConfigOverrideFromParameter(argv[argc], conf);
-        if(!(--argc))
+        if((--argc)==0)
             return;
 
         TS_CheckArg(argc, argv, conf);
@@ -658,9 +667,9 @@ static void TS_CheckArgForGame(int argc, char *argv[], int &gamearg, TS_ConfigOv
         printf(ENGINE " %s Info: checking arg %s (%i)\n", __func__, argv[argc], argc);
 
         TS_SetConfigOverrideFromParameter(argv[argc], conf);
-        gamearg =argc;
-        if(!(--argc))
+        if((--argc)<=0)
             return;
+        gamearg =argc;
 
         if(t5::IsFile(argv[gamearg])||t5::IsDir(argv[gamearg])){
             printf(ENGINE " Info: Using %s (%i) for gamearg.\n", argv[gamearg], gamearg);
@@ -680,7 +689,6 @@ int main
     TS_CMD_ProcessStubbingOptions(argc, argv);
 
     std::unique_ptr<v8::Platform> platform(new Turbo::Platform());
-
     v8::V8::InitializePlatform(platform.get());
 
     TS_ConfigOverride conf;
@@ -692,15 +700,20 @@ int main
 
     char *v8args = TS_CMD_ProcessV8Options(argc, argv);
 
-    int gamearg = 0;
+    int gamearg = -1;
 
-    TS_CheckArgForGame(argc-1, argv, gamearg, conf);
+    if(argc>1)
+        TS_CheckArgForGame(argc-1, argv, gamearg, conf);
 
-    if((argc>1) && (gamearg) && (*(argv[gamearg])!='\0')){
-        printf(ENGINE " Info: We are running in given-path mode.\n");
-        runGame(argv[gamearg], v8args, &conf);
-    }
-    else{
-        runGame("startup/", v8args, &conf);
+    if((argc>1) && (gamearg>=0) && (*(argv[gamearg])!='\0'))
+        next_game = argv[gamearg];
+    else
+        next_game = "startup/";
+
+    while(!next_game.empty()){
+        const std::string lnext_game = next_game;
+        next_game.clear();
+        printf(ENGINE " Loading game %s\n", lnext_game.c_str());
+        runGame(lnext_game.c_str(), v8args, &conf);
     }
 }

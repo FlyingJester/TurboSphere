@@ -743,8 +743,7 @@ Turbo::JSFunction GroupCtor(Turbo::JSArguments args){
         return;
 
     }
-
-
+    // Else is handled above with (!args[0]->IsArray())&&(!ShapeJSObj.IsA(args[0]))
 
 }
 
@@ -838,15 +837,27 @@ Turbo::JSFunction SetPixelSurface(Turbo::JSArguments args){
 }
 
 Turbo::JSFunction ArrayBufferToSurface(Turbo::JSArguments args){
-    int sig[4] = {Turbo::Number, Turbo::Number, Turbo::ArrayBuffer, 0};
+    int sig[4] = {Turbo::Number, Turbo::Number, Turbo::Object, 0};
 
-    if(!Turbo::CheckArg::CheckSig(args, 3, sig))
+    if(!Turbo::CheckArg::CheckSig(args, 2, sig))
       return;
 
     int w = args[0]->Uint32Value(), h = args[1]->Uint32Value();
     const size_t length = w*h*4;
 
-    v8::Local<v8::ArrayBuffer> buffer = v8::Local<v8::ArrayBuffer>::Cast(args[2]);
+    v8::Local<v8::ArrayBuffer> buffer;
+    if(args[2]->IsArrayBuffer())
+      buffer = v8::Local<v8::ArrayBuffer>::Cast(args[2]);
+    else if(args[2]->IsTypedArray()){
+        buffer = v8::Local<v8::TypedArray>::Cast(args[2])->Buffer();
+    }
+    else if(args[2]->IsArrayBufferView()){
+        buffer = v8::Local<v8::ArrayBufferView>::Cast(args[2])->Buffer();
+    }
+    else{
+        Turbo::SetError(args, BRACKNAME " ArrayBufferToSurface Error: Argument 2 was not an ArrayBuffer, ArrayBufferView, or a TypedArray.");
+        return;
+    }
 
     v8::ArrayBuffer::Contents contents = buffer->Externalize();
 

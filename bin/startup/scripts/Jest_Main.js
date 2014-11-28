@@ -1,6 +1,7 @@
 RequireSystemScript("colors.js");
 RequireSystemScript("turbo/map_engine.js");
 RequireSystemScript("turbo/bytearray.js");
+RequireSystemScript("turbo/image.js");
 
 var s = new Surface(64, 64, Black);
 var BlankIm = new Image(new Surface(1, 1, White));
@@ -253,6 +254,9 @@ function game(){
 
     var Astral = Turbo.LoadMapFile("astral.rmp");
 
+    var Tileim = new BlackMamba.Image(Astral.tileset.tiles[64].surface);
+    var Testim = new BlackMamba.Image(new Surface("noob.bmp"));
+
     /*
     var F = new RawFile("TSfile.txt");
 
@@ -313,6 +317,8 @@ function game(){
 
         LilZ.MoveAuto();
         LilZ.AdjustAngle();
+        Tileim.blit(64, 64);
+        Testim.blit(32, 64);
 
         FlipScreen();
         var t = f - ( GetTime() - 8 );

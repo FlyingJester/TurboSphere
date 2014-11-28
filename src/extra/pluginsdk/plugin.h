@@ -164,8 +164,7 @@ namespace Turbo{
 
     template<class T = JSArguments>
     inline void SetError(T args, const char *err, v8::Local<v8::Value> (&v8ExceptionType)(v8::Handle<v8::String>) = v8::Exception::Error){
-        v8::Isolate *iso = v8::Isolate::GetCurrent();
-        args.GetReturnValue().Set( v8ExceptionType(v8::String::NewFromUtf8(iso, err)));
+        args.GetReturnValue().Set( v8ExceptionType(v8::String::NewFromUtf8(args.GetIsolate(), err)));
     }
 
     template<class T = JSArguments>
@@ -273,7 +272,7 @@ namespace Turbo{
             if (!args[i]->IsString()) {
                 char argnumprnt[] = {(char)i, '\0'};
                 std::string err = std::string("[" PLUGINNAME "] ").append(funcname).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Boolean.");
-                args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), err.c_str())));
+                args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(args.GetIsolate(), err.c_str())));
                 return false;
             }
         return true;
@@ -284,7 +283,7 @@ namespace Turbo{
             if (!args[i]->IsInt32()) {
                 char argnumprnt[] = {(char)i, '\0'};
                 std::string err = std::string("[" PLUGINNAME "] ").append(funcname).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Boolean.");
-                args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), err.c_str())));
+                args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(args.GetIsolate(), err.c_str())));
                 return false;
             }
         return true;
@@ -297,7 +296,7 @@ namespace Turbo{
                 char argnumprnt[] = {(char)i, '\0'};
 
                 std::string err = std::string("[" PLUGINNAME "] ").append(funcname).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Boolean.");
-                args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), err.c_str())));
+                args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(args.GetIsolate(), err.c_str())));
                 return false;
             }
         return true;
@@ -306,7 +305,7 @@ namespace Turbo{
         inline bool CheckSig(JSArguments args, int num, const int *argtypes/*<- Null terminated*/, bool error = true){
 
             const char *prevF = nullptr;
-            auto iso = v8::Isolate::GetCurrent();
+            auto iso = args.GetIsolate();
 
 
             if(args.Length()<num){
@@ -440,7 +439,7 @@ namespace Turbo{
         v8::Handle<v8::Object> returnobj = JSo.Template->GetFunction()->NewInstance();
 
         for(std::vector<JSAccessor>::const_iterator lIter = JSo.accessors.begin(); lIter!=JSo.accessors.end(); lIter++){
-            returnobj->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), std::get<0>(*lIter)), std::get<1>(*lIter), std::get<2>(*lIter));
+            returnobj->SetAccessor(v8::String::NewFromUtf8(iso, std::get<0>(*lIter)), std::get<1>(*lIter), std::get<2>(*lIter));
         }
 
         for(typename std::vector<typename JSObj<T>::JSWrapFunction>::const_iterator lIter = JSo.wrappingfuncs.begin(); lIter!=JSo.wrappingfuncs.end(); lIter++){

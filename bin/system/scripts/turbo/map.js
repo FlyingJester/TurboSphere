@@ -99,7 +99,7 @@ Turbo.Map = function(stream, compat){
     this.zones = new Array(this.num_zones);
 
     for(var i = 0; i<this.zones.length; i++){
-        Abort(i);
+        //Abort(i);
 
         var position = Turbo.ReadBinaryObject(stream, Turbo.SegmentScheme.data)
         this.zones[i] = Turbo.ReadBinaryObject(stream, Turbo.ZoneScheme.header);
