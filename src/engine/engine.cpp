@@ -684,7 +684,9 @@ int main
     v8::V8::InitializePlatform(platform.get());
 
     TS_ConfigOverride conf;
-    conf.config = (TS_Config*)malloc(sizeof(TS_Config));
+    TS_Config config;
+
+    conf.config = &config;
 
     printf("TurboSphere %s\n", TS_GetLongVersion());
 
@@ -701,6 +703,4 @@ int main
     else{
         runGame("startup/", v8args, &conf);
     }
-
-    free(conf.config);
 }
