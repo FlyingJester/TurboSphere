@@ -36,6 +36,7 @@ struct ThreadKit{ // A recursive structure that describes and controls a rendert
     TS_Thread  *Thread;
 
     concurrent_queue<Sapphire::Galileo::GL::Operation *> Queues[NUM_BUFFERS];
+
     TS_Atomic32 *index;
     TS_Atomic32 *lastIndex;
 };

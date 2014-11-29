@@ -139,9 +139,7 @@ Turbo::JSFunction GetStringWidth(Turbo::JSArguments args){
     v8::String::Utf8Value lStr(args[0]);
     struct StringSpec lSpec = GetUTF8StringSpecs(mFont, *lStr);
 
-    printf(BRACKNAME " %s Info: String:%s\n  Length:\n\tstr: %zu\tspec:%i\n", __func__,*lStr, strlen(*lStr), lSpec.length);
-
-    args.GetReturnValue().Set(v8::Integer::New(v8::Isolate::GetCurrent(), lSpec.w));
+    args.GetReturnValue().Set(lSpec.w);
 }
 
 Turbo::JSFunction GetStringHeight(Turbo::JSArguments args){

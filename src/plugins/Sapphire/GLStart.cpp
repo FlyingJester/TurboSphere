@@ -5,6 +5,7 @@
 #ifdef OS_X
 
 #include "RetinaCheck.h"
+#include "libyyymonitor/monitor.hpp"
 #include <SDL2/SDL_syswm.h>
 
 #endif
@@ -35,10 +36,10 @@ void SwapQueues(){
 inline void SetSDL_GL_Attributes(void){
 //    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE,0);
-//    SDL_GL_SetAttribute(SDL_GL_RED_SIZE,8);
-//    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,8);
-//    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,8);
-//    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE,8);
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE,8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE,8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE,8);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE,8);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 }
 

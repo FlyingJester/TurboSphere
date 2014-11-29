@@ -254,7 +254,11 @@ function game(){
 
     var Astral = Turbo.LoadMapFile("astral.rmp");
 
-    var Tileim = new BlackMamba.Image(Astral.tileset.tiles[64].surface);
+    Astral.calculateMap();
+
+    //var Tileim = new BlackMamba.Image(Astral.tileset.tiles[64].surface);
+
+
     var Testim = new BlackMamba.Image(new Surface("noob.bmp"));
 
     /*
@@ -288,6 +292,7 @@ function game(){
 
         var f = GetTime();
 
+
         if(AreKeysLeft()){
             var k = GetKey();
             if(k==KEY_Q)
@@ -295,6 +300,7 @@ function game(){
         }
 
 
+        Astral.drawMap();
         LilZ.Draw();
 
         for(let i in Asteroids){
@@ -317,11 +323,9 @@ function game(){
 
         LilZ.MoveAuto();
         LilZ.AdjustAngle();
-        Tileim.blit(64, 64);
-        Testim.blit(32, 64);
 
         FlipScreen();
-        var t = f - ( GetTime() - 8 );
+        var t = f - ( GetTime() -16 );
         if(t>0)
           Delay(t);
 

@@ -29,6 +29,8 @@ eframeworks = []
 if IsLinux():
   currentenv.Append(CPPDEFINES = ["USE_PTHREAD"])
 
+Sapphire_files += [os.path.join("Thread", "Mutex_sdl2.c")]
+
 if int(UseCpp11ThreadsAndAtomics):
   Sapphire_files += [os.path.join("Thread", "Thread_cpp11.cpp"), os.path.join("Thread", "Atomic_cpp11.cpp")]
 elif int(UseSDL2ThreadsAndAtomics):
@@ -43,8 +45,12 @@ if 'USE_INTEL_TBB' in currentenv['CPPDEFINES']:
 if int(Uselibjpg) or int(Uselibjpeg):
     elibs+=['jpeg']
 
+environment = currentenv.Clone()
+
+libyyymonitor = SConscript(dirs = ["libyyymonitor"], exports = ["environment"])
+
 Sapphire     = currentenv.SharedLibrary("Sapphire", Sapphire_files,
-  LIBS = ['t5', 'graphiccommon', 'graphicalg', 'configmanager', 'SDL2', 'SDL2_image', 'v8'] + elibs,
+  LIBS = [libyyymonitor, 't5', 'graphiccommon', 'graphicalg', 'configmanager', 'SDL2', 'SDL2_image', 'v8'] + elibs,
   FRAMEWORKS = ['OpenGL'] + eframeworks,
   CCFLAGS = " -g " )
 

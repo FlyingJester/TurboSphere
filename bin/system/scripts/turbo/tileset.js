@@ -20,6 +20,7 @@ Turbo.Tile = function(stream, surface){
     this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.TileScheme.header);
 
     this.surface = surface;
+    this.image = new Image(this.surface);
 
     // this.segments is initialized depending on the Obstruction type, since we already know its
     // length with obs type 2, but we need to fully iterate the bytemap for type 1.

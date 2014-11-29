@@ -621,7 +621,7 @@ Turbo::JSFunction VertexCtor(Turbo::JSArguments args){
 }
 
 inline bool ValidateVertex(const v8::Local<v8::Object> &aToCheck){
-    return ((aToCheck->Has(JSProps::X)) && (aToCheck->Has(JSProps::Y)));
+    return ((aToCheck->Has(JSProps::X)) && (aToCheck->Has(JSProps::Y)) && (aToCheck->Get(JSProps::X)->IsNumber()) && (aToCheck->Get(JSProps::Y)->IsNumber()));
 }
 
 Turbo::JSFunction ShapeCtor(Turbo::JSArguments args){

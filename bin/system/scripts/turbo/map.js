@@ -12,6 +12,8 @@ if(typeof Turbo == "undefined")
     var Turbo = {};
 if(typeof Turbo == "undefined")
     Turbo.Classic = {};
+if(typeof Turbo.default_shader == "undefined")
+    Turbo.default_shader = GetDefaultShaderProgram();
 
 Turbo.MapScheme   = Turbo.LoadSystemScheme("map.json");
 Turbo.EntityScheme= Turbo.LoadSystemScheme("entity.json");
@@ -78,6 +80,7 @@ Turbo.Map = function(stream, compat){
         this.layers[i].visibile = (~this.layers[i].flags) & 1;
         this.layers[i].has_parallax = this.layers[i].flags & 2;
         this.layers[i].mask = new Color(0xFF, 0xFF, 0xFF);
+        this.layers[i].shader = Turbo.default_shader;
 
         // Pop off the bit field.
         delete this.layers[i].flags;
@@ -141,15 +144,23 @@ Turbo.Map = function(stream, compat){
     this.calculateLayer = function(i){
         var shapes = [];
 
-        for(var x = 0; x<this.width; x++){
-            for(var y = 0; y<this.height; y++){
-                at = x+(y*this.width);
+        for(var y = 0; y<this.layers[i].height; y++){
+            for(var x = 0; x<this.layers[i].width; x++){
+                var at = x+(y*this.layers[i].width);
+
+                if(typeof this.layers[i].field[at] == "number" && this.layers[i].field[at]>this.tileset.tiles.length)
+                    throw "Tile number " + this.layers[i].field[at] + " at " + at+ " Out of range";
+
+                var x1 = x*this.tileset.width;
+                var x2 = x1+this.tileset.width;
+                var y1 = y*this.tileset.width;
+                var y2 = y1+this.tileset.width;
 
                 shapes.push(new Shape([
-                    {x:(x+0)*this.width, y:(y+0)*this.height},
-                    {x:(x+1)*this.width, y:(y+0)*this.height},
-                    {x:(x+1)*this.width, y:(y+1)*this.height},
-                    {x:(x+0)*this.width, y:(y+1)*this.height}],
+                    {x:x1, y:y1},
+                    {x:x2, y:y1},
+                    {x:x2, y:y2},
+                    {x:x1, y:y2}],
                   this.tileset.tiles[this.layers[i].field[at]].image)
                 );
 
@@ -167,15 +178,25 @@ Turbo.Map = function(stream, compat){
     }
 
     this.calculateCamera = function(){
-        this.camera.x = camera_person.x;
-        this.camera.y = camera_person.y;
+        if(this.camera_person){
+            this.camera.x = this.camera_person.x;
+            this.camera.y = this.camera_person.y;
+        }
     }
 
     this.drawLayer = function(i){
         this.calculateCamera();
-        this.layer[i].group.x = this.camera.x;
-        this.layer[i].group.y = this.camera.y;
-        this.layer[i].group.draw();
+        this.layers[i].group.x = this.camera.x;
+        this.layers[i].group.y = this.camera.y;
+        this.layers[i].group.draw();
+    }
+
+    this.drawMap = function(){
+        for(var i in this.layers){
+            // TODO: render Persons.
+            this.drawLayer(i);
+        }
+
     }
 
 }
