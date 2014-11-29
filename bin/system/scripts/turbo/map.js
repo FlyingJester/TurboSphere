@@ -77,13 +77,12 @@ Turbo.Map = function(stream, compat){
 
         // Parse flags so we can kill the messenger.
         //   Magic equations from sphere/docs/internal/map.rmp.txt
-        this.layers[i].visibile = (~this.layers[i].flags) & 1;
+        this.layers[i].visibile =  ~this.layers[i].flags & 1 ;
         this.layers[i].has_parallax = this.layers[i].flags & 2;
         this.layers[i].mask = new Color(0xFF, 0xFF, 0xFF);
         this.layers[i].shader = Turbo.default_shader;
 
         // Pop off the bit field.
-        delete this.layers[i].flags;
 
         // Load all segments.
         this.layers[i].segments = new Array(this.layers[i].num_segments);
@@ -157,15 +156,16 @@ Turbo.Map = function(stream, compat){
                 var y2 = y1+this.tileset.width;
 
                 shapes.push(new Shape([
-                    {x:x1, y:y1},
-                    {x:x2, y:y1},
-                    {x:x2, y:y2},
-                    {x:x1, y:y2}],
+                  {x:x1, y:y1},
+                  {x:x2, y:y1},
+                  {x:x2, y:y2},
+                  {x:x1, y:y2}],
                   this.tileset.tiles[this.layers[i].field[at]].image)
                 );
 
             }
         }
+
 
         this.layers[i].group = new Group(shapes, this.layers[i].shader);
 
@@ -174,6 +174,7 @@ Turbo.Map = function(stream, compat){
     this.calculateMap = function(){
         for(var i in this.layers){
             this.calculateLayer(i);
+
         }
     }
 

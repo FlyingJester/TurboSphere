@@ -141,7 +141,7 @@ namespace RenderThread{
         while(AtomicGet(lKit->ShouldDie)==0){
 
             if(queue.try_pop(Op)==false){
-                SDL_Delay(10);
+                SDL_Delay(0);
                 continue;
             }
 
@@ -150,6 +150,7 @@ namespace RenderThread{
             Op->Draw();
 
             if(Op->EndsScene()){
+                queue.clear();
                 queue = lKit->Queues[AtomicGet(lKit->index)];
             }
 

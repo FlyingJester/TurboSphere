@@ -15,12 +15,11 @@ Turbo.LoadTilesetFile = function(path){
 Turbo.TileScheme = Turbo.LoadSystemScheme("tile.json");
 Turbo.TilesetScheme = Turbo.LoadSystemScheme("tileset.json");
 
-Turbo.Tile = function(stream, surface){
+Turbo.Tile = function(stream, image, size){
 
     this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.TileScheme.header);
 
-    this.surface = surface;
-    this.image = new Image(this.surface);
+    this.image = image;
 
     // this.segments is initialized depending on the Obstruction type, since we already know its
     // length with obs type 2, but we need to fully iterate the bytemap for type 1.
@@ -38,11 +37,11 @@ Turbo.Tile = function(stream, surface){
         this.loadObstructions = function(stream){
 
             // Ensure that the stream is big enough.
-            if(stream.size() - stream.tell() < (this.surface.width*this.surface.height))
+            if(stream.size() - stream.tell() < (this.size.width*this.size.height))
               throw "Unexpected end of file.";
 
-            for(var y = 0; y < this.surface.height; y++){
-                for(var x = 0; x < this.surface.width; x++){
+            for(var y = 0; y < this.size.height; y++){
+                for(var x = 0; x < this.size.width; x++){
                 // A value other than 0 indicates that this point (1px by 1px) is obstructed.
                 // This is an ugly way to represent it, but this is a very deprecated feature
                 // to begin with.
@@ -131,32 +130,46 @@ Turbo.Tileset = function(stream){
     if(stream.size() - stream.tell() < this.tiles.length*(this.BPP/8)*this.width*this.height)
       throw "Unexpected end of file.";
 
-    // Slight performance drain while the nested conditinal gets spun up, but it's less verbose.
-    for(var i = 0; i<this.tile_surfaces.length; i++){
-        if((this.BPP==32) && (typeof SurfaceFromArrayBuffer=="function")){
+    if((this.BPP==32) && (typeof ImageFromArrayBuffer=="function")){
+        var tile_images = new Array(this.num_tiles);
+        for(var i = 0; i< this.num_tiles; i++){
             var data = stream.read((this.BPP/8)*this.width*this.height);
-
-            // SurfaceFromArrayBuffer is evil, and you should not use it outside the Turbo runtime.
-            // If you MUST (or are just a jerk and just don't want to listen), remember that it
-            //   poisons the ArrayBuffer you give it.
-            this.tile_surfaces[i] = SurfaceFromArrayBuffer(this.width, this.height, data);
+            tile_images[i] = ImageFromArrayBuffer(this.width, this.height, data);
         }
-        else{ // Fall back to slow (but effective) methods since we can't hotwire the surface.
-            this.tile_surfaces[i] = new Surface(this.width, this.height, Black);
-            for(var y = 0; y < this.height; y++){
-                for(var x = 0; x < this.width; x++){
-                    var color =  this.colorEquation(stream);
-                    this.tile_surfaces[i].setPixel(x, y, color);
+        // Load tile headers
+        for(var i = 0; i<this.tiles.length; i++){
+            this.tiles[i] = new Turbo.Tile(stream, tile_images[i], this);
+        }
+    }
+    else {
+        // Slight performance drain while the nested conditinal gets spun up, but it's less verbose.
+        for(var i = 0; i<this.tile_surfaces.length; i++){
+            if((this.BPP==32) && (typeof SurfaceFromArrayBuffer=="function")){
+                var data = stream.read((this.BPP/8)*this.width*this.height);
+
+                // SurfaceFromArrayBuffer is evil, and you should not use it outside the Turbo runtime.
+                // If you MUST (or are just a jerk and just don't want to listen), remember that it
+                //   poisons the ArrayBuffer you give it.
+                this.tile_surfaces[i] = SurfaceFromArrayBuffer(this.width, this.height, data);
+
+            }
+            else{ // Fall back to slow (but effective) methods since we can't hotwire the surface.
+                var sf = new Surface(this.width, this.height, Black);
+
+                for(var y = 0; y < this.height; y++){
+                    for(var x = 0; x < this.width; x++){
+                        var color =  this.colorEquation(stream);
+                        this.tile_surfaces[i].setPixel(x, y, color);
+                    }
                 }
             }
         }
-    }
 
-    // Load tile headers
-    for(var i = 0; i<this.tiles.length; i++){
-        this.tiles[i] = new Turbo.Tile(stream, this.tile_surfaces[i]);
+        // Load tile headers
+        for(var i = 0; i<this.tiles.length; i++){
+            this.tiles[i] = new Turbo.Tile(stream, new Image(this.tile_surfaces[i]), this);
+        }
     }
-
     // Load tile obstructions
     for(var i = 0; i<this.tiles.length; i++){
         this.tiles[i].loadObstructions(stream);

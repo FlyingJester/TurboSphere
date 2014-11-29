@@ -252,26 +252,11 @@ Asteroid.prototype.Draw = sDraw;
 
 function game(){
 
-    var Astral = Turbo.LoadMapFile("astral.rmp");
+    var Astral = Turbo.LoadMapFile("test.rmp");
 
     Astral.calculateMap();
 
-    //var Tileim = new BlackMamba.Image(Astral.tileset.tiles[64].surface);
-
-
     var Testim = new BlackMamba.Image(new Surface("noob.bmp"));
-
-    /*
-    var F = new RawFile("TSfile.txt");
-
-    var ab = F.read(80);
-    var byteview = new Uint8Array(ab);
-
-    var ba = ByteArrayFromTypedArray(byteview);
-    Abort(CreateStringFromByteArray(ba));
-
-    Abort(F.getSize());
-    */
 
     var Live = true;
     var LilZ = new SpaceShip(GetScreenWidth()/2, GetScreenHeight()/2);
