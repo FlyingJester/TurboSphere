@@ -34,6 +34,8 @@ public:
 struct JSProps {
     static v8::Handle<v8::Value> X;
     static v8::Handle<v8::Value> Y;
+    static v8::Handle<v8::Value> U;
+    static v8::Handle<v8::Value> V;
     static v8::Handle<v8::Value> Color;
 };
 
@@ -205,6 +207,8 @@ public:
         v8::Handle<v8::Object> lObj = v8::Object::New(aIso);
         lObj->Set(JSProps::X, v8::Integer::New(aIso, lIter->x));
         lObj->Set(JSProps::Y, v8::Integer::New(aIso, lIter->y));
+        lObj->Set(JSProps::U, v8::Integer::New(aIso, lIter->u));
+        lObj->Set(JSProps::V, v8::Integer::New(aIso, lIter->v));
         return lObj;
     }
 
@@ -363,6 +367,8 @@ std::array<Turbo::JSValue,       NumVars>  VariableList = {};
 std::array<Turbo::JSVariableName,NumVars>  VariableNameList = {};
 v8::Handle<v8::Value> JSProps::X;
 v8::Handle<v8::Value> JSProps::Y;
+v8::Handle<v8::Value> JSProps::U;
+v8::Handle<v8::Value> JSProps::V;
 v8::Handle<v8::Value> JSProps::Color;
 
 void InitScript(int64_t ID){
@@ -370,6 +376,8 @@ void InitScript(int64_t ID){
 
     JSProps::X = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "x");
     JSProps::Y = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "y");
+    JSProps::U = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "u");
+    JSProps::V = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "v");
     JSProps::Color = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), "color");
 
     printf(BRACKNAME " Info: ID is %llx!\n", ID);
@@ -392,6 +400,7 @@ void InitScript(int64_t ID){
 
     SurfaceJSObj.AddToProto("save", SaveSurface);
     SurfaceJSObj.AddToProto("setPixel", SetPixelSurface);
+    SurfaceJSObj.AddToProto("blitSurface", SurfaceBlitSurface);
 
     memberiter_t lIter = CrossPluginSurfaceMembers.begin();
 
@@ -663,9 +672,14 @@ Turbo::JSFunction ShapeCtor(Turbo::JSArguments args){
                 lColor = *ColorJSObj.Unwrap(vertex->Get(JSProps::Color));
             }
 
+
             Vertices[i].color = lColor;
 
-            if(num_vertices<FIXEDUVCOORD_SIZE){
+            if(vertex->Has(JSProps::U) && vertex->Has(JSProps::V)){
+                  Vertices[i].u = vertex->Get(JSProps::U)->NumberValue();
+                  Vertices[i].v = vertex->Get(JSProps::V)->NumberValue();
+            }
+            else if(num_vertices<FIXEDUVCOORD_SIZE){
                 switch(num_vertices){
                 case 4:
                   Vertices[i].u = FixedUV4[(i*2)  ];
@@ -969,6 +983,28 @@ Turbo::JSFunction GroupSetRotation(Turbo::JSArguments args){
     assert(mGroup!=nullptr);
 
     mGroup->SetRotationAttr(args[0]->NumberValue(), args[1]->NumberValue(), args[2]->NumberValue());
+}
+
+Turbo::JSFunction SurfaceBlitSurface(Turbo::JSArguments args){
+
+    const int sig[] = {Turbo::Object, Turbo::Number, Turbo::Number, 0};
+
+    if(!Turbo::CheckArg::CheckSig(args, 3, sig))
+      return;
+
+    if(!SurfaceJSObj.IsA(args[0])){
+        Turbo::SetError(args, " Argument 0 is not a Surface.", v8::Exception::TypeError);
+        return;
+    }
+
+    SDL_Surface *that = Turbo::GetMemberSelf<SDL_Surface>(args);
+    SDL_Surface *other= SurfaceJSObj.Unwrap(args[0]);
+    SDL_Rect to = {static_cast<int>(args[1]->IntegerValue()),
+                   static_cast<int>(args[2]->IntegerValue()),
+                     other->w, other->h};
+
+    SDL_BlitSurface(other, nullptr, that, &to);
+
 }
 
 /////

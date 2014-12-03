@@ -156,10 +156,10 @@ Turbo.Map = function(stream, compat){
                 var y2 = y1+this.tileset.width;
 
                 shapes.push(new Shape([
-                  {x:x1, y:y1},
-                  {x:x2, y:y1},
-                  {x:x2, y:y2},
-                  {x:x1, y:y2}],
+                  {x:x1, y:y1, u:1.0, v:1.0},
+                  {x:x2, y:y1, u:1.0, v:0.0},
+                  {x:x2, y:y2, u:1.0, v:0.0,},
+                  {x:x1, y:y2, u:0.0, v:1.0}],
                   this.tileset.tiles[this.layers[i].field[at]].image)
                 );
 

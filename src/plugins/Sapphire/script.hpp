@@ -49,6 +49,7 @@ Turbo::JSFunction ArrayBufferToImage(Turbo::JSArguments args);
 
 Turbo::JSFunction SaveSurface(Turbo::JSArguments args);
 Turbo::JSFunction SetPixelSurface(Turbo::JSArguments args);
+Turbo::JSFunction SurfaceBlitSurface(Turbo::JSArguments args);
 Turbo::JSFunction SaveImage(Turbo::JSArguments args);
 Turbo::JSFunction ImageCreateSurface(Turbo::JSArguments args);
 /////
