@@ -153,7 +153,8 @@ namespace GL {
 
 class Shape : public GL::Drawable {
 protected:
-
+    int gl_mode;
+    int vertex_size;
 public:
     Shape(std::vector<Vertex> &aVertices, Image *aImage);
 

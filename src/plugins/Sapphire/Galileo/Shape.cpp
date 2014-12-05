@@ -56,13 +56,15 @@ void Shape::FillGL(void){
     assert(sizeof(float)*8 == sizeof(GL::VertexU));
     assert(sizeof(float)==4);
 
+    vertex_size = mVertices.size();
+
     // Buffers
-    float *Vertex  = (float*)alloca(sizeof(float)*mVertices.size()*2);
-    float *Texcoord= (float*)alloca(sizeof(float)*mVertices.size()*2);
-    float *Color   = (float*)alloca(sizeof(float)*mVertices.size()*4);
+    float *Vertex  = (float*)alloca(sizeof(float)*vertex_size*2);
+    float *Texcoord= (float*)alloca(sizeof(float)*vertex_size*2);
+    float *Color   = (float*)alloca(sizeof(float)*vertex_size*4);
 
     // Buffer the information to be passed, packing it tight as possible.
-    for(int i = 0; i<mVertices.size(); i++){
+    for(int i = 0; i<vertex_size; i++){
         Vertex[(i*2)+0] = mVertices[i].x;
         Vertex[(i*2)+1] = mVertices[i].y;
         Texcoord[(i*2)+0] = mVertices[i].u;
@@ -76,14 +78,23 @@ void Shape::FillGL(void){
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, mBuffer[0]);
-    glBufferData(GL_ARRAY_BUFFER, 4*mVertices.size()*2,
+    glBufferData(GL_ARRAY_BUFFER, 4*vertex_size*2,
                  Vertex, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, mBuffer[1]);
-    glBufferData(GL_ARRAY_BUFFER, 4*mVertices.size()*2,
+    glBufferData(GL_ARRAY_BUFFER, 4*vertex_size*2,
                  Texcoord, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, mBuffer[2]);
-    glBufferData(GL_ARRAY_BUFFER, 4*mVertices.size()*4,
+    glBufferData(GL_ARRAY_BUFFER, 4*vertex_size*4,
                  Color, GL_STATIC_DRAW);
+
+
+    gl_mode = GL_TRIANGLE_STRIP;
+    if(vertex_size==4)
+    gl_mode = GL_TRIANGLE_FAN;
+    else if(vertex_size==2)
+      gl_mode = GL_LINE_STRIP;
+    else if(vertex_size==1)
+      gl_mode = GL_POINTS;
 
 }
 
@@ -139,32 +150,10 @@ int Shape::Draw(){
 
     assert(mImage!=nullptr);
 
-    if(mDirty){
-        this->FillGL();
-        mDirty = false;
-    }
-
     BindArray();
     mImage->Bind();
 
-    //static auto lmode = (mVertices.size()>=3)?GL_TRIANGLE_FAN:((mVertices.size()==2)?GL_LINE_STRIP:GL_POINTS);
-    GLenum lmode = GL_TRIANGLE_FAN;
-    if(mVertices.size()==2)
-      lmode = GL_LINE_STRIP;
-    else if(mVertices.size()==1)
-      lmode = GL_POINTS;
-
-    glDrawArrays(lmode, 0, mVertices.size());
-
-  #ifndef NDEBUG
-    if(mVertices.size()<3){
-      assert(lmode!=GL_TRIANGLE_FAN);
-    }
-    else{
-
-      assert(lmode==GL_TRIANGLE_FAN);
-    }
-  #endif
+    glDrawArrays(gl_mode, 0, vertex_size);
 
     return 0;
 }

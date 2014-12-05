@@ -10,14 +10,6 @@
 
 namespace Sapphire{
 namespace Galileo {
-/*
-class Group : public GL::Operation {
-protected:
-    std::list<Shape *> mShapes;
-    Shader *mShader;
-    int mOffsetX, mOffsetY;
-public:
-*/
 
 Group::Group()
   : mOffset{0.0f, 0.0f}
@@ -32,22 +24,8 @@ Group::~Group(){
 }
 
 int Group::Draw(void){
-    mShader->Bind();
 
-    int lPosition = mShader->mUniforms.find(Shader::ShaderOffsetUniformName)->second;
-    int lRotPosition = mShader->mUniforms.find(Shader::ShaderRotOffsetUniformName)->second;
-    int lAngle = mShader->mUniforms.find(Shader::ShaderAngleUniformName)->second;
-
-    glUniform2fv(lPosition,    8, mOffset);
-    glUniform2fv(lRotPosition, 8, mRotOffset);
-    glUniform1f(lAngle, mAngle);
-
-    iterator lIter = begin();
-
-    while(lIter!=end()){
-        (*lIter)->Draw();
-        lIter++;
-    }
+    std::for_each(begin(), end(), std::mem_fn(&GL::Operation::Draw));
 
     return 0;
 
@@ -79,17 +57,22 @@ int Group::DrawAll(concurrent_queue<GL::Operation *> *aSendTo){
     aSendTo->push(new ShaderParamChange(lAngle,
                   1, &mAngle, (ShaderParamChange::callback_t)glUniform1fv, 4));
 
-    for(iterator lIter = begin(); lIter!=end(); lIter++){
-        aSendTo->push(*lIter);
-    }
+    aSendTo->push(this);
 
     return 0;
 
 }
 
+int Group::Draw(concurrent_queue<GL::Operation *> *aSendTo){
+    aSendTo->push(this);
+    return 0;
+}
+
+
 int Group::DrawRange(concurrent_queue<GL::Operation *> *aSendTo, iterator aFrom, iterator aTo){
 
     aSendTo->push(mShader.get());
+
     aSendTo->push(new ShaderParamChange(mShader->mUniforms.find(Shader::ShaderOffsetUniformName)->second,
                   1, mOffset, (ShaderParamChange::callback_t)glUniform2fv, 8));
 
@@ -99,9 +82,7 @@ int Group::DrawRange(concurrent_queue<GL::Operation *> *aSendTo, iterator aFrom,
     aSendTo->push(new ShaderParamChange(mShader->mUniforms.find(Shader::ShaderAngleUniformName)->second,
                   1, &mAngle, (ShaderParamChange::callback_t)glUniform1fv, 4));
 
-    for(iterator lIter = aFrom; lIter!=aTo; lIter++){
-        aSendTo->push(*lIter);
-    }
+    std::for_each(aFrom, aTo, std::mem_fn(&GL::Operation::Draw));
 
     return 0;
 

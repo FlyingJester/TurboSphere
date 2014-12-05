@@ -1,5 +1,4 @@
-#ifndef GRAPHICALG_STUB_HEAD
-#define GRAPHICALG_STUB_HEAD
+#pragma once
 
 #define ALG_PI  3.14159265358979323846f
 #define ALG_PI2 6.28318530717958647692f
@@ -24,6 +23,4 @@
       #define GRAPHICALG_EXPORT
     #endif
   #endif
-#endif
-
 #endif

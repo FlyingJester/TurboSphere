@@ -300,7 +300,7 @@ int opengameLocal(const char *Rfile, TS_Config *localConf, TS_Directories *local
     std::unique_ptr<t5::map::Group> lSGMGroup(new t5::map::Group("SGM", nullptr));
     assert(lSGMGroup.get());
 
-    lSGMGroup->ReadDataSourceINI(lSGMSource.get());
+    lSGMGroup->ReadDataSource(lSGMSource.get());
 
     localConf->soundchannels = 32;
 
@@ -314,9 +314,11 @@ int opengameLocal(const char *Rfile, TS_Config *localConf, TS_Directories *local
 
     mainscriptname =  strcat(mainscriptname, scriptname);
 
-    localConf->mainscript   = (char *)calloc(strlen(localDirs->script)+strlen(scriptname)+1, 1);
+    char *script_name = (char *)calloc(strlen(localDirs->script)+strlen(scriptname)+1, 1);
 
-    memcpy((void *)localConf->mainscript, mainscriptname, strlen(localDirs->script)+strlen(scriptname)+1);
+    memcpy(script_name, mainscriptname, strlen(localDirs->script)+strlen(scriptname)+1);
+
+    localConf->mainscript = script_name;
 
     free((void *)mainscriptname);
 

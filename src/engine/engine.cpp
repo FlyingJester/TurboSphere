@@ -536,6 +536,8 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
     context->Enter();
 
+    printf(ENGINE "%s\n", gameSGMfile);
+
     opengame(gameSGMfile);
     free((void *)gameSGMfile);
     if((TS_conf->mainscript==nullptr)||TS_conf->mainscript[0]=='\0'){
@@ -667,9 +669,9 @@ static void TS_CheckArgForGame(int argc, char *argv[], int &gamearg, TS_ConfigOv
         printf(ENGINE " %s Info: checking arg %s (%i)\n", __func__, argv[argc], argc);
 
         TS_SetConfigOverrideFromParameter(argv[argc], conf);
+        gamearg =argc;
         if((--argc)<=0)
             return;
-        gamearg =argc;
 
         if(t5::IsFile(argv[gamearg])||t5::IsDir(argv[gamearg])){
             printf(ENGINE " Info: Using %s (%i) for gamearg.\n", argv[gamearg], gamearg);

@@ -141,7 +141,7 @@ Turbo.Map = function(stream, compat){
     }
 
     this.calculateLayer = function(i){
-        var shapes = [];
+        var vertices = [];
 
         for(var y = 0; y<this.layers[i].height; y++){
             for(var x = 0; x<this.layers[i].width; x++){
@@ -155,19 +155,20 @@ Turbo.Map = function(stream, compat){
                 var y1 = y*this.tileset.width;
                 var y2 = y1+this.tileset.width;
 
-                shapes.push(new Shape([
-                  {x:x1, y:y1, u:1.0, v:1.0},
-                  {x:x2, y:y1, u:1.0, v:0.0},
-                  {x:x2, y:y2, u:1.0, v:0.0,},
-                  {x:x1, y:y2, u:0.0, v:1.0}],
-                  this.tileset.tiles[this.layers[i].field[at]].image)
-                );
+                var this_tile = this.tileset.tiles[this.layers[i].field[at]];
+                var next_tile = this.tileset.tiles[this.layers[i].field[at+1]];
 
+                vertices.push({x:x1, y:y1, u:this_tile.tex_coords[0].u, v:this_tile.tex_coords[0].v});
+                vertices.push({x:x2, y:y1, u:this_tile.tex_coords[1].u, v:this_tile.tex_coords[1].v});
+                vertices.push({x:x1, y:y2, u:this_tile.tex_coords[3].u, v:this_tile.tex_coords[3].v});
+                vertices.push({x:x2, y:y2, u:this_tile.tex_coords[2].u, v:this_tile.tex_coords[2].v});
+                vertices.push({x:x2, y:y2, u:next_tile.tex_coords[3].u, v:next_tile.tex_coords[3].v});
+//                vertices.push({x:x2, y:y2, u:next_tile.tex_coords[3].u, v:next_tile.tex_coords[3].v});
             }
         }
+        var shape = new Shape(vertices, this.tileset.image_atlas);
 
-
-        this.layers[i].group = new Group(shapes, this.layers[i].shader);
+        this.layers[i].group = new Group(shape, this.layers[i].shader);
 
     }
 

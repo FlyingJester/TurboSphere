@@ -5,13 +5,11 @@ full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall 
 
 Import(full_import_list)
 
-files = ["opengame.cpp", "openscript.cpp"]
-
-graphicalg = globalenv.SharedLibrary('graphicalg', ['structures.cpp', 'circles.c'])
+graphicalg = globalenv.SharedLibrary("graphicalg", ["structures.cpp", "circles.c", "lines.c"])
 
 installdir = os.path.join(os.path.join(librarydir, component))
 
 LibraryInstall(installdir, graphicalg, globalenv)
-globalenv.Install(os.path.join(installdir, "include"), ["structures.h", "circles.h"])
+globalenv.Install(os.path.join(installdir, "include"), ["structures.h", "circles.h", "lines.h"])
 
 Return("graphicalg")

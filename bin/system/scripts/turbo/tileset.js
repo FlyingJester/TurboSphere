@@ -15,7 +15,7 @@ Turbo.LoadTilesetFile = function(path){
 Turbo.TileScheme = Turbo.LoadSystemScheme("tile.json");
 Turbo.TilesetScheme = Turbo.LoadSystemScheme("tileset.json");
 
-Turbo.Tile = function(stream, image, tex_coords, size){
+Turbo.Tile = function(stream, tex_coords, size){
 
     this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.TileScheme.header);
 

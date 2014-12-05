@@ -170,6 +170,7 @@ public:
     }
 
     virtual int Draw(void);
+    virtual int Draw(concurrent_queue<GL::Operation *> *aSendTo);
     virtual int DrawAll(concurrent_queue<GL::Operation *> *aSendTo);
     virtual int DrawRange(concurrent_queue<GL::Operation *> *aSendTo, iterator aFrom, iterator aTo);
 
