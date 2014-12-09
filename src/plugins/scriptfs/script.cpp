@@ -262,6 +262,7 @@ void InitRawFile(int ID){
     scriptfs::RawFileObj.AddToProto("getPosition", scriptfs::RawFileGetPosition);
     scriptfs::RawFileObj.AddToProto("setPosition", scriptfs::RawFileSetPosition);
     scriptfs::RawFileObj.AddToProto("read", scriptfs::RawFileRead);
+    scriptfs::RawFileObj.AddToProto("write", scriptfs::RawFileWrite);
     scriptfs::RawFileObj.AddAccessor("size",   scriptfs::RawFileSize, nullptr);
 
     scriptfs::sRawfilePath = GetDirs()->save;
