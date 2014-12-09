@@ -1,0 +1,46 @@
+{
+    "signature":".rss",
+    "header":[
+        {"size":4, "type":"fixed_string", "name":"signature"},
+        {"size":2, "type":"number", "name":"version"},
+        {"size":2, "type":"number", "name":"num_images"},
+        {"size":2, "type":"number", "name":"width"},
+        {"size":2, "type":"number", "name":"height"},
+        {"size":2, "type":"number", "name":"num_directions"},
+        {"size":2, "type":"number", "name":"base_x1"},
+        {"size":2, "type":"number", "name":"base_y1"},
+        {"size":2, "type":"number", "name":"base_x2"},
+        {"size":2, "type":"number", "name":"base_y2"},
+        {"size":106, "type":"reserved"}
+    ],
+    "v2_direction":[
+        {"size":2, "type":"number", "name":"num_frames"},
+        {"size":62, "type":"reserved}
+    ],
+    "v2_frame":[
+        {"size":2, "type":"number", "name":"width"},
+        {"size":2, "type":"number", "name":"height"},
+        {"size":2, "type":"number", "name":"delay"},
+        {"size":26, "type":"reserved}
+    ],
+    "direction":[
+        {"size":2, "type":"number", "name":"num_frames"},
+        {"size":6, "type":"reserved},
+        {"size":2, "type":"string", "name"}
+    ],
+    "frame":[
+        {"size":2, "type":"number", "name":"frame_index"},
+        {"size":2, "type":"number", "name":"delay"},
+        {"size":4, "type":"reserved},
+    ],
+    "directions":[
+        "north",
+        "northeast",
+        "east",
+        "southeast",
+        "south",
+        "southwest",
+        "west",
+        "northwest"
+    ]
+}
