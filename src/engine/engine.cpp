@@ -707,6 +707,9 @@ int main
     if(argc>1)
         TS_CheckArgForGame(argc-1, argv, gamearg, conf);
 
+    if((!t5::IsDir(argv[gamearg]))&&(!t5::IsFile(argv[gamearg])))
+        gamearg = -1;
+
     if((argc>1) && (gamearg>=0) && (*(argv[gamearg])!='\0'))
         next_game = argv[gamearg];
     else
