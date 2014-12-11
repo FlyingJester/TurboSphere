@@ -1,8 +1,0 @@
-{
-    "data":[
-        {"size":2, "type":"number", "name":"x1"},
-        {"size":2, "type":"number", "name":"y1"},
-        {"size":2, "type":"number", "name":"x2"},
-        {"size":2, "type":"number", "name":"y2"}
-    ]
-}

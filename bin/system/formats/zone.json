@@ -1,8 +1,0 @@
-{
-    "header":[
-        {"size":2, "type":"number", "name":"layer"},
-        {"size":2, "type":"number", "name":"num_steps"},
-        {"size":4, "type":"reserved"},
-        {"size":2, "type":"string", "name":"script"}
-    ]
-}
