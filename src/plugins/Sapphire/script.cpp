@@ -775,57 +775,13 @@ Turbo::JSFunction SaveSurface(Turbo::JSArguments args){
     SDL_Surface* mSurf = Turbo::GetMemberSelf <SDL_Surface> (args);
     assert(mSurf);
 
-    std::string lSaveName;
+    int sig[2] = {Turbo::String, 0};
 
-    if(args.Length()<1){
-      const char *lTmp = std::tmpnam(nullptr);
-      SDL_SaveBMP(mSurf, lTmp);
-      fprintf(stderr, BRACKNAME " %s Warning: no file name supplied. Using %s.", __func__, lTmp);
-    }
-    else if(Turbo::CheckArg::String(args, 0, __func__)){
-      v8::String::Utf8Value lStr(args[0]);
-      lSaveName = *lStr;
-      std::string::reverse_iterator lStrExtBeg = lSaveName.rbegin();
-
-      while(*lStrExtBeg!='.' && (lStrExtBeg.base()!=lSaveName.begin()))
-        lStrExtBeg++;
-
-      std::string lExt = std::string(lStrExtBeg.base(), lSaveName.end());
-      printf(BRACKNAME " %s Info: Saving a '%s'.\n", __func__, lExt.c_str());
-      std::map<std::string, Sapphire::Save::SaveFunction>::const_iterator lSaveFunc = Sapphire::Save::SaveWithExtension.find(lExt);
-
-
-      if(lSaveFunc!=Sapphire::Save::SaveWithExtension.end()){
-          printf(BRACKNAME " %s Info: Saving a with save func %p.\n", __func__, (*lSaveFunc).second);
-
-          int err = (*lSaveFunc).second(mSurf, std::string(GetDirs()->image).append(lSaveName).c_str());
-
-          if(err!=Save::SaveStatus::ssSuccess){
-
-              fprintf(stderr, BRACKNAME " %s Error: Could not save surface.\n", __func__);
-
-              args.GetIsolate()->ThrowException(
-                v8::Exception::Error(v8::String::NewFromUtf8(args.GetIsolate(),
-                (
-                  std::string(BRACKNAME " SaveSurface Error: Could not save surface")
-                + std::string(lSaveName)
-                + std::string(".")
-                ).c_str()
-              )));
-              return;
-          }
-
-      }
-      else
-        SDL_SaveBMP(mSurf, lSaveName.c_str());
-
-
-    }
-    else{
-      args.GetIsolate()->ThrowException( v8::Exception::Error(v8::String::NewFromUtf8(args.GetIsolate(),
-                                 BRACKNAME " SaveSurface Error: Argument 0 is not a string.")));
+    if(!Turbo::CheckArg::CheckSig(args, 1, sig))
       return;
-    }
+
+    v8::String::Utf8Value lStr(args[0]);
+    Save::Save(mSurf, *lStr);
 
 }
 

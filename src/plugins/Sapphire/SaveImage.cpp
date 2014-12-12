@@ -6,6 +6,7 @@
 namespace Sapphire {
 namespace Save {
   const char *ErrorText;
+  const char * const DefaultFormat = "bmp";
 }
 }
 
@@ -67,6 +68,43 @@ class ArrayHolder {
 
 namespace Sapphire {
 namespace Save {
+
+SaveStatus BMPSaveFunction(SDL_Surface *aToSave, const std::string &aPath);
+
+SaveStatus Save(SDL_Surface *aToSave, const std::string &to){
+
+    std::string ext = DefaultFormat;
+
+    std::string::const_reverse_iterator reverse = std::find(to.crbegin(), to.crend(), '.');
+
+    // Explosion. Fall back to BMP and save it blindly.
+    if(reverse==to.crend()){
+        ext = DefaultFormat;
+    }
+    else{
+        // Reverse it, then move ahead of the dot.
+        const std::string ext_anycase(++(reverse.base()), to.cend());
+
+        // Ensure the extension is in all lowercase.
+        ext.resize(ext_anycase.size());
+        std::transform(ext_anycase.cbegin(), ext_anycase.cend(), ext.begin(), std::tolower);
+    }
+
+    SaveFunction lSaveFunc = nullptr;
+    const std::map<std::string, SaveFunction>::const_iterator iSaveFunc = SaveWithExtension.find(ext);
+
+    if(iSaveFunc==SaveWithExtension.end()){
+        lSaveFunc = BMPSaveFunction;
+    }
+    else{
+        lSaveFunc = iSaveFunc->second;
+    }
+
+    assert(lSaveFunc);
+
+    return lSaveFunc(aToSave, to);
+
+}
 
 std::array<SaveFunction, num_formats> SaveFunctions = std::array<SaveFunction, num_formats> ();
 std::array<InitFunction, num_formats> InitFunctions = std::array<InitFunction, num_formats> ();

@@ -38,6 +38,10 @@ enum Formats {
 
 enum SaveStatus {ssSuccess, ssFailure};
 
+// Preferred method:
+SaveStatus Save(SDL_Surface *aToSave, const std::string &to);
+
+// Other stuff, mostly internal.
 typedef SaveStatus(*SaveFunction)(SDL_Surface *aToSave, const std::string &aPath);
 typedef SaveStatus(*InitFunction)(void);
 
@@ -49,6 +53,7 @@ void InitSurfaceSave();
 extern std::array<SaveFunction, num_formats> SaveFunctions;
 extern std::array<InitFunction, num_formats> InitFunctions;
 extern const std::map<std::string, SaveFunction> &SaveWithExtension;
+
 
 }
 }
