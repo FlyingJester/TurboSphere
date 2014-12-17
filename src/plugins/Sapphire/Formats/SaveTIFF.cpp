@@ -28,6 +28,7 @@ SaveStatus TIFFSaveFunction(SDL_Surface *aToSave, const std::string &aPath){
   TIFFSetField(tif, TIFFTAG_XRESOLUTION, aToSave->w);
   TIFFSetField(tif, TIFFTAG_YRESOLUTION, aToSave->h);
   TIFFSetField(tif, TIFFTAG_RESOLUTIONUNIT, 1);
+
   for (i = 0; i < rows; i++){
     TIFFWriteScanline(tif, &dataArray[i * columns], i, 0);
   }

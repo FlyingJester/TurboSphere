@@ -57,12 +57,15 @@ class ArrayHolder {
 #endif
 #ifdef USE_GIF
 
-
-
 #endif
 #ifdef USE_TGA
 
   #include "Formats/SaveTGA.cpp"
+
+#endif
+#ifdef USE_XPM
+
+  #include "Formats/SaveXPM.cpp"
 
 #endif
 
@@ -152,6 +155,7 @@ SaveStatus InitFormats(void){
   InitFunctions[Formats::tiff] = TIFFInitFunction;
   if(SaveFunctions[Formats::tiff])
     SaveViaExtension["tiff"]    = SaveFunctions[Formats::tiff];
+    SaveViaExtension["tif"]     = SaveFunctions[Formats::tiff];
 #endif
 #ifdef USE_GIF
   InitFunctions[Formats::gif] = GIFInitFunction;
@@ -162,6 +166,11 @@ SaveStatus InitFormats(void){
   InitFunctions[Formats::tga] = TGAInitFunction;
   if(SaveFunctions[Formats::tga])
     SaveViaExtension["tga"]     = SaveFunctions[Formats::tga];
+#endif
+#ifdef USE_XPM
+  InitFunctions[Formats::xpm] = XPMInitFunction;
+  if(SaveFunctions[Formats::xpm])
+    SaveViaExtension["xpm"]     = SaveFunctions[Formats::xpm];
 #endif
 
   return ssSuccess;

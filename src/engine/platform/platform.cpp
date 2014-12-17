@@ -25,7 +25,7 @@ namespace Turbo {
       : group(Thread::CreateTaskGroup())
       , global_threads_num(global_threads_i){
 
-            for(int i = 0; i<global_threads_i; i++){
+            for(int i = 0; i<global_threads_num; i++){
                Platform::long_threads.push_back(new Thread(Thread::GetLongThreadPool()));
                Platform::short_threads.push_back(new Thread(Thread::GetShortThreadPool()));
             }

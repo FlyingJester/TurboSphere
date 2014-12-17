@@ -33,6 +33,9 @@ enum Formats {
 #ifdef USE_GIF
   gif,
 #endif
+#ifdef USE_XPM
+  xpm,
+#endif
   num_formats
 };
 

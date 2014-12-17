@@ -96,8 +96,6 @@ static void LoadScriptWithPrefix(const v8::FunctionCallbackInfo<v8::Value> &args
         return;
     }
 
-    v8::Isolate *isolate = v8::Isolate::GetCurrent();
-
     Turbo::CheckArg::String(args, 0, __func__);
 
     v8::String::Utf8Value str(args[0]);

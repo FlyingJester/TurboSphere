@@ -1,6 +1,7 @@
 RequireSystemScript('turbo/format.js');
 RequireSystemScript('turbo/map.js');
 RequireSystemScript('turbo/tileset.js');
+RequireSystemScript('turbo/person.js');
 RequireSystemScript('turbo/spriteset.js');
 RequireSystemScript('turbo/bytearray.js');
 
@@ -30,6 +31,11 @@ Turbo.IsChangingMaps = false;
 // Holds an array of {which:SCRIPT_ON_BLANK, script:function(){/*...*/}}
 Turbo.SpooledDefaultScripts = [];
 Turbo.SpooledEntities = [];
+
+Turbo.IsMapEngineRunning = function(){
+    return (Turbo.CurrentMap || Turbo.NextMap || Turbo.IsChangingMaps);
+}
+var IsMapEngineRunning = Turbo.IsMapEngineRunning;
 
 // Someday this won't be necessary.
 function MapMaybeString(map){
@@ -65,10 +71,6 @@ function ExitMapEngine(){
     Turbo.CurrentMap = null;
     Turbo.NextMap = null;
     Turbo.IsChangingMaps = true;
-}
-
-function IsMapEngineRunning(){
-    return !(Turbo.CurrentMap || Turbo.NextMap || Turbo.IsChangingMaps);
 }
 
 function UpdateMapEngine(){}
@@ -361,4 +363,27 @@ function SetRenderScript(script){
     else{
         Turbo.CurrentMap.render_script = function(){eval(script);}
     }
+}
+
+// Person Control!
+
+function CreatePerson(name, spriteset, destroy_on_map_change){
+
+    if(typeof destroy_on_map_change == "undefined")
+        destroy_on_map_change = true;
+
+    var loaded_spriteset;
+    if(spriteset instanceof Turbo.Spriteset)
+        loaded_spriteset = spriteset;
+
+    if(Turbo.IsMapEngineRunning()){
+        Turbo.CurrentMap.AddPerson(new Turbo.Person(Turbo.CurrentMap.start_x, Turbo.CurrentMap.start_y,
+                                                    Turbo.CurrentMap.start_layer, name, destroy_on_map_change, loaded_spriteset));
+    }
+    else{
+        Turbo.SpooledEntities.push(new Turbo.Person(0, 0, 0, name, destroy_on_map_change, loaded_spriteset));
+    }
+
+
+
 }

@@ -1,9 +1,8 @@
-
-#include "engine.h"
-#include "functionload.h"
-#include <cstring>
 #include <string>
 #include <vector>
+#include <cstring>
+#include "engine.h"
+#include "functionload.h"
 
 #ifdef _MSC_VER
 	#define STRDUP _strdup
@@ -13,16 +12,17 @@
 
 static std::vector<regFunction> funclist;
 
-regFunction::regFunction(const char *_name, v8::Handle<v8::FunctionTemplate> _templ, v8::Isolate *iso){
-    name = name;
-    templ = _templ;
+regFunction::regFunction(const char *name_, v8::Handle<v8::FunctionTemplate> templ_, v8::Isolate *iso)
+  : name(name_)
+  , templ(templ_){
+
 }
 
 int registerfunction(const char *name, void (*func)(const v8::FunctionCallbackInfo<v8::Value> &args), v8::Isolate *iso){
     if(!func){
         return 1;
     }
-    if(name==NULL){
+    if(name==nullptr){
         return 1;
     }
     regFunction newfunc(name, v8::FunctionTemplate::New(iso, *func), iso);
@@ -55,8 +55,8 @@ int registerFuncsFromDL(int numfuncs, void (*funcs[])(const v8::FunctionCallback
 }
 
 void addFunctionToList(const char *name, void (*func)(const v8::FunctionCallbackInfo<v8::Value> &args), v8::Isolate *iso){
-    if(name==NULL){
-        printf("Problem with plugin %i.\n", name);
+    if(name==nullptr){
+        printf("Problem with plugin %s.\n", name);
     }
     regFunction r(name, func, iso);
     funclist.push_back(r);

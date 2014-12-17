@@ -8,22 +8,22 @@
 
 namespace scriptfs {
 
-    std::array<Turbo::JSCallback, NUM_FUNCS> Functions = {
-        {scriptfs::OpenRawFile}
-    };
+    std::array<Turbo::JSCallback, NUM_FUNCS> Functions = {{
+        scriptfs::OpenRawFile
+    }};
 
-    std::array<Turbo::JSName, NUM_FUNCS> FunctionNames = {
-        {"RawFile"}
-    };
+    std::array<Turbo::JSName, NUM_FUNCS> FunctionNames = {{
+        "RawFile"
+    }};
 
-    std::array<Turbo::JSValue, NUM_VARS> Variables = {
+    std::array<Turbo::JSValue, NUM_VARS> Variables = {{
         v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), GetDirs()->root),
         v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), GetDirs()->system)
-    };
-    std::array<Turbo::JSName, NUM_VARS> VariableNames = {
+    }};
+    std::array<Turbo::JSName, NUM_VARS> VariableNames = {{
         "FILESYSTEM_ROOT",
         "FILESYSTEM_SYSTEM"
-    };
+    }};
 
 }
 

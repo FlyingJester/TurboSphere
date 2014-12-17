@@ -555,7 +555,7 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
         TS_OverrideConfig(TS_conf, overrideConf);
     }
 
-    loadAllPlugins();
+    LoadAllPlugins(iso);
     v8::V8::AddMessageListener(TS_MessageCallback);
 
     printf(ENGINE " Info: All Plugins initialized.\n");

@@ -2,8 +2,8 @@
 #define LOADPLUGINS_HEAD
 typedef const char * pluginName;
 
-int loadAllPlugins();
-int CloseAllPlugins();
+void LoadAllPlugins(v8::Isolate *isolate);
+void CloseAllPlugins();
 
 void grabFuncsFromLibrary(fhandle handle);
 #endif

@@ -92,6 +92,10 @@ Turbo.Map = function(stream, compat){
     } // For var i ... layers
 
     this.entities = new Array(this.num_entities);
+
+    this.AddEntity = function(that){this.entities.push(that);}
+    this.AddPerson = this.AddEntity;
+
     for(var i = 0; i< this.entities.length; i++){
 
         // Load the layer header.

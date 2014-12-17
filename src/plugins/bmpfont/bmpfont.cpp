@@ -85,10 +85,8 @@ const unsigned NumFuncs = 2;
 Turbo::JSFunction LoadFont(Turbo::JSArguments args);
 Turbo::JSFunction GetSystemFont(Turbo::JSArguments args);
 
-std::array<Turbo::JSCallback,    NumFuncs> FunctionList = {LoadFont, GetSystemFont};
-std::array<Turbo::JSName,        NumFuncs> FunctionNameList = {"Font", "GetSystemFont"};
-//std::array<Turbo::JSValue,       NumVars>  VariableList;
-//std::array<Turbo::JSVariableName,NumVars>  VariableNameList;
+std::array<Turbo::JSCallback,    NumFuncs> FunctionList = {{LoadFont, GetSystemFont}};
+std::array<Turbo::JSName,        NumFuncs> FunctionNameList = {{"Font", "GetSystemFont"}};
 
 Turbo::JSObj<TS_bmpfont> BMPFontJSObj;
 
@@ -104,7 +102,7 @@ Turbo::JSFunction LoadFont(Turbo::JSArguments args){
     v8::String::Utf8Value lStr(args[0]);
     std::string lName = (std::string(GetDirs()->font) + std::string(*lStr));
 
-    if(!T5_IsFile(lName.c_str())){
+    if(!t5::IsFile(lName.c_str())){
         Turbo::SetError(args, std::string(BRACKNAME " LoadFont Error: No file ").append(lName).c_str());
         return;
     }
@@ -170,7 +168,7 @@ Turbo::JSFunction GetSystemFont(Turbo::JSArguments args){
     printf(BRACKNAME " Info: Loading system font.\n");
     std::string lName = (std::string(GetDirs()->system) + std::string(GetConfig()->systemfont));
 
-    if(!T5_IsFile(lName.c_str())){
+    if(!t5::IsFile(lName.c_str())){
         fprintf(stderr, BRACKNAME " %s Error: File %s does not exist.\n", __func__, lName.c_str());
         Turbo::SetError(args, std::string(BRACKNAME " GetSystemFont Error: No file ").append(lName).c_str());
         return;

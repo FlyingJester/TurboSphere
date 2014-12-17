@@ -1,7 +1,9 @@
-author=Unknown
-description=
-name=TS Test
-screen_height=640
-screen_width=1280
-script=Jest_Main.js
-version=2
+{
+    "author" : "Flying Jester",
+    "description" : "Map Engine, map, tileset, and spriteset test",
+    "name": "Map Engine Test",
+    "screen_height" : 600,
+    "screen_width" : 800,
+    "script" : "main.js",
+    "version" : 2
+}

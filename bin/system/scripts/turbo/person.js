@@ -1,7 +1,8 @@
-RequireSystemScript("turbo/bytearray.js");
-RequireSystemScript("turbo/format.js");
-RequireSystemScript("turbo/map.js");
-RequireSystemScript("turbo/tileset.js");
+RequireSystemScript('turbo/bytearray.js');
+RequireSystemScript('turbo/format.js');
+RequireSystemScript('turbo/map.js');
+RequireSystemScript('turbo/tileset.js');
+RequireSystemScript('turbo/spriteset.js');
 
 if(typeof Turbo == "undefined")
     var Turbo = {};

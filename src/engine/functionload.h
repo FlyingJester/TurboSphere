@@ -5,9 +5,9 @@
 
 #include <TSPR/dlopenwrap.h>
 
-//#define DLOPENFUNCTONPRESET(_type, _dlfunc, _handle, _name, _error, action) DLOPENFUNCTION(_type, _dlfunc, _handle, _name, "Error loading plugin : No function \"%s\".\n", _error, action)
-
-typedef void** FunctionArray;
+typedef void (*Function_)(const v8::FunctionCallbackInfo<v8::Value> &args);
+typedef Function_* FunctionArray;
+typedef const char ** NameArray;
 
 class regFunction {
 public:

@@ -5,7 +5,7 @@
 
 #include <vector>
 
-typedef v8::Handle<v8::Value> * VariableArray;
+typedef v8::Handle<v8::Value> *VariableArray;
 
 class regVariable {
 public:
