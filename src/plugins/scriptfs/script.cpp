@@ -28,7 +28,6 @@ Turbo::JSFunction CopyFile(Turbo::JSArguments args){
 
 }
 
-
 namespace scriptfs {
 
     static std::string sRawfilePath = "";
@@ -246,8 +245,7 @@ Turbo::JSFunction scriptfs::OpenRawFile(Turbo::JSArguments args){
     err = ::OpenRawFile(rFile, lCombinedPath.c_str(), writeable);
 
     if(TURBO_TRYRAWFILE_ISERROR(err)){
-      TURBO_TRYRAWFILE_ERROR(args, err);
-      return;
+        Turbo::SetError(args, (std::string(__func__) + std::string(" Error: Could not open file ") + lCombinedPath + std::string(": ") + std::string(ExplainRawFileError(err)) ).c_str());
     }
     else
       Turbo::WrapObject(args, scriptfs::RawFileObj, new RawFileHolder(rFile));

@@ -1,19 +1,24 @@
-#include "scriptfs.hpp"
-#include "script.hpp"
-#include "rawfile.hpp"
-#include <openscript.h>
-#include <opengame.h>
 
 #include <array>
+#include <t5.h>
+#include "scriptfs.hpp"
+#include <openscript.h>
+#include <opengame.h>
+#include "script.hpp"
+#include "rawfile.hpp"
 
 namespace scriptfs {
 
     std::array<Turbo::JSCallback, NUM_FUNCS> Functions = {{
-        scriptfs::OpenRawFile
+        scriptfs::OpenRawFile,
+        T5Call<bool, t5::IsFile>,
+        T5Call<bool, t5::IsDir>
     }};
 
     std::array<Turbo::JSName, NUM_FUNCS> FunctionNames = {{
-        "RawFile"
+        "RawFile",
+        "IsFile",
+        "IsDirectory",
     }};
 
     std::array<Turbo::JSValue, NUM_VARS> Variables = {{
