@@ -158,8 +158,8 @@ Turbo.Map = function(stream, compat){
     }
 
     this.calculateLayer = function(i){
-        var vertices = [];
-
+        var vertices = new Array((this.layers[i].height-1)*this.layers[i].width);
+        var a = 0;
         for(var y = 0; y<this.layers[i].height; y++){
             for(var x = 0; x<this.layers[i].width; x++){
                 var at = x+(y*this.layers[i].width);
@@ -173,17 +173,14 @@ Turbo.Map = function(stream, compat){
                 var y2 = y1+this.tileset.width;
 
                 var this_tile = this.tileset.tiles[this.layers[i].field[at]];
-                if(at+1!=this.layers[i].height*this.layers[i].width)
-                    var next_tile = this.tileset.tiles[this.layers[i].field[at+1]];
-                else
-                    var next_tile = this_tile;
 
-                vertices.push({x:x1, y:y1, u:this_tile.tex_coords[0].u, v:this_tile.tex_coords[0].v});
-                vertices.push({x:x2, y:y1, u:this_tile.tex_coords[1].u, v:this_tile.tex_coords[1].v});
-                vertices.push({x:x1, y:y2, u:this_tile.tex_coords[3].u, v:this_tile.tex_coords[3].v});
-                vertices.push({x:x2, y:y2, u:this_tile.tex_coords[2].u, v:this_tile.tex_coords[2].v});
-                vertices.push({x:x2, y:y2, u:next_tile.tex_coords[3].u, v:next_tile.tex_coords[3].v});
-//                vertices.push({x:x2, y:y2, u:next_tile.tex_coords[3].u, v:next_tile.tex_coords[3].v});
+                vertices[a++] = {x:x1, y:y1, u:this_tile.tex_coords[0].u, v:this_tile.tex_coords[0].v};
+                vertices[a++] = {x:x2, y:y1, u:this_tile.tex_coords[1].u, v:this_tile.tex_coords[1].v};
+                vertices[a++] = {x:x1, y:y2, u:this_tile.tex_coords[3].u, v:this_tile.tex_coords[3].v};
+                vertices[a++] = {x:x2, y:y2, u:this_tile.tex_coords[2].u, v:this_tile.tex_coords[2].v};
+                if(x<this.layers[i].width-1){
+                    vertices[a++] = {x:x2, y:y2, u:this.tileset.tiles[this.layers[i].field[at+1]].tex_coords[3].u, v:this.tileset.tiles[this.layers[i].field[at+1]].tex_coords[3].v};
+                }
             }
         }
         var shape = new Shape(vertices, this.tileset.image_atlas);

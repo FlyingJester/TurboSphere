@@ -121,6 +121,11 @@ function MapEngine(map, fps){
         // render_script
         Turbo.CurrentMap.render_script();
 
+
+        // Throttle FPS
+        FlipScreen();
+        while(AreKeysLeft()){GetKey();}
+
         // We only change maps at the end of a frame.
         if(Turbo.IsChangingMaps){
             Turbo.CurrentMap = Turbo.NextMap;
@@ -128,12 +133,9 @@ function MapEngine(map, fps){
             Turbo.IsChangingMaps = false;
         }
 
-        // Throttle FPS
-        FlipScreen();
         var frame_surplus = fps_interval-(GetSeconds()-time);
         Delay(Math.max(frame_surplus, 0));
 
-        while(AreKeysLeft()){GetKey();}
 
     }
 
