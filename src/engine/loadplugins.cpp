@@ -95,7 +95,6 @@ void LoadPluginMembers(struct plugin_t plugin, v8::Isolate *isolate){
         addVariableToList(plugin.variable_names[i], plugin.variables[i], isolate);
     }
 
-    fputs("[Engine] Successfully loaded plugin members.", stderr);
 }
 
 void LoadAllPlugins(v8::Isolate *isolate){
