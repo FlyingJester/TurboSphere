@@ -102,6 +102,8 @@ function MapEngine(map, fps){
 
     Turbo.SpooledDefaultScripts.forEach(function(i){Turbo.CurrentMap.default_scripts[i.which] = i.script});
 
+    var fps_interval = ((1/Turbo.CurrentMap.fps)*1000);
+
     while(Turbo.CurrentMap){
 
         var time = GetSeconds();
@@ -128,7 +130,7 @@ function MapEngine(map, fps){
 
         // Throttle FPS
         FlipScreen();
-        var frame_surplus = Math.min((GetSeconds()-time) , ((1/Turbo.CurrentMap.fps)*1000));
+        var frame_surplus = fps_interval-(GetSeconds()-time);
         Delay(Math.max(frame_surplus, 0));
 
         while(AreKeysLeft()){GetKey();}
