@@ -82,8 +82,8 @@ function SetMapEngineFrameRate(fps){
     if(fps==NaN)
         throw "FPS is NaN";
 
-    if(Turbo.CurrentMap)
-        Turbo.CurrentMap.fps = fps;
+    if(Turbo.CurrentMap!=null)
+        Turbo.CurrentMap.fps= fps;
 }
 
 function GetMapEngineFrameRate(){
@@ -98,7 +98,8 @@ function MapEngine(map, fps){
     if(typeof fps == "undefined")
         fps = 60;
 
-    Turbo.CurrentMap.fps = fps;
+    if(Turbo.CurrentMap!=null)
+        Turbo.CurrentMap.fps =fps;
 
     Turbo.CurrentMap = MapMaybeString(map);
 
@@ -373,8 +374,13 @@ function CreatePerson(name, spriteset, destroy_on_map_change){
         destroy_on_map_change = true;
 
     var loaded_spriteset;
-    if(spriteset instanceof Turbo.Spriteset)
+
+    if(spriteset instanceof String){
+        loaded_spriteset = Turbo.LoadSpritesetFile(spriteset);
+    }
+    else{
         loaded_spriteset = spriteset;
+    }
 
     if(Turbo.IsMapEngineRunning()){
         Turbo.CurrentMap.AddPerson(new Turbo.Person(Turbo.CurrentMap.start_x, Turbo.CurrentMap.start_y,

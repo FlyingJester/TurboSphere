@@ -19,8 +19,15 @@ Turbo.MapScheme   = Turbo.LoadSystemScheme("map.json");
 Turbo.EntityScheme= Turbo.LoadSystemScheme("entity.json");
 
 Turbo.LoadMapFile = function(path){
+    try{
+        var reader = new Turbo.FileReader(new RawFile("~/maps/"+path))
+    }
+    catch(e){
+        throw e + " path: "+path;
+    }
 
-    return new Turbo.Map(new Turbo.FileReader(new RawFile("../maps/"+path)));
+    return new Turbo.Map(reader);
+
 }
 
 Turbo.Map = function(stream, compat){
@@ -100,6 +107,10 @@ Turbo.Map = function(stream, compat){
 
         // Load the layer header.
         this.entities[i] = Turbo.ReadBinaryObject(stream, Turbo.EntityScheme.header);
+
+        if(this.entities[i].type==2){
+            Turbo.AddSchemeElementToObject({name:"trigger_function", size:2, type:"string"}, this.entities[i], stream);
+        }
     } // For var i ... entities
 
     this.zones = new Array(this.num_zones);
