@@ -35,6 +35,8 @@ Turbo.Map = function(stream, compat){
     if(typeof compat == "undefined")
       compat = true;
 
+    this.update_script = function(){}
+    this.render_script = function(){}
 
     this.fps = 60;
 
@@ -80,7 +82,7 @@ Turbo.Map = function(stream, compat){
 
         // Load layer tile data.
         // *2 because layer elements are 16-bits long.
-        this.layers[i].field = stream.read(this.layers[i].width*this.layers[i].height*2);
+        this.layers[i].field = new Uint16Array(stream.read(this.layers[i].width*this.layers[i].height*2).buffer);
 
         // Parse flags so we can kill the messenger.
         //   Magic equations from sphere/docs/internal/map.rmp.txt
@@ -171,7 +173,10 @@ Turbo.Map = function(stream, compat){
                 var y2 = y1+this.tileset.width;
 
                 var this_tile = this.tileset.tiles[this.layers[i].field[at]];
-                var next_tile = this.tileset.tiles[this.layers[i].field[at+1]];
+                if(at+1!=this.layers[i].height*this.layers[i].width)
+                    var next_tile = this.tileset.tiles[this.layers[i].field[at+1]];
+                else
+                    var next_tile = this_tile;
 
                 vertices.push({x:x1, y:y1, u:this_tile.tex_coords[0].u, v:this_tile.tex_coords[0].v});
                 vertices.push({x:x2, y:y1, u:this_tile.tex_coords[1].u, v:this_tile.tex_coords[1].v});
@@ -215,6 +220,8 @@ Turbo.Map = function(stream, compat){
         }
 
     }
+
+    this.calculateMap();
 
 }
 

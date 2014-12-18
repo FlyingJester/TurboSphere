@@ -44,9 +44,6 @@ function MapMaybeString(map){
         map = Turbo.LoadMapFile(map);
     }
 
-    if(!(Turbo.CurrentMap instanceof Turbo.Map))
-        throw "Turbo.CurrentMap is not a Turbo.Map (" + Turbo.CurrentMap + ")";
-
     return map;
 }
 
@@ -130,8 +127,12 @@ function MapEngine(map, fps){
         }
 
         // Throttle FPS
-        frame_surplus = (GetSeconds()-time) + ((1/Turbo.CurrentMap.fps)*1000);
+        FlipScreen();
+        var frame_surplus = Math.min((GetSeconds()-time) , ((1/Turbo.CurrentMap.fps)*1000));
         Delay(Math.max(frame_surplus, 0));
+
+        while(AreKeysLeft()){GetKey();}
+
     }
 
     Turbo.CurrentMap = null;
