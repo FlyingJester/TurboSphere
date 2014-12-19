@@ -11,7 +11,7 @@ class regVariable {
 public:
     regVariable(const char *, v8::Handle<v8::Value>, v8::Isolate *iso);
     ~regVariable();
-    void registerToContext(v8::Handle<v8::Context> context, v8::Isolate *iso);
+    void registerToContext(v8::Handle<v8::Context> context, v8::Isolate *iso) const;
     const char *name;
     v8::Handle<v8::Value> data;
 };

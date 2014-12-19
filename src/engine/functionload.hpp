@@ -10,18 +10,15 @@ typedef Function_* FunctionArray;
 typedef const char ** NameArray;
 
 class regFunction {
-public:
-    regFunction(const char *, v8::Handle<v8::FunctionTemplate>, v8::Isolate *);
-    regFunction(const char *_name, void (*func)(const v8::FunctionCallbackInfo<v8::Value>&), v8::Isolate *);
-    ~regFunction();
-    void registerToContext(v8::Handle<v8::Context> context, v8::Isolate *iso);
-    const char *name;
+    std::string name;
     v8::Handle<v8::FunctionTemplate> templ;
+public:
+    regFunction(const std::string &name_, v8::Handle<v8::FunctionTemplate>, v8::Isolate *);
+    regFunction(const std::string &name_, void (*func)(const v8::FunctionCallbackInfo<v8::Value>&), v8::Isolate *);
+    void registerToContext(v8::Handle<v8::Context> context, v8::Isolate *iso) const;
 };
 
-//extern std::vector<regFunction> funclist;
-
-void addFunctionToList(const char *name, void (*func)(const v8::FunctionCallbackInfo<v8::Value>&), v8::Isolate *iso);
+void addFunctionToList(const std::string &name, void (*func)(const v8::FunctionCallbackInfo<v8::Value>&), v8::Isolate *iso);
 
 void registerAllFunctions(v8::Handle<v8::Context> context, v8::Isolate *iso);
 
