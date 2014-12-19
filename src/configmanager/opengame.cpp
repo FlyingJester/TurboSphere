@@ -104,6 +104,7 @@ TS_Directories::TS_Directories(void)
     soundfont = "";
     systemshader = "";
     shader = "";
+    plugin = "";
 
     MemH = realloc(MemH, sizeof(const char *));
     ((const char **) MemH )[0] = nullptr;
@@ -139,7 +140,7 @@ TS_Directories *GetDirs(void){
 	return &TS_dirsmain;
 }
 
-void setDirectories(const char * basedirectory){
+void setDirectories(const char * basedirectory, const char *ts_root){
 	TS_Directories *TS_dirs = GetDirs();
         TS_dirs->image       = STRDUP(string(TS_dirs->root).append("images/").c_str());
         TS_dirs->font        = STRDUP(string(TS_dirs->root).append("fonts/").c_str());
@@ -153,10 +154,10 @@ void setDirectories(const char * basedirectory){
         TS_dirs->windowstyle = STRDUP(string(TS_dirs->root).append("windowstyles/").c_str());
         TS_dirs->soundfont   = STRDUP(string(TS_dirs->root).append("soundfonts/").c_str());
         TS_dirs->shader      = STRDUP(string(TS_dirs->root).append("shaders/").c_str());
-        TS_dirs->system      = "system/";
-        TS_dirs->systemscript= "system/scripts/";
-        TS_dirs->systemshader= "system/shaders/";
-        TS_dirs->plugin      = "plugin/";
+        TS_dirs->system      = STRDUP(string(ts_root).append("system/").c_str());
+        TS_dirs->systemscript= STRDUP(string(TS_dirs->system).append("scripts/").c_str());
+        TS_dirs->systemshader= STRDUP(string(TS_dirs->system).append("shaders/").c_str());
+        TS_dirs->plugin      = STRDUP(string(ts_root).append("plugin/").c_str());
 
         /*
         int i = 0;
@@ -196,6 +197,8 @@ void setLocalConfig(TS_Config *c, const char *engine_conf_file, const char *syst
     std::unique_ptr<t5::DataSource> lSystemConfSource(t5::DataSource::FromPath(t5::DataSource::eRead, system_conf_file));
     assert(lEngineConfSource.get());
     assert(lSystemConfSource.get());
+
+    printf("[ConfigManager] Engine config: %s, system config %s\n", engine_conf_file, system_conf_file);
 
     assert(t5::IsFile(engine_conf_file) && t5::IsFile(system_conf_file));
 
@@ -287,9 +290,11 @@ void setLocalConfig(TS_Config *c, const char *engine_conf_file, const char *syst
     c->plugins = nullptr;
 }
 
-void setConfig(const char * basedirectory){
-    //GetDirs()->root;
-    setLocalConfig(GetConfig());
+void setConfig(const char * basedirectory, const char *engine_path){
+    std::string r = engine_path;
+    if(r.back()!='/')
+        r.push_back('/');
+    setLocalConfig(GetConfig(), (r+"engine.ini").c_str(), (r+"system.ini").c_str());
 }
 
 int opengameLocal(const char *Rfile, TS_Config *localConf, TS_Directories *localDirs){
@@ -331,7 +336,10 @@ int opengameLocal(const char *Rfile, TS_Config *localConf, TS_Directories *local
 
 }
 
-void opengame(const char *Rfile){
+void opengame(const char *Rfile, const char *config_root){
+    std::string r = config_root;
+    if(r.back()!='/')
+        r.push_back('/');
 
     int err = opengameLocal(Rfile, GetConfig(), GetDirs());
     if(err){

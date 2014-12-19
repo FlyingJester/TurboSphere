@@ -234,7 +234,9 @@ const char * Init(int ID){
     bmpfont::script::BMPFontJSObj.AddToProto("getStringHeight", bmpfont::script::GetStringHeight);
     // Load Sapphire!
 
-    fhandle SapphireHandle = DLOPENLIBRARY("Sapphire", "plugin", DL_LOCAL|DL_NOW);
+    std::string sapphire_path = std::string(GetDirs()->plugin) + LIBRARY_PREFIX + "Sapphire." + LIBRARY_SUFFIX;
+
+    fhandle SapphireHandle = DLOPENFILE(sapphire_path.c_str() ,DL_LOCAL|DL_NOW);
     if(!SapphireHandle){
       fprintf(stderr, BRACKNAME " Init Error: Could not open Sapphire.\n");
       return nullptr;

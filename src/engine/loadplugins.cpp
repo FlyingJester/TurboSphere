@@ -10,6 +10,7 @@
 #include "functionload.hpp"
 #include "loadplugins.hpp"
 #include "variableregister.hpp"
+#include "platform/path.h"
 
 #ifdef _WIN32
 #define STRDUP _strdup
@@ -17,7 +18,7 @@
 #define STRDUP strdup
 #endif
 
-const std::string plugin_directory_name = "plugin";
+const std::string plugin_directory_name = std::string(TS_GetApplicationPath()) + "plugin";
 
 struct plugin_t {
     const char *(*Init)(int);

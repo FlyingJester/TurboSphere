@@ -16,6 +16,7 @@
 #include <TSPR/noreturn.h>
 #include "platform/time.hpp"
 #include "platform/platform.hpp"
+#include "platform/path.h"
 
 #if defined(HAS_UNISTD)
 #include <unistd.h>
@@ -458,8 +459,8 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
         if(dir[path_size_chr-1]=='/'){
             TS_dirs->root = STRDUP(dir);
-            setDirectories(TS_dirs->root);
-            setConfig(TS_dirs->root);
+            setDirectories(TS_dirs->root, TS_GetApplicationPath());
+            setConfig(TS_dirs->root, TS_GetApplicationPath());
 
             if((overrideConf!=nullptr)&&(overrideConf->config!=nullptr)){
                 TS_OverrideConfig(TS_conf, overrideConf);
@@ -470,8 +471,8 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
         }
         else {
             TS_dirs->root = STRDUP(string(dir).append("/").c_str());
-            setDirectories(TS_dirs->root);
-            setConfig(TS_dirs->root);
+            setDirectories(TS_dirs->root, TS_GetApplicationPath());
+            setConfig(TS_dirs->root, TS_GetApplicationPath());
 
             if((overrideConf!=nullptr)&&(overrideConf->config!=nullptr)){
                 TS_OverrideConfig(TS_conf, overrideConf);
@@ -498,8 +499,8 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
 
         TS_dirs->root = STRDUP(string(dir).append("/").c_str());
-        setDirectories(TS_dirs->root);
-        setConfig(TS_dirs->root);
+        setDirectories(TS_dirs->root, TS_GetApplicationPath());
+        setConfig(TS_dirs->root, TS_GetApplicationPath());
         if((overrideConf!=nullptr)&&(overrideConf->config!=nullptr)){
             TS_OverrideConfig(TS_conf, overrideConf);
         }
@@ -538,7 +539,7 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
 
     printf(ENGINE "%s\n", gameSGMfile);
 
-    opengame(gameSGMfile);
+    opengame(gameSGMfile, TS_GetApplicationPath());
     free((void *)gameSGMfile);
     if((TS_conf->mainscript==nullptr)||TS_conf->mainscript[0]=='\0'){
         printf("\n");
@@ -549,7 +550,7 @@ void runGame(const char * path, const char *v8Flags, TS_ConfigOverride *override
     if((overrideConf!=nullptr)&&(overrideConf->config!=nullptr)){
         TS_OverrideConfig(TS_conf, overrideConf);
     }
-    setDirectories(TS_dirs->root);
+    setDirectories(TS_dirs->root, TS_GetApplicationPath());
 
     if((overrideConf!=nullptr)&&(overrideConf->config!=nullptr)){
         TS_OverrideConfig(TS_conf, overrideConf);
@@ -713,7 +714,7 @@ int main
     if((argc>1) && (gamearg>=0) && (*(argv[gamearg])!='\0'))
         next_game = argv[gamearg];
     else
-        next_game = "startup/";
+        next_game = std::string(TS_GetApplicationPath()) + "startup/";
 
     while(!next_game.empty()){
         const std::string lnext_game = next_game;

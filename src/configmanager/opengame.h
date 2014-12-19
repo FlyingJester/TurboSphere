@@ -62,7 +62,6 @@ public:
     const char * systemscript; //!< The path to the default system script directory, used for RequireSystemScript and EvaluateSystemScript.
     const char * systemshader; //!< The path to the default system script directory, used for RequireSystemScript and EvaluateSystemScript.
     const char * plugin; //!< The path to the directory that contains loaded plugins.
-
     void * MemH; //!< Private memory handling structure.
 #ifdef _MSC_VER
 } TS_Directories;
@@ -137,16 +136,17 @@ CONFIGMGR_EXPORT v8::ArrayBuffer::Allocator* RetrieveArrayBufferAllocator(void);
 /*!Reads data from a specified game.sgm file and sets the current configuration based on those values.
 *
 */
-CONFIGMGR_EXPORT void opengame(const char *rfile /**<The name or path of the sgm file to read into the current TS_Config structure as given by \link GetConfig \endlink. Path is relative to the root directory in the current TS_Directories as given by \link GetDirs \endlink.*/);
+CONFIGMGR_EXPORT void opengame(const char *rfile /**<The name or path of the sgm file to read into the current TS_Config structure as given by \link GetConfig \endlink. Path is relative to the root directory in the current TS_Directories as given by \link GetDirs \endlink.*/,
+const char *config_root);
 
 /*!Sets the current game's directory paths to the default paths using a given game root directory.
 \param basedir The directory to use as the base for the other directories in the configuration.
 */
-CONFIGMGR_EXPORT void setDirectories(const char * basedir);
+CONFIGMGR_EXPORT void setDirectories(const char * basedirectory, const char *ts_root);
 
 /*!Sets the current game's configuration to the one specified by the config file in the given game root directory.
 \param basedir The directory containing the game.sgm and system.ini files to read.
 */
-CONFIGMGR_EXPORT void setConfig(const char * basedir);
-CONFIGMGR_EXPORT void setLocalConfig(TS_Config *c, const char *engine_conf_file = "engine.ini", const char *system_conf_file = "system.ini");
+CONFIGMGR_EXPORT void setConfig(const char * basedirectory, const char *engine_path);
+CONFIGMGR_EXPORT void setLocalConfig(TS_Config *c, const char *engine_conf_file, const char *system_conf_file);
 #endif

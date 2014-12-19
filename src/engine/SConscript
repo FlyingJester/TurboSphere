@@ -37,7 +37,10 @@ platformfiles = [
 ]
 
 if IsDarwin():
-  platformfiles += ["platform/osx_time.m", "platform/osx_messagebox.m"]
+  platformfiles += ["platform/osx_time.m", "platform/osx_messagebox.m", "platform/osx_path.m"]
+else:
+  platformfiles += ["platform/generic_path.c"]
+
 
 enginelibs += [globalenv.StaticLibrary("turbo_patform", platformfiles)]
 
@@ -48,7 +51,7 @@ if not IsWindows():
 if IsDarwin():
   enginelibs += ["objc"]
   localenv.Append(FRAMEWORKS=['Cocoa', 'CoreFoundation'])
-  globalenv.Append(FRAMEWORKS=['CoreFoundation'])
+  globalenv.Append(FRAMEWORKS=['CoreFoundation', 'Foundation'])
 
 localenv.Append(LIBS = enginelibs)
 
