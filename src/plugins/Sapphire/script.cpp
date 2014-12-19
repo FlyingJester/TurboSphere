@@ -460,10 +460,20 @@ void InitScript(int64_t ID){
 }
 
 Turbo::JSFunction FlipScreen(Turbo::JSArguments args){
-    Sapphire::GL::RenderQueue()->push(new Sapphire::Galileo::FlipScreen());
-    Sapphire::GL::SwapQueues();
-    Sapphire::GL::RenderQueue()->clear();
-//    AtomicInc(Sapphire::GL::GetEngineFrame());
+
+    GL::ThreadKit &lKit = *GL::GetSystemThreadkit();
+    Turbo::Monitor monitor(lKit.monitor);
+    monitor.Lock();
+    lKit.Queues[lKit.draw_to].push(new Sapphire::Galileo::FlipScreen());
+
+    GL::AdvanceDrawQueue<GL::ThreadKit &>(lKit);
+
+    printf(BRACKNAME " Drawing to buffer %i\n", lKit.draw_to);
+
+    monitor.Unlock();
+
+    monitor.NotifyAll();
+
 }
 
 /////
@@ -767,7 +777,12 @@ Turbo::JSFunction DrawGroup(Turbo::JSArguments args){
     Galileo::Group* mGroup = Turbo::GetMemberSelf <Galileo::Group> (args);
     assert(mGroup!=nullptr);
 
-    mGroup->DrawAll(Sapphire::GL::RenderQueue());
+    Turbo::Monitor monitor(Sapphire::GL::GetSystemThreadkit()->monitor);
+    monitor.Lock();
+
+    mGroup->DrawAll(Sapphire::GL::GetSystemThreadkit()->Queues+Sapphire::GL::GetSystemThreadkit()->draw_to);
+
+    monitor.Unlock();
 
 }
 

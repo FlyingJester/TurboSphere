@@ -1,11 +1,10 @@
 #pragma once
-#pragma once
-#include <color.h>
 #include <list>
-#include <TSPR/concurrent_queue.h>
+#include <queue>
+#include <memory>
+#include <color.h>
 #include "Shape.hpp"
 #include "Shader.hpp"
-#include <memory>
 
 namespace Sapphire{
 namespace Galileo {
@@ -170,9 +169,9 @@ public:
     }
 
     virtual int Draw(void);
-    virtual int Draw(concurrent_queue<GL::Operation *> *aSendTo);
-    virtual int DrawAll(concurrent_queue<GL::Operation *> *aSendTo);
-    virtual int DrawRange(concurrent_queue<GL::Operation *> *aSendTo, iterator aFrom, iterator aTo);
+    virtual int Draw(std::queue<GL::Operation *> *aSendTo);
+    virtual int DrawAll(std::queue<GL::Operation *> *aSendTo);
+    virtual int DrawRange(std::queue<GL::Operation *> *aSendTo, iterator aFrom, iterator aTo);
 
     void SetShader(Shader *aShader){mShader = std::shared_ptr<Shader>(aShader);}
 

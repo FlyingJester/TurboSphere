@@ -31,7 +31,7 @@ int Group::Draw(void){
 
 }
 
-int Group::DrawAll(concurrent_queue<GL::Operation *> *aSendTo){
+int Group::DrawAll(std::queue<GL::Operation *> *aSendTo){
     aSendTo->push(mShader.get());
 
     auto o = mShader->mUniforms.find(Shader::ShaderOffsetUniformName);
@@ -63,13 +63,13 @@ int Group::DrawAll(concurrent_queue<GL::Operation *> *aSendTo){
 
 }
 
-int Group::Draw(concurrent_queue<GL::Operation *> *aSendTo){
+int Group::Draw(std::queue<GL::Operation *> *aSendTo){
     aSendTo->push(this);
     return 0;
 }
 
 
-int Group::DrawRange(concurrent_queue<GL::Operation *> *aSendTo, iterator aFrom, iterator aTo){
+int Group::DrawRange(std::queue<GL::Operation *> *aSendTo, iterator aFrom, iterator aTo){
 
     aSendTo->push(mShader.get());
 

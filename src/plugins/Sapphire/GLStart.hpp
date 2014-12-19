@@ -3,9 +3,10 @@
 #include "Galileo/Galileo.hpp"
 #include <SDL2/SDL.h>
 #include "Thread/Atomic.hpp"
+#include "libyyymonitor/monitor.hpp"
 #include "Thread/Thread.hpp"
 #include "Galileo/Shape.hpp"
-#include <TSPR/concurrent_queue.h>
+#include <queue>
 
 #define NUM_BUFFERS 16
 
@@ -14,14 +15,37 @@
 namespace Sapphire{
 namespace GL{
 
-concurrent_queue<Sapphire::Galileo::GL::Operation *> *RenderQueue();
+//concurrent_queue<Sapphire::Galileo::GL::Operation *> *RenderQueue();
 
-void SwapQueues();
+//void SwapQueues();
 
 template<int T>
 class DummyOperation : public Sapphire::Galileo::GL::Operation {
     virtual int Draw(){return T;}
 };
+
+template<typename T>
+void AdvanceRenderQueue(T kit){
+    kit.render_from++;
+    kit.render_from%=NUM_BUFFERS;
+    if(kit.render_from==kit.draw_to){
+        kit.render_from++;
+        kit.render_from%=NUM_BUFFERS;
+    }
+}
+
+template<typename T>
+void AdvanceDrawQueue(T kit){
+    kit.draw_to++;
+    kit.draw_to%=NUM_BUFFERS;
+
+    if(kit.draw_to==kit.render_from){
+        kit.draw_to++;
+        kit.draw_to%=NUM_BUFFERS;
+        while(!kit.Queues[kit.draw_to].empty())
+            kit.Queues[kit.draw_to].pop();
+    }
+}
 
 struct Window {
     SDL_GLContext context;
@@ -35,11 +59,15 @@ struct ThreadKit{ // A recursive structure that describes and controls a rendert
     atomic32_t *DidDie;
     TS_Thread  *Thread;
 
-    concurrent_queue<Sapphire::Galileo::GL::Operation *> Queues[NUM_BUFFERS];
+    std::queue<Sapphire::Galileo::GL::Operation *> Queues[NUM_BUFFERS];
 
-    TS_Atomic32 *index;
-    TS_Atomic32 *lastIndex;
+    Turbo::Monitor monitor;
+
+    int draw_to, render_from;
+
 };
+
+struct ThreadKit *GetSystemThreadkit(void);
 
 // OpenGL version.
 struct Version{
@@ -47,7 +75,7 @@ struct Version{
     char minor;
 };
 
-    SDL_GLContext CreateForWindow(Window *aFor, Version aGLVersion);
+SDL_GLContext CreateForWindow(Window *aFor, Version aGLVersion);
 
 namespace MainThread{
 

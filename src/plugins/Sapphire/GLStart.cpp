@@ -5,7 +5,6 @@
 #ifdef OS_X
 
 #include "RetinaCheck.h"
-#include "libyyymonitor/monitor.hpp"
 #include <SDL2/SDL_syswm.h>
 
 #endif
@@ -17,20 +16,12 @@ namespace GL{
 
 typedef struct ThreadKit * ThreadKitP;
 
-ThreadKitP &GetSystemThreadkit(void){
+ThreadKitP &GetSystemThreadkit_internal(void){
     static ThreadKitP s;
     return s;
 }
-
-concurrent_queue<Sapphire::Galileo::GL::Operation *> *RenderQueue(){
-    ThreadKitP kit = GetSystemThreadkit();
-    return &(kit->Queues[AtomicGet(kit->index)]);
-}
-
-void SwapQueues(){
-    ThreadKitP kit = GetSystemThreadkit();
-    AtomicSet(kit->index, (AtomicGet(kit->index)+1)%NUM_BUFFERS);
-
+ThreadKitP GetSystemThreadkit(void){
+    return GetSystemThreadkit_internal();
 }
 
 inline void SetSDL_GL_Attributes(void){
@@ -128,22 +119,38 @@ namespace RenderThread{
 
         Operation *Op = nullptr;
 
-        concurrent_queue<Sapphire::Galileo::GL::Operation *> &queue = lKit->Queues[AtomicGet(lKit->index)];
+
+        Turbo::Monitor monitor(lKit->monitor);
 
         while(AtomicGet(lKit->ShouldDie)==0){
 
-            if(queue.try_pop(Op)==false){
-                SDL_Delay(0);
+            monitor.Lock();
+
+            std::queue<Sapphire::Galileo::GL::Operation *> &queue = lKit->Queues[lKit->render_from];
+
+            if(queue.empty()){
+                monitor.Wait();
+                AdvanceRenderQueue<ThreadKit &>(*lKit);
+                monitor.Unlock();
                 continue;
             }
 
+            Op = queue.front();
             assert(Op);
+            queue.pop();
+
+            printf(BRACKNAME " Drawing from %i\n", lKit->render_from);
+
+            if(Op->EndsScene()){
+                AdvanceRenderQueue<ThreadKit &>(*lKit);
+            }
+
+            monitor.Unlock();
 
             Op->Draw();
 
             if(Op->EndsScene()){
-                queue.clear();
-                queue = lKit->Queues[AtomicGet(lKit->index)];
+                monitor.NotifyAll();
             }
 
             if(!Op->IsPersistent()){
@@ -159,10 +166,10 @@ namespace RenderThread{
 
     void StartThread(Window *aWindow){
         ThreadKit *lKit = new ThreadKit();
-        lKit->index = CreateAtomic(0);
-        lKit->lastIndex = CreateAtomic(0);
+        lKit->render_from = 0;
+        lKit->draw_to = 1;
 
-        GetSystemThreadkit() = lKit;
+        GetSystemThreadkit_internal() = lKit;
 
         ClaimWindow(aWindow);
 
@@ -170,10 +177,7 @@ namespace RenderThread{
 
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-
         glEnable(GL_SCISSOR_TEST);
-
-       // glEnable(GL_TEXTURE_2D);
 
         lKit->mWindow = new Window();
         lKit->mWindow->screen = aWindow->screen;

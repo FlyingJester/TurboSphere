@@ -102,11 +102,11 @@ function MapEngine(map, fps){
 
     Turbo.SpooledDefaultScripts.forEach(function(i){Turbo.CurrentMap.default_scripts[i.which] = i.script});
 
-    var fps_interval = ((1/Turbo.CurrentMap.fps)*1000);
+    var fps_interval = ((1/Turbo.CurrentMap.fps)*1000); // In seconds.
 
     while(Turbo.CurrentMap){
 
-        var time = GetSeconds();
+        var time = GetSeconds(); // In seconds.
 
         // Perform map logic
 
@@ -133,9 +133,8 @@ function MapEngine(map, fps){
             Turbo.IsChangingMaps = false;
         }
 
-        var frame_surplus = fps_interval-(GetSeconds()-time);
-        Delay(Math.max(frame_surplus, 0));
-
+        var frame_surplus = (fps_interval-(GetSeconds()-time))/1000; // In milliseconds.
+        Delay(Math.max(frame_surplus, 0)); // In milliseconds.
 
     }
 
