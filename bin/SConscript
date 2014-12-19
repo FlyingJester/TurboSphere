@@ -2,10 +2,15 @@
 
 import os
 import sys
+import glob
 
 Import("globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir ")
 
 if IsDarwin():
+  files = glob.glob("../lib/*/*.dylib")
+  for f in files:
+    localenv.Install(os.getcwd()+"/core/", f)
+    localenv.Install(os.getcwd()+"/t5/", f)
   AppDir = os.path.join(os.getcwd(), "TurboSphere.app")
   CntDir = os.path.join(AppDir, "Contents")
   MOSDir = os.path.join(CntDir, "MacOS")
@@ -17,3 +22,5 @@ if IsDarwin():
     os.makedirs(MOSDir)
   localenv.Install(MOSDir, "turbosphere")
   localenv.Install(MOSDir, "../lib/")
+  localenv.Install(MOSDir, "plugin")
+  localenv.Install(MOSDir, "system")
