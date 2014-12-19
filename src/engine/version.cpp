@@ -19,9 +19,7 @@
 //
 //
 
-using std::string;
-
-static const char * short_version_string = "0.4.1b";
+static const char * short_version_string = "0.4.2";
 static const char * compiler_string =
 #ifdef _MSC_VER
     "Microsoft Visual C++"
@@ -38,7 +36,7 @@ const char *TS_GetVersion(void){
 
 const char *TS_GetLongVersion(void){
     static bool first = false;
-    static string ver = "TurboSphere - A Plugin-Based, JavaScript Game Engine.\n";
+    static std::string ver = "TurboSphere - A Plugin-Based, JavaScript Game Engine.\n";
     static const char *version_string = NULL;
     if(!first){
         ver += "TurboSphere Version ";

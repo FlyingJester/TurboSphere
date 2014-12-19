@@ -1,5 +1,5 @@
-#include "engine.h"
-#include "variableregister.h"
+#include "engine.hpp"
+#include "variableregister.hpp"
 
 static std::vector<regVariable> varlist;
 

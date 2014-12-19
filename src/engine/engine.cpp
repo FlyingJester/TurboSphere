@@ -1,6 +1,6 @@
 //TurboSphere - A plugin-based, JavaScript game engine.
 
-#include "engine.h"
+#include "engine.hpp"
 #include "version.h"
 #include "options.h"
 
@@ -8,10 +8,10 @@
 #include <opengame.h>
 #include <screen.h>
 
-#include "functionload.h"
-#include "variableregister.h"
-#include "loadplugins.h"
-#include "typed_array.h"
+#include "functionload.hpp"
+#include "variableregister.hpp"
+#include "loadplugins.hpp"
+#include "typed_array.hpp"
 
 #include <TSPR/noreturn.h>
 #include "platform/time.hpp"

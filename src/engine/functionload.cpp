@@ -1,8 +1,8 @@
 #include <string>
 #include <vector>
 #include <cstring>
-#include "engine.h"
-#include "functionload.h"
+#include "engine.hpp"
+#include "functionload.hpp"
 
 #ifdef _MSC_VER
 	#define STRDUP _strdup

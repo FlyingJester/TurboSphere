@@ -6,10 +6,10 @@
 #include <TSPR/dlopenwrap.h>
 #include <t5.h>
 #include <opengame.h>
-#include "engine.h"
-#include "functionload.h"
-#include "loadplugins.h"
-#include "variableregister.h"
+#include "engine.hpp"
+#include "functionload.hpp"
+#include "loadplugins.hpp"
+#include "variableregister.hpp"
 
 #ifdef _WIN32
 #define STRDUP _strdup
