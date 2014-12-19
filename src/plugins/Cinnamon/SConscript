@@ -1,0 +1,41 @@
+Import('currentenv localenv librarydir corelibtargets binarydir LibraryInstall IsWindows IsDarwin')
+
+import os
+import sys
+
+core_files = [
+    "libapi.cpp",
+    "demuxer/ogg.cpp",
+    "demuxer/null.cpp",
+    "demuxer/raw.cpp",
+    "decoder/vorbis.cpp",
+    "decoder/null.cpp",
+    "decoder/raw.cpp",
+    "player/openal.cpp",
+]
+ts_files = [
+    "tsapi.cpp",
+    "jsapi.cpp"
+]
+
+utilities = [
+    ["cinplay.cpp"],
+    ["cinwave.cpp"]
+]
+
+localenv.Append(LIBS=["ogg"], CPPDEFINES = ["USE_OGG"])
+
+if IsDarwin():
+    localenv.Append(FRAMEWORKS=["OpenAL"], CPPDEFINES = ["USE_OPENAL"])
+
+cinnamon_core = localenv.StaticLibrary('cinnamon_core', core_files, LIBS = ['t5'])
+cinnamon      = localenv.SharedLibrary('cinnamon', ts_files, LIBS = [cinnamon_core, 't5', 'configmanager', 'v8'])
+
+Depends(cinnamon_core, corelibtargets)
+
+for u in utilities:
+    localenv.Program(source = u, LIBS = [cinnamon_core, 't5'])
+
+
+LibraryInstall(os.path.join(binarydir, 'plugin'), cinnamon, currentenv)
+
