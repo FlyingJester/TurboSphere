@@ -20,7 +20,7 @@ Turbo.Spriteset = function(stream){
         throw "Bad signature. Should be " + Turbo.SpritesetScheme.signature + " instead of " + this.signature;
 
     if((this.version!=1)&&(this.version!=2)&&(this.version!=3))
-        throw "Unsupported or invalid version "+this.version". Version must be 1, 2, or 3";
+        throw "Unsupported or invalid version " + this.version + ". Version must be 1, 2, or 3";
 
     // Setup the images and directions based on version.
     // Note that version 3 has a dynamic number of images.
@@ -43,7 +43,7 @@ Turbo.Spriteset = function(stream){
     switch(this.version){
     case 1:
         for(var d = 0; d < 8; d++){
-            this.directions[d] = {name:Turbo.SpritesetScheme.directions[d]; this.frames = new Array(8);};
+            this.directions[d] = {name:Turbo.SpritesetScheme.directions[d], frames:new Array(8)};
             for(var f = 0; f < 8; f++){
                 var frame_num = (d<<3)+f;
                 var im = ImageFromArrayBuffer(stream.read(this.width*this.height*4).buffer);
@@ -79,7 +79,7 @@ Turbo.Spriteset = function(stream){
         // Load up the directions
         for(var d = 0; d<this.num_directions; d++){
             this.directions[d] = Turbo.ReadBinaryObject(stream, Turbo.SpritesetScheme.direction);
-            this.directions[d].frames = new Array(this.directions[d].num_frames)
+            this.directions[d].frames = new Array(this.directions[d].num_frames);
 
             for(var f = 0; f<this.directions[d].num_frames; f++){
                 this.directions[d].frames[f] = Turbo.ReadBinaryObject(stream, Turbo.SpritesetScheme.frame);
