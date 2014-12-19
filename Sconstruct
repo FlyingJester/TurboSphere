@@ -43,7 +43,7 @@ def LibraryInstall(name, library, env):
   if(IsDarwin()):
     print library[0].name
     LibraryFileName = os.path.join(os.getcwd(), library[0].name)
-    return env.Command(os.path.join(name, library[0].name), LibraryFileName, "install_name_tool $SOURCE -id $TARGET && cp $SOURCE $TARGET ")
+    return env.Command(os.path.join(name, library[0].name), LibraryFileName, "install_name_tool $SOURCE -id @executable_path/$TARGET && cp $SOURCE $TARGET ")
   else:
     return env.Install(name, [library])
 
@@ -100,7 +100,7 @@ conf.Finish()
 if IsDarwin():
     globalenv.Append(CPPDEFINES = ["HAS_UNISTD", "HAS_STAT_SYS", "USE_STAT"])
     globalenv.Append(CPPDEFINES = ["OS_X"]) # We could probably just trust __APPLE__ or __MACH__.
-    globalenv.Append(CPPPATH = "/usr/local/include/", LIBPATH = "/usr/local/lib/") # Necessary on Yosemite, doesn't do any harm on Mavericks.
+    globalenv.Append(CPPPATH = ["/usr/local/include/"], LIBPATH = ["/usr/local/lib/"]) # Necessary on Yosemite, doesn't do any harm on Mavericks.
 
 # Because Windows requires different functions entirely, it is implemented as a unique code path in
 # the source code proper.
@@ -120,3 +120,4 @@ localenv  = libconfig.Clone()
 # Begin the build proper.
 build = SConscript(dirs = ["extra"], exports = "globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir ")
 build = SConscript("src/Sconscript", exports = "globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir ")
+instl = SConscript(dirs = ["bin"], exports = "globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir ")

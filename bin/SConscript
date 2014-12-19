@@ -1,0 +1,19 @@
+# For doing any OS packaging.
+
+import os
+import sys
+
+Import("globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir ")
+
+if IsDarwin():
+  AppDir = os.path.join(os.getcwd(), "TurboSphere.app")
+  CntDir = os.path.join(AppDir, "Contents")
+  MOSDir = os.path.join(CntDir, "MacOS")
+  if not os.path.exists(AppDir):
+    os.makedirs(AppDir)
+  if not os.path.exists(CntDir):
+    os.makedirs(CntDir)
+  if not os.path.exists(MOSDir):
+    os.makedirs(MOSDir)
+  localenv.Install(MOSDir, "turbosphere")
+  localenv.Install(MOSDir, "../lib/")
