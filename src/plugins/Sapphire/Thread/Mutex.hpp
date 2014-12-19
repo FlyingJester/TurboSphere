@@ -7,9 +7,9 @@ typedef void TS_Mutex;
 //  A Mutex or semaphore backend must only define these functions.
 extern "C" {
     TS_Mutex *TS_CreateMutex();
-    TS_DestroyMutex(TS_Mutex *toDestroy);
-    TS_LockMutex(TS_Mutex *toLock);
-    TS_UnlockMutex(TS_Mutex *toUnlock);
+    void S_DestroyMutex(TS_Mutex *toDestroy);
+    void TS_LockMutex(TS_Mutex *toLock);
+    void TS_UnlockMutex(TS_Mutex *toUnlock);
 }
 
 namespace Sapphire {

@@ -12,7 +12,7 @@ msvc_ccflags = "/O2 /EHsc /Zi"
 msvc_cflags = ""
 msvc_cxxflags = ""
 
-gcc_ccflags = " -Werror=return-type -Wall -Werror -Wno-pointer-arith -mtune=native -O2 -Wcast-align -g "
+gcc_ccflags = " -Wall -Werror -ffast-math -march=native -O2 -Wcast-align -g "
 gcc_cflags = " -std=c11 "
 gcc_cxxflags = " -std=c++11 "
 
@@ -20,7 +20,7 @@ if os.environ.get('TRAVIS') == 'true':
   gcc_cflags = " -std=c99 "
   gcc_cxxflags = " -std=gnu++0x "
 
-clang_ccflags = gcc_ccflags + " -DHAS_UNISTD -DHAS_STAT_SYS -DUSE_STAT -Wno-return-type-c-linkage -Wno-null-arithmetic "
+clang_ccflags = gcc_ccflags + " -DHAS_UNISTD -DHAS_STAT_SYS -DUSE_STAT -Wno-return-type-c-linkage "
 clang_cflags = gcc_cflags
 clang_cxxflags = gcc_cxxflags
 

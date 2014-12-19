@@ -13,7 +13,6 @@ void SetFrameRate(int32_t aFramesPerSecond);
 int32_t GetFrameRate(void);
 
 class FlipScreen : public GL::Operation {
-    SDL_Window *window;
 
 public:
     FlipScreen(SDL_Window *aWindow = nullptr);

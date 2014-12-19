@@ -95,8 +95,7 @@ int32_t GetFrameRate(void){
   return AtomicGet(sFPS);
 }
 
-FlipScreen::FlipScreen(SDL_Window *aWindow)
-  : window(aWindow){
+FlipScreen::FlipScreen(SDL_Window *aWindow){
 
 }
 

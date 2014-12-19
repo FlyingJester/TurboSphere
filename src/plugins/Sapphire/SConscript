@@ -54,8 +54,7 @@ libyyymonitor = SConscript(dirs = ["libyyymonitor"], exports = ["environment"])
 
 Sapphire     = currentenv.SharedLibrary("Sapphire", Sapphire_files,
   LIBS = [libyyymonitor, 't5', 'graphiccommon', 'graphicalg', 'configmanager', 'SDL2', 'SDL2_image', 'v8'] + elibs,
-  FRAMEWORKS = ['OpenGL'] + eframeworks,
-  CCFLAGS = " -g " )
+  FRAMEWORKS = ['OpenGL'] + eframeworks)
 
 Depends(Sapphire, corelibtargets)
 LibraryInstall(os.path.join(binarydir, 'plugin'), Sapphire, currentenv)

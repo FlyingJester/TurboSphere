@@ -54,18 +54,14 @@ template <class A, class B, class C = DoNothing<A *> >
 class GenericHolder {
   public:
   A *mWraps;
-  B *b;
+  B b;
+  C c;
   GenericHolder(A *a){
-    printf(BRACKNAME " Info: creating RAII primitive.\n");
     mWraps = a;
-    b = new B();
-    C(mWraps);
+    c(mWraps);
   }
   ~GenericHolder(){
-    printf(BRACKNAME " Info: destroying RAII primitive.\n");
-    (*b)(mWraps);
-    printf(BRACKNAME " Info: Wrapped val is %p.\n", mWraps);
-    delete b;
+    b(mWraps);
   }
 
 };

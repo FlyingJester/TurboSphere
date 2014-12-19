@@ -67,8 +67,6 @@ SaveStatus PNGSaveFunction(SDL_Surface *aToSave, const std::string &aPath){
     if(setjmp(png_jmpbuf(pngs)))
       return ssFailure;
 
-    int e = IMAGE_DEPTH;
-
     png_set_IHDR(pngs, info, aToSave->w, aToSave->h, 8, PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_ADAM7, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 
     png_bytep*rowlist = new png_bytep [aToSave->h*sizeof(png_byte*)];

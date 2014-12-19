@@ -12,10 +12,10 @@ namespace Sapphire{
 namespace Galileo {
 
 Group::Group()
-  : mOffset{0.0f, 0.0f}
+  : mShader(nullptr)
+  , mOffset{0.0f, 0.0f}
   , mRotOffset{0.0f, 0.0f}
   , mAngle(0.0f)
-  , mShader(nullptr)
 {
 
 }

@@ -328,7 +328,7 @@ void Group  (const v8::WeakCallbackData<v8::Object, Galileo::Group> &args){
 
 }
 
-std::array<Turbo::JSCallback, NumFuncs> FunctionList = {
+std::array<Turbo::JSCallback, NumFuncs> FunctionList = {{
     FlipScreen,
     ColorCtor,
     SurfaceCtor,
@@ -344,9 +344,9 @@ std::array<Turbo::JSCallback, NumFuncs> FunctionList = {
     GetScreenWidth,
     GetScreenHeight,
 
-};
+}};
 
-std::array<Turbo::JSName, NumFuncs> FunctionNameList = {
+std::array<Turbo::JSName, NumFuncs> FunctionNameList = {{
     "FlipScreen",
     "Color",
     "Surface",
@@ -361,7 +361,7 @@ std::array<Turbo::JSName, NumFuncs> FunctionNameList = {
     "GetDefaultShaderProgram",
     "GetScreenWidth",
     "GetScreenHeight",
-};
+}};
 
 std::array<Turbo::JSValue,       NumVars>  VariableList = {};
 std::array<Turbo::JSVariableName,NumVars>  VariableNameList = {};

@@ -113,7 +113,7 @@ SaveStatus JPEGSaveFunction(SDL_Surface *aToSave, const std::string &aPath){
         lSurfaceHolder(new GenericHolder<SDL_Surface, JPEG::FreeSurface > (lJPEGFormatSurface));
     SDL_UnlockSurface(lJPEGFormatSurface);
 
-    int err = SDL_SaveBMP(lJPEGFormatSurface, (aPath+std::string("1")).c_str());
+    SDL_SaveBMP(lJPEGFormatSurface, (aPath+std::string("1")).c_str());
     uint8_t *lPixels = (uint8_t *)lJPEGFormatSurface->pixels;
 
 
