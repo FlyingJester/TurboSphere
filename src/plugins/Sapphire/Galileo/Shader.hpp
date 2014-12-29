@@ -28,7 +28,7 @@ public:
     ShaderParamChange();
     ShaderParamChange(int aLocation, size_t aCount, const void *aData,
                       callback_t aCallback, size_t s);
-    ~ShaderParamChange();
+    virtual ~ShaderParamChange();
 
     virtual int Draw(){
         mCallback(mLocation, mCount, mData);

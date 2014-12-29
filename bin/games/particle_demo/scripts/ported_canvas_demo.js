@@ -295,7 +295,7 @@ function game(){
         Demo.loop();
         Demo.onMouseMove();
 
-        //Delay(Math.max(0, GetTime()-t+4));
+        Delay(Math.max(0, GetTime()-t+12));
 
     }
 

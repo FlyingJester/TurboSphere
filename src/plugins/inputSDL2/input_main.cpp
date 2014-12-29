@@ -79,18 +79,14 @@ const char * Init(int ID){
 
 	if(SDL_WasInit(0)==0){
         SDL_Init(SDL_INIT_JOYSTICK);
-        //atexit(SDL_Quit);
     }
     else if(SDL_WasInit(SDL_INIT_JOYSTICK)==0){
         SDL_InitSubSystem(SDL_INIT_JOYSTICK);
     }
 
     SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
-    SDL_EventState(SDL_SYSWMEVENT, SDL_IGNORE);
 
     InitJoystick();
-
-    printf("[" PLUGINNAME "] Info: Event state setup succeeded.\n");
 
     return (const char *)"inputSDL";
 }
@@ -590,7 +586,7 @@ Turbo::JSVariableName *GetVariableNames(void){
 	varnames[numerate(false)]=(char*)"KEY_EURO";
 
    // Mouse
-  varnames[numerate(false)]=(char*)"MOUSE_LEFT"; //1
+    varnames[numerate(false)]=(char*)"MOUSE_LEFT"; //1
 
 	varnames[numerate(false)]=(char*)"MOUSE_MIDDLE"; //2
 
@@ -604,11 +600,11 @@ Turbo::JSVariableName *GetVariableNames(void){
 
    // Scroll Wheel Events
 
-  varnames[numerate(false)]=(char*)"MOUSE_WHEEL_UP"; //1
+    varnames[numerate(false)]=(char*)"MOUSE_WHEEL_UP"; //1
 
 	varnames[numerate(false)]=(char*)"MOUSE_WHEEL_DOWN"; //2
 
-  varnames[numerate(false)]=(char*)"MOUSE_WHEEL_LEFT"; //3
+    varnames[numerate(false)]=(char*)"MOUSE_WHEEL_LEFT"; //3
 
 	varnames[numerate(false)]=(char*)"MOUSE_WHEEL_RIGHT"; //4
 

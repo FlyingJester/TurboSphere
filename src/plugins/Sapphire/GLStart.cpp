@@ -119,19 +119,17 @@ namespace RenderThread{
 
         Operation *Op = nullptr;
 
-
-        Turbo::Monitor monitor(lKit->monitor);
-
         while(AtomicGet(lKit->ShouldDie)==0){
 
-            monitor.Lock();
+            lKit->monitor.Lock();
 
             std::queue<Sapphire::Galileo::GL::Operation *> &queue = lKit->Queues[lKit->render_from];
 
             if(queue.empty()){
-                monitor.Wait();
                 AdvanceRenderQueue<ThreadKit &>(*lKit);
-                monitor.Unlock();
+
+                lKit->monitor.Wait();
+                lKit->monitor.Unlock();
                 continue;
             }
 
@@ -139,19 +137,19 @@ namespace RenderThread{
             assert(Op);
             queue.pop();
 
-            printf(BRACKNAME " Drawing from %i\n", lKit->render_from);
-
             if(Op->EndsScene()){
+                while(!lKit->Queues[lKit->render_from].empty()){
+
+                    if(!lKit->Queues[lKit->render_from].front()->IsPersistent())
+                        delete lKit->Queues[lKit->render_from].front();
+
+                    lKit->Queues[lKit->render_from].pop();
+                }
                 AdvanceRenderQueue<ThreadKit &>(*lKit);
             }
-
-            monitor.Unlock();
+            lKit->monitor.Unlock();
 
             Op->Draw();
-
-            if(Op->EndsScene()){
-                monitor.NotifyAll();
-            }
 
             if(!Op->IsPersistent()){
                 delete Op;
@@ -159,7 +157,6 @@ namespace RenderThread{
             }
 
         }
-
 
         return nullptr;
     }

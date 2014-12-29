@@ -13,9 +13,9 @@ void SetFrameRate(int32_t aFramesPerSecond);
 int32_t GetFrameRate(void);
 
 class FlipScreen : public GL::Operation {
-
 public:
     FlipScreen(SDL_Window *aWindow = nullptr);
+    virtual ~FlipScreen(){}
     virtual int Draw();
     virtual bool IsPersistent(void){
         return false;

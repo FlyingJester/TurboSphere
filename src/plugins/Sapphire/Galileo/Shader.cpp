@@ -195,6 +195,7 @@ ShaderParamChange::ShaderParamChange()
   , mData(nullptr)
   , mCallback(nullptr)
 {
+
 }
 
 ShaderParamChange::ShaderParamChange(int aLocation, size_t aCount, const void *aData,
