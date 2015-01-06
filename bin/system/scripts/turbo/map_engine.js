@@ -379,12 +379,14 @@ function CreatePerson(name, spriteset, destroy_on_map_change){
 
     var loaded_spriteset;
 
-    if(spriteset instanceof String){
+    if(typeof spriteset == "string"){
         loaded_spriteset = Turbo.LoadSpritesetFile(spriteset);
     }
     else{
         loaded_spriteset = spriteset;
     }
+    
+    throw loaded_spriteset;
     
     if(Turbo.IsMapEngineRunning()){
         Turbo.CurrentMap.AddPerson(new Turbo.Person(Turbo.CurrentMap.start_x, Turbo.CurrentMap.start_y,
