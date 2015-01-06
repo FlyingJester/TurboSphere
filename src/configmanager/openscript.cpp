@@ -42,25 +42,19 @@ bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::String> name, v8
         return false;
     }
 
-    v8::TryCatch try_catch;
     v8::ScriptOrigin origin(name);
     v8::Handle<v8::Script> script = v8::Script::Compile(source, &origin);
 
 
     if (script.IsEmpty()){
-        v8::String::Utf8Value error(try_catch.Exception());
         v8::String::Utf8Value pname(name);
 
-        printf("%s\n", *error);
         printf("\nCould not compile script %s\n", *pname);
         return false;
     }
     else{
         v8::Handle<v8::Value> result = script->Run();
-        if (result.IsEmpty())
-        {
-            v8::String::Utf8Value error(try_catch.Exception());
-            printf("%s\n", *error);
+        if (result.IsEmpty()){
             printf("JS did not run successfully.\n");
             return false;
         }
@@ -79,20 +73,19 @@ bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::String> name, v8
 
 template<class T>
 void OpenAndRunScript(const std::string &file, const char *origin, const T& args){
+    printf("[ConfigManager] Info: Loading script %s.\n", file.c_str());
     std::unique_ptr<char, void(*)(void *)> ScriptStr(openfile(file.c_str()), free);
     if(ScriptStr.get()[0]=='\0') {
-        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), (std::string("[ConfigManager] ") + origin + " Error: Could not load script.").c_str())));
+        args.GetIsolate()->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(args.GetIsolate(), (std::string("[ConfigManager] ") + origin + " Error: Could not load script.").c_str())));
         return;
     }
-    if(!ExecuteString(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ScriptStr.get()), v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), file.c_str()), v8::Isolate::GetCurrent(), false)){
-        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ((string)"[ConfigManager] Error in script "+file).c_str())));
-    }
+    ExecuteString(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ScriptStr.get()), v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), file.c_str()), v8::Isolate::GetCurrent(), false);
 }
 
 
 static void LoadScriptWithPrefix(const v8::FunctionCallbackInfo<v8::Value> &args, const char *origin, const char *prefix){
     if(args.Length()<1) {
-        args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), (std::string("[ConfigManager] ") + origin + " Error: No arguments given.\n").c_str())));
+        args.GetIsolate()->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(args.GetIsolate(), (std::string("[ConfigManager] ") + origin + " Error: No arguments given.\n").c_str())));
         return;
     }
 

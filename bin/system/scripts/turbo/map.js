@@ -104,6 +104,13 @@ Turbo.Map = function(stream, compat){
 
     this.AddEntity = function(that){this.entities.push(that);}
     this.AddPerson = this.AddEntity;
+    this.GetPerson = function(name){
+        for(var i in this.entities){
+            if(this.entities[i].name==name)
+                return this.entities[i].name==name;
+        }
+        return null;
+    }
 
     for(var i = 0; i< this.entities.length; i++){
 
