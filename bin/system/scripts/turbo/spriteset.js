@@ -8,7 +8,7 @@ Turbo.Classic = Turbo.Classic || {};
 Turbo.SpritesetScheme= Turbo.LoadSystemScheme("spriteset.json");
 
 Turbo.LoadSpritesetFile = function(path){
-    return new Turbo.SpriteSet(new Turbo.FileReader(new RawFile("../spritesets/"+path)));
+    return new Turbo.Spriteset(new Turbo.FileReader(new RawFile("../spritesets/"+path)));
 }
 
 Turbo.Spriteset = function(stream){
@@ -84,7 +84,7 @@ Turbo.Spriteset = function(stream){
             for(var f = 0; f<this.directions[d].num_frames; f++){
                 this.directions[d].frames[f] = Turbo.ReadBinaryObject(stream, Turbo.SpritesetScheme.frame);
                 this.directions[d].frames[f].index = this.directions[d].frames[f].frame_index;
-                this.directions[d].frames[f].image = images[this.directions[d].frames[f].frame_index];
+                this.directions[d].frames[f].image = this.images[this.directions[d].frames[f].frame_index];
             }
         }
         break;

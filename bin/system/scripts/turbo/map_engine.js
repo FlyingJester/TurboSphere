@@ -386,8 +386,6 @@ function CreatePerson(name, spriteset, destroy_on_map_change){
         loaded_spriteset = spriteset;
     }
     
-    throw loaded_spriteset;
-    
     if(Turbo.IsMapEngineRunning()){
         Turbo.CurrentMap.AddPerson(new Turbo.Person(Turbo.CurrentMap.start_x, Turbo.CurrentMap.start_y,
                                                     Turbo.CurrentMap.start_layer, name, destroy_on_map_change, loaded_spriteset));
