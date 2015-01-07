@@ -102,9 +102,9 @@ Turbo.Map = function(stream, compat){
 
     this.entities = new Array(this.num_entities);
 
-    this.AddEntity = function(that){this.entities.push(that);}
-    this.AddPerson = this.AddEntity;
-    this.GetPerson = function(name){
+    this.addEntity = function(that){this.entities.push(that);}
+    this.addPerson = this.AddEntity;
+    this.getPerson = function(name){
         for(var i in this.entities){
             if(this.entities[i].name==name)
                 return this.entities[i].name==name;
@@ -114,18 +114,13 @@ Turbo.Map = function(stream, compat){
 
     for(var i = 0; i< this.entities.length; i++){
 
-        // Load the layer header.
-        this.entities[i] = Turbo.ReadBinaryObject(stream, Turbo.EntityScheme.header);
-
-        if(this.entities[i].type==2){
-            Turbo.AddSchemeElementToObject({name:"trigger_function", size:2, type:"string"}, this.entities[i], stream);
-        }
+        this.entities[i] = Turbo.LoadEntity(stream);
+        
     } // For var i ... entities
 
     this.zones = new Array(this.num_zones);
 
     for(var i = 0; i<this.zones.length; i++){
-        //Abort(i);
 
         var position = Turbo.ReadBinaryObject(stream, Turbo.SegmentScheme.data)
         this.zones[i] = Turbo.ReadBinaryObject(stream, Turbo.ZoneScheme.header);

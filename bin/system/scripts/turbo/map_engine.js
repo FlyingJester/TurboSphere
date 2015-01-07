@@ -90,7 +90,7 @@ function GetMapEngineFrameRate(){
     return 60;
 }
 
-
+// Map Engine implementation.
 function MapEngine(map, fps){
 
     if(typeof fps == "undefined")
@@ -101,17 +101,26 @@ function MapEngine(map, fps){
 
     Turbo.CurrentMap = MapMaybeString(map);
 
-    Turbo.SpooledDefaultScripts.forEach(function(i){Turbo.CurrentMap.default_scripts[i.which] = i.script});
+    Turbo.SpooledDefaultScripts.forEach(function(i){Turbo.CurrentMap.default_scripts[i.which] = i.script;});
+    
+    Turbo.SpooledEntities.forEach(function(i){Turbo.CurrentMap.addEntity(i);});
 
     var fps_interval = ((1/Turbo.CurrentMap.fps)*1000); // In seconds.
-
+    
+    // Event loop.
     while(Turbo.CurrentMap){
 
         var time = GetSeconds(); // In seconds.
 
         // Perform map logic
 
-        //...
+        // Perform queue commands
+        Turbo.CurrentMap.entities.forEach(
+            function(i){
+                i.queued_commands.forEach(function(e){e(i)});
+                i.queued_commands = [];
+            }
+        );
 
         // Perform update_script
         Turbo.CurrentMap.update_script();
@@ -388,7 +397,7 @@ function CreatePerson(name, spriteset, destroy_on_map_change){
     }
     
     if(Turbo.IsMapEngineRunning()){
-        Turbo.CurrentMap.AddPerson(new Turbo.Person(Turbo.CurrentMap.start_x, Turbo.CurrentMap.start_y,
+        Turbo.CurrentMap.addPerson(new Turbo.Person(Turbo.CurrentMap.start_x, Turbo.CurrentMap.start_y,
                                                     Turbo.CurrentMap.start_layer, name, destroy_on_map_change, loaded_spriteset));
     }
     else{

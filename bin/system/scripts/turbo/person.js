@@ -8,12 +8,22 @@ if(typeof Turbo == "undefined")
     var Turbo = {};
 Turbo.Classic = Turbo.Classic || {};
 
+Turbo.EntityScheme = Turbo.LoadSystemScheme("entity.json");
+
 Turbo.Entity = function(x, y, layer, name, destroy){
     this.x = x; this.y = y;
     this.draw_offset = {x:0, y:0};
     this.layer = layer;
     this.name = name;
     this.destroy_on_map_change = destroy;
+    this.queued_commands = [];
+    
+    this.onCreate  = function(){};
+    this.onDestroy = function(){};
+    this.onTalk    = function(){};
+    this.onTouch   = function(){};
+    this.onGenerate= function(){};
+    this.onTrigger = function(){};
 }
 
 Turbo.GetPerson = function(name){
@@ -54,13 +64,13 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
         this.base = {x1:s.base_x1, y1:s.base_y1, x2:s.base_x2, y2:s.base_y2};
     }
     
-    
     this.setSpriteset(spriteset);
 
     this.direction_i = 0;
     this.validateDirection = function(){
         this.direction = this.spriteset.directions[this.direction_i].name;
         this.frame = 0;
+        this.frame_counter = 0;
     }
     this.validateDirection();
     
@@ -70,83 +80,40 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
     
     this.__proto__ = new Turbo.Entity(x, y, layer, name, destroy);
 
-    this.onCreate  = function(){};
-    this.onDestroy = function(){};
-    this.onTalk    = function(){};
-    this.onTouch   = function(){};
-    this.onGenerate= function(){};
 }
 
-Turbo.Trigger = function(x, y, layer, name){
-    this.__proto__ = new Turbo.Entity(x, y, layer, name, true);
-    this.onTrigger = function(){};
+Turbo.Trigger = function(x, y, layer){
+    this.__proto__ = new Turbo.Entity(x, y, layer, "", true);
 }
 
-// Remember to increment the cursor by length.
-// Length includes the size value.
-Turbo.Classic.readString = Turbo.Classic.readString || function(bytearray, at){
+Turbo.LoadEntity = function(stream){
 
-    if(bytearray.length<at)
-      throw "Unexpected end of file.";
-
-    var len = Turbo.dByteCat(bytearray[at++], bytearray[at++]);
-
-    if(bytearray.length<at+len)
-      throw "Unexpected end of file.";
-
-    var str = bytearray.slice(at, at+len);
-
-    var string = CreateStringFromByteArray(str);
-
-    return {length:len+2, string:string};
-
-}
-
-Turbo.LoadEntity = function(array, i, entity){
-    var at = i;
-
-    var type = Turbo.dByteCat(array[at++], array[at++]);
-
-    var data = {x:Turbo.dByteCat(array[at++], array[at++]),
-                   y:Turbo.dByteCat(array[at++], array[at++]),
-                   layer:Turbo.dByteCat(array[at++], array[at++])};
-
-    /*reserved[8]*/ at+=8;
-
-    var script_names = ['onCreate', 'onDestroy', 'onTalk', 'onTouch', 'onGenerate'];
-
-    var string = Turbo.Classic.readString(array, at);
-    at+=string.length;
-    var name = string.string;
-
-    var string = Turbo.Classic.readString(array, at);
-    at+=string.length;
-    var spriteset = string.string;
-
-    if(type==1){
-        entity = new Turbo.Person(data.x, data.y, data.layer, name, true, spriteset);
-
-        for(var j in script_names){
-            var string = Turbo.Classic.readString(array, at);
-            at+=string.length;
-            entity[script_names[j]] = function(){eval(string.string);};
-        }
-
-        /*reserved[16]*/ at+=16;
+    var base = Turbo.ReadBinaryObject(stream, Turbo.EntityScheme.header);
+    
+    if(base.type==Turbo.EntityScheme.type.person){
+        var entity = Turbo.ReadBinaryObject(stream, Turbo.EntityScheme.person);
+        var person = Turbo.Person(base.x, base.y, base.layer, entity.name, true, entity.spriteset_file);
+        
+        person.onCreate     = function(){eval(entity.on_create);}
+        person.onDestroy    = function(){eval(entity.on_destroy);}
+        person.onTalk       = function(){eval(entity.on_talk);}
+        person.onTouch      = function(){eval(entity.on_touch);}
+        person.onGenerate   = function(){eval(entity.on_generate);}
+        
+        return person;
+        
     }
-    else{
-        entity = new Turbo.Person(data.x, data.y, data.layer, name, true, spriteset);
-
-        var string = Turbo.Classic.readString(array, at);
-        at+=string.length;
-        entity.onTrigger = function(){eval(string.string);};
-        entity.onTrigger = function(){eval(string.string);};
-
+    else if(base.type==Turbo.EntityScheme.type.trigger){
+        var entity = Turbo.ReadBinaryObject(stream, Turbo.EntityScheme.trigger);
+        var trigger = new Turbo.Entity(base.x, base.y, base.layer, "", true);
+        
+        trigger.onTrigger = function(){eval(entity.trigger_function);}
+        
+        return trigger;
+        
     }
+    else throw "Unknown entity type "+ base.type;
 
-
-
-    return i-at;
 }
 
 /*///////////////////////////////////////////////////////////////////////////*/
@@ -173,6 +140,47 @@ const COMMAND_MOVE_NORTH        = "COMMAND_MOVE_NORTH";
 const COMMAND_MOVE_EAST         = "COMMAND_MOVE_EAST";
 const COMMAND_MOVE_SOUTH        = "COMMAND_MOVE_SOUTH";
 const COMMAND_MOVE_WEST         = "COMMAND_MOVE_WEST";
+
+Turbo.DefaultCommands = {
+    COMMAND_WAIT:function(){},
+    COMMAND_ANIMATE:function(){this.frame_counter++;},
+    COMMAND_FACE_NORTH:function(that){
+        SetPersonDirection(that.name, "north");
+    },
+    COMMAND_FACE_NORTHEAST:function(that){
+        SetPersonDirection(that.name, "northeast");
+    },
+    COMMAND_FACE_EAST:function(that){
+        SetPersonDirection(that.name, "east");
+    },
+    COMMAND_FACE_SOUTHEAST:function(that){
+        SetPersonDirection(that.name, "southeast");
+    },
+    COMMAND_FACE_SOUTH:function(that){
+        SetPersonDirection(that.name, "south");
+    },
+    COMMAND_FACE_SOUTHWEST:function(that){
+        SetPersonDirection(that.name, "southwest");
+    },
+    COMMAND_FACE_WEST:function(that){
+        SetPersonDirection(that.name, "west");
+    },
+    COMMAND_FACE_NORTHWEST:function(that){
+        SetPersonDirection(that.name, "northwest");
+    },
+    COMMAND_MOVE_NORTH:function(that){
+        that.y-=that.speed.y;
+    },
+    COMMAND_MOVE_EAST:function(that){
+        that.x+=that.speed.x;
+    },
+    COMMAND_MOVE_SOUTH:function(that){
+        that.y+=that.speed.y;
+    },
+    COMMAND_MOVE_WEST:function(that){
+        that.x-=that.speed.x;
+    }
+}
 
 function GetPersonOffsetX(name){
     return Turbo.GetPersonThrow(name).offset.x;
@@ -411,6 +419,36 @@ function SetPersonValue(name, key, value){
 
 */
 
+function GetPersonScriptFunctional(name, which){
+    var person = Turbo.GetPersonThrow(name);
+    
+    switch(which){
+
+        case SCRIPT_ON_CREATE:
+        return function(){person.onCreate()};
+        break;
+        
+        case SCRIPT_ON_DESTROY:
+        return function(){person.onDestroy()};
+        break;
+        
+        case SCRIPT_ON_ACTIVATE_TOUCH:
+        return function(){person.onTouch()};
+        break;
+        
+        case SCRIPT_ON_ACTIVATE_TALK:
+        return function(){person.onTalk()};
+        break;
+        
+        case SCRIPT_COMMAND_GENERATOR:
+        return function(){person.onGenerate()};
+        break;
+
+        default:
+        throw "No such script type as " + script;
+    }    
+}
+
 function SetPersonScript(name, which, script){
     var person = Turbo.GetPersonThrow(name);
         
@@ -427,15 +465,19 @@ function SetPersonScript(name, which, script){
         case SCRIPT_ON_CREATE:
         person.onCreate = func;
         break;
+        
         case SCRIPT_ON_DESTROY:
         person.onDestroy = func;
         break;
+        
         case SCRIPT_ON_ACTIVATE_TOUCH:
         person.onTouch = func;
         break;
+        
         case SCRIPT_ON_ACTIVATE_TALK:
         person.onTalk = func;
         break;
+        
         case SCRIPT_COMMAND_GENERATOR:
         person.onGenerate = func;
         break;
@@ -446,62 +488,45 @@ function SetPersonScript(name, which, script){
 }
 
 function CallPersonScript(name, which){
-    var person = Turbo.GetPersonThrow(name);
-        switch(which){
+    GetPersonScriptFunctional(name, which)();
+}
 
-        case SCRIPT_ON_CREATE:
-        person.onCreate();
-        break;
-        case SCRIPT_ON_DESTROY:
-        person.onDestroy();
-        break;
-        case SCRIPT_ON_ACTIVATE_TOUCH:
-        person.onTouch();
-        break;
-        case SCRIPT_ON_ACTIVATE_TALK:
-        person.onTalk();
-        break;
-        case SCRIPT_COMMAND_GENERATOR:
-        person.onGenerate();
-        break;
-        
-        default:
-        throw "No such script type as " + script;
-    }    
+function QueuePersonCommand(name, command, immediate){
+    
+    var person = Turbo.GetPersonThrow(name);
+    var cmd = Turbo.DefaultCommands[command];
+    
+    if(immediate){
+        cmd(person);
+    }
+    else{
+        person.queued_commands.push(cmd);
+    }
+}
+
+function QueuePersonScript(name, script, immediate){
+    
+    var person = Turbo.GetPersonThrow(name);
+    var cmd = GetPersonScriptFunctional(name, script);
+    
+    if(immediate){
+        cmd(person);
+    }
+    else{
+        person.queued_commands.push(cmd);
+    }
+}
+
+function ClearPersonCommands(name){
+    Turbo.GetPersonThrow(name).queued_commands = [];
+}
+
+function IsCommandQueueEmpty(name){
+    return Turbo.GetPersonThrow(name).queued_commands.length==0;
 }
 
 /*
       
-      QueuePersonCommand(name, command, immediate)
-        - adds a command to the person's command queue
-          the commands are:
-            COMMAND_WAIT
-            COMMAND_ANIMATE
-            COMMAND_FACE_NORTH
-            COMMAND_FACE_NORTHEAST
-            COMMAND_FACE_EAST
-            COMMAND_FACE_SOUTHEAST
-            COMMAND_FACE_SOUTH
-            COMMAND_FACE_SOUTHWEST
-            COMMAND_FACE_WEST
-            COMMAND_FACE_NORTHWEST
-            COMMAND_MOVE_NORTH
-            COMMAND_MOVE_EAST
-            COMMAND_MOVE_SOUTH
-            COMMAND_MOVE_WEST
-          (note: these *might* change in a future release
-          'immediate', if true, will execute the command go right away
-          if false, it will wait until the next frame)
-      
-      QueuePersonScript(name, script, immediate)
-        - adds a script command to the person's queue
-      
-      ClearPersonCommands(name)
-        - clears the command queue of sprite with the 'name'
-
-      IsCommandQueueEmpty(name)
-        - returns true if the person 'name' has an empty command queue
-
       IsPersonObstructed(name, x, y)
       // returns true if person 'name' would be obstructed at (x, y)
 
