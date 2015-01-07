@@ -46,15 +46,27 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
     if(typeof destroy == "undefined")
         destroy = true;
 
-    this.speed = 1.0;
-    this.spriteset = spriteset;
-
-    this.direction_i = 0;
-    this.validate_direction = function(){
-        this.direction = this.spriteset.directions[this.direction_i].name;
+    this.speed = {x:1.0, y:1.0};
+    this.visible = true;
+    
+    this.setSpriteset = function(s){
+        this.spriteset = s;
+        this.base = {x1:s.base_x1, y1:s.base_y1, x2:s.base_x2, y2:s.base_y2};
     }
     
-    this.validate_direction();
+    
+    this.setSpriteset(spriteset);
+
+    this.direction_i = 0;
+    this.validateDirection = function(){
+        this.direction = this.spriteset.directions[this.direction_i].name;
+        this.frame = 0;
+    }
+    this.validateDirection();
+    
+    this.getDirection = function(){
+        return this.spriteset.directions[person.spriteset.direction_i];
+    }
     
     this.__proto__ = new Turbo.Entity(x, y, layer, name, destroy);
 
@@ -141,6 +153,27 @@ Turbo.LoadEntity = function(array, i, entity){
 //                       Sphere 1.5 Compatibility Layer                      //
 /*///////////////////////////////////////////////////////////////////////////*/
 
+const SCRIPT_ON_CREATE          = "SCRIPT_ON_CREATE";
+const SCRIPT_ON_DESTROY         = "SCRIPT_ON_DESTROY";
+const SCRIPT_ON_ACTIVATE_TOUCH  = "SCRIPT_ON_ACTIVATE_TOUCH";
+const SCRIPT_ON_ACTIVATE_TALK   = "SCRIPT_ON_ACTIVATE_TALK";
+const SCRIPT_COMMAND_GENERATOR  = "SCRIPT_COMMAND_GENERATOR";
+
+const COMMAND_WAIT              = "COMMAND_WAIT";
+const COMMAND_ANIMATE           = "COMMAND_ANIMATE";
+const COMMAND_FACE_NORTH        = "COMMAND_FACE_NORTH";
+const COMMAND_FACE_NORTHEAST    = "COMMAND_FACE_NORTHEAST";
+const COMMAND_FACE_EAST         = "COMMAND_FACE_EAST";
+const COMMAND_FACE_SOUTHEAST    = "COMMAND_FACE_SOUTHEAST";
+const COMMAND_FACE_SOUTH        = "COMMAND_FACE_SOUTH";
+const COMMAND_FACE_SOUTHWEST    = "COMMAND_FACE_SOUTHWEST";
+const COMMAND_FACE_WEST         = "COMMAND_FACE_WEST";
+const COMMAND_FACE_NORTHWEST    = "COMMAND_FACE_NORTHWEST";
+const COMMAND_MOVE_NORTH        = "COMMAND_MOVE_NORTH";
+const COMMAND_MOVE_EAST         = "COMMAND_MOVE_EAST";
+const COMMAND_MOVE_SOUTH        = "COMMAND_MOVE_SOUTH";
+const COMMAND_MOVE_WEST         = "COMMAND_MOVE_WEST";
+
 function GetPersonOffsetX(name){
     return Turbo.GetPersonThrow(name).offset.x;
 }
@@ -157,12 +190,32 @@ function SetPersonOffsetY(name, y){
     Turbo.GetPersonThrow(name).offset.y = y;
 }
 
+function GetPersonX(name){
+    return Turbo.GetPersonThrow(name).x;
+}
+
 function SetPersonX(name, x){
     Turbo.GetPersonThrow(name).x = x;
 }
 
+function GetPersonY(name){
+    return Turbo.GetPersonThrow(name).y;
+}
+
 function SetPersonY(name, y){
     Turbo.GetPersonThrow(name).y = y;
+}
+
+function GetPersonXFloat(name){
+    return GetPersonX(name);
+}
+
+function GetPersonYFloat(name){
+    return GetPersonX(name);
+}
+
+function GetPersonLayer(name){
+    return Turbo.GetPersonThrow(name).layer;
 }
 
 function SetPersonLayer(name, layer){
@@ -176,36 +229,62 @@ function SetPersonXYFloat(name, x, y){
 
 function SetPersonDirection(name, direction){
     var person = Turbo.GetPersonThrow(name);
+    
+    for(var i in person.spriteset.directions){
+        if(person.spriteset.directions[i].name == direction){
+            person.direction_i = i;
+            person.validateDirection();
+            return;
+        }
+    }
+    
+    throw "No direction " + direction + " in spriteset for person " + name;
+    
+}
 
+function SetPersonFrame(name, frame){
+    var person = Turbo.GetPersonThrow(name);
+    
+    if(frame>=person.getDirection().frames.length){
+        throw "Frame number " + frame + " out of range for spriteset for " + name + ". Max is " + person.getDirection().frames.length;
+    }
+    
+    person.frame = frame;
+    
+    
+}
+
+function GetPersonDirection(name){
+    return Turbo.GetPersonThrow(name).getDirection();
+}
+
+function GetPersonFrame(name){
+    return Turbo.GetPersonThrow(name).frame;
+}
+
+function SetPersonSpeed(name, speed){
+      SetPersonSpeedX(name, speed);
+      SetPersonSpeedY(name, speed);
+}
+
+function SetPersonSpeedXY(name, speed_x, speed_y){
+      SetPersonSpeedX(name, speed_x);
+      SetPersonSpeedY(name, speed_y);
+}
+
+function GetPersonSpeed(name){
+    return GetPersonSpeedX(name);
+}
+
+function GetPersonSpeedX(name){
+    return Turbo.GetPersonThrow(name).speed.x;
+}
+
+function GetPersonSpeedY(name){
+    return Turbo.GetPersonThrow(name).speed.y;
 }
 
 /*
-      SetPersonFrame(name, frame)
-        - sets which frame from which direction to display
-      
-      GetPersonX(name)
-      GetPersonY(name)
-            
-      GetPersonLayer(name)
-        - Gets the position of the person on the map.
-          The position is based on the middle of the spriteset's base
-          rectangle.
-      GetPersonXFloat(name)
-      GetPersonYFloat(name)
-        - Gets the position of the person on the map in floating point 
-          accuracy.
-      
-      GetPersonDirection(name)
-      GetPersonFrame(name)
-        - gets the frame and direction that are currently being displayed
-
-      SetPersonSpeed(name, speed)
-      SetPersonSpeedXY(name, speed_x, speed_y)
-        - sets the speed at which a person moves at
-
-      GetPersonSpeedX(name)
-      GetPersonSpeedY(name)
-        - gets the speed at which a person moves at
 
       SetPersonFrameRevert(name, delay)
         - sets the delay between when the person last moved and returning to
@@ -214,6 +293,10 @@ function SetPersonDirection(name, direction){
       GetPersonFrameRevert(name)
         - gets the delay between when the person last moved and returning to
           first frame.  The delay is in frames. 0 disables this behaviour.
+*/
+
+
+/*
 
       SetPersonScaleFactor(name, scale_w, scale_h)
         - rescales the sprite to a certain scale specified by scale_w and scale_h.
@@ -223,16 +306,21 @@ function SetPersonDirection(name, direction){
 
       SetPersonScaleAbsolute(name, width, height)
         - rescales the sprite to width pixels and height pixels.
+*/
 
-      GetPersonSpriteset(name)
-        - returns the person's spriteset.
+function GetPersonSpriteset(name){
+    return Turbo.GetPersonThrow(name).spriteset;
+}
 
-      SetPersonSpriteset(name, spriteset)
-        - set's the person's spriteset to spriteset
-        e.g. SetPersonSpriteset("Jimmy", LoadSpriteset("jimmy.running.rss"));
+function SetPersonSpriteset(name, spriteset){
+     Turbo.GetPersonThrow(name).setSpriteset(spriteset);
+}
 
-      GetPersonBase(name)
-        - returns the person's base obstruction object.
+function GetPersonBase(name){
+    Turbo.GetPersonThrow(name).base;
+}
+
+/*
 
       GetPersonAngle(name)
         - returns the person's angle that is used
@@ -254,64 +342,136 @@ function SetPersonDirection(name, direction){
 
       IsPersonVisible(name)
         - returns the person's visible status 
+*/
+
+function GetPersonVisible(name){
+    return Turbo.GetPersonThrow(name).visible;
+}
+
+function SetPersonVisible(name, visible){
+    Turbo.GetPersonThrow(name).visible = visible;
+}
+
+function IsPersonVisible(name){
+    return GetPersonVisible(name);
+}
+
+// This is SOLELY for legacy purposes. It serves no useful function now.
+function GetPersonData(name){
+    
+    var person = Turbo.GetPersonThrow(name);
+    var data_kludge;
+    
+    if(typeof person.data_kludge != "undefined"){
+        data_kludge = person.data_kludge;
+    }
+    else{
+        data_kludge = {};
+    }
+    
+    data_kludge.num_frames = person.getDirection().frames.length;
+    data_kludge.num_directions = person.spriteset.directions.length;
+    data_kludge.width  = person.spriteset.width;
+    data_kludge.height = person.spriteset.height;
+    data_kludge.leader = "";
+    
+    return data_kludge;
+    
+}
+
+// This is SOLELY for legacy purposes. It serves no useful function now.
+function SetPersonData(name, data_kludge){
+    Turbo.GetPersonThrow(name).data_kludge = data_kludge;
+}
+
+function GetPersonValue(name, key){
+    var person = Turbo.GetPersonThrow(name);
+    if((typeof person.data_kludge != "undefined") && (typeof person.data_kludge[key] != "undefined"))
+        return person.data_kludge[key];
+    
+    return "";
         
+}
 
-      SetPersonVisible(name, visible)
-        - sets the person's visible status, true = visible, false = not visible
-        e.g. SetPersonVisible(GetCurrentPerson(), !IsPersonVisible(GetCurrentPerson()));
+function SetPersonValue(name, key, value){
+    var person = Turbo.GetPersonThrow(name);
+    if(typeof person.data_kludge != "undefined")
+        person.data_kludge = {};
+    
+    person.data_kludge[key] = value;
+}
 
-      GetPersonData(name)
-        - gets a data object assiocated with the person 'name'
-        There are certain default properties/values filled in by the engine, they are:
-        num_frames - the number of frames for the person's current direction
-        num_directions - the number of directions for the person
-        width - the width of the spriteset's current frame
-        height - the height of the spriteset's current frame
-        leader - the person that this person is following, or "" if no-one...
-        Any other properties are free for you to fill with values
-
-        e.g. var data = GetPersonData("Jimmy");
-        var num_frames = data["num_frames"];
-
-      SetPersonData(name, data)
-        - sets the 'data' object assiocated with the person 'name'
-        e.g.
-        var data = GetPersonData("Jimmy");
-        data["talked_to_jimmy"] = true;
-        SetPersonData("Jimmy", data);
-
-      SetPersonValue(name, key, value)
-        - SetPersonValue("Jimmy", "talked_to_jimmy", true); // same as code above
-
-      GetPersonValue(name, key)
-        - GetPersonValue("Jimmy", "num_frames"); // same as previous code above
+/*
 
       FollowPerson(name, leader, pixels)
         - makes the sprite 'name' follow 'pixels' pixels behind sprite 'leader'.
         If this function is called like:
         FollowPerson(name, "", 0),
         the person will detach from anyone it is following.
-      
-      SetPersonScript(name, which, script)
-        - sets 'script' as the thing 'name' does in a certain event
-          the five events are
-          SCRIPT_ON_CREATE
-          SCRIPT_ON_DESTROY
-          SCRIPT_ON_ACTIVATE_TOUCH
-          SCRIPT_ON_ACTIVATE_TALK
-          SCRIPT_COMMAND_GENERATOR
-          (SCRIPT_COMMAND_GENERATOR will be called when the command queue for
-           the person runs out (for random movement thingies, etc))
-      
-      CallPersonScript(name, which)
-        - calls a person's script from code
-         'which' constants are the same as for SetPersonScript()
-      
-      GetCurrentPerson()
-        - best when called from inside a PersonScript handler
-          it will return the name of the person for whom the current script 
-          is running
 
+*/
+
+function SetPersonScript(name, which, script){
+    var person = Turbo.GetPersonThrow(name);
+        
+    var func;
+    if(typeof script=="function"){
+        func = function(){script()};
+    }
+    else{
+        func = function(){eval(script);}
+    }
+        
+    switch(which){
+
+        case SCRIPT_ON_CREATE:
+        person.onCreate = func;
+        break;
+        case SCRIPT_ON_DESTROY:
+        person.onDestroy = func;
+        break;
+        case SCRIPT_ON_ACTIVATE_TOUCH:
+        person.onTouch = func;
+        break;
+        case SCRIPT_ON_ACTIVATE_TALK:
+        person.onTalk = func;
+        break;
+        case SCRIPT_COMMAND_GENERATOR:
+        person.onGenerate = func;
+        break;
+
+        default:
+        throw "No such script type as " + script;
+    }    
+}
+
+function CallPersonScript(name, which){
+    var person = Turbo.GetPersonThrow(name);
+        switch(which){
+
+        case SCRIPT_ON_CREATE:
+        person.onCreate();
+        break;
+        case SCRIPT_ON_DESTROY:
+        person.onDestroy();
+        break;
+        case SCRIPT_ON_ACTIVATE_TOUCH:
+        person.onTouch();
+        break;
+        case SCRIPT_ON_ACTIVATE_TALK:
+        person.onTalk();
+        break;
+        case SCRIPT_COMMAND_GENERATOR:
+        person.onGenerate();
+        break;
+        
+        default:
+        throw "No such script type as " + script;
+    }    
+}
+
+/*
+      
       QueuePersonCommand(name, command, immediate)
         - adds a command to the person's command queue
           the commands are:

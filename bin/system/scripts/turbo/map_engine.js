@@ -26,6 +26,7 @@ const SCRIPT_ON_LEAVE_MAP_WEST  = 50;
 //   is changed. The Spooled arrays acumulate values until the MapEngine is
 //   called.
 Turbo.CurrentMap = null;
+Turbo.CurrentPerson = null; // Backward compatibility only.
 Turbo.NextMap = null;
 Turbo.IsChangingMaps = false;
 // Holds an array of {which:SCRIPT_ON_BLANK, script:function(){/*...*/}}
@@ -394,6 +395,8 @@ function CreatePerson(name, spriteset, destroy_on_map_change){
         Turbo.SpooledEntities.push(new Turbo.Person(0, 0, 0, name, destroy_on_map_change, loaded_spriteset));
     }
 
-
+function GetCurrentPerson(){
+    return Turbo.CurrentPerson;
+}
 
 }
