@@ -449,7 +449,8 @@ void InitScript(int64_t ID){
     ShapeJSObj.AddWrappingFunc(ExtraWrapperArrayPopulator<Galileo::Shape, ShapeExtraWrapCall>);
 
     ImageJSObj.AddToProto("createSurface", ImageCreateSurface);
-    ImageJSObj.AddAccessor("image", ShapeImageGetter, ShapeImageSetter);
+    
+    ShapeJSObj.AddAccessor("image", ShapeImageGetter, ShapeImageSetter);
 
     SurfaceJSObj.AddAccessor("width",  Turbo::GenericPropertyGetter<int, SDL_Surface, &SDL_Surface::w>, nullptr);
     SurfaceJSObj.AddAccessor("height", Turbo::GenericPropertyGetter<int, SDL_Surface, &SDL_Surface::h>, nullptr);

@@ -271,8 +271,8 @@ namespace Turbo{
         inline bool String(JSArguments args, int i, const char *funcname){
             if (!args[i]->IsString()) {
                 char argnumprnt[] = {(char)i, '\0'};
-                std::string err = std::string("[" PLUGINNAME "] ").append(funcname).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Boolean.");
-                args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(args.GetIsolate(), err.c_str())));
+                std::string err = std::string("[" PLUGINNAME "] ").append(funcname).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a String.");
+                SetError(args, err, v8::Exception::TypeError);
                 return false;
             }
         return true;
@@ -282,8 +282,8 @@ namespace Turbo{
 
             if (!args[i]->IsInt32()) {
                 char argnumprnt[] = {(char)i, '\0'};
-                std::string err = std::string("[" PLUGINNAME "] ").append(funcname).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Boolean.");
-                args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(args.GetIsolate(), err.c_str())));
+                std::string err = std::string("[" PLUGINNAME "] ").append(funcname).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an Integer.");
+                SetError(args, err, v8::Exception::TypeError);
                 return false;
             }
         return true;
@@ -296,7 +296,7 @@ namespace Turbo{
                 char argnumprnt[] = {(char)i, '\0'};
 
                 std::string err = std::string("[" PLUGINNAME "] ").append(funcname).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Boolean.");
-                args.GetReturnValue().Set( v8::Exception::Error(v8::String::NewFromUtf8(args.GetIsolate(), err.c_str())));
+                SetError(args, err, v8::Exception::TypeError);
                 return false;
             }
         return true;
@@ -305,15 +305,13 @@ namespace Turbo{
         inline bool CheckSig(JSArguments args, int num, const int *argtypes/*<- Null terminated*/, bool error = true){
 
             const char *prevF = nullptr;
-            auto iso = args.GetIsolate();
-
 
             if(args.Length()<num){
                 if(!error)
                     return false;
                 TS_Stack_PreviousFunctionName(prevF);
                 const char *err = (std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Called with fewer than ")+std::to_string(num)+std::string(" arguments.")).c_str();
-                args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err)));
+                SetError(args, err, v8::Exception::TypeError);
                 return false;
             }
             unsigned char argnumprnt [2] = {'0', '\0'};
@@ -333,7 +331,7 @@ namespace Turbo{
 
                         err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a String.");
                         if(error)
-                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                            SetError(args, err, v8::Exception::TypeError);
                     return false;
 
                     case (JSType::Int):
@@ -344,7 +342,7 @@ namespace Turbo{
                         err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an Integer.");
 
                         if(error)
-                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                            SetError(args, err, v8::Exception::TypeError);
                     return false;
 
                     case Uint:
@@ -355,7 +353,7 @@ namespace Turbo{
                         err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an Integer.");
 
                         if(error)
-                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                            SetError(args, err, v8::Exception::TypeError);
                     return false;
 
                     case Number:
@@ -366,7 +364,7 @@ namespace Turbo{
                         err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Number.");
 
                         if(error)
-                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                            SetError(args, err, v8::Exception::TypeError);
                     return false;
 
                     case JSType::Bool:
@@ -377,7 +375,7 @@ namespace Turbo{
                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Boolean.");
 
                         if(error)
-                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                            SetError(args, err, v8::Exception::TypeError);
                     return false;
 
                     case Array:
@@ -388,7 +386,7 @@ namespace Turbo{
                         err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an Array.");
 
                         if(error)
-                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                            SetError(args, err, v8::Exception::TypeError);
                     return false;
 
                     case ArrayBuffer:
@@ -399,7 +397,7 @@ namespace Turbo{
                         err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an ArrayBuffer.");
 
                         if(error)
-                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                            SetError(args, err, v8::Exception::TypeError);
                     return false;
 
                     case TypedArray:
@@ -410,7 +408,7 @@ namespace Turbo{
                         err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an TypedArray.");
 
                         if(error)
-                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                            SetError(args, err, v8::Exception::TypeError);
                     return false;
 
                     case Object:
@@ -421,7 +419,7 @@ namespace Turbo{
                         err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is undefined.");
 
                         if(error)
-                            args.GetReturnValue().Set( v8::Exception::TypeError(v8::String::NewFromUtf8(iso, err.c_str())));
+                            SetError(args, err, v8::Exception::TypeError);
                     return false;
                     default:
                     return true;

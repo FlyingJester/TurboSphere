@@ -79,6 +79,20 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
     }
     
     this.__proto__ = new Turbo.Entity(x, y, layer, name, destroy);
+    
+    throw Object.keys(this.spriteset.images[0])
+    
+    this.shape = new Shape([{x:0, y:0}, {x:this.spriteset.width, y:0}, {x:this.spriteset.width, y:this.spriteset.height}, {x:0, y:this.spriteset.height}], this.spriteset.images[0]);
+    this.group = new Group(this.shape, Turbo.default_shader);
+
+    this.draw = function(map){
+        
+        this.group.x = this.x+map.x;
+        this.group.y = this.y+map.y;
+        
+        this.group.draw();
+        
+    }
 
 }
 

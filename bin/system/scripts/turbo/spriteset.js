@@ -38,7 +38,7 @@ Turbo.Spriteset = function(stream){
     }
 
     this.directions = new Array(this.num_directions);
-
+    
     // Versions 1 and 2 set things up to look like a version 3 spriteset.
     switch(this.version){
     case 1:
@@ -74,6 +74,7 @@ Turbo.Spriteset = function(stream){
         // Read in all the images.
         for(var i = 0; i<this.images.length; i++){
             this.images[i] = ImageFromArrayBuffer(stream.read(this.width*this.height*4).buffer);
+            throw this.images[i];
         }
 
         // Load up the directions
