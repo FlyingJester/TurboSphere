@@ -12,38 +12,37 @@
 #include "Sapphire.hpp"
 
 namespace Sapphire {
+    namespace GL{
 
-namespace Script{
-}
-
-namespace GL{
-
-    inline void UploadTexture(unsigned w, unsigned h, void *pix){
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pix);
-        #ifdef OS_X
-        glFinish(); //Janky OS X OpenGL 4.
-        #endif
+        inline void UploadTexture(unsigned w, unsigned h, void *pix){
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pix);
+            #ifdef OS_X
+            glFinish(); //Janky OS X OpenGL 4.
+            #endif
+        }
+        template <typename T>
+        inline void UploadTexture(T a, void *pix){UploadTexture(a->w, a->h, pix);}
+        
     }
-    template <typename T>
-    inline void UploadTexture(T a, void *pix){UploadTexture(a->w, a->h, pix);}
-
+    
     void Image::SetTexParameters(){
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
+    
+    
+/*
 
-    Image::Image(){
+
+    Texture::Texture(){
         glGenTextures(1, &mTexture);
     }
-    Image::~Image(){
+    Texture::~Texture(){
         glDeleteTextures(1, &mTexture);
     }
 
-    void Image::Bind() const{
-        glBindTexture(GL_TEXTURE_2D, mTexture);
-    }
 
-    Image::Image(const SDL_Surface *aFrom){
+    Texture::Texture(const SDL_Surface *aFrom){
         glGenTextures(1, &mTexture);
         Bind();
         SetTexParameters();
@@ -52,7 +51,7 @@ namespace GL{
 
     }
 
-    Image::Image(unsigned aTexture, unsigned w, unsigned h){
+    Texture::Texture(unsigned aTexture, unsigned w, unsigned h){
         glGenTextures(1, &mTexture);
         Bind();
         SetTexParameters();
@@ -61,16 +60,18 @@ namespace GL{
 
     }
 
-    void Image::GetBuffer(void *aTo) const{
+    void Texture::GetBuffer(void *aTo) const{
         Bind();
         glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, aTo);
 
     }
 
 }
+*/
 
-Image::Image()
-  : GL::Image() {
+Image::Image(){
+    
+    glBindTexture(GL_TEXTURE_2D, mTexture);
 
     assert( sizeof(PixelData) == sizeof (int32_t) );
 
@@ -80,11 +81,16 @@ Image::Image()
 }
 
 Image::Image(const SDL_Surface *aFrom)
-  : GL::Image(aFrom)
-  , RGBA(new PixelData[aFrom->w*aFrom->h])
+  : RGBA(new PixelData[aFrom->w*aFrom->h])
   , w(aFrom->w)
   , h(aFrom->h){
 
+    glGenTextures(1, &mTexture);
+    Bind();
+    SetTexParameters();
+
+    GL::UploadTexture(aFrom, aFrom->pixels);
+      
     assert( sizeof(PixelData) == sizeof (int32_t) );
 
     memcpy(RGBA, aFrom->pixels, aFrom->w*aFrom->h*4);
@@ -93,28 +99,34 @@ Image::Image(const SDL_Surface *aFrom)
 }
 
 Image::Image(Image *aFrom)
-  : GL::Image(aFrom->mTexture, aFrom->w, aFrom->h)
-  , RGBA(new PixelData[aFrom->w*aFrom->h])
+  : RGBA(new PixelData[aFrom->w*aFrom->h])
   , w(aFrom->w)
   , h(aFrom->h){
+    
+    glGenTextures(1, &mTexture);
+    Bind();
+    SetTexParameters();
 
     assert( sizeof(PixelData) == sizeof (int32_t) );
 
-    aFrom->GetBuffer(RGBA);
+    aFrom->CopyData(RGBA);
 
-//    memcpy(RGBA, aFrom->RGBA, aFrom->BufferSize());
-
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, aFrom->w, aFrom->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, RGBA);
 }
 
 Image::~Image(){
     delete[] RGBA;
 }
 
+void Image::Bind() const{
+    glBindTexture(GL_TEXTURE_2D, mTexture);
+}
+
 Image::PixelData *Image::Lock(){
 
     if(RGBA==nullptr){
         RGBA = new PixelData[w*h];
-        GetBuffer(RGBA);
+        CopyData(RGBA);
     }
 
     return RGBA;
@@ -126,7 +138,8 @@ void Image::Unlock(){
 }
 
 void Image::CopyData(void *aTo){ //Fills a buffer with a copy of the color data.
-    GetBuffer(aTo);
+    Bind();
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, aTo);
 }
 
 }

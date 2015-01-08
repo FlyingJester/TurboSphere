@@ -24,6 +24,7 @@ static const size_t NumVars  = 0;
 
 typedef std::pair<const char *, Turbo::JSCallback> CallbackWithName;
 typedef std::vector<CallbackWithName>::iterator memberiter_t;
+typedef std::shared_ptr<Image> ScriptImage_t;
 
 extern std::array<Turbo::JSCallback,    NumFuncs> FunctionList;
 extern std::array<Turbo::JSName,        NumFuncs> FunctionNameList;
@@ -33,7 +34,7 @@ extern std::vector<CallbackWithName>     CrossPluginSurfaceMembers;
 
 extern Turbo::JSObj<TS_Color>        ColorJSObj;
 extern Turbo::JSObj<SDL_Surface>     SurfaceJSObj;
-extern Turbo::JSObj<std::shared_ptr<Image> >           ImageJSObj;
+extern Turbo::JSObj<ScriptImage_t>   ImageJSObj;
 extern Turbo::JSObj<Galileo::Vertex> VertexJSObj;
 extern Turbo::JSObj<Galileo::Shape>  ShapeJSObj;
 extern Turbo::JSObj<Galileo::Group>  GroupJSObj;

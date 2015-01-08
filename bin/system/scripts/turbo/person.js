@@ -10,6 +10,8 @@ Turbo.Classic = Turbo.Classic || {};
 
 Turbo.EntityScheme = Turbo.LoadSystemScheme("entity.json");
 
+Turbo.StepMagic = 3; // TODO: Hork this from Sphere.
+
 Turbo.Entity = function(x, y, layer, name, destroy){
     this.x = x; this.y = y;
     this.draw_offset = {x:0, y:0};
@@ -70,15 +72,39 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
     this.setSpriteset(spriteset);
 
     this.direction_i = 0;
+    
+    this.setImageFromCurrentFrame = function(){
+        this.shape.image = this.spriteset.directions[this.direction_i].frames[this.frame].image;
+    }
+
     this.validateDirection = function(){
         this.direction = this.spriteset.directions[this.direction_i].name;
         this.frame = 0;
         this.frame_counter = 0;
+        
+        this.setImageFromCurrentFrame();
+        
     }
-    this.validateDirection();
     
     this.getDirection = function(){
         return this.spriteset.directions[person.spriteset.direction_i];
+    }
+    
+    this.setDirection = function(name){
+        for(var i in this.spriteset.directions){
+            if(this.spriteset.directions[i].name==name){
+                this.direction_i = i;
+                this.validateDirection();
+                return;
+            }
+        }
+        
+        throw "Frame " + name + " does not exist in spriteset for " + this.name;
+        
+    }
+    
+    this.step = function(distance){
+        
     }
     
     this.__proto__ = new Turbo.Entity(x, y, layer, name, destroy);
@@ -86,6 +112,8 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
     this.shape = new Shape([{x:0, y:0}, {x:this.spriteset.width, y:0}, {x:this.spriteset.width, y:this.spriteset.height}, {x:0, y:this.spriteset.height}], this.spriteset.images[0]);
     this.group = new Group(this.shape, Turbo.default_shader);
 
+    this.validateDirection();
+    
     this.draw = function(camera_p){
         
         this.group.x = this.x+camera_p.x;
@@ -251,18 +279,7 @@ function SetPersonXYFloat(name, x, y){
 }
 
 function SetPersonDirection(name, direction){
-    var person = Turbo.GetPersonThrow(name);
-    
-    for(var i in person.spriteset.directions){
-        if(person.spriteset.directions[i].name == direction){
-            person.direction_i = i;
-            person.validateDirection();
-            return;
-        }
-    }
-    
-    throw "No direction " + direction + " in spriteset for person " + name;
-    
+    Turbo.GetPersonThrow(name).setDirection(name);
 }
 
 function SetPersonFrame(name, frame){

@@ -46,8 +46,8 @@ void Drawable::BindArray(){
 
 }
 
-Shape::Shape(std::vector<Vertex> &aVertices, Image *aImage)
-  : Drawable(aVertices, aImage)
+Shape::Shape(std::vector<Vertex> &aVertices, const std::shared_ptr<Image> &aImage)
+  : Drawable(aVertices, aImage.get())
 {
 
 }
@@ -148,7 +148,7 @@ void Shape::SetShader(Shader *aShader){
 
 int Shape::Draw(){
 
-    assert(mImage!=nullptr);
+    assert(mImage.get()!=nullptr);
 
     BindArray();
     mImage->Bind();

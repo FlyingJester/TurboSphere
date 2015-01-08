@@ -140,8 +140,13 @@ namespace GL {
           return mVertices.empty();
       }
 
-      virtual void ReplaceImage(Image *im){
-          mImage.reset(im);
+      template<class T>
+      void ReplaceImage(const std::shared_ptr<T> &im){
+          ReplaceTexture(static_cast<Image *>(im.get()));
+      }
+
+      virtual void ReplaceTexture(Image *aTexture){
+          mImage.reset(aTexture);
       }
 
       virtual Image *GetImage() const {
@@ -156,15 +161,15 @@ protected:
     int gl_mode;
     int vertex_size;
 public:
-    Shape(std::vector<Vertex> &aVertices, Image *aImage);
+    Shape(std::vector<Vertex> &aVertices, const std::shared_ptr<Image> &aImage);
 
     virtual ~Shape() {}
-    virtual bool CanUse(Shader *aShader);
-    virtual void SetShader(Shader *aShader);
+    bool CanUse(Shader *aShader) override;
+    void SetShader(Shader *aShader) override;
 
-    virtual void FillGL();
+    void FillGL() override;
 
-    virtual int Draw();
+    int Draw() override;
 
 };
 

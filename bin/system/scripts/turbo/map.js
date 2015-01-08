@@ -185,6 +185,7 @@ Turbo.Map = function(stream, compat){
                 }
             }
         }
+        
         var shape = new Shape(vertices, this.tileset.image_atlas);
 
         this.layers[i].group = new Group(shape, this.layers[i].shader);
@@ -208,9 +209,6 @@ Turbo.Map = function(stream, compat){
         this.layers[i].group.x = this.camera.x;
         this.layers[i].group.y = this.camera.y;
         this.layers[i].group.draw();
-        
-        if(typeof this.camera === "undefined")
-        throw "You puked the camera";
         
         var captured_camera = this.camera;
         

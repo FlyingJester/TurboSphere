@@ -5,32 +5,42 @@
 
 namespace Sapphire {
 
+class Image;
+
   /////
   // Namespace GL contains the strongly OpenGL components.
+/*
 namespace GL{
-
-  class Image {
+  class Texture {
   protected:
 
       unsigned mTexture;
 
-      Image();
-      Image(const SDL_Surface *aFrom);
-      Image(unsigned aTexture, unsigned w, unsigned h);
+      Texture();
+      Texture(const SDL_Surface *aFrom);
+      Texture(unsigned aTexture, unsigned w, unsigned h);
 
       void GetBuffer(void *) const;
 
       /////
       // Sets default parameters on the currently bound image.
-      static void SetTexParameters();
-
+      
+    
   public:
-      virtual ~Image();
-      virtual void Bind() const;
+      /////
+      // TODO: Pull this out of GL in the base, to ensure that we have at least ONE way to tell.
+      virtual unsigned Height() const = 0;
+      virtual unsigned Width() const = 0;
+      
+      virtual ~Texture();
+      virtual void CopyData(void *) = 0; //Fills a buffer with a copy of the color data.
+      
+      virtual Image *AsImage() = 0;
+      
   };
 }
-
-class Image : public GL::Image {
+*/
+class Image{
 public:
   union PixelData {
       uint32_t pixel;
@@ -38,6 +48,10 @@ public:
   };
 
 protected:
+    
+    static void SetTexParameters();
+    
+    unsigned mTexture;
 
     PixelData *RGBA;
 
@@ -48,16 +62,18 @@ public:
     Image();
     Image(const SDL_Surface *aFrom);
     Image(Image *aFrom);
-    virtual ~Image();
+    ~Image();
 
     //void GLBind() const;
     //static void GLUnbind();
 
-    inline unsigned Width() const  {return w;}
-    inline unsigned Height() const {return h;}
+    unsigned Width() const {return w;}
+    unsigned Height() const {return h;}
 
     PixelData *Lock();
     void Unlock();
+    
+    void Bind() const;
 
     size_t BufferSize() const {
       return w*h*4; //4 color channels.
@@ -65,6 +81,9 @@ public:
 
     void CopyData(void *); //Fills a buffer with a copy of the color data.
 
+    virtual Image *AsImage(){
+        return this;
+    }
 };
 
 }

@@ -87,30 +87,20 @@ void ShapeImageGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorInfo aIn
     const Galileo::Shape *mShape = Turbo::GetAccessorSelf<Galileo::Shape>(aInfo);
     assert(mShape);
 
-    Turbo::WrapObject(aInfo, ImageJSObj, new std::shared_ptr<Image>(mShape->GetImage()));
+    Turbo::WrapObject(aInfo, ImageJSObj, new ScriptImage_t(mShape->GetImage()));
 }
 
-void ShapeImageSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){
-
-    // Hold a shared pointer of the image just in case.
-    // We should technically be fine, since we are inside an accessor.
-    std::shared_ptr<Image> image(nullptr);
-
+void ShapeImageSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){    
     if(ImageJSObj.IsA(aVal)){
-        image = *ImageJSObj.Unwrap(aVal);
+        
+        Turbo::GetAccessorSelf<Galileo::Shape>(aInfo)->ReplaceTexture(ImageJSObj.Unwrap(aVal)->get());
     }
     else if(SurfaceJSObj.IsA(aVal)){
-        image.reset(new Image(SurfaceJSObj.Unwrap(aVal)));
+        Turbo::GetAccessorSelf<Galileo::Shape>(aInfo)->ReplaceTexture(new Sapphire::Image(SurfaceJSObj.Unwrap(aVal)));
     }
     else {
         Turbo::SetError(aInfo, (string(BRACKNAME " ") + string(__func__) + string(" Error: Value is not a Surface or Image.")).c_str(), v8::Exception::TypeError);
-        return;
     }
-
-    assert(image);
-
-    Turbo::GetAccessorSelf<Galileo::Shape>(aInfo)->ReplaceImage(image.get());
-
 }
 
 void GroupXGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
@@ -287,7 +277,7 @@ const float *FixedUVCoord[FIXEDUVCOORD_SIZE] = { // Known to be disproportionate
 
 Turbo::JSObj<TS_Color>        ColorJSObj;
 Turbo::JSObj<SDL_Surface>     SurfaceJSObj;
-Turbo::JSObj<std::shared_ptr<Image> > ImageJSObj;
+Turbo::JSObj<ScriptImage_t > ImageJSObj;
 Turbo::JSObj<Galileo::Vertex> VertexJSObj;
 Turbo::JSObj<Galileo::Shape>  ShapeJSObj;
 Turbo::JSObj<Galileo::Group>  GroupJSObj;
@@ -384,7 +374,7 @@ void InitScript(int64_t ID){
 
     ColorJSObj   = Turbo::JSObj<TS_Color>       ();
     SurfaceJSObj = Turbo::JSObj<SDL_Surface>    ();
-    ImageJSObj   = Turbo::JSObj<std::shared_ptr<Image> > ();
+    ImageJSObj   = Turbo::JSObj<ScriptImage_t > ();
     VertexJSObj  = Turbo::JSObj<Galileo::Vertex>();
     ShapeJSObj   = Turbo::JSObj<Galileo::Shape> ();
     GroupJSObj   = Turbo::JSObj<Galileo::Group> ();
@@ -392,7 +382,7 @@ void InitScript(int64_t ID){
 
     ColorJSObj.Finalize             = Turbo::Finalizer<TS_Color>;
     ShaderProgramJSObj.Finalize     = Turbo::Finalizer<std::shared_ptr<Galileo::Shader> >;
-    ImageJSObj.Finalize     = Turbo::Finalizer<std::shared_ptr<Image> >;
+    ImageJSObj.Finalize     = Turbo::Finalizer<ScriptImage_t >;
     SurfaceJSObj.Finalize   = Finalizer::NoFree;
     VertexJSObj.Finalize    = Finalizer::NoFree;
     ShapeJSObj.Finalize     = Finalizer::NoFree;
@@ -507,13 +497,13 @@ Turbo::JSFunction ColorCtor(Turbo::JSArguments args){
 Turbo::JSFunction ImageCtor(Turbo::JSArguments args){
 
     const int sig[] = {Turbo::Int, Turbo::Int, Turbo::Object, 0};
-
+    
     if(args.Length()==1){
         if(SurfaceJSObj.IsA(args[0])){//From Surface
             const SDL_Surface *lSurf =
               (SDL_Surface*)(v8::Local<v8::Object>::Cast(args[0]))->GetAlignedPointerFromInternalField(0);
             Image *rImage = new Image(lSurf);
-            Turbo::WrapObject(args, ImageJSObj, new std::shared_ptr<Image> (rImage) );
+            Turbo::WrapObject(args, ImageJSObj, new ScriptImage_t(rImage));
             return;
         }else if(Turbo::CheckArg::String(args, 0, __func__)){ // From Path
             v8::String::Utf8Value lStr(args[0]);
@@ -524,7 +514,7 @@ Turbo::JSFunction ImageCtor(Turbo::JSArguments args){
             }
             else{
               Image *rImage = new Sapphire::Image(lSurf);
-              Turbo::WrapObject(args, ImageJSObj, new std::shared_ptr<Image> (rImage)  );
+              Turbo::WrapObject(args, ImageJSObj, new ScriptImage_t (rImage)  );
             }
 
             SDL_FreeSurface(lSurf);
@@ -569,7 +559,7 @@ Turbo::JSFunction ImageCtor(Turbo::JSArguments args){
         SDL_FreeSurface(lSurf);
         delete[] pixels;
 
-        Turbo::WrapObject(args, ImageJSObj, new std::shared_ptr<Image> (rImage) );
+        Turbo::WrapObject(args, ImageJSObj, new ScriptImage_t(rImage));
 
     }
 
@@ -705,12 +695,13 @@ Turbo::JSFunction ShapeCtor(Turbo::JSArguments args){
 
             }
         }
+        
+        ScriptImage_t *lTexture =ImageJSObj.Unwrap(args[1]);
+        
+        assert(lTexture->get());
 
-        Image *lImage = static_cast< std::shared_ptr<Image> *>(v8::Local<v8::Object>::Cast(args[1])->GetAlignedPointerFromInternalField(0))->get();
-        assert(lImage);
-
-        Sapphire::Galileo::Shape *rShape = new Galileo::Shape(Vertices,lImage);
-
+        Sapphire::Galileo::Shape *rShape = new Galileo::Shape(Vertices, *lTexture);
+        
         rShape->FillGL();
 
         Turbo::WrapObject(args, ShapeJSObj, rShape);
@@ -863,7 +854,7 @@ Turbo::JSFunction ArrayBufferToImage(Turbo::JSArguments args){
     SDL_FreeSurface(lSurf);
     free(contents.Data());
 
-    Turbo::WrapObject(args, ImageJSObj, new std::shared_ptr<Image> (rImage) );
+    Turbo::WrapObject(args, ImageJSObj, new ScriptImage_t (rImage) );
 
 }
 
@@ -915,19 +906,19 @@ Turbo::JSFunction ArrayBufferToSurface(Turbo::JSArguments args){
 Turbo::JSFunction SaveImage(Turbo::JSArguments args);
 
 Turbo::JSFunction ImageCreateSurface(Turbo::JSArguments args){
-    std::shared_ptr<Image> *mImage = Turbo::GetMemberSelf <std::shared_ptr<Image> > (args);
-    assert(mImage);
-    assert(mImage->get());
+    ScriptImage_t *mTexture = Turbo::GetMemberSelf <ScriptImage_t > (args);
+    assert(mTexture);
+    assert(mTexture->get());
+    
+    printf(BRACKNAME " Info: Creating a surface of size %i, %i\n", (*mTexture)->Width(), (*mTexture)->Height());
 
-    printf(BRACKNAME " Info: Creating a surface of size %i, %i\n", (*mImage)->Width(), (*mImage)->Height());
-
-    SDL_Surface *rSurf = GenerateSurface((*mImage)->Width(), (*mImage)->Height());
+    SDL_Surface *rSurf = GenerateSurface((*mTexture)->Width(), (*mTexture)->Height());
     assert(rSurf);
 
     SDL_LockSurface(rSurf);
 
     assert(rSurf->pixels);
-    (*mImage)->CopyData(rSurf->pixels);
+    (*mTexture)->CopyData(rSurf->pixels);
 
     SDL_UnlockSurface(rSurf);
 
