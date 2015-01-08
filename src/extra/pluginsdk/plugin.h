@@ -314,12 +314,10 @@ namespace Turbo{
                 SetError(args, err, v8::Exception::TypeError);
                 return false;
             }
-            unsigned char argnumprnt [2] = {'0', '\0'};
 
             std::string err;
 
             for(int i = 0; i<num; i++){
-                *argnumprnt = (unsigned char)'0'+(unsigned char)i; // poor-man's to_string.
                 assert(argtypes[i]!=0);
 
                 switch(argtypes[i]){
@@ -329,7 +327,7 @@ namespace Turbo{
                             break;
                         TS_Stack_PreviousFunctionName(prevF);
 
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a String.");
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not a String.";
                         if(error)
                             SetError(args, err, v8::Exception::TypeError);
                     return false;
@@ -339,7 +337,7 @@ namespace Turbo{
                             break;
                         TS_Stack_PreviousFunctionName(prevF);
 
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an Integer.");
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not an Integer.";
 
                         if(error)
                             SetError(args, err, v8::Exception::TypeError);
@@ -350,7 +348,7 @@ namespace Turbo{
                             break;
                         TS_Stack_PreviousFunctionName(prevF);
 
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an Integer.");
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not an Integer.";
 
                         if(error)
                             SetError(args, err, v8::Exception::TypeError);
@@ -361,7 +359,7 @@ namespace Turbo{
                             break;
                         TS_Stack_PreviousFunctionName(prevF);
 
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Number.");
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not a Number.";
 
                         if(error)
                             SetError(args, err, v8::Exception::TypeError);
@@ -372,7 +370,7 @@ namespace Turbo{
                             break;
                         TS_Stack_PreviousFunctionName(prevF);
 
-                       err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Boolean.");
+                       err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not a Boolean.";
 
                         if(error)
                             SetError(args, err, v8::Exception::TypeError);
@@ -383,7 +381,7 @@ namespace Turbo{
                             break;
                         TS_Stack_PreviousFunctionName(prevF);
 
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an Array.");
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not an Array.";
 
                         if(error)
                             SetError(args, err, v8::Exception::TypeError);
@@ -394,7 +392,7 @@ namespace Turbo{
                             break;
                         TS_Stack_PreviousFunctionName(prevF);
 
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an ArrayBuffer.");
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not an ArrayBuffer.";
 
                         if(error)
                             SetError(args, err, v8::Exception::TypeError);
@@ -405,7 +403,7 @@ namespace Turbo{
                             break;
                         TS_Stack_PreviousFunctionName(prevF);
 
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an TypedArray.");
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not an TypedArray.";
 
                         if(error)
                             SetError(args, err, v8::Exception::TypeError);
@@ -416,7 +414,7 @@ namespace Turbo{
                             break;
                         TS_Stack_PreviousFunctionName(prevF);
 
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ").append((char *)argnumprnt).append(" is undefined.");
+                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is undefined.";
 
                         if(error)
                             SetError(args, err, v8::Exception::TypeError);

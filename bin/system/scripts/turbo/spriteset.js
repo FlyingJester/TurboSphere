@@ -46,7 +46,7 @@ Turbo.Spriteset = function(stream){
             this.directions[d] = {name:Turbo.SpritesetScheme.directions[d], frames:new Array(8)};
             for(var f = 0; f < 8; f++){
                 var frame_num = (d<<3)+f;
-                var im = ImageFromArrayBuffer(stream.read(this.width*this.height*4).buffer);
+                var im = ImageFromArrayBuffer(this.width, this.height, stream.read(this.width*this.height*4).buffer);
                 this.images[frame_num] = im;
                 this.directions[d].frames[f] = {image:im, delay:1, frame_index:frame_num, index:frame_num};
             }
@@ -73,8 +73,7 @@ Turbo.Spriteset = function(stream){
 
         // Read in all the images.
         for(var i = 0; i<this.images.length; i++){
-            this.images[i] = ImageFromArrayBuffer(stream.read(this.width*this.height*4).buffer);
-            throw this.images[i];
+            this.images[i] = ImageFromArrayBuffer(this.width, this.height, stream.read(this.width*this.height*4).buffer);
         }
 
         // Load up the directions

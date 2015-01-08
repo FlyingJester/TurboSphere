@@ -45,7 +45,7 @@ Turbo.Map = function(stream, compat){
     this.camera = {x:0, y:0};
 
     this.unsetCamera = function(){
-        this.camera_person = null;
+        this.camera_person = {x:0, y:0};
     }
 
     this.unsetInput = function(){
@@ -199,10 +199,8 @@ Turbo.Map = function(stream, compat){
     }
 
     this.calculateCamera = function(){
-        if(this.camera_person){
-            this.camera.x = this.camera_person.x;
-            this.camera.y = this.camera_person.y;
-        }
+        this.camera.x = this.camera_person.x;
+        this.camera.y = this.camera_person.y;
     }
 
     this.drawLayer = function(i){
@@ -210,11 +208,18 @@ Turbo.Map = function(stream, compat){
         this.layers[i].group.x = this.camera.x;
         this.layers[i].group.y = this.camera.y;
         this.layers[i].group.draw();
+        
+        if(typeof this.camera === "undefined")
+        throw "You puked the camera";
+        
+        var captured_camera = this.camera;
+        
+        this.entities.forEach(function(e){if(e.layer==i) e.draw(captured_camera);});
+        
     }
 
     this.drawMap = function(){
-        for(var i in this.layers){
-            // TODO: render Persons.
+        for(var i =0; i<this.layers.length; i++){
             this.drawLayer(i);
         }
 

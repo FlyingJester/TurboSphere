@@ -24,6 +24,9 @@ Turbo.Entity = function(x, y, layer, name, destroy){
     this.onTouch   = function(){};
     this.onGenerate= function(){};
     this.onTrigger = function(){};
+    
+    this.draw = function(){}
+    
 }
 
 Turbo.GetPerson = function(name){
@@ -80,15 +83,13 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
     
     this.__proto__ = new Turbo.Entity(x, y, layer, name, destroy);
     
-    throw Object.keys(this.spriteset.images[0])
-    
     this.shape = new Shape([{x:0, y:0}, {x:this.spriteset.width, y:0}, {x:this.spriteset.width, y:this.spriteset.height}, {x:0, y:this.spriteset.height}], this.spriteset.images[0]);
     this.group = new Group(this.shape, Turbo.default_shader);
 
-    this.draw = function(map){
+    this.draw = function(camera_p){
         
-        this.group.x = this.x+map.x;
-        this.group.y = this.y+map.y;
+        this.group.x = this.x+camera_p.x;
+        this.group.y = this.y+camera_p.y;
         
         this.group.draw();
         
