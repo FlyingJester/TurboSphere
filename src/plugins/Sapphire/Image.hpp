@@ -5,41 +5,6 @@
 
 namespace Sapphire {
 
-class Image;
-
-  /////
-  // Namespace GL contains the strongly OpenGL components.
-/*
-namespace GL{
-  class Texture {
-  protected:
-
-      unsigned mTexture;
-
-      Texture();
-      Texture(const SDL_Surface *aFrom);
-      Texture(unsigned aTexture, unsigned w, unsigned h);
-
-      void GetBuffer(void *) const;
-
-      /////
-      // Sets default parameters on the currently bound image.
-      
-    
-  public:
-      /////
-      // TODO: Pull this out of GL in the base, to ensure that we have at least ONE way to tell.
-      virtual unsigned Height() const = 0;
-      virtual unsigned Width() const = 0;
-      
-      virtual ~Texture();
-      virtual void CopyData(void *) = 0; //Fills a buffer with a copy of the color data.
-      
-      virtual Image *AsImage() = 0;
-      
-  };
-}
-*/
 class Image{
 public:
   union PixelData {
@@ -81,9 +46,6 @@ public:
 
     void CopyData(void *); //Fills a buffer with a copy of the color data.
 
-    virtual Image *AsImage(){
-        return this;
-    }
 };
 
 }
