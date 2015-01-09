@@ -1,12 +1,13 @@
 #pragma once
 
-#include "Vertex.hpp"
 #include <vector>
 #include <algorithm>
-#include <color.h>
-#include "../Image.hpp"
-#include <v8.h>
 #include <memory>
+#include <v8.h>
+#include <color.h>
+#include "Vertex.hpp"
+#include "../Image.hpp"
+#include "../Sapphire.hpp"
 
 namespace Sapphire{
 namespace Galileo {
@@ -84,7 +85,7 @@ namespace GL {
 
       }
 
-      Drawable(std::vector<Vertex> &aVertices, Image *aImage)
+      Drawable(std::vector<Vertex> &aVertices, std::shared_ptr<Image> aImage)
         : mImage(aImage) {
 
           mVertices.resize(aVertices.size());
@@ -141,16 +142,16 @@ namespace GL {
       }
 
       template<class T>
-      void ReplaceImage(const std::shared_ptr<T> &im){
-          ReplaceTexture(static_cast<Image *>(im.get()));
+      void ReplaceImage(const std::shared_ptr<T> im){
+          unsigned lTex = mImage->DebugGetTexture();
+          mImage = im;
+          
+          printf(BRACKNAME " Info: Replaced texture %u with %u\n", lTex, mImage->DebugGetTexture());
+          
       }
 
-      virtual void ReplaceTexture(Image *aTexture){
-          mImage.reset(aTexture);
-      }
-
-      virtual Image *GetImage() const {
-          return mImage.get();
+      virtual std::shared_ptr<Image> GetImage() const {
+          return mImage;
       }
 
   };
@@ -161,7 +162,7 @@ protected:
     int gl_mode;
     int vertex_size;
 public:
-    Shape(std::vector<Vertex> &aVertices, const std::shared_ptr<Image> &aImage);
+    Shape(std::vector<Vertex> &aVertices, const std::shared_ptr<Image> aImage);
 
     virtual ~Shape() {}
     bool CanUse(Shader *aShader) override;

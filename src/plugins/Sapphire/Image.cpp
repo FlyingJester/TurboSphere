@@ -71,37 +71,8 @@ namespace Sapphire {
 
 Image::Image(){
     
-    glBindTexture(GL_TEXTURE_2D, mTexture);
-
-    assert( sizeof(PixelData) == sizeof (int32_t) );
-
-    w = 0;
-    h = 0;
-    RGBA = nullptr;
-}
-
-Image::Image(const SDL_Surface *aFrom)
-  : RGBA(new PixelData[aFrom->w*aFrom->h])
-  , w(aFrom->w)
-  , h(aFrom->h){
-
-    glGenTextures(1, &mTexture);
-    Bind();
-    SetTexParameters();
-
-    GL::UploadTexture(aFrom, aFrom->pixels);
-      
-    assert( sizeof(PixelData) == sizeof (int32_t) );
-
-    memcpy(RGBA, aFrom->pixels, aFrom->w*aFrom->h*4);
-
-    printf(BRACKNAME " Info: created image.\n");
-}
-
-Image::Image(Image *aFrom)
-  : RGBA(new PixelData[aFrom->w*aFrom->h])
-  , w(aFrom->w)
-  , h(aFrom->h){
+    static unsigned num = 0;
+    num++;
     
     glGenTextures(1, &mTexture);
     Bind();
@@ -109,13 +80,44 @@ Image::Image(Image *aFrom)
 
     assert( sizeof(PixelData) == sizeof (int32_t) );
 
+    w = 0;
+    h = 0;
+    RGBA = nullptr;
+    
+    printf(BRACKNAME " Info: Initialized image %u with texture %u with Image()\n",  num, mTexture);
+    
+}
+
+Image::Image(const SDL_Surface *aFrom)
+  : Image(){
+    
+    w = aFrom->w; h = aFrom->h;
+    RGBA = new PixelData[w*h];
+    
+    memcpy(RGBA, aFrom->pixels, aFrom->w*aFrom->h*4);
+    
+    GL::UploadTexture(aFrom->w, aFrom->h, RGBA);
+      
+    printf(BRACKNAME " Info: Initialized image with texture %u with Image(const SDL_Surface *aFrom)\n", mTexture);
+}
+
+Image::Image(Image *aFrom)
+  : Image(){
+    
+    w = aFrom->w; h = aFrom->h;
+    RGBA = new PixelData[w*h];
+
     aFrom->CopyData(RGBA);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, aFrom->w, aFrom->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, RGBA);
+    GL::UploadTexture(aFrom->w, aFrom->h, RGBA);
+    
+    printf(BRACKNAME " Info: Initialized image with texture %u with Image(Image *aFrom)\n", mTexture);
 }
 
 Image::~Image(){
     delete[] RGBA;
+    glDeleteTextures(1, &mTexture);
+    ((void(*)(void))(0))();
 }
 
 void Image::Bind() const{

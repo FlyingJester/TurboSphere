@@ -24,13 +24,11 @@ protected:
     unsigned h;
 
 public:
+
     Image();
     Image(const SDL_Surface *aFrom);
     Image(Image *aFrom);
     ~Image();
-
-    //void GLBind() const;
-    //static void GLUnbind();
 
     unsigned Width() const {return w;}
     unsigned Height() const {return h;}
@@ -41,11 +39,15 @@ public:
     void Bind() const;
 
     size_t BufferSize() const {
-      return w*h*4; //4 color channels.
+      return w*h*4; //4 color channels at one byte each.
     }
 
     void CopyData(void *); //Fills a buffer with a copy of the color data.
 
+    inline unsigned DebugGetTexture(){
+        return mTexture;
+    }
+    
 };
 
 }

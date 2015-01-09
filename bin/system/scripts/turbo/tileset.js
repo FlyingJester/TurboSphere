@@ -140,7 +140,6 @@ Turbo.Tileset = function(stream){
             // If you MUST (or are just a jerk and just don't want to listen), remember that it
             //   poisons the ArrayBuffer you give it.
             tile_surfaces[i] = SurfaceFromArrayBuffer(this.width, this.height, data);
-
         }
         else{ // Fall back to slow (but effective) methods since we can't hotwire the surface.
             var sf = new Surface(this.width, this.height, Black);

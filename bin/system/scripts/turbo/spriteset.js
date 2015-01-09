@@ -73,7 +73,7 @@ Turbo.Spriteset = function(stream){
 
         // Read in all the images.
         for(var i = 0; i<this.images.length; i++){
-            this.images[i] = ImageFromArrayBuffer(this.width, this.height, stream.read(this.width*this.height*4).buffer);
+            this.images[i] = ImageFromArrayBuffer(this.width, this.height, stream.read(this.width*this.height*4).buffer, "Spriteset Image "+i);
         }
 
         // Load up the directions

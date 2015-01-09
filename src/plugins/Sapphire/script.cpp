@@ -92,11 +92,10 @@ void ShapeImageGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorInfo aIn
 
 void ShapeImageSetter(Turbo::JSAccessorProperty aProp, Turbo::JSValue aVal, Turbo::JSAccessorSetterInfo aInfo){    
     if(ImageJSObj.IsA(aVal)){
-        
-        Turbo::GetAccessorSelf<Galileo::Shape>(aInfo)->ReplaceTexture(ImageJSObj.Unwrap(aVal)->get());
+        Turbo::GetAccessorSelf<Galileo::Shape>(aInfo)->ReplaceImage(*ImageJSObj.Unwrap(aVal));
     }
     else if(SurfaceJSObj.IsA(aVal)){
-        Turbo::GetAccessorSelf<Galileo::Shape>(aInfo)->ReplaceTexture(new Sapphire::Image(SurfaceJSObj.Unwrap(aVal)));
+        Turbo::GetAccessorSelf<Galileo::Shape>(aInfo)->ReplaceImage(ScriptImage_t(new Sapphire::Image(SurfaceJSObj.Unwrap(aVal))));
     }
     else {
         Turbo::SetError(aInfo, (string(BRACKNAME " ") + string(__func__) + string(" Error: Value is not a Surface or Image.")).c_str(), v8::Exception::TypeError);
@@ -504,6 +503,7 @@ Turbo::JSFunction ImageCtor(Turbo::JSArguments args){
               (SDL_Surface*)(v8::Local<v8::Object>::Cast(args[0]))->GetAlignedPointerFromInternalField(0);
             Image *rImage = new Image(lSurf);
             Turbo::WrapObject(args, ImageJSObj, new ScriptImage_t(rImage));
+            printf(BRACKNAME " Info: Image %u from surface\n", rImage->DebugGetTexture());
             return;
         }else if(Turbo::CheckArg::String(args, 0, __func__)){ // From Path
             v8::String::Utf8Value lStr(args[0]);
@@ -696,18 +696,14 @@ Turbo::JSFunction ShapeCtor(Turbo::JSArguments args){
             }
         }
         
-        ScriptImage_t *lTexture =ImageJSObj.Unwrap(args[1]);
-        
-        assert(lTexture->get());
-
-        Sapphire::Galileo::Shape *rShape = new Galileo::Shape(Vertices, *lTexture);
+        Sapphire::Galileo::Shape *rShape = new Galileo::Shape(Vertices, *ImageJSObj.Unwrap(args[1]));
         
         rShape->FillGL();
 
         Turbo::WrapObject(args, ShapeJSObj, rShape);
     }
     else{
-            Turbo::SetError(args, BRACKNAME " ShapeCtor Error: Called with fewer than 2 arguments.", v8::Exception::SyntaxError);
+        Turbo::SetError(args, BRACKNAME " ShapeCtor Error: Called with fewer than 2 arguments.", v8::Exception::SyntaxError);
     }
 }
 
@@ -819,7 +815,7 @@ Turbo::JSFunction SetPixelSurface(Turbo::JSArguments args){
 }
 
 Turbo::JSFunction ArrayBufferToImage(Turbo::JSArguments args){
-    int sig[4] = {Turbo::Number, Turbo::Number, Turbo::Object, 0};
+    int sig[5] = {Turbo::Number, Turbo::Number, Turbo::Object, Turbo::String, 0};
 
     if(!Turbo::CheckArg::CheckSig(args, 2, sig))
       return;
@@ -854,6 +850,12 @@ Turbo::JSFunction ArrayBufferToImage(Turbo::JSArguments args){
     SDL_FreeSurface(lSurf);
     free(contents.Data());
 
+    if(Turbo::CheckArg::CheckSig(args, 3, sig, false)){
+        v8::String::Utf8Value lStr(args[3]);
+        printf(BRACKNAME " Info: %s Created texture %u\n", *lStr, rImage->DebugGetTexture());
+    }
+    else
+        printf(BRACKNAME " Info: Created texture %u\n", rImage->DebugGetTexture());
     Turbo::WrapObject(args, ImageJSObj, new ScriptImage_t (rImage) );
 
 }

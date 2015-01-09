@@ -46,8 +46,8 @@ void Drawable::BindArray(){
 
 }
 
-Shape::Shape(std::vector<Vertex> &aVertices, const std::shared_ptr<Image> &aImage)
-  : Drawable(aVertices, aImage.get())
+Shape::Shape(std::vector<Vertex> &aVertices, const std::shared_ptr<Image> aImage)
+  : Drawable(aVertices, aImage)
 {
 
 }
