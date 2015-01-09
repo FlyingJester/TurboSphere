@@ -117,7 +117,6 @@ Image::Image(Image *aFrom)
 Image::~Image(){
     delete[] RGBA;
     glDeleteTextures(1, &mTexture);
-    ((void(*)(void))(0))();
 }
 
 void Image::Bind() const{

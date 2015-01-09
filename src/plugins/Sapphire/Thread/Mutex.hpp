@@ -16,8 +16,19 @@ namespace Sapphire {
     typedef TS_Mutex mutex_t;
 
     inline mutex_t *CreateMutex(){return TS_CreateMutex();}
-    inline void DestroyMutex(mutex_t a){TS_DestroyMutex(a);}
-    inline void LockMutex(mutex_t a){TS_LockMutex(a);}
-    inline void UnlockMutex(mutex_t a){TS_UnlockMutex(a);}
+    inline void DestroyMutex(mutex_t *a){TS_DestroyMutex(a);}
+    inline void LockMutex(mutex_t *a){TS_LockMutex(a);}
+    inline void UnlockMutex(mutex_t *a){TS_UnlockMutex(a);}
+    
+    struct AutoLocker{
+        mutex_t *that;
+        AutoLocker(mutex_t *t)
+          : that(t){
+            LockMutex(that);
+        }
+        ~AutoLocker(){
+            UnlockMutex(that);
+        }
+    }
 
 }

@@ -1,9 +1,12 @@
 Import('currentenv librarydir corelibtargets binarydir LibraryInstall IsDarwin IsLinux IsWindows')
 
 import os
-import glob
+import sys
 
-Sapphire_files	 = glob.glob("*.cpp") + glob.glob("Galileo/*.cpp")
+Sapphire_files = ["api.cpp", "CrossPlugin.cpp", "GLStart.cpp", "Image.cpp", 
+    "SapphireInit.cpp", "SapphirePlugin.cpp", "SaveImage.cpp", "script.cpp",
+    "Galileo/State.cpp", "Galileo/Vertex.cpp", "Galileo/Shape.cpp", "Galileo/Group.cpp",
+    "Galileo/Shader.cpp", "Galileo/Galileo.cpp", "Surface/Primitives.cpp"]
 
 UseCpp11ThreadsAndAtomics = ARGUMENTS.get('cpp11_thread', 0)
 UseSDL2ThreadsAndAtomics = ARGUMENTS.get('sdl2_thread', 0)

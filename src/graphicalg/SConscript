@@ -10,6 +10,6 @@ graphicalg = globalenv.SharedLibrary("graphicalg", ["structures.cpp", "circles.c
 installdir = os.path.join(os.path.join(librarydir, component))
 
 LibraryInstall(installdir, graphicalg, globalenv)
-globalenv.Install(os.path.join(installdir, "include"), ["structures.h", "circles.h", "lines.h"])
+globalenv.Install(os.path.join(installdir, "include"), ["structures.h", "circles.h", "lines.h", "graphicalg_stub.h"])
 
 Return("graphicalg")

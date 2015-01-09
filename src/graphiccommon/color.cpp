@@ -34,7 +34,7 @@ return c;
 }
 
 
-inline uint32_t concatRGBA(int r, int g, int b, int a){
+uint32_t concatRGBA(int r, int g, int b, int a){
 	//printf("concatenating RGBA\n");
 	/*
 	uint32_t rc=((r>255)?255:r);
