@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <TSPR/concurrent_queue.h>
 #include <algorithm>
 #include <memory>
 #include <v8.h>
@@ -71,11 +72,17 @@ namespace GL {
       virtual void FillGL(void) = 0; //Fills the OpenGL components given the vertices.
 
       std::shared_ptr<Image> mImage;
+      
+      unsigned last_texture_set;
+      
   public:
 
-      Drawable()
-      {InitGL();}
+      Drawable(){
+          last_texture_set = 0;
+          InitGL();
+      }
       Drawable(std::vector<Vertex> &aVertices){
+          last_texture_set = 0;
 
           mVertices.resize(aVertices.size());
 
@@ -87,6 +94,7 @@ namespace GL {
 
       Drawable(std::vector<Vertex> &aVertices, std::shared_ptr<Image> aImage)
         : mImage(aImage) {
+          last_texture_set = 0;
 
           mVertices.resize(aVertices.size());
 
@@ -96,8 +104,10 @@ namespace GL {
 
       }
 
-      Drawable(int a)
-      {mVertices.reserve(a);}
+      Drawable(int a){
+          last_texture_set = 0;
+          mVertices.reserve(a);
+      }
 
       virtual ~Drawable(){CloseGL();}
 
@@ -143,10 +153,12 @@ namespace GL {
 
       template<class T>
       void ReplaceImage(const std::shared_ptr<T> im){
-          unsigned lTex = mImage->DebugGetTexture();
-          mImage = im;
           
-          printf(BRACKNAME " Info: Replaced texture %u with %u\n", lTex, mImage->DebugGetTexture());
+          if(last_texture_set==im->DebugGetTexture())
+              return;
+          
+          mImage = im;
+          last_texture_set = mImage->DebugGetTexture();
           
       }
 

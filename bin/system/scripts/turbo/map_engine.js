@@ -121,14 +121,26 @@ function MapEngine(map, fps){
                 
                 if(i.is_input_person){
                     
-                    if(IsKeyPressed(KEY_UP))
+                    if(IsKeyPressed(KEY_UP)){
                         i.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_NORTH);
-                    if(IsKeyPressed(KEY_DOWN))
+                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_NORTH);
+                    }
+                    
+                    if(IsKeyPressed(KEY_DOWN)){
                         i.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_SOUTH);
-                    if(IsKeyPressed(KEY_LEFT))
+                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_SOUTH);
+                        
+                    }
+                    if(IsKeyPressed(KEY_LEFT)){
                         i.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_WEST);
-                    if(IsKeyPressed(KEY_RIGHT))
+                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_WEST);
+                        
+                    }
+                    if(IsKeyPressed(KEY_RIGHT)){
                         i.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_EAST);
+                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_EAST);
+                        
+                    }
                     
                 }
                 i.queued_commands.forEach(function(e){e(i)});

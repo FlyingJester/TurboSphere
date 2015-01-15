@@ -107,7 +107,7 @@ Turbo.Map = function(stream, compat){
     this.getPerson = function(name){
         for(var i in this.entities){
             if(this.entities[i].name==name)
-                return this.entities[i].name==name;
+                return this.entities[i];
         }
         return null;
     }

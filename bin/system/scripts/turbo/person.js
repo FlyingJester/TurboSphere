@@ -33,7 +33,11 @@ Turbo.Entity = function(x, y, layer, name, destroy){
 }
 
 Turbo.GetPerson = function(name){
-    if(Turbo.CurrentMap==null){
+
+    if(Turbo.CurrentMap){
+        return Turbo.CurrentMap.getPerson(name);
+    }
+    else{     
         for(var i in Turbo.SpooledEntities){
             if(Turbo.SpooledEntities[i].name==name)
                 return Turbo.SpooledEntities[i];
@@ -41,15 +45,13 @@ Turbo.GetPerson = function(name){
         
         return null;
     }
-    else{
-        return Turbo.CurrentMap.GetPerson(name);
-    }
 }
 
 // Small helper to validate names.
 Turbo.GetPersonThrow = function(name){
     var person = Turbo.GetPerson(name);
-    if(person==null){
+    
+    if(!person){
         throw "No such person " + name;
     }
     
@@ -91,16 +93,18 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
         return this.spriteset.directions[person.spriteset.direction_i];
     }
     
-    this.setDirection = function(name){
-        for(var i in this.spriteset.directions){
-            if(this.spriteset.directions[i].name==name){
+    this.setDirection = function(dir_name){
+
+        for(var i = 0; i<this.spriteset.directions.length; i++){
+            
+            if(this.spriteset.directions[i].name==dir_name){
                 this.direction_i = i;
                 this.validateDirection();
                 return;
             }
         }
         
-        throw "Frame " + name + " does not exist in spriteset for " + this.name;
+        throw "Frame " + dir_name + " does not exist in spriteset for " + this.name;
         
     }
     
@@ -280,7 +284,8 @@ function SetPersonXYFloat(name, x, y){
 }
 
 function SetPersonDirection(name, direction){
-    Turbo.GetPersonThrow(name).setDirection(name);
+    
+    Turbo.GetPersonThrow(name).setDirection(direction);
 }
 
 function SetPersonFrame(name, frame){

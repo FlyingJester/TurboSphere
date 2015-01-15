@@ -79,6 +79,12 @@ Turbo.Spriteset = function(stream){
         // Load up the directions
         for(var d = 0; d<this.num_directions; d++){
             this.directions[d] = Turbo.ReadBinaryObject(stream, Turbo.SpritesetScheme.direction);
+            
+            while(this.directions[d].name.charCodeAt(this.directions[d].name.length-1)==0) 
+                this.directions[d].name = this.directions[d].name.substr(0, this.directions[d].name.length-1);
+            
+            //throw this.directions[d].name.charCodeAt(this.directions[d].name.length-1) + this.directions[d].name[this.directions[d].name.length-1];
+            
             this.directions[d].frames = new Array(this.directions[d].num_frames);
 
             for(var f = 0; f<this.directions[d].num_frames; f++){
