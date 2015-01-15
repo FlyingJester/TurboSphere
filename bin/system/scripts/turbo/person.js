@@ -17,6 +17,7 @@ Turbo.Entity = function(x, y, layer, name, destroy){
     this.draw_offset = {x:0, y:0};
     this.layer = layer;
     this.name = name;
+    this.is_input_person = false;
     this.destroy_on_map_change = destroy;
     this.queued_commands = [];
     

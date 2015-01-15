@@ -113,10 +113,24 @@ function MapEngine(map, fps){
         var time = GetSeconds(); // In seconds.
 
         // Perform map logic
-
+        AreKeysLeft()
+        
         // Perform queue commands
         Turbo.CurrentMap.entities.forEach(
             function(i){
+                
+                if(i.is_input_person){
+                    
+                    if(IsKeyPressed(KEY_UP))
+                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_NORTH);
+                    if(IsKeyPressed(KEY_DOWN))
+                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_SOUTH);
+                    if(IsKeyPressed(KEY_LEFT))
+                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_WEST);
+                    if(IsKeyPressed(KEY_RIGHT))
+                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_EAST);
+                    
+                }
                 i.queued_commands.forEach(function(e){e(i)});
                 i.queued_commands = [];
             }
@@ -131,10 +145,8 @@ function MapEngine(map, fps){
         // render_script
         Turbo.CurrentMap.render_script();
 
-
         // Throttle FPS
         FlipScreen();
-        while(AreKeysLeft()){GetKey();}
 
         // We only change maps at the end of a frame.
         if(Turbo.IsChangingMaps){
@@ -143,7 +155,7 @@ function MapEngine(map, fps){
             Turbo.IsChangingMaps = false;
         }
 
-        var frame_surplus = (fps_interval-(GetSeconds()-time))/1000; // In milliseconds.
+        var frame_surplus = (fps_interval-(GetSeconds()-time)); // In milliseconds.
         Delay(Math.max(frame_surplus, 0)); // In milliseconds.
 
     }
@@ -316,9 +328,21 @@ function SetZoneLayer(z, n){return z.layer = n;}
 function ExecuteZoneScript(z){z.on_touch();}
 function RenderMap(){Turbo.CurrentMap.drawMap};
 
-function AttachInput(person){Turbo.CurrentMap.input_person = person;}
+function AttachInput(person){
+    
+    var entity_list = Turbo.CurrentMap?Turbo.CurrentMap.entities:Turbo.SpooledEntities;
+    
+    entity_list.forEach(function(i){i.is_input_person = (i.name==person);});
+    
+}
 
-function DetachInput(person){Turbo.CurrentMap.unsetInput();}
+function DetachInput(){
+    
+    var entity_list = Turbo.CurrentMap?Turbo.CurrentMap.entities:Turbo.SpooledEntities;
+    
+    entity_list.forEach(function(i){i.is_input_person = false;})
+    
+}
 
 function IsInputAttached(){return Turbo.CurrentMap.input_person;}
 
@@ -404,8 +428,8 @@ function CreatePerson(name, spriteset, destroy_on_map_change){
         Turbo.SpooledEntities.push(new Turbo.Person(0, 0, 0, name, destroy_on_map_change, loaded_spriteset));
     }
 
-function GetCurrentPerson(){
-    return Turbo.CurrentPerson;
 }
 
+function GetCurrentPerson(){
+    return Turbo.CurrentPerson;
 }

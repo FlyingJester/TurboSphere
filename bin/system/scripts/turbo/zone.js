@@ -8,4 +8,3 @@ if (typeof Turbo == "undefined")
 Turbo.ZoneFromComposite = function(pos, scheme){
 
 }
-
