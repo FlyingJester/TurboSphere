@@ -90,11 +90,18 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
     }
     
     this.getDirection = function(){
-        return this.spriteset.directions[person.spriteset.direction_i];
+        return this.spriteset.directions[this.direction_i];
+    }
+    
+    this.getFrame = function(){
+        return this.getDirection().frames[this.frame];
     }
     
     this.setDirection = function(dir_name){
-
+    
+        if(dir_name==this.direction)
+            return;
+        
         for(var i = 0; i<this.spriteset.directions.length; i++){
             
             if(this.spriteset.directions[i].name==dir_name){
@@ -108,8 +115,18 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
         
     }
     
-    this.step = function(distance){
+    this.step = function(){
         
+        this.frame_counter++;
+        if(this.frame_counter>=this.getFrame().delay){
+            
+            this.frame_counter = 0;
+            
+            this.frame++;
+            this.frame%=this.getDirection().frames.length;
+            
+            this.setImageFromCurrentFrame();
+        }
     }
     
     this.__proto__ = new Turbo.Entity(x, y, layer, name, destroy);
@@ -191,7 +208,7 @@ const COMMAND_MOVE_WEST         = "COMMAND_MOVE_WEST";
 
 Turbo.DefaultCommands = {
     COMMAND_WAIT:function(){},
-    COMMAND_ANIMATE:function(){this.frame_counter++;},
+    COMMAND_ANIMATE:function(that){that.step();},
     COMMAND_FACE_NORTH:function(that){
         SetPersonDirection(that.name, "north");
     },
