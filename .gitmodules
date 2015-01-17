@@ -3,10 +3,13 @@
 	url = https://github.com/FlyingJester/TSPR.git
 [submodule "v8"]
 	path = src/thirdparty/v8
-	url = https://github.com/v8/v8.git
+	url = https://chromium.googlesource.com/v8/v8.git
 [submodule "src/t5"]
 	path = src/t5
 	url = https://github.com/FlyingJester/libt5
 [submodule "bin/system/formats"]
 	path = bin/system/formats
 	url = https://github.com/sphere-group/formats.git
+[submodule "src/thirdparty/depot_tools"]
+	path = src/thirdparty/depot_tools
+	url = https://chromium.googlesource.com/chromium/tools/depot_tools.git
