@@ -8,7 +8,6 @@
 #include "intrinsics.hpp"
 #include "engine.hpp"
 
-static JSRuntime *runtime = nullptr;
 static bool inited = false;
 
 const JSClass ts_global_class = {
@@ -132,14 +131,13 @@ bool RunGame(const char *path, const char *root_path){
     TS_PrintSystem(game_env->system, stdout);
     TS_PrintConfig(game_env->config, stdout);
 #endif
-
     // Prepare a JSRuntime if none exist.
-    if(runtime==nullptr){
-        runtime = JS_NewRuntime(8L * 1024L * 1024L);
-    }
+    std::unique_ptr<JSRuntime, void(*)(JSRuntime *)> runtime_ptr(JS_NewRuntime(8L * 1024L * 1024L), JS_DestroyRuntime);
+    JSRuntime *runtime = runtime_ptr.get();
     
     // Prepare a JSContext and a compartment, including the global object
-    JSContext *ctx = JS_NewContext(runtime, 8192);
+    std::unique_ptr<JSContext, void(*)(JSContext *)> context_ptr(JS_NewContext(runtime, 8192), JS_DestroyContext);
+    JSContext *ctx = context_ptr.get();
     
     if(!ctx){
         t5::DataSource::StdOut()->WriteF("[Engine] Error could not create context\n");
@@ -195,6 +193,8 @@ bool RunGame(const char *path, const char *root_path){
     
     // Free the JSContext
     JS_DestroyContext(ctx);
+    
+    JS_DestroyRuntime(runtime);
     
     return true;
     
