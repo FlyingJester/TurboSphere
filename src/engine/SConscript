@@ -2,60 +2,20 @@ import os
 import sys
 import glob
 
-full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin compiler librarydir binarydir"
+full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin compiler librarydir binarydir jslib"
 
 Import(full_import_list)
 
-files = [
-  "engine.cpp",
-  "functionload.cpp",
-  "loadplugins.cpp",
-  "typed_array.cpp",
-  "variableregister.cpp",
-  "version.cpp",
-  "options.c",
+engine_files = [
+    "engine.cpp",
+    "loadplugin.cpp",
+    "intrinsics.cpp"
 ]
 
-environment = localenv
+localenv = globalenv.Clone()
+localenv.Append(LIBS = ['t5', jslib, 'configmanager'])
 
-libyyymonitor = SConscript(dirs = ["platform/libyyymonitor"], exports = ["environment"])
-
-enginelibs = [
-  "t5",
-  "graphiccommon",
-  "graphicalg",
-  "configmanager",
-  "v8",
-  libyyymonitor,
-]
-
-platformfiles = [
-    "platform/platform.cpp",
-    "platform/time.cpp",
-    "platform/background.cpp"
-
-]
-
-if IsDarwin():
-  platformfiles += ["platform/osx_time.m", "platform/osx_messagebox.m", "platform/osx_path.m"]
-else:
-  platformfiles += ["platform/generic_path.c"]
-
-
-enginelibs += [globalenv.StaticLibrary("turbo_patform", platformfiles)]
-
-if not IsWindows():
-  enginelibs+= ["dl"]
-  enginelibs+= ["z"]
-
-if IsDarwin():
-  enginelibs += ["objc"]
-  localenv.Append(FRAMEWORKS=['Cocoa', 'CoreFoundation'])
-  globalenv.Append(FRAMEWORKS=['CoreFoundation', 'Foundation'])
-
-localenv.Append(LIBS = enginelibs)
-
-turbosphere = globalenv.Program("turbosphere", source = files, LIBS = enginelibs)
+turbosphere = localenv.Program("turbosphere", source = engine_files)
 
 globalenv.Install(binarydir, [turbosphere])
 

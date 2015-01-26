@@ -1,8 +1,8 @@
 import os
 import sys
 
-full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir corelibtargets"
-local_export_list ="currentenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir corelibtargets"
+full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir corelibtargets jslib"
+local_export_list ="currentenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir corelibtargets jslib"
 
 Import(full_import_list)
 
@@ -12,20 +12,21 @@ plugin_directory = os.getcwd()
 
 # TODO: add better make/gmake compatibility, especially about the environment.
 
-for d in os.listdir(plugin_directory):
+if False:
+    for d in os.listdir(plugin_directory):
 
-  currentenv = globalenv.Clone()
+      currentenv = globalenv.Clone()
 
-  currentenv.Append(CPPDEFINES = ["USE_PNG"])
+      currentenv.Append(CPPDEFINES = ["USE_PNG"])
 
-  if os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'SConscript')):
-    print "Using Scons on "+os.path.join(os.path.join(plugin_directory, d))
-    SConscript(dirs=[os.path.join(plugin_directory, d)], exports = local_export_list)
-  elif os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'makefile')) or os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'Makefile')):
-    print "Using Make on "+os.path.join(os.path.join(plugin_directory, d))
-    if os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'configure')):
-      print "Running configure..."
-      os.system(os.path.join(os.path.join(plugin_directory, d), "configure"))
-    print "Running make..."
-    os.system("make -C " + os.path.join(plugin_directory, d))
+      if os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'SConscript')):
+        print "Using Scons on "+os.path.join(os.path.join(plugin_directory, d))
+        SConscript(dirs=[os.path.join(plugin_directory, d)], exports = local_export_list)
+      elif os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'makefile')) or os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'Makefile')):
+        print "Using Make on "+os.path.join(os.path.join(plugin_directory, d))
+        if os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'configure')):
+          print "Running configure..."
+          os.system(os.path.join(os.path.join(plugin_directory, d), "configure"))
+        print "Running make..."
+        os.system("make -C " + os.path.join(plugin_directory, d))
 

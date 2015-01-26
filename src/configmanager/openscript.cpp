@@ -1,19 +1,12 @@
-#include <sstream>
-#include <iostream>
-#include <fstream>
 #include <string>
 #include <memory>
-#include <stdio.h>
-#include <v8.h>
-#include <t5_datasource.h>
+#include <vector>
+#include <mutex>
+#include <jsapi.h>
+#include <t5.h>
 #define CONFIGMGR_INTERNAL
 #include "openscript.h"
 #include "opengame.h"
-
-#define PLUGINNAME "configmanager"
-
-#include <pluginsdk/plugin.h>
-using namespace std;
 
 #ifdef _WIN32
 #define STRDUP _strdup
@@ -22,85 +15,198 @@ using namespace std;
 #define STRDUP strdup
 #endif
 
-char *openfile(const char *filename){
+struct SystemScriptTracker{
+    JSContext *ctx;
+    std::vector<std::string> scripts; 
+};
 
-    std::unique_ptr<t5::DataSource> source (t5::DataSource::FromPath(t5::DataSource::eRead, filename));
+std::vector<struct SystemScriptTracker> system_script_tracker;
+std::mutex system_script_tracker_mutex;
 
-    char *filetext = (char *)malloc(source->Length()+1);
-    filetext[source->Length()] = '\0';
+bool TS_ScriptWasEvaluated(JSContext *ctx, const std::string &script, bool add_if_not_there = true){
+    
+    system_script_tracker_mutex.lock();
+    struct SystemScriptTracker *tracker = nullptr;
+    for(std::vector<struct SystemScriptTracker>::iterator iter = system_script_tracker.begin(); iter!=system_script_tracker.end(); iter++){
+        if(iter->ctx==ctx){
+            tracker = &(*iter);
+            break;
+        }
+    }
+    
+    if(tracker==nullptr){
+        struct SystemScriptTracker that = {ctx};
+        system_script_tracker.push_back(that);
+        tracker = &(system_script_tracker.back());
+    }
+    
+    bool matches = false;
+    
+    for(std::vector<std::string>::const_iterator c_iter = tracker->scripts.cbegin(); c_iter!=tracker->scripts.cend(); c_iter++){
+        if((*c_iter)==script){
+            matches = true;
+            break;
+        }
+    }
+    
+    if((!matches) && add_if_not_there)
+        tracker->scripts.push_back(script);
+    
+    system_script_tracker_mutex.unlock();
 
-    source->Read(filetext, source->Length());
+    if(matches){
+        return true;
+    }
+    
+#ifndef RELEASE_NO_PRINTING
+    t5::DataSource::StdOut()->WriteF("[ConfigManager] Info considering script ", script, ", ", (matches?"not ":""), "compiled.\n");
+#endif
 
-    return filetext;
+    return false;
+    
 }
 
-
-bool ExecuteString(v8::Handle<v8::String> source,v8::Handle<v8::String> name, v8::Isolate *isolate, bool print_result) {
-
-    if(!isolate){
-        fprintf(stderr, "[ConfigManager] ExecuteString Error: isolate was null.");
+bool TS_LoadScript(JSContext *ctx, const char *filename, bool only_once){
+    
+    if(!filename){
+        t5::DataSource::StdOut()->WriteF("[ConfigManager] ", __func__, " Error bad filename NULL\n");
         return false;
     }
-
-    v8::ScriptOrigin origin(name);
-    v8::Handle<v8::Script> script = v8::Script::Compile(source, &origin);
-
-
-    if (script.IsEmpty()){
-        v8::String::Utf8Value pname(name);
-
-        printf("\nCould not compile script %s\n", *pname);
+    
+    if(!t5::IsFile(filename)){
+        t5::DataSource::StdOut()->WriteF("[ConfigManager] ", __func__, " Error no such file ", filename, "\n");
         return false;
     }
-    else{
-        v8::Handle<v8::Value> result = script->Run();
-        if (result.IsEmpty()){
-            printf("JS did not run successfully.\n");
+    
+    {
+        std::string file = filename;
+        if(only_once && TS_ScriptWasEvaluated(ctx, file))
+            return true;
+    }
+    
+    std::unique_ptr<t5::DataSource> source(t5::DataSource::FromPath(t5::DataSource::eRead, filename));
+    
+    if(source==nullptr){
+        t5::DataSource::StdOut()->WriteF("[ConfigManager] ", __func__, " Error could not open main script ", filename, '\n');
+        return false;
+    }
+    
+    size_t len = source->Length();
+    char * script = (char *)malloc(len+1);
+    script[len] = '\0';
+    
+    source->Read(script, len);
+    bool r = TS_ExecuteStringL(ctx, filename, script, len);
+    
+    free(script);
+    
+    return r;
+
+}
+
+bool TS_ExecuteStringL(JSContext *ctx, const char *filename, const char *source,  size_t len){
+    
+    JS::OwningCompileOptions options(ctx);
+    options.setUTF8(true);
+    options.setFileAndLine(ctx, filename, 0);
+    options.setIntroductionScript(nullptr);
+    options.setVersion(JSVERSION_LATEST);
+    JS::RootedObject scope(ctx, JS::CurrentGlobalOrNull(ctx));
+    
+    if((!scope) || OBJECT_TO_JSVAL(scope).isNull())
+        return false;
+    
+    JS::RootedScript script(ctx);
+    JS::RootedValue rval(ctx);
+
+    if(!JS::Compile(ctx, scope, options, source, len, &script)){
+        t5::DataSource::StdOut()->WriteF("[ConfigManager] ", __func__, " Error could not compile script ", filename, '\n');
+        return false;
+    }
+    
+    if(!JS_ExecuteScript(ctx, scope, script, &rval)){
+        t5::DataSource::StdOut()->WriteF("[ConfigManager] ", __func__, " Error could not execute script ", filename, '\n');
+        return false;
+    }
+    
+    return true;
+
+}
+
+bool ExecuteString(JSContext *ctx, const char *filename, const char *source){
+    return TS_ExecuteStringL(ctx, filename, source, strlen(source));
+}
+
+// NULL prefix for no prefix.
+bool TS_LoadScriptPrefixed_JS(JSContext *ctx, unsigned argc, JS::Value *vp, const char * prefix, bool only_once){
+    
+    std::string file;
+    
+    if(prefix){
+        
+        file = prefix;
+    
+        if((file.size()!=0) && (file.back()!='/'))
+            file.push_back('/');
+    
+    }
+    
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    args.rval().setUndefined();
+    
+    if(args.length()<1){
+        const char error_str[] = "[ConfigManager] TS_LoadScriptPrefixed_JS Error called with no arguments";
+        JS::RootedValue error(ctx, STRING_TO_JSVAL(JS_NewStringCopyN(ctx, error_str, sizeof(error_str)-1)));
+        JS_SetPendingException(ctx, error);
+        return false;
+    }
+    
+    if(!args[0].isString()){
+        const char error_str[] = "[ConfigManager] TS_LoadScriptPrefixed_JS Error argument 0 is not a string";
+        JS::RootedValue error(ctx, STRING_TO_JSVAL(JS_NewStringCopyN(ctx, error_str, sizeof(error_str)-1)));
+        JS_SetPendingException(ctx, error);
+        return false;
+    }
+    
+    {
+        char buffer[1024]; // No path can be even this large according to both Posix and Win32 
+        size_t len = JS_EncodeStringToBuffer(ctx, args[0].toString(), buffer, sizeof(buffer));
+        
+        if(len==sizeof(buffer)-1){
+            const char error_str[] = "[ConfigManager] TS_LoadScriptPrefixed_JS Error argument 0 string is too long";
+            JS::RootedValue error(ctx, STRING_TO_JSVAL(JS_NewStringCopyN(ctx, error_str, sizeof(error_str)-1)));
+            JS_SetPendingException(ctx, error);
             return false;
         }
-        else{
-
-            if (print_result && !result->IsUndefined())
-            {
-                v8::String::Utf8Value str(result);
-                printf("JS Result will be passed.\n");
-                printf("%s\n", *str);
+        
+        buffer[len] = '\0';
+        file+=buffer;
+        
+        if(only_once && TS_ScriptWasEvaluated(ctx, file))
+            return true;
+        
+        t5::DataSource *source = t5::DataSource::FromPath(t5::DataSource::eRead, file.c_str());
+        if(!source){
+            std::string err = "[ConfigManager] TS_LoadScriptPrefixed_JS Error could open script "; err+=file;
+            JS::RootedValue error(ctx, STRING_TO_JSVAL(JS_NewStringCopyN(ctx, err.c_str(), err.length())));
+            JS_SetPendingException(ctx, error);
+            return false;
+        }
+        
+        int source_len = source->Length();
+        std::unique_ptr<char, void(*)(void *)> script_source((char *)malloc(source_len+1), free);
+        script_source.get()[source_len] = '\0';
+        source->Read(script_source.get(), source_len);
+        
+        if(!TS_ExecuteStringL(ctx, file.c_str(), script_source.get(), source_len)){
+            if(!JS_ReportPendingException(ctx)){
+                std::string err = "[ConfigManager] TS_LoadScriptPrefixed_JS Error could not run script "; err+=file;
+                JS::RootedValue error(ctx, STRING_TO_JSVAL(JS_NewStringCopyN(ctx, err.c_str(), err.length())));
+                JS_SetPendingException(ctx, error);
             }
+            return false;
         }
     }
     return true;
 }
 
-template<class T>
-void OpenAndRunScript(const std::string &file, const char *origin, const T& args){
-    printf("[ConfigManager] Info: Loading script %s.\n", file.c_str());
-    std::unique_ptr<char, void(*)(void *)> ScriptStr(openfile(file.c_str()), free);
-    if(ScriptStr.get()[0]=='\0') {
-        args.GetIsolate()->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(args.GetIsolate(), (std::string("[ConfigManager] ") + origin + " Error: Could not load script.").c_str())));
-        return;
-    }
-    ExecuteString(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), ScriptStr.get()), v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), file.c_str()), v8::Isolate::GetCurrent(), false);
-}
-
-
-static void LoadScriptWithPrefix(const v8::FunctionCallbackInfo<v8::Value> &args, const char *origin, const char *prefix){
-    if(args.Length()<1) {
-        args.GetIsolate()->ThrowException(v8::Exception::Error(v8::String::NewFromUtf8(args.GetIsolate(), (std::string("[ConfigManager] ") + origin + " Error: No arguments given.\n").c_str())));
-        return;
-    }
-
-    Turbo::CheckArg::String(args, 0, __func__);
-
-    v8::String::Utf8Value str(args[0]);
-    string scriptpath = string(prefix) + (*str);
-    OpenAndRunScript(scriptpath, __func__, args);
-}
-
-
-void TS_LoadScript(const v8::FunctionCallbackInfo<v8::Value> &args){
-    LoadScriptWithPrefix(args, __func__, GetDirs()->script);
-}
-
-void TS_LoadSystemScript(const v8::FunctionCallbackInfo<v8::Value> &args) {
-    LoadScriptWithPrefix(args, __func__, GetDirs()->systemscript);
-}
