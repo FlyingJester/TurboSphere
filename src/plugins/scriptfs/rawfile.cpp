@@ -2,6 +2,12 @@
 #include "rawfile.hpp"
 #include <memory>
 
+namespace scriptfs{
+
+Turbo::JSPrototype<RawFileHolder> RawFileProto("RawFile",  scriptfs::OpenRawFile);
+
+}
+
 RawFileHolder::RawFileHolder(a _a){
     A = _a;
 }
@@ -18,9 +24,11 @@ void RawFileHolder::operator = (const a _a){
     A = _a;
 }
 
+void InitRawFile(JSContext *ctx, int ID){
+    scriptfs::RawFileProto.initForContext(ctx);
+}
 
-
-const char * ExplainRawFileError(enum RawFileError aError){
+const char * const ExplainRawFileError(enum RawFileError aError){
     switch(aError){
         case RF_NoError:
             return "No error.";

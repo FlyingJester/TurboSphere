@@ -1,68 +1,72 @@
-
 #include <array>
+#include <cassert>
 #include <t5.h>
-#include "scriptfs.hpp"
 #include <openscript.h>
 #include <opengame.h>
+#include "scriptfs.hpp"
 #include "script.hpp"
 #include "rawfile.hpp"
 
 namespace scriptfs {
 
-    std::array<Turbo::JSCallback, NUM_FUNCS> Functions = {{
-        scriptfs::OpenRawFile,
-        T5Call<bool, t5::IsFile>,
-        T5Call<bool, t5::IsDir>
+    std::array<JSNative, 2> Functions = {{
+       // scriptfs::OpenRawFile,
+        scriptfs::IsFile,
+        scriptfs::IsDir
     }};
 
-    std::array<Turbo::JSName, NUM_FUNCS> FunctionNames = {{
-        "RawFile",
+    std::array<const char *, 2> FunctionNames = {{
+      // "RawFile",
         "IsFile",
         "IsDirectory",
     }};
 
-    std::array<Turbo::JSValue, NUM_VARS> Variables = {{
-        v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), GetDirs()->root),
-        v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), GetDirs()->system)
-    }};
-    std::array<Turbo::JSName, NUM_VARS> VariableNames = {{
-        "FILESYSTEM_ROOT",
-        "FILESYSTEM_SYSTEM"
-    }};
-
 }
 
-void Close(void){
-
-}
-
-const char * Init(int ID){
-    InitRawFile(ID);
-
+const char *  Init(JSContext *ctx, unsigned ID){
+    assert(ctx);
+    assert(ID>0);
+    InitRawFile(ctx, ID);
     return "ScriptFS";
+    
 }
 
-int GetNumFunctions(void){
-    return NUM_FUNCS;
+void  Close(JSContext *ctx){
+    assert(ctx);
 }
 
-Turbo::JSFunctionArray GetFunctions(void){
-    return scriptfs::Functions.data();
+int  NumFunctions(JSContext *ctx){
+    assert(ctx);
+    return scriptfs::Functions.size();
 }
 
-Turbo::JSNameArray GetFunctionNames(void){
-    return scriptfs::FunctionNames.data();
+JSNative GetFunction(JSContext *ctx, int n){
+    assert(ctx);
+    assert(n<scriptfs::Functions.size());
+    
+    return scriptfs::Functions[n];
 }
 
-int GetNumVariables(void){
-return NUM_VARS;
+const char *  GetFunctionName(JSContext *ctx, int n){
+    assert(ctx);
+    assert(n<scriptfs::Functions.size());
+    
+    return scriptfs::FunctionNames[n];
 }
 
-Turbo::JSValueArray GetVariables(void){
-    return scriptfs::Variables.data();
-
+int  NumVariables(JSContext *ctx){
+    assert(ctx);
+    return 0;
 }
-
-Turbo::JSNameArray GetVariableNames(void){
-    return scriptfs::VariableNames.data();
+JS::Heap<JS::Value> * GetVariable(JSContext *ctx, int n){
+    assert(ctx);
+    assert(false);
+    
+    return nullptr;
+}
+const char *  GetVariableName(JSContext *ctx, int n){
+    assert(ctx);
+    assert(false);
+    
+    return nullptr;
 }

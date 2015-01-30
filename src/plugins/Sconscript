@@ -12,21 +12,20 @@ plugin_directory = os.getcwd()
 
 # TODO: add better make/gmake compatibility, especially about the environment.
 
-if False:
-    for d in os.listdir(plugin_directory):
+for d in os.listdir(plugin_directory):
 
-      currentenv = globalenv.Clone()
+  currentenv = globalenv.Clone()
 
-      currentenv.Append(CPPDEFINES = ["USE_PNG"])
+  currentenv.Append(CPPDEFINES = ["USE_PNG"])
 
-      if os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'SConscript')):
-        print "Using Scons on "+os.path.join(os.path.join(plugin_directory, d))
-        SConscript(dirs=[os.path.join(plugin_directory, d)], exports = local_export_list)
-      elif os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'makefile')) or os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'Makefile')):
-        print "Using Make on "+os.path.join(os.path.join(plugin_directory, d))
-        if os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'configure')):
-          print "Running configure..."
-          os.system(os.path.join(os.path.join(plugin_directory, d), "configure"))
-        print "Running make..."
-        os.system("make -C " + os.path.join(plugin_directory, d))
+  if os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'SConscript')):
+    print "Using Scons on "+os.path.join(os.path.join(plugin_directory, d))
+    SConscript(dirs=[os.path.join(plugin_directory, d)], exports = local_export_list)
+  elif os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'makefile')) or os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'Makefile')):
+    print "Using Make on "+os.path.join(os.path.join(plugin_directory, d))
+    if os.path.exists(os.path.join(os.path.join(plugin_directory, d), 'configure')):
+      print "Running configure..."
+      os.system(os.path.join(os.path.join(plugin_directory, d), "configure"))
+    print "Running make..."
+    os.system("make -C " + os.path.join(plugin_directory, d))
 
