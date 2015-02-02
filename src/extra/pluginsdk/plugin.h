@@ -107,9 +107,9 @@ namespace Turbo{
             case JSType::String:
                 return val.isString();
             case JSType::Number:
-                return val.isBoolean();
+                return val.isNumber();
             case JSType::Bool:
-                return val.isObject();
+                return val.isBoolean();
             case JSType::Object:
                 return val.isObject();
             case JSType::Array:
@@ -196,34 +196,23 @@ namespace Turbo{
             nullptr, 
             nullptr
         };
+        unsigned num_constructor_args;
 
-        JSPrototype(const char *class_name, JSNative construct){
+        JSPrototype(const char *class_name, JSNative construct = nullptr, unsigned nargs = 0, JSFinalizeOp finalizer = nullptr){
             
             clazz.name = strdup(class_name);
             //prototypes.reserve(8);
             clazz.construct = construct;
+            num_constructor_args = nargs;
+            clazz.finalize = finalizer;
             
         };
 
         ~JSPrototype(){
             free((void *)(clazz.name));
-            
         };
         
-        bool getPrototypeForContext(JSContext *ctx, JS::MutableHandleObject obj){
-            prototypes_mutex.lock();
-            for(typename std::vector<struct proto_object>::const_iterator citer = prototypes.cbegin(); citer!=prototypes.cend(); citer++){
-                if(citer->ctx==ctx){
-                    *obj = citer->proto;
-                    prototypes_mutex.unlock();
-                    return true;
-                }
-            }
-            prototypes_mutex.unlock();
-            return false;
-        }
-        
-        void initForContext(JSContext *ctx){
+        void initForContext(JSContext *ctx, JSPropertySpec *ps = nullptr, JSFunctionSpec *fs = nullptr, JSPropertySpec *static_ps = nullptr, JSFunctionSpec *static_fs = nullptr){
             
             prototypes_mutex.lock();
             
@@ -231,28 +220,57 @@ namespace Turbo{
             JS_GetPrototype(ctx, global, &global_proto);
             
             prototypes.push_back(proto_object({ctx}));
-            prototypes.back().proto.set(JS_InitClass(ctx, global, global_proto, &clazz, nullptr, 0, nullptr, nullptr, nullptr, nullptr));
+            prototypes.back().proto.set(JS_InitClass(ctx, global, global_proto, &clazz, clazz.construct, num_constructor_args, ps, fs, static_ps, static_fs));
             
             prototypes_mutex.unlock();
         
         }
         
+        bool getPrototypeForContext(JSContext *ctx, JS::MutableHandleObject obj){
+            
+            prototypes_mutex.lock();
+            
+            for(typename std::vector<struct proto_object>::const_iterator citer = prototypes.cbegin(); citer!=prototypes.cend(); citer++){
+                
+                if(citer->ctx==ctx){
+                    *obj = citer->proto;
+                    prototypes_mutex.unlock();
+                    return true;
+                }
+                
+            }
+            
+            prototypes_mutex.unlock();
+            return false;
+        
+        }
+        
         JSObject *wrap(JSContext *ctx, T *that){
+            
             for(typename std::vector<struct proto_object>::iterator iter = prototypes.begin(); iter!=prototypes.end(); iter++){
+                
                 if(iter->ctx==ctx){
                     JS::RootedObject global(ctx, JS::CurrentGlobalOrNull(ctx)), proto(ctx, iter->proto.get());
                     JS::RootedObject obj(ctx, JS_NewObjectWithGivenProto(ctx, &clazz, proto, global));
                     JS_SetPrivate(obj.get(), that);
                     return obj;
                 }
+                
             }
+            
             assert(false);
             return nullptr;
+            
         }
 
         template<class A>
         T *unwrap(JSContext *ctx, A a, JS::CallArgs *args){
-            return static_cast<T *>((JS_GetInstancePrivate(ctx, a, &clazz, args)));
+            return static_cast<T *>(JS_GetInstancePrivate(ctx, a, &clazz, args));
+        }
+        
+        template<class A> // For use in constructors and destructors. Does not check class.
+        T *unsafeUnwrap(A a){
+            return static_cast<T *>(JS_GetPrivate(a));
         }
         
         T *getSelf(JSContext *ctx, JS::Value *vp, JS::CallArgs *args){
