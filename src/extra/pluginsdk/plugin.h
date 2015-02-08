@@ -86,6 +86,16 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 
 namespace Turbo{
 
+    template<typename T = char>
+    struct JSStringHolder{
+        T *const string;
+        JSContext *const ctx;
+        
+        JSStringHolder(JSContext *ctx_, T *string_): string(string_), ctx(ctx_){}
+        
+        ~JSStringHolder(){JS_free(ctx, string);}
+    };
+    
     /////
     // Basic TypeDefs    
     typedef const char *(*InitFunction)(JSContext *ctx, unsigned ID);
@@ -96,6 +106,9 @@ namespace Turbo{
     typedef const char *(*GetNameFunction)(JSContext *ctx, int n);
     
     inline void SetError(JSContext *ctx, const std::string err){
+        // The short-circuit of the boolean-and will make the puts not happen with there is no pending exception.
+        // This gives us just a little more info on crash (lldb, for instance, can't handle printing `err').
+        assert((!JS_IsExceptionPending(ctx)) || (!puts(err.c_str())));
         JS::RootedValue error(ctx, STRING_TO_JSVAL(JS_NewStringCopyN(ctx, err.c_str(), err.length())));
         JS_SetPendingException(ctx, error);
     }
@@ -155,6 +168,12 @@ namespace Turbo{
         }
     }
     
+    template<typename T>
+    std::string BadArgTypeErrorMessage(unsigned i, enum JSType type, const T &func){
+        return std::string("[" PLUGINNAME "]") + " " + func + " Error: argument " + std::to_string(i) + " is not a " + GetTypeName(type);
+    }
+    
+    
     template<int N>
     bool CheckSignature(JSContext *ctx, JS::CallArgs &args, const enum JSType type[N], const char *func, bool set_error = true){
         
@@ -165,8 +184,7 @@ namespace Turbo{
             
             if(!CheckArg(ctx, args[i], type[i])){
                 if(set_error){
-                    const std::string err = std::string("[" PLUGINNAME "]") + " " + func + " Error: argument " + std::to_string(i) + " is not a " + GetTypeName(type[i]);
-                    SetError(ctx, err);
+                    SetError(ctx, BadArgTypeErrorMessage(i, type[i], func));
                 }
                 return false;
             }
@@ -198,13 +216,14 @@ namespace Turbo{
         };
         unsigned num_constructor_args;
 
-        JSPrototype(const char *class_name, JSNative construct = nullptr, unsigned nargs = 0, JSFinalizeOp finalizer = nullptr){
+        JSPrototype(const char *class_name, JSNative construct = nullptr, unsigned nargs = 0, JSFinalizeOp finalizer = nullptr, JSStrictPropertyOp set_prop = nullptr){
             
             clazz.name = strdup(class_name);
-            //prototypes.reserve(8);
+            //prototypes.reserve(1);
             clazz.construct = construct;
             num_constructor_args = nargs;
             clazz.finalize = finalizer;
+            clazz.setProperty = set_prop;
             
         };
 
@@ -246,11 +265,13 @@ namespace Turbo{
         }
         
         JSObject *wrap(JSContext *ctx, T *that){
-            
+            prototypes_mutex.lock();
             for(typename std::vector<struct proto_object>::iterator iter = prototypes.begin(); iter!=prototypes.end(); iter++){
                 
                 if(iter->ctx==ctx){
                     JS::RootedObject global(ctx, JS::CurrentGlobalOrNull(ctx)), proto(ctx, iter->proto.get());
+                    prototypes_mutex.unlock();
+                    
                     JS::RootedObject obj(ctx, JS_NewObjectWithGivenProto(ctx, &clazz, proto, global));
                     JS_SetPrivate(obj.get(), that);
                     return obj;
@@ -258,35 +279,71 @@ namespace Turbo{
                 
             }
             
+            // This usually means you didn't do a initForContext
             assert(false);
+            
             return nullptr;
             
         }
+        
+        T *unwrap(JSContext *ctx, JS::Value &a, JS::CallArgs *args){
+            if((!a.isObject()) || a.isNull() || a.isUndefined())
+                return nullptr;
+                
+            return unwrap(ctx, &a, args);
+        }
+        
 
-        template<class A>
-        T *unwrap(JSContext *ctx, A a, JS::CallArgs *args){
+        T *unwrap(JSContext *ctx, JS::Value *a, JS::CallArgs *args){
+            if((!a->isObject()) || a->isNull() || a->isUndefined())
+                return nullptr;
+            return unwrap(ctx, a->toObjectOrNull(), args);
+        }
+        
+        T *unwrap(JSContext *ctx, JSObject * a, JS::CallArgs *args){
+            JS::RootedObject obj(ctx, a);
+            return static_cast<T *>(JS_GetInstancePrivate(ctx, obj, &clazz, args));
+        }
+        
+        T *unwrap(JSContext *ctx, JS::HandleObject a, JS::CallArgs *args){
             return static_cast<T *>(JS_GetInstancePrivate(ctx, a, &clazz, args));
         }
         
-        template<class A> // For use in constructors and destructors. Does not check class.
-        T *unsafeUnwrap(A a){
-            return static_cast<T *>(JS_GetPrivate(a));
+        T *unwrap(JSContext *ctx, JS::HandleValue a, JS::CallArgs *args){
+            if((!a.isObject()) || a.isNull() || a.isUndefined())
+                return nullptr;
+            JS::RootedObject obj(ctx, a.toObjectOrNull());
+            return static_cast<T *>(JS_GetInstancePrivate(ctx, obj, &clazz, args));
         }
         
+        // For use in constructors and destructors. Does not check class.
+        T *unsafeUnwrap(JSObject * a){return static_cast<T *>(JS_GetPrivate(a));}
+        T *unsafeUnwrap(JS::Value *a){return static_cast<T *>(JS_GetPrivate(a->toObjectOrNull()));}
+        T *unsafeUnwrap(JS::Value &a){return static_cast<T *>(unsafeUnwrap(&a));}
+        T *unsafeUnwrap(JS::HandleValue a){return static_cast<T *>(unsafeUnwrap(a.toObjectOrNull()));}
+        T *unsafeUnwrap(JS::MutableHandleValue a){return static_cast<T *>(unsafeUnwrap(a.toObjectOrNull()));}
+        
         T *getSelf(JSContext *ctx, JS::Value *vp, JS::CallArgs *args){
+            
             JS::RootedValue  that_val(ctx, JS_THIS(ctx, vp));
             JS::RootedObject that_obj(ctx);
-            
-            if(!JS_ValueToObject(ctx, that_val, &that_obj))
-                return nullptr;
+            return unwrap(ctx, that_val.toObjectOrNull(), args);
+        }
+        
+        bool instanceOf(JSContext *ctx, JS::HandleObject obj, JS::CallArgs *args){
+            return JS_InstanceOf(ctx, obj, &clazz, args);
+        }
+        
+        bool instanceOf(JSContext *ctx, JS::HandleValue val, JS::CallArgs *args){
+            JS::RootedObject that_obj(ctx);
+            if(!JS_ValueToObject(ctx, val, &that_obj))
+                return false;
                 
-            return unwrap<JS::RootedObject &>(ctx, that_obj, args);
+            return instanceOf(ctx, that_obj, args);
         }
         
     };
-    
-    
-    
+
 }
 #ifdef NOPLUGNAME
     #undef PLUGINNAME

@@ -136,10 +136,8 @@ Turbo.Tileset = function(stream){
         if((this.BPP==32) && (typeof SurfaceFromArrayBuffer=="function")){
             var data = stream.read((this.BPP/8)*this.width*this.height);
 
-            // SurfaceFromArrayBuffer is evil, and you should not use it outside the Turbo runtime.
-            // If you MUST (or are just a jerk and just don't want to listen), remember that it
-            //   poisons the ArrayBuffer you give it.
-            tile_surfaces[i] = SurfaceFromArrayBuffer(this.width, this.height, data);
+            // We love you, SpiderMonkey
+            tile_surfaces[i] = SurfaceFromArrayBuffer(this.width, this.height, data.buffer);
         }
         else{ // Fall back to slow (but effective) methods since we can't hotwire the surface.
             var sf = new Surface(this.width, this.height, Black);

@@ -7,7 +7,6 @@
 
 namespace scriptfs {
     
-    
     template<bool(*func)(const char *)>
     bool t5Call(JSContext *ctx, unsigned argc, JS::Value *vp){
         
@@ -20,7 +19,7 @@ namespace scriptfs {
         
         char *file = JS_EncodeString(ctx, args[0].toString());
         if(!file){
-            Turbo::SetError(ctx, "could not encode string for argument 0");
+            Turbo::SetError(ctx, "[" PLUGINNAME "] t5Call Error could not encode string for argument 0");
             return false;
         }
         
@@ -127,7 +126,7 @@ namespace scriptfs {
         left = total-at;
         
         if(len>left){
-            Turbo::SetError(ctx, "tried to read past end of RawFile");
+            Turbo::SetError(ctx, "[" PLUGINNAME "] RawFileRead Error tried to read past end of RawFile");
             return false;
         }
 
@@ -162,7 +161,7 @@ namespace scriptfs {
         if(!Turbo::CheckSignature<2>(ctx, args, signature, __func__))
             return false;
         
-        JS::RootedObject buffer_root(ctx, &(args[0].toObject())); 
+        JS::RootedObject buffer_root(ctx, args[0].toObjectOrNull()); 
         
         unsigned char *data;
         uint32_t len;
@@ -214,7 +213,7 @@ bool scriptfs::OpenRawFile(JSContext *ctx, unsigned argc, JS::Value *vp){
     
     char *file = JS_EncodeString(ctx, args[0].toString());
     if(!file){ // How did this happen?
-        Turbo::SetError(ctx, "could not encode string for argument 0");
+        Turbo::SetError(ctx, "[" PLUGINNAME "] OpenRawFile Error could not encode string for argument 0");
         return false;
     }
     
@@ -224,7 +223,7 @@ bool scriptfs::OpenRawFile(JSContext *ctx, unsigned argc, JS::Value *vp){
     
     if(args.length()>1){
         if(!args[1].isBoolean()){
-            Turbo::SetError(ctx, "argument 1 is not a Boolean");
+            Turbo::SetError(ctx, "[" PLUGINNAME "] OpenRawFile Error argument 1 is not a Boolean");
             return false;
         }
         writeable = args[1].toBoolean();
@@ -235,7 +234,7 @@ bool scriptfs::OpenRawFile(JSContext *ctx, unsigned argc, JS::Value *vp){
 
     // If we can't write to it and it doesn't exist, this isn't going to work.
     if((!writeable) && (!t5::IsFile(full_path))){
-        Turbo::SetError(ctx, "not opening for writing and file does not exist");
+        Turbo::SetError(ctx, std::string("[" PLUGINNAME "] OpenRawFile Error file ") + full_path + " not opening for writing and file does not exist");
         return false;
     }
 

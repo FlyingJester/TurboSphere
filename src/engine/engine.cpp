@@ -34,9 +34,16 @@ void TS_ReportError(JSContext *ctx, const char *msg, JSErrorReport *report) {
     if(report->filename)
         filename = report->filename;
     
+    const char * error_type = "Generic Error";
+    if(JSREPORT_IS_WARNING(report->flags))
+        error_type="Warning";
+    else if(JSREPORT_IS_EXCEPTION(report->flags))
+        error_type="Exception";
+    else if(JSREPORT_IS_STRICT_MODE_ERROR(report->flags))
+        error_type="StrictError";
     
     t5::DataSource::StdOut()->Put('\n');
-    t5::DataSource::StdOut()->WriteF("[Engine] Error in file ", filename, " line ", report->lineno, ": ", msg, '\n');
+    t5::DataSource::StdOut()->WriteF("[Engine] ", JSREPORT_IS_STRICT(report->flags)?"Strict ":"", error_type, " in file ", filename, " line ", report->lineno+1, '\n', msg, '\n');
     t5::DataSource::StdOut()->Put('\n');
     
 }
