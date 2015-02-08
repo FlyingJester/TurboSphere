@@ -2,7 +2,6 @@
 
 #include "Sapphire.hpp"
 
-
 #ifdef _WIN32
 	#define SAPPHIRE_EXPORT __declspec(dllexport)
 

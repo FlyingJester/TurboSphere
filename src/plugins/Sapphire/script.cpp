@@ -20,8 +20,6 @@
 #include <openscript.h>
 #include <opengame.h>
 
-using std::string;
-
 namespace Sapphire {
 namespace Script {
 

@@ -1,0 +1,17 @@
+Import('currentenv IsDarwin IsWindows')
+
+import os
+import sys
+
+platform_files = ["sm_wrapper.cpp"]
+platform_libs = []
+platform_frameworks = []
+
+if IsDarwin():
+    platform_files += ["osx_time.m"]
+    platform_frameworks = ["CoreServices"]
+if IsWindows():
+    platform_files += ["win_time.c"]
+
+chrono_platform = currentenv.StaticLibrary('chrono_platform', platform_files, LIBS = platform_libs, FRAMEWORKS = platform_frameworks)
+Return('chrono_platform')

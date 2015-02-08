@@ -1,0 +1,16 @@
+Import('currentenv librarydir IsDarwin IsWindows corelibtargets binarydir LibraryInstall jslib')
+
+import os
+import sys
+
+files = [
+    "chrono.cpp",
+    "script.cpp"
+]
+
+platform = SConscript(dirs=["platform"], exports = "currentenv IsDarwin IsWindows")
+
+chrono     = currentenv.SharedLibrary('chrono', files, LIBS = [jslib, platform])
+Depends(chrono, corelibtargets)
+
+LibraryInstall(os.path.join(binarydir, 'plugin'), chrono, currentenv)
