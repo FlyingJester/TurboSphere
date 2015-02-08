@@ -19,6 +19,7 @@
 #include <screen.h>
 #include <openscript.h>
 #include <opengame.h>
+#include <t5.h>
 
 namespace Sapphire {
 namespace Script {
@@ -114,32 +115,32 @@ SAPPHIRE_SCRIPT_GROUP_GETTER(GroupAngleGetter,JS_NumberValue(that->GetRotation<d
 SAPPHIRE_SCRIPT_GROUP_SETTER_NUMBER(GroupAngleSetter, that->SetRotation(args[0].toNumber()))
 
 bool GroupSetter(JSContext *ctx, JS::HandleObject obj, JS::HandleId id, bool strict, JS::MutableHandleValue vp){
-    // TODO: Cache all this crap.
-    const std::string shader_program_string("shader_program"), shapes_string("string");
-    JS::RootedId shader_program_id(ctx), shapes_id(ctx);
-    JS::RootedString shader_program_string_handle(ctx, JS_NewStringCopyN(ctx, shader_program_string.c_str(), shader_program_string.length())),
-    shapes_string_handle(ctx, JS_NewStringCopyN(ctx, shapes_string.c_str(), shapes_string.length()));
-    JS_StringToId(ctx, shader_program_string_handle, &shader_program_id);
-    JS_StringToId(ctx, shapes_string_handle, &shapes_id);
-
-    if(shader_program_id == id){
-        if(!(vp.isObject() || vp.isNull() || vp.isUndefined())){
-            Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter ") + shader_program_string + " Error value is not a ShaderProgram");
+    JS::RootedValue id_value(ctx);
+    if(!JS_IdToValue(ctx, id, &id_value)){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter Error can not decode property ID"));
+        return false;
+    }
+    
+    struct Turbo::JSStringHolder<> file(ctx, JS_EncodeString(ctx, id_value.toString()));
+    
+    if(strcmp(file.string, "shader_program")==0){
+        if((!vp.isObject()) || vp.isNull() || vp.isUndefined()){
+            Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter ") + file.string + " Error value is not a valid object");
             return false;
         }
         
         std::shared_ptr<Galileo::Shader> *shader_program = ShaderProgramProto.unwrap(ctx, vp.toObjectOrNull(), nullptr);
         if(!shader_program){
-            Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter ") + shader_program_string + " Error value is not a ShaderProgram");
+            Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter ") + file.string + " Error value is not a ShaderProgram");
             return false;
         }
         
         GroupProto.unsafeUnwrap(obj)->SetShader(*shader_program);
         return true;
     }
-    else if(shapes_id == id){
+    else if(strcmp(file.string, "shapes")==0){
         if(!(JS_IsArrayObject(ctx, vp))){
-            Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter ") + shapes_string + " Error value is not an Array");
+            Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter ") + file.string + " Error value is not an Array");
             return false;
         }
         JS::RootedObject shapes_array(ctx, vp.toObjectOrNull());
@@ -203,7 +204,7 @@ Turbo::JSPrototype<SDL_Surface>      SurfaceProto("Surface", SurfaceCtor, 1);
 Turbo::JSPrototype<ScriptImage_t>    ImageProto("Image", ImageCtor, 1);
 //Turbo::JSPrototype<Galileo::Vertex>  VertexProto("VertexNative", VertexCtor, 2);
 Turbo::JSPrototype<Galileo::Shape>   ShapeProto("Shape", ShapeCtor, 2);
-Turbo::JSPrototype<Galileo::Group>   GroupProto("Group", GroupCtor, 2);
+Turbo::JSPrototype<Galileo::Group>   GroupProto("Group", GroupCtor, 2, nullptr, GroupSetter);
 Turbo::JSPrototype<std::shared_ptr<Galileo::Shader> > ShaderProgramProto("ShaderProgram", ShaderProgramCtor, 1);
 
 /*
@@ -722,9 +723,8 @@ bool GroupCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     JSObject *group_object = GroupProto.wrap(ctx, group_native);
     JS::RootedObject group_handle(ctx, group_object);
     
-    if(!JS_SetProperty(ctx, group_handle, "shader_program", args[0]) &&
-        JS_SetProperty(ctx, group_handle, "shapes", args[1])){
-            
+    if(!(JS_SetProperty(ctx, group_handle, "shader_program", args[1]) &&
+        JS_SetProperty(ctx, group_handle, "shapes", args[0]))){
         return false;
     }
     

@@ -102,7 +102,7 @@ namespace Turbo{
     typedef void (*CloseFunction)(JSContext *ctx);
     typedef int (*NumFunction)(JSContext *ctx);
     typedef JSNative *(*GetFuncFunction)(JSContext *ctx, int n);
-    typedef JS::Heap<JS::Value> *(*GetVarFunction)(JSContext *ctx, int n);
+    typedef void (*GetVarFunction)(JSContext *ctx, int n, JS::MutableHandleValue val);
     typedef const char *(*GetNameFunction)(JSContext *ctx, int n);
     
     inline void SetError(JSContext *ctx, const std::string err){
@@ -170,16 +170,17 @@ namespace Turbo{
     
     template<typename T>
     std::string BadArgTypeErrorMessage(unsigned i, enum JSType type, const T &func){
-        return std::string("[" PLUGINNAME "]") + " " + func + " Error: argument " + std::to_string(i) + " is not a " + GetTypeName(type);
+        return std::string("[" PLUGINNAME "] ") + func + " Error argument " + std::to_string(i) + " is not a " + GetTypeName(type);
     }
     
     
     template<int N>
     bool CheckSignature(JSContext *ctx, JS::CallArgs &args, const enum JSType type[N], const char *func, bool set_error = true){
         
-        if(args.length()<N)
+        if(args.length()<N){
+            SetError(ctx, std::string("[" PLUGINNAME "] ") + func + " Error called with fewer than " + std::to_string(N) + "arguments");
             return false;
-        
+        }
         for(int i = 0; i<N; i++){
             
             if(!CheckArg(ctx, args[i], type[i])){
@@ -192,7 +193,21 @@ namespace Turbo{
         
         return true;
     }
-
+    
+    inline bool CheckForSingleArg(JSContext *ctx, JS::CallArgs &args, enum JSType type, const char *func, bool set_error = true){
+        if(args.length()==0){
+            SetError(ctx, std::string("[" PLUGINNAME "] ") + func + " Error called with no arguments");
+            return false;
+        }
+        if(!CheckArg(ctx, args[0], type)){
+            if(set_error){
+                SetError(ctx, BadArgTypeErrorMessage(0, type, func));
+            }
+            return false;
+        }
+        return true;
+    }
+    
     template<class T> struct JSPrototype{
 
         struct proto_object {JSContext *ctx; JS::Heap<JSObject *> proto;};

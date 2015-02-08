@@ -9,7 +9,7 @@ namespace Turbo{
     typedef void (*CloseFunction)(JSContext *ctx);
     typedef int (*NumFunction)(JSContext *ctx);
     typedef JSNative (*GetFuncFunction)(JSContext *ctx, int n);
-    typedef JS::Heap<JS::Value> *(*GetVarFunction)(JSContext *ctx, int n);
+    typedef void (*GetVarFunction)(JSContext *ctx, int n, JS::MutableHandleValue value);
     typedef const char *(*GetNameFunction)(JSContext *ctx, int n);
     
     bool loadAllPlugins(JSContext *ctx, const std::string &dir);

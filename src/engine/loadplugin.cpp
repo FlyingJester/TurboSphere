@@ -96,7 +96,7 @@ bool loadPlugin(JSContext *ctx, const std::string &path){
         return false;
     }
     
-    static unsigned ID = 1;
+    static unsigned ID = 0;
     
     struct Plugin plugin;
     plugin.handle = DLOPENFILE(path.c_str(), DL_NOW|DL_LOCAL);
@@ -104,10 +104,10 @@ bool loadPlugin(JSContext *ctx, const std::string &path){
     if(!GetFunction(plugin.API.Init, path, plugin.handle, "Init"))
         return false;
     
-    plugin.name = plugin.API.Init(ctx, ID++);
+    plugin.name = plugin.API.Init(ctx, ++ID);
     
     #define LOAD_FUNC(NAME)\
-    if(!GetFunction(plugin.API.NAME, plugin.name, plugin.handle, #NAME)) return false
+    if(!GetFunction(plugin.API.NAME, plugin.name, plugin.handle, #NAME)) do{DLCLOSELIBRARY(plugin.handle); return false;}while(true)
 
     LOAD_FUNC(Close);
     LOAD_FUNC(NumFunctions);
@@ -125,8 +125,13 @@ bool loadPlugin(JSContext *ctx, const std::string &path){
     for(unsigned i = 0; i<plugin.num_functions; i++){
         JS_DefineFunction(ctx, global, plugin.API.GetFunctionName(ctx, i), plugin.API.GetFunction(ctx, i), 0, 0);
     }
+    
     for(unsigned i = 0; i<plugin.num_variables; i++){
-        //...
+        JS::RootedValue val(ctx);
+        plugin.API.GetVariable(ctx, i, &val);
+        if(!JS_DefineProperty(ctx, global, plugin.API.GetVariableName(ctx, i), val, JSPROP_PERMANENT)){
+            DLCLOSELIBRARY(plugin.handle); return false;
+        }
     }
 
     return true;
