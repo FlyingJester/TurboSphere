@@ -88,17 +88,18 @@ Image::Image(){
     
 }
 
-Image::Image(const SDL_Surface *aFrom)
+Image::Image(const uint32_t *pixels, unsigned w_, unsigned h_)
   : Image(){
-    
-    w = aFrom->w; h = aFrom->h;
+    w = w_;
+    h = h_;
     RGBA = new PixelData[w*h];
-    
-    memcpy(RGBA, aFrom->pixels, aFrom->w*aFrom->h*4);
-    
-    GL::UploadTexture(aFrom->w, aFrom->h, RGBA);
+    memcpy(RGBA, pixels, w*h*4);
+    GL::UploadTexture(w, h, RGBA);
+}
+
+Image::Image(const SDL_Surface *aFrom)
+  : Image(static_cast<uint32_t *>(aFrom->pixels), static_cast<unsigned>(aFrom->w), static_cast<unsigned>(aFrom->h)){
       
-    printf(BRACKNAME " Info: Initialized image with texture %u with Image(const SDL_Surface *aFrom)\n", mTexture);
 }
 
 Image::Image(Image *aFrom)

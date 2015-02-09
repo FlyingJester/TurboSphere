@@ -188,7 +188,7 @@ Turbo.Map = function(stream, compat){
         
         var shape = new Shape(vertices, this.tileset.image_atlas);
 
-        this.layers[i].group = new Group(shape, this.layers[i].shader);
+        this.layers[i].group = new Group([shape], this.layers[i].shader);
 
     }
 

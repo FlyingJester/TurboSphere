@@ -2,8 +2,8 @@
     "author" : "Flying Jester",
     "description" : "Map Engine, map, tileset, and spriteset test",
     "name": "Map Engine Test",
-    "screen_height" : 600,
-    "screen_width" : 800,
+    "screen_height" : 320,
+    "screen_width" : 400,
     "script" : "main.js",
     "version" : 2
 }

@@ -5,25 +5,22 @@
 
 namespace Sapphire {
 
-static TS_Directories *TS_Dirs = GetDirs();
-
-// TODO: new T5!
-SDL_Surface *LoadSurface(const char *aPath, bool aAbsolute){
+SDL_Surface *LoadSurface(const char *aPath, struct TS_GameDirectories *dirs, bool aAbsolute){
 
     const char * lPath = aPath;
     char *lsPath = nullptr;
 
     if(!aAbsolute){
         const size_t aPathLen  = strlen(aPath);
-        const size_t aImageLen = strlen(TS_Dirs->image);
+        const size_t aImageLen = strlen(dirs->image);
         lsPath = (char *)alloca(aPathLen + aImageLen + 1);
         lsPath[aPathLen+aImageLen] = 0;
-        memcpy(lsPath, TS_Dirs->image, aImageLen);
+        memcpy(lsPath, dirs->image, aImageLen);
         memcpy(lsPath+aImageLen, aPath, aPathLen);
         lPath = lsPath;
     }
 
-    SDL_Surface *lAnyFormatSurface = IMG_Load(aPath);
+    SDL_Surface *lAnyFormatSurface = IMG_Load(lPath);
 
     if(lAnyFormatSurface==nullptr){
         fprintf(stderr, P_ERROR "Could not load Image %s. %s\n", aPath, SDL_GetError());

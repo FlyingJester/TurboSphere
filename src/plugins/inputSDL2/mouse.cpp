@@ -1,26 +1,35 @@
-#define INPUT_INTERNAL
-#define PLUGINNAME "InputSDL2"
-#include "main.h"
+#include "input_main.hpp"
+#include <SDL2/SDL_events.h>
 
-Turbo::JSFunction GetMouseX(Turbo::JSArguments args){
+namespace InputSDL2{
+namespace Script{
+
+bool GetMouseX(JSContext *ctx, unsigned argc, JS::Value *vp){
 	SDL_PumpEvents();
 	int x = 0;
 	SDL_GetMouseState(&x, nullptr);
-	args.GetReturnValue().Set(x);
+	CallArgsFromVp(argc, vp).rval().set(JS_NumberValue(x));
+    return true;
 }
 
-Turbo::JSFunction GetMouseY(Turbo::JSArguments args){
+bool GetMouseY(JSContext *ctx, unsigned argc, JS::Value *vp){
 	SDL_PumpEvents();
 	int	y = 0;
 	SDL_GetMouseState(nullptr, &y);
-	args.GetReturnValue().Set(y);
+	CallArgsFromVp(argc, vp).rval().set(JS_NumberValue(y));
+    return true;
 }
 
-Turbo::JSFunction IsMouseButtonPressed(Turbo::JSArguments args){
-    int sig[] = {Turbo::Int, 0};
-
-    if(!Turbo::CheckArg::CheckSig(args, 1, sig, true))
-        return;
+bool IsMouseButtonPressed(JSContext *ctx, unsigned argc, JS::Value *vp){
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckForSingleArg(ctx, args, Turbo::Number, __func__))
+        return false;
+        
     //Just inline it to death.
-	args.GetReturnValue().Set((bool)(SDL_GetMouseState(nullptr, nullptr)&(1<<args[0]->Int32Value())));
+    args.rval().set(BOOLEAN_TO_JSVAL(SDL_GetMouseState(nullptr, nullptr)&(1<<static_cast<unsigned>(args[0].toNumber()))));
+    return true;
+}
+
+}
 }

@@ -21,41 +21,51 @@ int T5_StdErr_Write(const char *aToWrite){
   return 0;
 }
 
-const char * Init(int aID){
+const char *Init(JSContext *ctx, unsigned aID){
 
-    Sapphire::Script::InitScript(aID);
+    Sapphire::Script::InitScript(ctx);
 
-    Sapphire::Init(aID);
+    Sapphire::Init(ctx, aID);
 
     return PLUGINNAME;
 }
 
-void Close(void){
-
+void Close(JSContext *ctx){
+    assert(ctx);
 }
 
-using namespace Sapphire;
-
-int GetNumFunctions(void){
-    return Script::NumFuncs;
+int NumFunctions(JSContext *ctx){
+    assert(ctx);
+    return Sapphire::Script::FunctionList.size();
 }
 
-const Turbo::JSFunctionArray GetFunctions(void){
-    return Script::FunctionList.data();
+JSNative GetFunction(JSContext *ctx, int n){
+    assert(ctx);
+    assert(n<Sapphire::Script::FunctionList.size());
+    
+    return Sapphire::Script::FunctionList[n];
 }
 
-const Turbo::JSNameArray GetFunctionNames(void){
-    return Script::FunctionNameList.data();
+const char * GetFunctionName(JSContext *ctx, int n){
+    assert(ctx);
+    assert(n<Sapphire::Script::FunctionNameList.size());
+    
+    return Sapphire::Script::FunctionNameList[n];
 }
 
-int GetNumVariables(void){
-    return Script::NumVars;
+int  NumVariables(JSContext *ctx){
+    assert(ctx);
+    return 0;
 }
-
-const Turbo::JSValueArray GetVariables(void){
-    return Script::VariableList.data();
+JS::Heap<JS::Value> * GetVariable(JSContext *ctx, int n){
+    assert(ctx);
+    assert(false);
+    
+    return nullptr;
 }
-
-const Turbo::JSNameArray GetVariableNames(void){
-    return Script::VariableNameList.data();
+const char *  GetVariableName(JSContext *ctx, int n){
+    assert(ctx);
+    assert(false);
+    
+    return nullptr;
 }

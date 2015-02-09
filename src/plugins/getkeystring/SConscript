@@ -1,8 +1,8 @@
-Import('currentenv librarydir corelibtargets binarydir LibraryInstall')
+Import('currentenv librarydir corelibtargets binarydir LibraryInstall jslib')
 
 import os
 
-getkeystring     = currentenv.SharedLibrary('getkeystring', ['getkeystring.cpp'], LIBS = ['v8'])
+getkeystring     = currentenv.SharedLibrary('getkeystring', ['getkeystring.cpp'], LIBS = [jslib])
 Depends(getkeystring, corelibtargets)
 
 LibraryInstall(os.path.join(binarydir, 'plugin'), getkeystring, currentenv)

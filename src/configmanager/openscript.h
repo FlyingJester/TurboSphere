@@ -1,8 +1,8 @@
-#ifndef OPENSCRIPT_HEAD
-#define OPENSCRIPT_HEAD
+#pragma once
 #include <string>
 #include <vector>
-using namespace std;
+#include <jsapi.h>
+#include "opengame.h"
 
 #ifdef _WIN32
 	#ifdef CONFIGMGR_INTERNAL
@@ -16,9 +16,20 @@ using namespace std;
 	#define CONFIGMGRCALL
 #endif
 
+CONFIGMGR_EXPORT bool TS_ExecuteString(JSContext *ctx, const char *filename, const char *source);
+CONFIGMGR_EXPORT bool TS_ExecuteStringL(JSContext *ctx, const char *filename, const char *source, size_t len);
+CONFIGMGR_EXPORT bool TS_LoadScript(JSContext *ctx, const char *filename, bool only_once = false);
 
-CONFIGMGR_EXPORT char *openfile(const char *Rfile);
-CONFIGMGR_EXPORT bool ExecuteString(v8::Handle<v8::String> source, v8::Handle<v8::String> name, v8::Isolate *isolate, bool print_result);
-CONFIGMGR_EXPORT void TS_LoadScript(const v8::FunctionCallbackInfo<v8::Value>& args);
-CONFIGMGR_EXPORT void TS_LoadSystemScript(const v8::FunctionCallbackInfo<v8::Value>& args);
-#endif
+// only_once=true for Require*Script, only_once=false for Evaluate*Script
+CONFIGMGR_EXPORT bool TS_LoadScriptPrefixed_JS(JSContext *ctx, unsigned argc, JS::Value *vp, const char * prefix, bool only_once = true);
+
+template<bool only_once>
+bool TS_LoadScript_JS(JSContext *ctx, unsigned argc, JS::Value *vp){
+    return TS_LoadScriptPrefixed_JS(ctx, argc, vp, TS_GetContextEnvironment(ctx)->directories->script, only_once);
+}
+
+template<bool only_once>
+bool TS_LoadSystemScript_JS(JSContext *ctx, unsigned argc, JS::Value *vp){
+    return TS_LoadScriptPrefixed_JS(ctx, argc, vp, TS_GetContextEnvironment(ctx)->system->systemscript, only_once);
+}
+

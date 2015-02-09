@@ -1,9 +1,9 @@
-Import('currentenv librarydir corelibtargets binarydir LibraryInstall IsDarwin IsLinux IsWindows')
+Import('currentenv librarydir corelibtargets binarydir LibraryInstall IsDarwin IsLinux IsWindows jslib')
 
 import os
 import sys
 
-Sapphire_files = ["api.cpp", "CrossPlugin.cpp", "GLStart.cpp", "Image.cpp", 
+Sapphire_files = ["api.cpp", "GLStart.cpp", "Image.cpp", 
     "SapphireInit.cpp", "SapphirePlugin.cpp", "SaveImage.cpp", "script.cpp",
     "Galileo/State.cpp", "Galileo/Vertex.cpp", "Galileo/Shape.cpp", "Galileo/Group.cpp",
     "Galileo/Shader.cpp", "Galileo/Galileo.cpp", "Surface/Primitives.cpp"]
@@ -56,7 +56,7 @@ environment = currentenv.Clone()
 libyyymonitor = SConscript(dirs = ["libyyymonitor"], exports = ["environment"])
 
 Sapphire     = currentenv.SharedLibrary("Sapphire", Sapphire_files,
-  LIBS = [libyyymonitor, 't5', 'graphiccommon', 'graphicalg', 'configmanager', 'SDL2', 'SDL2_image', 'v8'] + elibs,
+  LIBS = [libyyymonitor, 't5', 'graphiccommon', 'graphicalg', 'configmanager', 'SDL2', 'SDL2_image', jslib] + elibs,
   FRAMEWORKS = ['OpenGL'] + eframeworks)
 
 Depends(Sapphire, corelibtargets)

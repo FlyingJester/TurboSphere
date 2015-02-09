@@ -1,197 +1,183 @@
-#include "script.hpp"
-#include <t5.h>
 #include <string>
-
+#include <vector>
+#include <jsfriendapi.h>
+#include <t5.h>
 #include <opengame.h>
-
-#define TURBO_TRYRAWFILE_ISERROR(ERR) (ERR!=RawFileError::RF_NoError)
-
-#define TURBO_TRYRAWFILE_ERROR(ARGS, ERR)\
-     if(TURBO_TRYRAWFILE_ISERROR(ERR)){\
-        Turbo::SetError(ARGS, (std::string(__func__) + std::string(" Error: Could not open file: ") + std::string(ExplainRawFileError(ERR)) ).c_str());\
-    }
-
-
-Turbo::JSFunction GetFileList(Turbo::JSArguments args){
-
-}
-
-Turbo::JSFunction RemoveFile(Turbo::JSArguments args){
-
-}
-
-Turbo::JSFunction RenameFile(Turbo::JSArguments args){
-
-}
-
-Turbo::JSFunction CopyFile(Turbo::JSArguments args){
-
-}
+#include "script.hpp"
 
 namespace scriptfs {
-
-    static std::string sRawfilePath = "";
-
-    Turbo::JSObj<RawFileHolder> RawFileObj;
-
-    void RawFileSize(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
-        const RawFileHolder *mRawFile = Turbo::GetAccessorSelf<RawFileHolder>(aInfo);
-        assert(mRawFile);
-
-        unsigned long s = 0;
-
-        rawfile_getSize(mRawFile->A, &s);
-
-        aInfo.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), s));
-    }
-
-    Turbo::JSFunction RawFileGetSize(Turbo::JSArguments args){
-        const RawFileHolder *mRawFile = Turbo::GetMemberSelf<RawFileHolder>(args);
-        assert(mRawFile!=nullptr);
-
-        unsigned long s = 0;
-
-        rawfile_getSize(mRawFile->A, &s);
-
-        args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), s));
-    }
-
-    Turbo::JSFunction RawFileGetPosition(Turbo::JSArguments args){
-        const RawFileHolder *mRawFile = Turbo::GetMemberSelf<RawFileHolder>(args);
-        assert(mRawFile!=nullptr);
-
-        unsigned long s = 0;
-
-        rawfile_getPosition(mRawFile->A, &s);
-
-        args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), s));
-    }
-
-    Turbo::JSFunction RawFileSetPosition(Turbo::JSArguments args){
-        const RawFileHolder *mRawFile = Turbo::GetMemberSelf<RawFileHolder>(args);
-        assert(mRawFile!=nullptr);
-
-        int sig[] = {Turbo::Int, 0};
-
-        if(!Turbo::CheckArg::CheckSig(args, 1, sig))
-          return;
-
-        unsigned long s = (unsigned long)args[0]->IntegerValue();
-
-        rawfile_setPosition(mRawFile->A,  s);
-        rawfile_getPosition(mRawFile->A, &s);
-
-        args.GetReturnValue().Set(v8::Number::New(v8::Isolate::GetCurrent(), s));
-    }
-
-
-    Turbo::JSFunction RawFileRead(Turbo::JSArguments args){
-
-        const int sig[2] = {Turbo::Int, 0};
-        unsigned long len, left, at, total;
-        enum RawFileError err;
-        const RawFileHolder *mRawFile = Turbo::GetMemberSelf<RawFileHolder>(args);
-        assert(mRawFile!=nullptr);
-
-        if(!Turbo::CheckArg::CheckSig(args, 1, sig))
-          return;
-
-        len = args[0]->IntegerValue();
-
-        err = rawfile_getPosition(mRawFile->A, &at);
-        if(TURBO_TRYRAWFILE_ISERROR(err)){
-          TURBO_TRYRAWFILE_ERROR(args, err);
-          return;
+    
+    template<bool(*func)(const char *)>
+    bool t5Call(JSContext *ctx, unsigned argc, JS::Value *vp){
+        
+        JS::CallArgs args = CallArgsFromVp(argc, vp);
+        
+        const Turbo::JSType signature[] = {Turbo::Number};
+        
+        if(!Turbo::CheckSignature<1>(ctx, args, signature, __func__))
+            return false;
+        
+        char *file = JS_EncodeString(ctx, args[0].toString());
+        if(!file){
+            Turbo::SetError(ctx, "[" PLUGINNAME "] t5Call Error could not encode string for argument 0");
+            return false;
         }
+        
+        std::string full_path = std::string(TS_GetContextEnvironment(ctx)->directories->root)+file;
+        
+        JS_free(ctx, file);
+        
+        args.rval().set(BOOLEAN_TO_JSVAL(t5::IsFile(full_path)));
+        return true;
+    }
 
-        err = rawfile_getSize(mRawFile->A, &total);
-        if(TURBO_TRYRAWFILE_ISERROR(err)){
-          TURBO_TRYRAWFILE_ERROR(args, err);
-          return;
+    bool IsFile(JSContext *ctx, unsigned argc, JS::Value *vp){
+        return t5Call<t5::IsFile>(ctx, argc, vp);
+    }
+    bool IsDir(JSContext *ctx, unsigned argc, JS::Value *vp){
+        return t5Call<t5::IsFile>(ctx, argc, vp);
+    }
+    
+    bool RawFileGetSize(JSContext *ctx, unsigned argc, JS::Value *vp){
+        
+        JS::CallArgs args = CallArgsFromVp(argc, vp);
+        
+        const RawFileHolder *that = RawFileProto.getSelf(ctx, vp, &args);
+        if(!that)
+            return false;
+        
+        unsigned long s = 0;
+
+        rawfile_getSize(that->A, &s);
+
+        args.rval().set(JS_NumberValue(s));
+        return true;
+    }
+
+    bool RawFileGetPosition(JSContext *ctx, unsigned argc, JS::Value *vp){
+
+        JS::CallArgs args = CallArgsFromVp(argc, vp);
+        
+        const RawFileHolder *that = RawFileProto.getSelf(ctx, vp, &args);
+        
+        if(!that)
+            return false;
+            
+        unsigned long s = 0;
+
+        rawfile_getPosition(that->A, &s);
+
+        args.rval().set(JS_NumberValue(s));
+        return true;
+    }
+
+    bool RawFileSetPosition(JSContext *ctx, unsigned argc, JS::Value *vp){
+     
+        JS::CallArgs args = CallArgsFromVp(argc, vp);
+        
+        const RawFileHolder *that = RawFileProto.getSelf(ctx, vp, &args);
+        if(!that)
+            return false;
+        
+        const Turbo::JSType signature[] = {Turbo::Number};
+        
+        if(!Turbo::CheckSignature<1>(ctx, args, signature, __func__))
+            return false;
+        
+        unsigned long s = args[0].toNumber();
+
+        rawfile_setPosition(that->A,  s);
+        rawfile_getPosition(that->A, &s);
+
+        args.rval().set(JS_NumberValue(s));
+        return true;
+    }
+
+
+    bool RawFileRead(JSContext *ctx, unsigned argc, JS::Value *vp){
+
+        JS::CallArgs args = CallArgsFromVp(argc, vp);
+        
+        const RawFileHolder *that = RawFileProto.getSelf(ctx, vp, &args);
+        if(!that)
+            return false;
+            
+        static const Turbo::JSType signature[] = {Turbo::Number};
+        
+        if(!Turbo::CheckSignature<1>(ctx, args, signature, __func__))
+            return false;
+
+        unsigned long at, total, left, len = args[0].toNumber();
+
+        enum RawFileError err = rawfile_getPosition(that->A, &at);
+        
+        if(err!=RF_NoError){
+            Turbo::SetError(ctx, ExplainRawFileError(err));
+            return false;
         }
+        
+        err = rawfile_getSize(that->A, &total);
 
+        if(err!=RF_NoError){
+            Turbo::SetError(ctx, ExplainRawFileError(err));
+            return false;
+        }
 
         left = total-at;
+        
         if(len>left){
-            Turbo::SetError(args, " Tried to read past end of RawFile", v8::Exception::RangeError);
-            return;
+            Turbo::SetError(ctx, "[" PLUGINNAME "] RawFileRead Error tried to read past end of RawFile");
+            return false;
         }
 
-        v8::Local<v8::ArrayBuffer> buffer = v8::ArrayBuffer::New(args.GetIsolate(), len);
-        if(len!=0){
-            int to = len/4;
-            v8::Local<v8::Uint32Array> typed_buffer = v8::Uint32Array::New(buffer, 0, to);
-            if(typed_buffer->HasIndexedPropertiesInExternalArrayData() && typed_buffer->GetIndexedPropertiesExternalArrayData()){
-                   // An ugly hack to work around a poorly designed API.
-                   //   I blame violent video games.
-                void *data = typed_buffer->GetIndexedPropertiesExternalArrayData();
-
-                assert(data!=nullptr);
-
-                err = rawfile_read(mRawFile->A, data, len);
-            }
-            else{
-                v8::HandleScope scope(args.GetIsolate());
-
-                void *r_buffer = malloc(len);
-                err = rawfile_read(mRawFile->A, r_buffer, len);
-
-                for(int i = 0; i<to; i++){
-                    typed_buffer->Set(i, v8::Uint32::New(args.GetIsolate(), static_cast<uint32_t *>(r_buffer)[i]));
-                }
-
-                v8::Local<v8::Uint8Array> typed_buffer_2 = v8::Uint8Array::New(buffer, 0, len);
-                for(int i = to*4; i<len; i++){
-                    typed_buffer_2->Set(i, v8::Uint32::New(args.GetIsolate(), static_cast<uint8_t *>(r_buffer)[i]));
-                }
-
-                printf("Copied %lu bytes the slow way.\n", len);
-
-                free(r_buffer);
-
-            /*
-                v8::ArrayBuffer::Contents contents = buffer->Externalize();
-
-                assert(contents.ByteLength()==len);
-                err = rawfile_read(mRawFile->A, contents.Data(), len);
-
-                buffer->Reinternalize(contents);
-            */
-            }
+        std::unique_ptr<void, void(*)(void *)> raw_buffer(malloc(len), free);
+        
+        err = rawfile_read(that->A, raw_buffer.get(), len);
+        
+        if(err!=RF_NoError){
+            Turbo::SetError(ctx, ExplainRawFileError(err));
+            return false;
         }
 
-        args.GetReturnValue().Set(buffer);
-
+        JSObject *buffer = JS_NewArrayBufferWithContents(ctx, len, raw_buffer.release());
+        
+        args.rval().set(OBJECT_TO_JSVAL(buffer));
+        
+        assert(raw_buffer.get()==nullptr);
+        
+        return true;
     }
 
-    Turbo::JSFunction RawFileWrite(Turbo::JSArguments args){
-
-        const int sig[] = {Turbo::TypedArray, Turbo::Int, 0};
-
-        RawFileHolder *mRawFile = Turbo::GetMemberSelf<RawFileHolder>(args);
-        assert(mRawFile!=nullptr);
-
-        if(!Turbo::CheckArg::CheckSig(args, 1, sig))
-          return;
-
-        v8::TypedArray *ar = v8::TypedArray::Cast(*(args[0]));
-
-        if(ar->Length()==0)
-          return;
-
-        v8::ArrayBuffer::Contents lContent = ar->Buffer()->Externalize();
-
-        if(lContent.ByteLength()==0)
-          return;
-        unsigned long len = lContent.ByteLength();
-
-        if(Turbo::CheckArg::CheckSig(args, 2, sig, false))
-          len = std::min<unsigned long>(len, args[1]->IntegerValue());
-
-        rawfile_write(mRawFile->A, lContent.Data(), len);
+    bool RawFileWrite(JSContext *ctx, unsigned argc, JS::Value *vp){
+          
+        JS::CallArgs args = CallArgsFromVp(argc, vp);
+        
+        const RawFileHolder *that = RawFileProto.getSelf(ctx, vp, &args);
+        if(!that)
+            return false;
+            
+        const Turbo::JSType signature[] = {Turbo::ArrayBuffer, Turbo::Number};
+        
+        if(!Turbo::CheckSignature<2>(ctx, args, signature, __func__))
+            return false;
+        
+        JS::RootedObject buffer_root(ctx, args[0].toObjectOrNull()); 
+        
+        unsigned char *data;
+        uint32_t len;
+        
+        js::GetArrayBufferLengthAndData(buffer_root, &len, &data);
+        
+        enum RawFileError err = rawfile_write(that->A, data, len);
+        
+        if(err!=RF_NoError){
+            Turbo::SetError(ctx, ExplainRawFileError(err));
+            return false;
+        }
+        
+        args.rval().set(JS::UndefinedHandleValue);
+        return true;
     }
-
-    Turbo::JSFunction OpenRawFile(Turbo::JSArguments args);
 
 }
 
@@ -203,66 +189,67 @@ inline bool IsPathSeperator(char c){
     ;
 }
 
-bool ReplacePathStringIfFound(std::string &in, std::string replace, const char *with){
+inline bool ReplacePathStringIfFound(std::string &in, const char *replace, const char *with){
+    size_t rep_len = strlen(replace);
     size_t c = in.rfind(replace);
     if(c!=std::string::npos){
-        in = std::string(with) + in.substr(c+replace.size()+1);
+        in = std::string(with) + in.substr(c+rep_len+1);
         return true;
     }
-
     return false;
 }
 
-Turbo::JSFunction scriptfs::OpenRawFile(Turbo::JSArguments args){
+bool scriptfs::OpenRawFile(JSContext *ctx, unsigned argc, JS::Value *vp){
 
-    const int sig[3] = {Turbo::String, Turbo::Bool, 0};
-    RawFileError err;
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+        
+    static const Turbo::JSType signature[] = {Turbo::String, Turbo::Number};
+    
+    if(!Turbo::CheckSignature<1>(ctx, args, signature, __func__))
+        return false;
+    
+    enum RawFileError err;
     bool writeable = false;
-
-    if(!Turbo::CheckArg::CheckSig(args, 1, sig))
-      return;
-
-    if(args.Length()>1){
-        if(!Turbo::CheckArg::CheckSig(args, 2, sig)){
-            return;
+    
+    char *file = JS_EncodeString(ctx, args[0].toString());
+    if(!file){ // How did this happen?
+        Turbo::SetError(ctx, "[" PLUGINNAME "] OpenRawFile Error could not encode string for argument 0");
+        return false;
+    }
+    
+    std::string full_path = std::string(TS_GetContextEnvironment(ctx)->directories->other)+file;
+    
+    JS_free(ctx, file);
+    
+    if(args.length()>1){
+        if(!args[1].isBoolean()){
+            Turbo::SetError(ctx, "[" PLUGINNAME "] OpenRawFile Error argument 1 is not a Boolean");
+            return false;
         }
-
-        writeable = args[1]->BooleanValue();
+        writeable = args[1].toBoolean();
     }
 
-    v8::String::Utf8Value lPath(args[0]);
+    ReplacePathStringIfFound(full_path, "#~", TS_GetContextEnvironment(ctx)->system->system);
+    ReplacePathStringIfFound(full_path, "~", TS_GetContextEnvironment(ctx)->directories->root);
 
-    std::string lCombinedPath = scriptfs::sRawfilePath + std::string(*lPath);
-
-    if(ReplacePathStringIfFound(lCombinedPath, "#~", GetDirs()->system))
-        printf(BRACKNAME " %s Info: Replaced #~, with %s. Now we have %s.\n", __func__, GetDirs()->system, lCombinedPath.c_str());
-    if(ReplacePathStringIfFound(lCombinedPath, "~", GetDirs()->root))
-        printf(BRACKNAME " %s Info: Replaced ~ with %s. Now we have %s.\n", __func__, GetDirs()->root, lCombinedPath.c_str());
+    // If we can't write to it and it doesn't exist, this isn't going to work.
+    if((!writeable) && (!t5::IsFile(full_path))){
+        Turbo::SetError(ctx, std::string("[" PLUGINNAME "] OpenRawFile Error file ") + full_path + " not opening for writing and file does not exist");
+        return false;
+    }
 
     struct RawFile *rFile = AllocRawFile();
     assert(rFile);
 
-    err = ::OpenRawFile(rFile, lCombinedPath.c_str(), writeable);
+    err = ::OpenRawFile(rFile, full_path.c_str(), writeable);
+    std::unique_ptr<RawFileHolder> holder(new RawFileHolder(rFile));
 
-    if(TURBO_TRYRAWFILE_ISERROR(err)){
-        Turbo::SetError(args, (std::string(__func__) + std::string(" Error: Could not open file ") + lCombinedPath + std::string(": ") + std::string(ExplainRawFileError(err)) ).c_str());
+    if(err!=RF_NoError){
+        Turbo::SetError(ctx, ExplainRawFileError(err));
+        return false;
     }
-    else
-      Turbo::WrapObject(args, scriptfs::RawFileObj, new RawFileHolder(rFile));
-    }
-
-void InitRawFile(int ID){
-    scriptfs::RawFileObj = Turbo::JSObj<RawFileHolder> ();
-    scriptfs::RawFileObj.ID = ID << 16;
-    scriptfs::RawFileObj.Finalize = Turbo::Finalizer<RawFileHolder>;
-    scriptfs::RawFileObj.SetTypeName("RawFile");
-    scriptfs::RawFileObj.AddToProto("getSize", scriptfs::RawFileGetSize);
-    scriptfs::RawFileObj.AddToProto("getPosition", scriptfs::RawFileGetPosition);
-    scriptfs::RawFileObj.AddToProto("setPosition", scriptfs::RawFileSetPosition);
-    scriptfs::RawFileObj.AddToProto("read", scriptfs::RawFileRead);
-    scriptfs::RawFileObj.AddToProto("write", scriptfs::RawFileWrite);
-    scriptfs::RawFileObj.AddAccessor("size",   scriptfs::RawFileSize, nullptr);
-
-    scriptfs::sRawfilePath = GetDirs()->save;
-
+    
+    args.rval().set(OBJECT_TO_JSVAL(RawFileProto.wrap(ctx, holder.release())));
+    return true;
+    
 }

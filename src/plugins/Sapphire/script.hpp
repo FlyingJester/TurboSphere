@@ -17,63 +17,61 @@
 namespace Sapphire {
 namespace Script {
 
-void InitScript(int64_t ID);
+void InitScript(JSContext *ctx);
 
-static const size_t NumFuncs = 14;
-static const size_t NumVars  = 0;
+static const size_t NumFuncs = 6;
 
-typedef std::pair<const char *, Turbo::JSCallback> CallbackWithName;
-typedef std::vector<CallbackWithName>::iterator memberiter_t;
+typedef std::vector<JSFunctionSpec>::iterator memberiter_t;
 typedef std::shared_ptr<Image> ScriptImage_t;
 
-extern std::array<Turbo::JSCallback,    NumFuncs> FunctionList;
-extern std::array<Turbo::JSName,        NumFuncs> FunctionNameList;
-extern std::array<Turbo::JSValue,       NumVars>  VariableList;
-extern std::array<Turbo::JSVariableName,NumVars>  VariableNameList;
-extern std::vector<CallbackWithName>     CrossPluginSurfaceMembers;
+extern std::array<JSNative, NumFuncs> FunctionList;
+extern std::array<const char * const, NumFuncs> FunctionNameList;
+extern std::vector<JSFunctionSpec>     CrossPluginSurfaceMembers;
 
-extern Turbo::JSObj<TS_Color>        ColorJSObj;
-extern Turbo::JSObj<SDL_Surface>     SurfaceJSObj;
-extern Turbo::JSObj<ScriptImage_t>   ImageJSObj;
-extern Turbo::JSObj<Galileo::Vertex> VertexJSObj;
-extern Turbo::JSObj<Galileo::Shape>  ShapeJSObj;
-extern Turbo::JSObj<Galileo::Group>  GroupJSObj;
-extern Turbo::JSObj<std::shared_ptr<Galileo::Shader> > ShaderProgramJSObj;
+extern Turbo::JSPrototype<TS_Color>         ColorProto;
+extern Turbo::JSPrototype<SDL_Surface>      SurfaceProto;
+extern Turbo::JSPrototype<ScriptImage_t>    ImageProto;
+//extern Turbo::JSPrototype<Galileo::Vertex>  VertexProto;
+extern Turbo::JSPrototype<Galileo::Shape>   ShapeProto;
+extern Turbo::JSPrototype<Galileo::Group>   GroupProto;
+extern Turbo::JSPrototype<std::shared_ptr<Galileo::Shader> > ShaderProgramProto;
 
 /////
 // Old School
-Turbo::JSFunction ColorCtor(Turbo::JSArguments args);
-Turbo::JSFunction ImageCtor(Turbo::JSArguments args);
-Turbo::JSFunction SurfaceCtor(Turbo::JSArguments args);
-Turbo::JSFunction ArrayBufferToSurface(Turbo::JSArguments args);
-Turbo::JSFunction ArrayBufferToImage(Turbo::JSArguments args);
+bool ColorCtor(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool ImageCtor(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool SurfaceCtor(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool ArrayBufferToSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool ArrayBufferToImage(JSContext *ctx, unsigned argc, JS::Value *vp);
 
-Turbo::JSFunction SaveSurface(Turbo::JSArguments args);
-Turbo::JSFunction SetPixelSurface(Turbo::JSArguments args);
-Turbo::JSFunction SurfaceBlitSurface(Turbo::JSArguments args);
-Turbo::JSFunction SaveImage(Turbo::JSArguments args);
-Turbo::JSFunction ImageCreateSurface(Turbo::JSArguments args);
+bool SaveSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool SetPixelSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool SurfaceBlitSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool SaveImage(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool ImageCreateSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
 /////
 // New School!
-Turbo::JSFunction VertexCtor(Turbo::JSArguments args);
-Turbo::JSFunction ShapeCtor(Turbo::JSArguments args);
-Turbo::JSFunction GroupCtor(Turbo::JSArguments args);
+bool VertexCtor(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool ShapeCtor(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool GroupCtor(JSContext *ctx, unsigned argc, JS::Value *vp);
 
-Turbo::JSFunction DrawGroup(Turbo::JSArguments args);
-Turbo::JSFunction GroupSetPosition(Turbo::JSArguments args);
-Turbo::JSFunction GroupSetRotation(Turbo::JSArguments args);
+bool DrawGroup(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool GroupSetPosition(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool GroupSetRotation(JSContext *ctx, unsigned argc, JS::Value *vp);
+
+bool GroupSetNativeShapes(JSContext *ctx, Galileo::Group *group, JS::HandleObject shape_array);
 
 /////
 // Middle School
-Turbo::JSFunction ShaderCtor(Turbo::JSArguments args);
-Turbo::JSFunction ShaderProgramCtor(Turbo::JSArguments args);
-Turbo::JSFunction GetDefaultShaderProgram(Turbo::JSArguments args);
+bool ShaderCtor(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool ShaderProgramCtor(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool GetDefaultShaderProgram(JSContext *ctx, unsigned argc, JS::Value *vp);
 
 
-Turbo::JSFunction FlipScreen(Turbo::JSArguments args);
-Turbo::JSFunction GetScreenWidth(Turbo::JSArguments args);
-Turbo::JSFunction GetScreenHeight(Turbo::JSArguments args);
-//Turbo::JSFunction (Turbo::JSArguments args);
+bool FlipScreen(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool GetScreenWidth(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool GetScreenHeight(JSContext *ctx, unsigned argc, JS::Value *vp);
+//bool (JSContext *ctx, unsigned argc, JS::Value *vp);
 
 }
 }

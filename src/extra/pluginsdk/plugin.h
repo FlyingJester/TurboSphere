@@ -73,20 +73,12 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
     #define PLUGINNAME "Engine"
     #define NOPLUGNAME 1
 #endif
-#include <v8.h>
-
-#include <TSPR/stacktrace.h>
-
-/////
-// Containers for JSAccessors
-//
-
-#include <tuple>
-#include <forward_list>
+#include <jsapi.h>
+#include <jsfriendapi.h>
 
 #include <string>
 #include <vector>
-#include <cstdarg>
+#include <mutex>
 #include <cassert>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -94,438 +86,280 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
 
 namespace Turbo{
 
-    /////
-    // Basic TypeDefs
-    typedef const v8::FunctionCallbackInfo<v8::Value> & JSArguments;
-    typedef void JSFunction;
-    typedef JSFunction(*JSCallback)(JSArguments);
-    typedef JSCallback*  JSFunctionArray;
-    typedef const char*  JSName;
-    typedef JSName       JSFunctionName;
-    typedef JSName       JSVariableName;
-    typedef const char** JSNameArray;
-    typedef const char*  InitFunction;
-
-    typedef void * CallbackPointer;
-
-    /////
-    // Internal Typdefs
-    //
-    typedef v8::Handle<v8::String> JSString;
-    typedef v8::Local<v8::String> JSAccessorProperty;
-    typedef const v8::PropertyCallbackInfo<v8::Value>& JSAccessorInfo;
-    typedef JSAccessorInfo JSAccessorGetterInfo;
-    typedef const v8::PropertyCallbackInfo<void>& JSAccessorSetterInfo;
-    typedef v8::Local<v8::Value> JSValue;
-    typedef JSValue *JSValueArray;
-
-    /////
-    // A helper for GetFunctions/Variables and names
-    //
-    /////
-    // More safely stores script data (functions and variables) in a format
-    //   easily used by Engine.
-    //
-    template <class A>
-    class ScriptObjectList{
-    public:
-        ScriptObjectList(size_t n = 0){
-            num = n;
-            contains = new A[num];
-            names    = new Turbo::JSName[num];
-        }
-        ~ScriptObjectList(){
-            delete []contains;
-            delete []names;
-        }
-
-        const A *GetA(void){
-            return contains;
-        }
-
-        size_t GetNum(void){
-            return num;
-        }
-        const Turbo::JSNameArray GetNames(void){
-            return names;
-        }
-
-        void Set(A a, Turbo::JSName name, size_t at){
-            assert(at<num);
-            contains[at] = a;
-            names[at] = name;
-        }
-
-    private:
-        A *contains;
-        size_t num;
-        Turbo::JSNameArray names;
+    template<typename T = char>
+    struct JSStringHolder{
+        T *const string;
+        JSContext *const ctx;
+        
+        JSStringHolder(JSContext *ctx_, T *string_): string(string_), ctx(ctx_){}
+        
+        ~JSStringHolder(){JS_free(ctx, string);}
     };
-
-    template<class T = JSArguments>
-    inline void SetError(T args, const char *err, v8::Local<v8::Value> (&v8ExceptionType)(v8::Handle<v8::String>) = v8::Exception::Error){
-        args.GetIsolate()->ThrowException(v8ExceptionType(v8::String::NewFromUtf8(args.GetIsolate(), err)));
+    
+    /////
+    // Basic TypeDefs    
+    typedef const char *(*InitFunction)(JSContext *ctx, unsigned ID);
+    typedef void (*CloseFunction)(JSContext *ctx);
+    typedef int (*NumFunction)(JSContext *ctx);
+    typedef JSNative *(*GetFuncFunction)(JSContext *ctx, int n);
+    typedef void (*GetVarFunction)(JSContext *ctx, int n, JS::MutableHandleValue val);
+    typedef const char *(*GetNameFunction)(JSContext *ctx, int n);
+    
+    inline void SetError(JSContext *ctx, const std::string err){
+        // The short-circuit of the boolean-and will make the puts not happen with there is no pending exception.
+        // This gives us just a little more info on crash (lldb, for instance, can't handle printing `err').
+        assert((!JS_IsExceptionPending(ctx)) || (!puts(err.c_str())));
+        JS::RootedValue error(ctx, STRING_TO_JSVAL(JS_NewStringCopyN(ctx, err.c_str(), err.length())));
+        JS_SetPendingException(ctx, error);
     }
 
-    template<class T = JSArguments>
-    inline void SetError(T args, std::string err, v8::Local<v8::Value> (&v8ExceptionType)(v8::Handle<v8::String>) = v8::Exception::Error){
-        SetError(args, err.c_str(), v8ExceptionType);
+    enum JSType{String = 1, Number, Bool, Object, Array, TypedArray, ArrayBuffer};
+    
+    inline bool CheckArg(JSContext *ctx, JS::HandleValue val, enum JSType type){
+        switch(type){
+            case JSType::String:
+                return val.isString();
+            case JSType::Number:
+                return val.isNumber();
+            case JSType::Bool:
+                return val.isBoolean();
+            case JSType::Object:
+                return val.isObject();
+            case JSType::Array:
+            {
+                JS::RootedValue obj(ctx, val); 
+                return JS_IsArrayObject(ctx, obj);
+            }
+            case JSType::ArrayBuffer:
+            {
+                JS::RootedValue value(ctx, val);
+                JS::RootedObject obj(ctx);
+                return (JS_ValueToObject(ctx, value, &obj) && JS_IsArrayBufferObject(obj));
+            }
+            case JSType::TypedArray:
+            {
+                JS::RootedValue value(ctx, val);
+                JS::RootedObject obj(ctx);
+                return (JS_ValueToObject(ctx, value, &obj) && JS_IsTypedArrayObject(obj));
+            }
+            default:
+                return false;
+        }
     }
-
-    enum JSType{Int = 1, Uint, String, Number, Bool, Array, TypedArray, ArrayBuffer, Object};
-
-    typedef std::tuple<const char *, v8::AccessorGetterCallback, v8::AccessorSetterCallback> JSAccessor;
-
-    template <class T>
-    void Finalizer(const v8::WeakCallbackData<v8::Object, T> &args) {
-        assert(args.GetValue()->GetAlignedPointerFromInternalField(0) == args.GetParameter());
-        delete args.GetParameter();
-        args.GetValue().Clear();
+    
+    inline const char * const GetTypeName(enum JSType type){
+        
+        switch(type){
+        #define TURBO_TYPE_CASE(TYPE)\
+            case TYPE:\
+                return #TYPE
+                
+        TURBO_TYPE_CASE(String);
+        TURBO_TYPE_CASE(Number);
+        TURBO_TYPE_CASE(Bool);
+        TURBO_TYPE_CASE(Array);
+        TURBO_TYPE_CASE(TypedArray);
+        TURBO_TYPE_CASE(ArrayBuffer);
+        TURBO_TYPE_CASE(Object);
+        
+        #undef TURBO_TYPE_CASE
+        default:
+            return nullptr;
+        }
     }
-    template <class T, class F>
-    void FinalizerFunctional(const v8::WeakCallbackData<v8::Object, T> &args) {
-        F f;
-        f(args.GetParemter());
+    
+    template<typename T>
+    std::string BadArgTypeErrorMessage(unsigned i, enum JSType type, const T &func){
+        return std::string("[" PLUGINNAME "] ") + func + " Error argument " + std::to_string(i) + " is not a " + GetTypeName(type);
     }
+    
+    
+    template<int N>
+    bool CheckSignature(JSContext *ctx, JS::CallArgs &args, const enum JSType type[N], const char *func, bool set_error = true){
+        
+        if(args.length()<N){
+            SetError(ctx, std::string("[" PLUGINNAME "] ") + func + " Error called with fewer than " + std::to_string(N) + "arguments");
+            return false;
+        }
+        for(int i = 0; i<N; i++){
+            
+            if(!CheckArg(ctx, args[i], type[i])){
+                if(set_error){
+                    SetError(ctx, BadArgTypeErrorMessage(i, type[i], func));
+                }
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    inline bool CheckForSingleArg(JSContext *ctx, JS::CallArgs &args, enum JSType type, const char *func, bool set_error = true){
+        if(args.length()==0){
+            SetError(ctx, std::string("[" PLUGINNAME "] ") + func + " Error called with no arguments");
+            return false;
+        }
+        if(!CheckArg(ctx, args[0], type)){
+            if(set_error){
+                SetError(ctx, BadArgTypeErrorMessage(0, type, func));
+            }
+            return false;
+        }
+        return true;
+    }
+    
+    template<class T> struct JSPrototype{
 
-    template<class T> class JSObj{
-        public:
+        struct proto_object {JSContext *ctx; JS::Heap<JSObject *> proto;};
+        std::vector<struct proto_object> prototypes;
+        std::mutex prototypes_mutex;
+        
+        JSClass clazz = {
+            nullptr, 
+            JSCLASS_HAS_PRIVATE,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr,
+            nullptr, 
+            nullptr, 
+            nullptr, 
+            nullptr
+        };
+        unsigned num_constructor_args;
 
-        typedef void(*JSWrapFunction)(v8::Handle<v8::Object> &, const T*, v8::Isolate *);
-
-        v8::Handle<v8::FunctionTemplate> Template;
-        v8::Handle<v8::ObjectTemplate> InstanceTemplate;
-        v8::Handle<v8::ObjectTemplate> Prototype;
-        v8::Handle<v8::Function> Constructor;
-
-        std::vector<JSAccessor> accessors;
-        std::vector<JSWrapFunction> wrappingfuncs;
-
-        JSObj<T>(){
-
-            Template         = v8::FunctionTemplate::New(v8::Isolate::GetCurrent());
-            Prototype        = Template->PrototypeTemplate();
-            InstanceTemplate = Template->InstanceTemplate();
-            InstanceTemplate->SetInternalFieldCount(4);
-            Constructor      = Template->GetFunction();
-
+        JSPrototype(const char *class_name, JSNative construct = nullptr, unsigned nargs = 0, JSFinalizeOp finalizer = nullptr, JSStrictPropertyOp set_prop = nullptr){
+            
+            clazz.name = strdup(class_name);
+            //prototypes.reserve(1);
+            clazz.construct = construct;
+            num_constructor_args = nargs;
+            clazz.finalize = finalizer;
+            clazz.setProperty = set_prop;
+            
         };
 
-        ~JSObj(){
-
-            Template.Clear();
-            InstanceTemplate.Clear();
-            Prototype.Clear();
-
-            if(!TypeName.IsEmpty())
-                TypeName.Clear();
-
+        ~JSPrototype(){
+            free((void *)(clazz.name));
         };
-
-        template<class A>
-        bool IsA(v8::Handle<A> Tobj){
-            auto obj = v8::Handle<v8::Object>::Cast(Tobj);
-            return (ID&&(!((obj->InternalFieldCount()<2)||(ID!=obj->GetInternalField(1)->Uint32Value()))));
+        
+        void initForContext(JSContext *ctx, JSPropertySpec *ps = nullptr, JSFunctionSpec *fs = nullptr, JSPropertySpec *static_ps = nullptr, JSFunctionSpec *static_fs = nullptr){
+            
+            prototypes_mutex.lock();
+            
+            JS::RootedObject global(ctx, JS::CurrentGlobalOrNull(ctx)), global_proto(ctx);
+            JS_GetPrototype(ctx, global, &global_proto);
+            
+            prototypes.push_back(proto_object({ctx}));
+            prototypes.back().proto.set(JS_InitClass(ctx, global, global_proto, &clazz, clazz.construct, num_constructor_args, ps, fs, static_ps, static_fs));
+            
+            prototypes_mutex.unlock();
+        
         }
-
-        JSString TypeName;
-        void (*Finalize)(const v8::WeakCallbackData<v8::Object, T> &args);
-
-        unsigned long long ID;
-
-        inline void SetTypeName(const char *name){
-            if(!TypeName.IsEmpty())
-                TypeName.Clear();
-            TypeName = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name);
-            Template->SetClassName(TypeName);
-        }
-
-        inline void AddToProto(const char *name , v8::FunctionCallback call){
-            auto iso = v8::Isolate::GetCurrent();
-            InstanceTemplate->Set(v8::String::NewFromUtf8(iso, name), v8::FunctionTemplate::New(iso, call));
-            Prototype->Set(v8::String::NewFromUtf8(iso, name), v8::FunctionTemplate::New(iso, call));
-        }
-
-        inline void AddAccessor(const char *name, v8::AccessorGetterCallback Getter, v8::AccessorSetterCallback Setter){
-            InstanceTemplate->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name), Getter, Setter);
-            Prototype->SetAccessor(v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), name), Getter, Setter);
-            accessors.push_back(JSAccessor(name, Getter, Setter));
-        }
-
-        inline void AddWrappingFunc(JSWrapFunction aFunc){
-            assert(aFunc);
-            wrappingfuncs.push_back(aFunc);
-        }
-
-        template<class A>
-        static T *Unwrap(A a){
-            return static_cast<T *>(v8::Local<v8::Object>::Cast(a)->GetAlignedPointerFromInternalField(0));
-        }
-
-    };
-
-    /////
-    // Data Validation
-    namespace CheckArg{
-
-        inline bool String(JSArguments args, int i, const char *funcname){
-            if (!args[i]->IsString()) {
-                char argnumprnt[] = {(char)i, '\0'};
-                std::string err = std::string("[" PLUGINNAME "] ").append(funcname).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a String.");
-                SetError(args, err, v8::Exception::TypeError);
-                return false;
-            }
-        return true;
-        }
-
-        inline bool Int(JSArguments args, int i, const char *funcname){
-
-            if (!args[i]->IsInt32()) {
-                char argnumprnt[] = {(char)i, '\0'};
-                std::string err = std::string("[" PLUGINNAME "] ").append(funcname).append(" Error: Argument ").append((char *)argnumprnt).append(" is not an Integer.");
-                SetError(args, err, v8::Exception::TypeError);
-                return false;
-            }
-        return true;
-        }
-
-        inline bool Bool(JSArguments args, int i, const char *funcname){
-
-
-            if (!args[i]->IsBoolean()) {
-                char argnumprnt[] = {(char)i, '\0'};
-
-                std::string err = std::string("[" PLUGINNAME "] ").append(funcname).append(" Error: Argument ").append((char *)argnumprnt).append(" is not a Boolean.");
-                SetError(args, err, v8::Exception::TypeError);
-                return false;
-            }
-        return true;
-        }
-
-        inline bool CheckSig(JSArguments args, int num, const int *argtypes/*<- Null terminated*/, bool error = true){
-
-            const char *prevF = nullptr;
-
-            if(args.Length()<num){
-                if(!error)
-                    return false;
-                TS_Stack_PreviousFunctionName(prevF);
-                const char *err = (std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Called with fewer than ")+std::to_string(num)+std::string(" arguments.")).c_str();
-                SetError(args, err, v8::Exception::TypeError);
-                return false;
-            }
-
-            std::string err;
-
-            for(int i = 0; i<num; i++){
-                assert(argtypes[i]!=0);
-
-                switch(argtypes[i]){
-
-                    case (JSType::String):
-                        if (args[i]->IsString())
-                            break;
-                        TS_Stack_PreviousFunctionName(prevF);
-
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not a String.";
-                        if(error)
-                            SetError(args, err, v8::Exception::TypeError);
-                    return false;
-
-                    case (JSType::Int):
-                        if (args[i]->IsInt32())
-                            break;
-                        TS_Stack_PreviousFunctionName(prevF);
-
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not an Integer.";
-
-                        if(error)
-                            SetError(args, err, v8::Exception::TypeError);
-                    return false;
-
-                    case Uint:
-                        if (args[i]->IsUint32())
-                            break;
-                        TS_Stack_PreviousFunctionName(prevF);
-
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not an Integer.";
-
-                        if(error)
-                            SetError(args, err, v8::Exception::TypeError);
-                    return false;
-
-                    case Number:
-                        if (args[i]->IsNumber())
-                            break;
-                        TS_Stack_PreviousFunctionName(prevF);
-
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not a Number.";
-
-                        if(error)
-                            SetError(args, err, v8::Exception::TypeError);
-                    return false;
-
-                    case JSType::Bool:
-                        if (args[i]->IsBoolean())
-                            break;
-                        TS_Stack_PreviousFunctionName(prevF);
-
-                       err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not a Boolean.";
-
-                        if(error)
-                            SetError(args, err, v8::Exception::TypeError);
-                    return false;
-
-                    case Array:
-                        if (args[i]->IsArray())
-                            break;
-                        TS_Stack_PreviousFunctionName(prevF);
-
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not an Array.";
-
-                        if(error)
-                            SetError(args, err, v8::Exception::TypeError);
-                    return false;
-
-                    case ArrayBuffer:
-                        if (args[i]->IsArrayBuffer())
-                            break;
-                        TS_Stack_PreviousFunctionName(prevF);
-
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not an ArrayBuffer.";
-
-                        if(error)
-                            SetError(args, err, v8::Exception::TypeError);
-                    return false;
-
-                    case TypedArray:
-                        if (args[i]->IsTypedArray())
-                            break;
-                        TS_Stack_PreviousFunctionName(prevF);
-
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is not an TypedArray.";
-
-                        if(error)
-                            SetError(args, err, v8::Exception::TypeError);
-                    return false;
-
-                    case Object:
-                        if (!args[i]->IsUndefined())
-                            break;
-                        TS_Stack_PreviousFunctionName(prevF);
-
-                        err = std::string("[" PLUGINNAME "] ").append(prevF).append(" Error: Argument ") + std::to_string(i) + " is undefined.";
-
-                        if(error)
-                            SetError(args, err, v8::Exception::TypeError);
-                    return false;
-                    default:
+        
+        bool getPrototypeForContext(JSContext *ctx, JS::MutableHandleObject obj){
+            
+            prototypes_mutex.lock();
+            
+            for(typename std::vector<struct proto_object>::const_iterator citer = prototypes.cbegin(); citer!=prototypes.cend(); citer++){
+                
+                if(citer->ctx==ctx){
+                    *obj = citer->proto;
+                    prototypes_mutex.unlock();
                     return true;
                 }
+                
             }
-            return true;
+            
+            prototypes_mutex.unlock();
+            return false;
+        
         }
-    }
-
-    ///////////////////////////////////////////////////////////////////////////////
-    // Wrapping Objects
-
-    // Designed for when the yet-to-be-wrapped object needs to be inspected or modified.
-    template<class T> inline v8::Handle<v8::Object> CreateObject(const JSObj<T> &JSo, T *obj, v8::Isolate *iso){
-        v8::Handle<v8::Object> returnobj = JSo.Template->GetFunction()->NewInstance();
-
-        for(std::vector<JSAccessor>::const_iterator lIter = JSo.accessors.begin(); lIter!=JSo.accessors.end(); lIter++){
-            returnobj->SetAccessor(v8::String::NewFromUtf8(iso, std::get<0>(*lIter)), std::get<1>(*lIter), std::get<2>(*lIter));
+        
+        JSObject *wrap(JSContext *ctx, T *that){
+            prototypes_mutex.lock();
+            for(typename std::vector<struct proto_object>::iterator iter = prototypes.begin(); iter!=prototypes.end(); iter++){
+                
+                if(iter->ctx==ctx){
+                    JS::RootedObject global(ctx, JS::CurrentGlobalOrNull(ctx)), proto(ctx, iter->proto.get());
+                    prototypes_mutex.unlock();
+                    
+                    JS::RootedObject obj(ctx, JS_NewObjectWithGivenProto(ctx, &clazz, proto, global));
+                    JS_SetPrivate(obj.get(), that);
+                    return obj;
+                }
+                
+            }
+            
+            // This usually means you didn't do a initForContext
+            assert(false);
+            
+            return nullptr;
+            
         }
-
-        for(typename std::vector<typename JSObj<T>::JSWrapFunction>::const_iterator lIter = JSo.wrappingfuncs.begin(); lIter!=JSo.wrappingfuncs.end(); lIter++){
-            (*lIter)(returnobj, obj, iso);
+        
+        T *unwrap(JSContext *ctx, JS::Value &a, JS::CallArgs *args){
+            if((!a.isObject()) || a.isNull() || a.isUndefined())
+                return nullptr;
+                
+            return unwrap(ctx, &a, args);
         }
+        
 
-        returnobj->SetAlignedPointerInInternalField(0, obj);
-        returnobj->SetInternalField(1, v8::Integer::NewFromUnsigned(iso, JSo.ID));
-
-        return returnobj;
-    }
-
-    template<class T, class A> void WrapObject(A args, const JSObj<T> &JSo, T *obj){
-
-        auto iso = args.GetIsolate();
-
-        /////
-        // Create a JS object that holds an ID number and a pointer to the object
-        assert(obj != nullptr);
-
-        v8::Persistent<v8::Object> preturnobj(iso, CreateObject(JSo, obj, iso));
-        preturnobj.SetWeak(obj, JSo.Finalize);
-
-        args.GetReturnValue().Set(preturnobj);
-
-        preturnobj.ClearWeak();
-
-    }
-
-    /////
-    // Unwrapping objects
-
-    template<class T>
-    T *GetMemberSelf(JSArguments args) {
-        return static_cast<T*>(args.Holder()->GetAlignedPointerFromInternalField(0));
-    }
-
-    template<class T, typename A>
-    T *GetAccessorSelf(v8::PropertyCallbackInfo<A> info) {
-        return static_cast<T*>(info.Holder()->GetAlignedPointerFromInternalField(0));
-    }
-
-    template<class T, class A>
-    T* GetSelf(const A &container){
-        return static_cast<T*>(container.Holder()->GetAlignedPointerFromInternalField(0));
-    }
-
-    template<class A>
-    void *GetSelf(const A &container){
-        return container.Holder()->GetAlignedPointerFromInternalField(0);
-    }
-
-    template<typename T, class C, T C::*M>
-    void GenericPropertyGetter(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
-        const C *that = Turbo::GetAccessorSelf<C>(aInfo);
-        assert(that);
-        aInfo.GetReturnValue().Set(that->*M);
-    }
-
-    template<typename T, class C, T C::*M>
-    void GenericPropertyGetterCallback(Turbo::JSAccessorProperty aProp, Turbo::JSAccessorGetterInfo aInfo){
-        const C *that = Turbo::GetAccessorSelf<C>(aInfo);
-        assert(that);
-        aInfo.GetReturnValue().Set(that->*M());
-    }
+        T *unwrap(JSContext *ctx, JS::Value *a, JS::CallArgs *args){
+            if((!a->isObject()) || a->isNull() || a->isUndefined())
+                return nullptr;
+            return unwrap(ctx, a->toObjectOrNull(), args);
+        }
+        
+        T *unwrap(JSContext *ctx, JSObject * a, JS::CallArgs *args){
+            JS::RootedObject obj(ctx, a);
+            return static_cast<T *>(JS_GetInstancePrivate(ctx, obj, &clazz, args));
+        }
+        
+        T *unwrap(JSContext *ctx, JS::HandleObject a, JS::CallArgs *args){
+            return static_cast<T *>(JS_GetInstancePrivate(ctx, a, &clazz, args));
+        }
+        
+        T *unwrap(JSContext *ctx, JS::HandleValue a, JS::CallArgs *args){
+            if((!a.isObject()) || a.isNull() || a.isUndefined())
+                return nullptr;
+            JS::RootedObject obj(ctx, a.toObjectOrNull());
+            return static_cast<T *>(JS_GetInstancePrivate(ctx, obj, &clazz, args));
+        }
+        
+        // For use in constructors and destructors. Does not check class.
+        T *unsafeUnwrap(JSObject * a){return static_cast<T *>(JS_GetPrivate(a));}
+        T *unsafeUnwrap(JS::Value *a){return static_cast<T *>(JS_GetPrivate(a->toObjectOrNull()));}
+        T *unsafeUnwrap(JS::Value &a){return static_cast<T *>(unsafeUnwrap(&a));}
+        T *unsafeUnwrap(JS::HandleValue a){return static_cast<T *>(unsafeUnwrap(a.toObjectOrNull()));}
+        T *unsafeUnwrap(JS::MutableHandleValue a){return static_cast<T *>(unsafeUnwrap(a.toObjectOrNull()));}
+        
+        T *getSelf(JSContext *ctx, JS::Value *vp, JS::CallArgs *args){
+            
+            JS::RootedValue  that_val(ctx, JS_THIS(ctx, vp));
+            JS::RootedObject that_obj(ctx);
+            return unwrap(ctx, that_val.toObjectOrNull(), args);
+        }
+        
+        bool instanceOf(JSContext *ctx, JS::HandleObject obj, JS::CallArgs *args){
+            return JS_InstanceOf(ctx, obj, &clazz, args);
+        }
+        
+        bool instanceOf(JSContext *ctx, JS::HandleValue val, JS::CallArgs *args){
+            JS::RootedObject that_obj(ctx);
+            if(!JS_ValueToObject(ctx, val, &that_obj))
+                return false;
+                
+            return instanceOf(ctx, that_obj, args);
+        }
+        
+    };
 
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// Legacy and Old-fashioned stuff
-
-/////
-// Memory alignment
-
-#define MIN_MEM_ALIGN 2
-
-#ifdef _MSC_VER
-
-    #define __func__ __FUNCTION__
-
-    #define MEMALIGN(X) _declspec(align(X))
-#else
-
-    #define MEMALIGN(X) __attribute__((aligned(X)))
-#endif
-
-#define MINMEMALIGN MEMALIGN(MIN_MEM_ALIGN)
-
-
-
 #ifdef NOPLUGNAME
     #undef PLUGINNAME
 #endif

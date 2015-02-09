@@ -10,7 +10,6 @@
 #include "../Sapphire.hpp"
 
 #include <cassert>
-#include <v8.h>
 
 namespace Sapphire{
 namespace Galileo {
@@ -109,10 +108,10 @@ bool Shape::CanUse(Shader *aShader){
 
 }
 
-void Shape::SetShader(Shader *aShader){
+void Shape::SetShader(std::shared_ptr<Shader> aShader){
     mShader = aShader;
 
-    assert(CanUse(aShader));
+    assert(CanUse(aShader.get()));
 
     //Update Vertex Array!
     Bind();

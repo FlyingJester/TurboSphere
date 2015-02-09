@@ -3,7 +3,7 @@
 
 #include <cassert>
 
-#include <screen.h>
+#include <opengame.h>
 
 namespace Sapphire {
 
@@ -222,12 +222,12 @@ const std::string Shader::ShaderScreenSizeUniformName    = "TS_ScreenSize";
 __thread std::vector<int> *Shader::EnabledAttributes = nullptr;
 __thread Shader *Shader::BoundShader = nullptr;
 
-Shader *Shader::GetDefaultShader(void){
+Shader *Shader::GetDefaultShader(void *ctx){
 
     GLuint lDefaultProg = SDL_GL::CreateDefaultProgram();
     if((lDefaultProg)!=0){
 
-        Shader *lShader = new Shader(lDefaultProg);
+        Shader *lShader = new Shader(TS_GetContextEnvironment(ctx)->config, lDefaultProg);
 
         lShader->AddAttribute(ShaderPositionName);
         lShader->AddAttribute(ShaderTextureUVName);
@@ -242,7 +242,7 @@ Shader *Shader::GetDefaultShader(void){
       return nullptr;
 }
 
-Shader::Shader(int aProgram)
+Shader::Shader(TS_GameConfig *config, int aProgram)
   : mProgram(aProgram) {
     mAttributes = GLSLValueMap();
     mUniforms   = GLSLValueMap();
@@ -257,7 +257,7 @@ Shader::Shader(int aProgram)
     AddAttribute(ShaderTextureUVName);
     AddAttribute(ShaderColorName);
 
-    glUniform2f(mUniforms[ShaderScreenSizeUniformName], GetScreenWidth(), GetScreenHeight());
+    glUniform2f(mUniforms[ShaderScreenSizeUniformName], config->screenwidth, config->screenheight);
 
 }
 

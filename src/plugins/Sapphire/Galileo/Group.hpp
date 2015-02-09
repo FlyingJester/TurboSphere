@@ -5,6 +5,7 @@
 #include <color.h>
 #include "Shape.hpp"
 #include "Shader.hpp"
+#include "../libyyymonitor/monitor.hpp"
 
 namespace Sapphire{
 namespace Galileo {
@@ -29,7 +30,8 @@ protected:
     int ShaderOffsetUniformName, ShaderRotOffsetUniformName, ShaderAngleUniformName;
 
     int mLastDrawnShader;
-
+    
+    mutable Turbo::Monitor monitor;
 public:
 
     Group();
@@ -113,8 +115,32 @@ public:
         SetRotationOffset<U>(_x, _y);
     }
 
+    virtual inline void lock() const {
+        monitor.lock();
+    }
+    
+    virtual inline void unlock() const {
+        monitor.unlock();
+    }
+    
+    virtual inline void wait() const {
+        monitor.Wait();
+    }
+    
+    virtual inline void notify() const {
+        monitor.Notify();
+    }
+    
+    virtual inline void notifyAll() const {
+        monitor.NotifyAll();
+    }
+
     virtual inline iterator begin(){
         return mShapes.begin();
+    }
+
+    virtual inline struct Turbo::Monitor::Locker createLocker(){
+        return monitor.CreateLocker();
     }
 
     virtual inline iterator end(){
@@ -151,7 +177,7 @@ public:
 
     virtual inline void push(GL::Operation *aToPush){
         mShapes.push_back(aToPush);
-        aToPush->SetShader(mShader.get());
+        aToPush->SetShader(mShader);
     }
 
     inline bool empty(void) const {
@@ -168,12 +194,17 @@ public:
         return mShapes.erase(at);
     }
 
+    template<typename i=iterator>
+    i insert(i at, GL::Operation *aOp){
+        return mShapes.insert(at, aOp);
+    }
+    
     virtual int Draw(void);
     virtual int Draw(std::queue<GL::Operation *> *aSendTo);
     virtual int DrawAll(std::queue<GL::Operation *> *aSendTo);
     virtual int DrawRange(std::queue<GL::Operation *> *aSendTo, iterator aFrom, iterator aTo);
 
-    void SetShader(Shader *aShader){mShader = std::shared_ptr<Shader>(aShader);}
+    void SetShader(std::shared_ptr<Shader> aShader){mShader = aShader;}
 
 };
 

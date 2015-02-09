@@ -2,33 +2,34 @@
 
 #include "Sapphire.hpp"
 
-#include <pluginsdk/plugin.h>
-
 #ifdef _WIN32
 	#define SAPPHIRE_EXPORT __declspec(dllexport)
 
     #define CCALL __cdecl
 
-#else
-
+#endif
+#ifndef _WIN32
 #define CCALL
-#define SAPPHIRE_EXPORT extern "C"
+#define SAPPHIRE_EXPORT
 #endif
 
 #define CROSSPLUGIN_EXPORT SAPPHIRE_EXPORT
 
-#ifdef _WIN32
-	extern "C" {
-#endif
-SAPPHIRE_EXPORT void                          CCALL Close(void);
-SAPPHIRE_EXPORT const char *                  CCALL Init(int);
-SAPPHIRE_EXPORT int                           CCALL GetNumFunctions(void);
-SAPPHIRE_EXPORT const Turbo::JSFunctionArray  CCALL GetFunctions(void);
-SAPPHIRE_EXPORT const Turbo::JSNameArray      CCALL GetFunctionNames(void);
-SAPPHIRE_EXPORT int                           CCALL GetNumVariables(void);
-SAPPHIRE_EXPORT const Turbo::JSValueArray     CCALL GetVariables(void);
-SAPPHIRE_EXPORT const Turbo::JSNameArray      CCALL GetVariableNames(void);
-#ifdef _WIN32
-	}
-#endif
+#include <jsapi.h>
+#include <pluginsdk/plugin.h>
 
+
+extern "C" {
+
+    SAPPHIRE_EXPORT const char * CCALL Init(JSContext *ctx, unsigned ID);
+    SAPPHIRE_EXPORT void CCALL Close(JSContext *ctx);
+    
+    SAPPHIRE_EXPORT int CCALL NumFunctions(JSContext *ctx);
+    SAPPHIRE_EXPORT JSNative CCALL GetFunction(JSContext *ctx, int n);
+    SAPPHIRE_EXPORT const char * CCALL GetFunctionName(JSContext *ctx, int n);
+    
+    SAPPHIRE_EXPORT int CCALL NumVariables(JSContext *ctx);
+    SAPPHIRE_EXPORT JS::Heap<JS::Value> *CCALL GetVariable(JSContext *ctx, int n);
+    SAPPHIRE_EXPORT const char * CCALL GetVariableName(JSContext *ctx, int n);
+
+}

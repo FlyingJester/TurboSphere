@@ -4,6 +4,7 @@
 #include "Sapphire.hpp"
 #include "Image.hpp"
 #include <color.h>
+#include <opengame.h>
 
 /////
 // This file contains functions that exist solely to simplify Script-facing functions.
@@ -14,7 +15,7 @@ namespace Sapphire {
 
 //TODO: Commented out functions are still unimplemented.
 
-SDL_Surface *LoadSurface(const char *aPath, bool aAbsolute = false);
+SDL_Surface *LoadSurface(const char *aPath, struct TS_GameDirectories *dirs, bool aAbsolute = false);
 SDL_Surface *CreateSurface(unsigned aWidth, unsigned aHeight, TS_Color *color);
 SDL_Surface *CreateSurface(unsigned aWidth, unsigned aHeight, const void *aData,
                            unsigned long long aRedMask, unsigned long long aGreenMask,

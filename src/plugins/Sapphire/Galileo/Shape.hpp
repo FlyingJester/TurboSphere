@@ -4,7 +4,6 @@
 #include <TSPR/concurrent_queue.h>
 #include <algorithm>
 #include <memory>
-#include <v8.h>
 #include <color.h>
 #include "Vertex.hpp"
 #include "../Image.hpp"
@@ -34,7 +33,7 @@ namespace GL {
   class Operation {
 
   protected:
-      Shader *mShader;
+      std::shared_ptr<Shader> mShader;
       bool mDirty;
   public:
 
@@ -47,7 +46,7 @@ namespace GL {
       }
 
 
-      virtual void SetShader(Shader *aShader){}
+      virtual void SetShader(std::shared_ptr<Shader> aShader){}
 
       inline void MarkDirty(){mDirty = true;}
       inline bool IsDirty(){return mDirty;}
@@ -113,7 +112,7 @@ namespace GL {
 
       virtual int Draw() = 0;
 
-      virtual void SetShader(Shader *aShader) = 0;
+      virtual void SetShader(std::shared_ptr<Shader> aShader) = 0;
       // Checks if the specified shader contains the attribtues and
       // uniforms this drawable expects.
       virtual bool CanUse(Shader *aShader) = 0;
@@ -178,7 +177,7 @@ public:
 
     virtual ~Shape() {}
     bool CanUse(Shader *aShader) override;
-    void SetShader(Shader *aShader) override;
+    void SetShader(std::shared_ptr<Shader> aShader) override;
 
     void FillGL() override;
 

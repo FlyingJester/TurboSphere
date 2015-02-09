@@ -26,6 +26,7 @@ protected:
 public:
 
     Image();
+    Image(const uint32_t *pixels, unsigned w_, unsigned h_);
     Image(const SDL_Surface *aFrom);
     Image(Image *aFrom);
     ~Image();

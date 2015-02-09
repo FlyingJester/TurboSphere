@@ -10,6 +10,6 @@ namespace Sapphire{
 namespace Galileo{
     /////
     // Sets up default GL state. Is thread-local.
-    void Init(uint64_t ID);
+    void Init(void *ctx, uint64_t ID);
 }
 }
