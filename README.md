@@ -8,14 +8,30 @@ TurboSphere is a reimplementation and modernization of the [Sphere RPG Engine](s
 
 TurboSphere uses plugins for all its functionality.
 
-TurboSphere uses [SDL2](http://www.libsdl.org/) and [Google's V8](http://code.google.com/p/v8/). This combination allows for simple or complex games to be created easily using JavaScript.
+Why Use TurboSphere to Make a Game
+----------------------------------
+
+TurboSphere has a fast and reliable JavaScript engine, SpiderMonkey, which gives all the power of scripting as a web app has. The Sphere family of game engines differ in several key ways from web-based development, however:
+* The Event Loop is exposed to script
+* Direct access to audio, graphics, input, and networking systems is exposed
+
+Many well-written HTML5 games are easily ported to TurboSphere, and can run even faster in the less abstracted and lighter-weight environment TurboSphere provides over a web browser.
+The use of plugins allows more advanced developers who want to use C or C++ for certain tasks to easily integrate native C/C++ code with JavaScript components.
+
+This combination of the well-known, performant JavaScript language and more direct access to a computer or devices capabilities are a chief strength of TurboSphere.
+
+TurboSphere is free to use, modify, and distribute, and its permissive license is intended to allow for ease of use in both open source and proprietary projects.
+
+Technical Description
+---------------------
+
+TurboSphere uses [SDL2](http://www.libsdl.org/), OpenGL 3.3 or 4.1, and [Mozilla's SpiderMonkey](https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey). This combination allows for simple or complex games to be created easily using JavaScript.
 
 TurboSphere also uses the T5 file I/O library.
 
 Want to ask a question? TurboSphere is supported on the [Sphere forums](http://forums.spheredev.org/). Be sure to mention you are using TurboSphere, as the original Sphere is also supported there.
 
-For building instructions, see the docs/INSTALL files. The Linux file includes instructions for getting and building the
-right version of V8. Scons is the only current build system used for TurboSphere.
+For building instructions, see the docs/INSTALL files. Scons is the only current build system used for TurboSphere.
 
 Installation
 ------------
@@ -30,10 +46,10 @@ Compiling
 ####Prerequisites
 
 * C++ Compiler that at least mostly supports C++11. See list of [Verified Compilers].
-* Bass, V8, and SDL2. More on how to get these later.
+* SpiderMonkey 38 and SDL2. More on how to get these later.
 * Windows or a Unix-based OS.
 * Windows or X11.
-* OpenGL 3.2 or greater
+* OpenGL 3.3 or greater
 * Windows DirectSound, ALSA, or Mac OS X.
 
 ####Verified Compilers
@@ -41,16 +57,14 @@ Compiling
 TurboSphere is known and tested to compile using the following compilers:
 
 * GCC 4.8
-* Windows SDK 7.1 64-bit
-* Clang 3.1
+* Clang 3.2
 
 It is suspected, but unverified or not tested to work on the following compilers:
 
 * GCC 4.3-4.7 on Linux
 * GCC 4.6-4.7 on OS X
-* MSVC 2008
-* MSVC 2010
 * MSVC 2013
+* Solaris Studio with GNU libstdc++
 
 In addition, it is theoretically possible, but completely untested to work on the following compilers (here be dragons!):
 
@@ -58,7 +72,6 @@ In addition, it is theoretically possible, but completely untested to work on th
 * Android NDK 64-bit
 
 Notes:
-MingW is known to compile Google V8, but seems unable to compile it as a shared library. It also has some issues the plugin loading code.
 
 Android-specific and OpenGL ES-specific code previously existed in TurboSphere, although actually testing an Android build would require the Android Emulator and more knowledge of Java than I have. I have compiled a majority of the engine and plugin code, but was stopped when I needed to compile against OpenGL ES, and needed an Android build of Bass. Bass, V8, and SDL2 are all known to work on Android ARM and Android x86. There's theoretically nothing stopping this from working.
 
@@ -66,74 +79,35 @@ Android-specific and OpenGL ES-specific code previously existed in TurboSphere, 
 
 To compile TurboSphere, you will need to get three third-party libraries, along with several addon libraries for them.
 
-* Bass
-- BassMidi
-* V8
+* SpiderMonkey
 * SDL2
-- SDL2_ttf
 - SDL2_image
 
-You can download Bass and SDL2 in binary form for Windows, and Bass in binary form for Linux. Most Linux distros have SDL2 in their package managers (SDL 1.3 is SOMETIMES acceptable).
-
-Get Bass from [Un4Seen](http://www.un4seen.com/). You will also need the BassMidi addon. The downloads for Bass contain both x86 and x86_64 libraries, as well as development libraries in the case of Windows.
+You can download SDL2 and SDL2_image in binary form for Windows, and Bass in binary form for Linux. Most Linux distros have SDL2 in their package managers (SDL 1.3 is SOMETIMES acceptable).
 
 Get SDL2 from [LibSDL.org](http://libsdl.org/). You can get SDL2_ttf [here](http://www.libsdl.org/projects/SDL_ttf/) and SDL2_image [here](http://www.libsdl.org/projects/SDL_image/).
 
-V8 is the most troublesome component used by TurboSphere to get working. I would recommend tackling this first!
+To build SpiderMonkey, it is easiest to build Gecko in its entirety. This can be done by cloning [Mozilla's Github repo for Firefox](https://github.com/Mozilla/Gecko-dev) and copying the files from js/src/dist.
 
-To begin, you need to get a copy of V8. Specifically, starting with TurboSphere 0.4.0, a copy of V8 3.24. It is recommended you get it using the git submodule included in the TurboSphere repo.  You can get it without git using subversion with the command `svn checkout http://v8.googlecode.com/svn/branches/3. v8`.
+Place the js/src/dist/include folder in TurboSphere's src/thirdparty/ directory (so that it is src/thirdparty/include), and place libmozjs.so/libmozjs.dylib/mozjs.lib into /src/thirdparty/lib.
 
-On OS X or Linux (or anywhere `make` is supported), you can build V8 with the following commands:
+On Linux and OS X, you will need to rename the library from libmozjs-.so/libmozjs-.dylib to libmozjs.so/libmozjs.dylib, and on OS X you will need to change the install name using `install_name_tool` to be `@executable_path/libmozjs.dylib`. Be sure to do this before building TurboSphere.
 
-`make dependencies`
+On Linux, you will need to put libmozjs.so in /usr/local/lib. On OS X, you will need a copy in the binary directory (being sure it is a copy with the doctored install name). On Windows, place libmozjs-.dll into the binary directory. Note that you may or may not need to rename the dll to libmozjs.dll.
 
-`make x86.release -Dlibrary=shared`
-
-If you are using an unsupported version of GCC, you can try adding `-werror=no` and `-strictaliasing=no`.
-
-On Windows, building V8 is more difficult.
-
-You will need Python 2.6 or 2.7. But you will need this to build TurboSphere anyway. Get that and Scons for Windows.
-
-To build on Windows, use the following commands:
-
-`svn co http://gyp.googlecode.com/svn/trunk build/gyp`
-
-`svn co http://src.chromium.org/svn/trunk/deps/third_party/cygwin@66844 third_party/cygwin`
-
-`svn co https://src.chromium.org/chrome/trunk/deps/third_party/icu46 third_party/icu`
-
-You ABSOLUTELY need this specific copy of Cygwin. If you don't have it, the build will fail in a rather silent way.
-
-Now, use this command to generate the project file:
-
-`python build\gyp_v8 -Dlibrary=shared`
-
-This will generate the MSVC project file, all.sln. Build the solution to generate v8.dll and v8.lib. If you are using the Windows SDK 7.1, you will need to change the toolchain in the project file (I know of no way to override this from the command line if you just want to use MSBUILD).
-
-Installing Bass on Linux is simple. Use `scons --install_libs=y confwrite` as root user from the TurboSphere root. This will generate a folder and install the TurboSphere libraries to it. It is /lib64/turbosphere or /lib/turbosphere on 64-bit and 32-bit systems, respectively. Copy libbass.so to this folder. You do NOT need to put libbassmidi.so here, as TurboSphere will NOT check this folder when loading Bass plugins.
-
-Install V8 (libv8.so) to this directory as well.
-
-On Windows, place the *.lib files in the TurboSphere source root, and the .dll files in the bin/Release folder.
+Download the TurboSphere submodules with `git init submodule` and `git update submodule`.
 
 Finally, to compile TurboSphere:
 
-On Windows, run:
-
 `scons`
 
-On Linux, you will need to compile the engine and install the core TurboSphere libraries first.
+This will install the plugins and engine to the TurboSphere root's bin directory. On Linux, you will need to copy libconfigmanager, libgraphiccommon, and libgraphicalg to /usr/local/lib.
 
-As root, run `scons`. Then, you probably will want to compile the plugins (TurboSphere does little without them). As a normal user, run `scons`.
-
-This will install the plugins and engine to the TurboSphere root's bin directory. You will probably need to run `ldconfig` after this, since the TurboSphere core libraries are installed to sub-directory of the standard library location (to make it easier to wipe out TurboSphere if you don't want it around anymore).
+On OS X, you sometimes need to run scons twice to ensure that the install names are correctly set on the core libraries and that turbosphere (the binary) is properly copied. This is only an issue on clean builds, subsequent builds will always have the newest binaries in the bin directory.
 
 To use TurboSphere, just navigate to bin/Release and try `./turbosphere`. It _should_ run the test script, which demonstrates some of its abilities. If it crashes be sure to let us know!
 
 ####Things to Note
-
-* Remember that bassmidi goes in the same directory as TurboSphere's executable on Linux, unlike the other libraries.
 
 Getting Help
 ------------
@@ -172,12 +146,18 @@ License Text:
 
    THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+Additonally, certain parts of TurboSphere are released under other licenses. See lib/thirdparty for these licenses.
+
+libyyymonitor is under the TurboSphere license, rather than the GPL, with permission of the Kashyyyk project.
+
 Related Projects
 ----------------
 
-TurboSphere is a reimplementation of the Sphere RPG Engine. There is another reimplementation of Sphere under development, called Sphere-sfml. It can be found on the Spherical Forums.
+TurboSphere is a reimplementation of the Sphere RPG Engine. There are other reimplementations of Sphere under development. The other main Sphere projects are Sphere-sfml and MiniSphere. Both these, as well as TurboSphere, can be found on the Spherical Forums.
 
-Sphere-sfml is written in C#. It is not feature-complete yet, but in general has more functionality than TurboSphere implements. There are cases in which each has features the other lacks. It lacks TurboSphere's plugin system, advanced audio support, and dynamic recompiling JavaScript engine. Sphere-sfml has a precompiler for JS which compiles it directly to CIL and therefore benefitting from improvements made to Microsoft .NET technology. Sphere-sfml has much better MapEngine support than TurboSphere, which is a vital component of the original Sphere engine.
+Sphere-sfml is written in C#. It is more feature-complete than TurboSphere, but is only intended to run on Windows. It has a somewhat slower JavaScript environment than TurboSphere's, but is also more stable.
+
+MiniSphere is aimed at being a simple, if slower implementation of Sphere's API in portable C. It is in the early stages of development.
 
 Several projects have been compared to Sphere in the past. These include:
 
