@@ -42,7 +42,7 @@ namespace scriptfs {
         
         JS::CallArgs args = CallArgsFromVp(argc, vp);
         
-        const RawFileHolder *that = RawFileProto.getSelf(ctx, vp, &args);
+        const RawFileHolder *that = raw_file_proto.getSelf(ctx, vp, &args);
         if(!that)
             return false;
         
@@ -58,7 +58,7 @@ namespace scriptfs {
 
         JS::CallArgs args = CallArgsFromVp(argc, vp);
         
-        const RawFileHolder *that = RawFileProto.getSelf(ctx, vp, &args);
+        const RawFileHolder *that = raw_file_proto.getSelf(ctx, vp, &args);
         
         if(!that)
             return false;
@@ -75,7 +75,7 @@ namespace scriptfs {
      
         JS::CallArgs args = CallArgsFromVp(argc, vp);
         
-        const RawFileHolder *that = RawFileProto.getSelf(ctx, vp, &args);
+        const RawFileHolder *that = raw_file_proto.getSelf(ctx, vp, &args);
         if(!that)
             return false;
         
@@ -98,7 +98,7 @@ namespace scriptfs {
 
         JS::CallArgs args = CallArgsFromVp(argc, vp);
         
-        const RawFileHolder *that = RawFileProto.getSelf(ctx, vp, &args);
+        const RawFileHolder *that = raw_file_proto.getSelf(ctx, vp, &args);
         if(!that)
             return false;
             
@@ -152,7 +152,7 @@ namespace scriptfs {
           
         JS::CallArgs args = CallArgsFromVp(argc, vp);
         
-        const RawFileHolder *that = RawFileProto.getSelf(ctx, vp, &args);
+        const RawFileHolder *that = raw_file_proto.getSelf(ctx, vp, &args);
         if(!that)
             return false;
             
@@ -249,7 +249,7 @@ bool scriptfs::OpenRawFile(JSContext *ctx, unsigned argc, JS::Value *vp){
         return false;
     }
     
-    args.rval().set(OBJECT_TO_JSVAL(RawFileProto.wrap(ctx, holder.release())));
+    args.rval().set(OBJECT_TO_JSVAL(raw_file_proto.wrap(ctx, holder.release())));
     return true;
     
 }

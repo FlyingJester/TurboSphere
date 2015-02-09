@@ -28,13 +28,19 @@ extern std::array<JSNative, NumFuncs> FunctionList;
 extern std::array<const char * const, NumFuncs> FunctionNameList;
 extern std::vector<JSFunctionSpec>     CrossPluginSurfaceMembers;
 
-extern Turbo::JSPrototype<TS_Color>         ColorProto;
-extern Turbo::JSPrototype<SDL_Surface>      SurfaceProto;
-extern Turbo::JSPrototype<ScriptImage_t>    ImageProto;
-//extern Turbo::JSPrototype<Galileo::Vertex>  VertexProto;
-extern Turbo::JSPrototype<Galileo::Shape>   ShapeProto;
-extern Turbo::JSPrototype<Galileo::Group>   GroupProto;
-extern Turbo::JSPrototype<std::shared_ptr<Galileo::Shader> > ShaderProgramProto;
+extern Turbo::JSPrototype<TS_Color>         color_proto;
+extern Turbo::JSPrototype<SDL_Surface>      surface_proto;
+extern Turbo::JSPrototype<ScriptImage_t>    image_proto;
+extern Turbo::JSPrototype<Galileo::Shape>   shape_proto;
+extern Turbo::JSPrototype<Galileo::Group>   group_proto;
+extern Turbo::JSPrototype<std::shared_ptr<Galileo::Shader> > shader_program_proto;
+
+void ColorFinalizer(JSFreeOp *fop, JSObject *obj);
+void SurfaceFinalizer(JSFreeOp *fop, JSObject *obj);
+void ImageFinalizer(JSFreeOp *fop, JSObject *obj);
+void ShapeFinalizer(JSFreeOp *fop, JSObject *obj);
+void GroupFinalizer(JSFreeOp *fop, JSObject *obj);
+void ShaderProgramFinalizer(JSFreeOp *fop, JSObject *obj);
 
 /////
 // Old School

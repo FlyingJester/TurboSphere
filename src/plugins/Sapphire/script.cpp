@@ -26,9 +26,9 @@ namespace Script {
 
 bool ShapeImageGetter(JSContext *ctx, unsigned argc, JS::Value *vp){
     JS::CallArgs args = CallArgsFromVp(argc, vp);
-    Galileo::Shape *mShape = ShapeProto.getSelf(ctx, vp, &args);
+    Galileo::Shape *mShape = shape_proto.getSelf(ctx, vp, &args);
     
-    args.rval().set(OBJECT_TO_JSVAL(ImageProto.wrap(ctx, new ScriptImage_t(mShape->GetImage()))));
+    args.rval().set(OBJECT_TO_JSVAL(image_proto.wrap(ctx, new ScriptImage_t(mShape->GetImage()))));
     
     return true;
 }
@@ -39,20 +39,20 @@ bool ShapeImageSetter(JSContext *ctx, unsigned argc, JS::Value *vp){
     if(!Turbo::CheckSignature<1>(ctx, args, signature, __func__))
         return false;
     
-    ScriptImage_t *image = ImageProto.unwrap(ctx, args[0], &args);
+    ScriptImage_t *image = image_proto.unwrap(ctx, args[0], &args);
     
     if(image){
-        ShapeProto.getSelf(ctx, vp, &args)->ReplaceImage(*image);
+        shape_proto.getSelf(ctx, vp, &args)->ReplaceImage(*image);
     }
     else{
         
-        SDL_Surface *surface = SurfaceProto.unwrap(ctx, args[0], &args);
+        SDL_Surface *surface = surface_proto.unwrap(ctx, args[0], &args);
         if(!surface){
             Turbo::SetError(ctx, std::string("[" PLUGINNAME "] ") + __func__ + " Error argument 0 is not a Surface or an Image");
             return false;
         }
         
-        ShapeProto.getSelf(ctx, vp, &args)->ReplaceImage(ScriptImage_t(new Sapphire::Image(surface)));
+        shape_proto.getSelf(ctx, vp, &args)->ReplaceImage(ScriptImage_t(new Sapphire::Image(surface)));
     }
     
     return true;
@@ -69,7 +69,7 @@ bool FUNC_NAME(JSContext *ctx, unsigned argc, JS::Value *vp){\
     return true;\
 }
 
-#define SAPPHIRE_SCRIPT_GROUP_GETTER(FUNC_NAME, VALUATOR) SAPPHIRE_SCRIPT_OBJECT_GETTER(FUNC_NAME, Galileo::Group, GroupProto, VALUATOR)
+#define SAPPHIRE_SCRIPT_GROUP_GETTER(FUNC_NAME, VALUATOR) SAPPHIRE_SCRIPT_OBJECT_GETTER(FUNC_NAME, Galileo::Group, group_proto, VALUATOR)
 
 #define SAPPHIRE_SCRIPT_OBJECT_SETTER(FUNC_NAME, TYPE, PROTO, TURBO_T, SETTER)\
 bool FUNC_NAME(JSContext *ctx, unsigned argc, JS::Value *vp){\
@@ -83,21 +83,21 @@ bool FUNC_NAME(JSContext *ctx, unsigned argc, JS::Value *vp){\
 }
 
 #define SAPPHIRE_SCRIPT_OBJECT_SETTER_NUMBER(FUNC_NAME, TYPE, PROTO, SETTER) SAPPHIRE_SCRIPT_OBJECT_SETTER(FUNC_NAME, TYPE, PROTO, Turbo::Number, SETTER)
-#define SAPPHIRE_SCRIPT_GROUP_SETTER_NUMBER(FUNC_NAME, SETTER) SAPPHIRE_SCRIPT_OBJECT_SETTER_NUMBER(FUNC_NAME, Galileo::Group, GroupProto, SETTER)
+#define SAPPHIRE_SCRIPT_GROUP_SETTER_NUMBER(FUNC_NAME, SETTER) SAPPHIRE_SCRIPT_OBJECT_SETTER_NUMBER(FUNC_NAME, Galileo::Group, group_proto, SETTER)
 
-SAPPHIRE_SCRIPT_OBJECT_GETTER(SurfaceWidthGetter, SDL_Surface, SurfaceProto, JS_NumberValue(that->w))
-SAPPHIRE_SCRIPT_OBJECT_GETTER(SurfaceHeightGetter, SDL_Surface, SurfaceProto, JS_NumberValue(that->h))
-SAPPHIRE_SCRIPT_OBJECT_GETTER(ImageWidthGetter, ScriptImage_t, ImageProto, JS_NumberValue((*that)->Width()))
-SAPPHIRE_SCRIPT_OBJECT_GETTER(ImageHeightGetter, ScriptImage_t, ImageProto, JS_NumberValue((*that)->Height()))
+SAPPHIRE_SCRIPT_OBJECT_GETTER(SurfaceWidthGetter, SDL_Surface, surface_proto, JS_NumberValue(that->w))
+SAPPHIRE_SCRIPT_OBJECT_GETTER(SurfaceHeightGetter, SDL_Surface, surface_proto, JS_NumberValue(that->h))
+SAPPHIRE_SCRIPT_OBJECT_GETTER(ImageWidthGetter, ScriptImage_t, image_proto, JS_NumberValue((*that)->Width()))
+SAPPHIRE_SCRIPT_OBJECT_GETTER(ImageHeightGetter, ScriptImage_t, image_proto, JS_NumberValue((*that)->Height()))
 
-SAPPHIRE_SCRIPT_OBJECT_GETTER(ColorRedGetter, TS_Color, ColorProto, JS_NumberValue(that->red))
-SAPPHIRE_SCRIPT_OBJECT_SETTER_NUMBER(ColorRedSetter, TS_Color, ColorProto, that->red = NumberToColorChannel(args[0].toNumber()))
-SAPPHIRE_SCRIPT_OBJECT_GETTER(ColorGreenGetter, TS_Color, ColorProto, JS_NumberValue(that->green))
-SAPPHIRE_SCRIPT_OBJECT_SETTER_NUMBER(ColorGreenSetter, TS_Color, ColorProto, that->green = NumberToColorChannel(args[0].toNumber()))
-SAPPHIRE_SCRIPT_OBJECT_GETTER(ColorBlueGetter, TS_Color, ColorProto, JS_NumberValue(that->blue))
-SAPPHIRE_SCRIPT_OBJECT_SETTER_NUMBER(ColorBlueSetter, TS_Color, ColorProto, that->blue = NumberToColorChannel(args[0].toNumber()))
-SAPPHIRE_SCRIPT_OBJECT_GETTER(ColorAlphaGetter, TS_Color, ColorProto, JS_NumberValue(that->alpha))
-SAPPHIRE_SCRIPT_OBJECT_SETTER_NUMBER(ColorAlphaSetter, TS_Color, ColorProto, that->alpha = NumberToColorChannel(args[0].toNumber()))
+SAPPHIRE_SCRIPT_OBJECT_GETTER(ColorRedGetter, TS_Color, color_proto, JS_NumberValue(that->red))
+SAPPHIRE_SCRIPT_OBJECT_SETTER_NUMBER(ColorRedSetter, TS_Color, color_proto, that->red = NumberToColorChannel(args[0].toNumber()))
+SAPPHIRE_SCRIPT_OBJECT_GETTER(ColorGreenGetter, TS_Color, color_proto, JS_NumberValue(that->green))
+SAPPHIRE_SCRIPT_OBJECT_SETTER_NUMBER(ColorGreenSetter, TS_Color, color_proto, that->green = NumberToColorChannel(args[0].toNumber()))
+SAPPHIRE_SCRIPT_OBJECT_GETTER(ColorBlueGetter, TS_Color, color_proto, JS_NumberValue(that->blue))
+SAPPHIRE_SCRIPT_OBJECT_SETTER_NUMBER(ColorBlueSetter, TS_Color, color_proto, that->blue = NumberToColorChannel(args[0].toNumber()))
+SAPPHIRE_SCRIPT_OBJECT_GETTER(ColorAlphaGetter, TS_Color, color_proto, JS_NumberValue(that->alpha))
+SAPPHIRE_SCRIPT_OBJECT_SETTER_NUMBER(ColorAlphaSetter, TS_Color, color_proto, that->alpha = NumberToColorChannel(args[0].toNumber()))
 
 SAPPHIRE_SCRIPT_GROUP_GETTER(GroupXGetter, JS_NumberValue(that->GetX()))
 SAPPHIRE_SCRIPT_GROUP_SETTER_NUMBER(GroupXSetter, that->SetX(args[0].toNumber()))
@@ -129,13 +129,13 @@ bool GroupSetter(JSContext *ctx, JS::HandleObject obj, JS::HandleId id, bool str
             return false;
         }
         
-        std::shared_ptr<Galileo::Shader> *shader_program = ShaderProgramProto.unwrap(ctx, vp.toObjectOrNull(), nullptr);
+        std::shared_ptr<Galileo::Shader> *shader_program = shader_program_proto.unwrap(ctx, vp.toObjectOrNull(), nullptr);
         if(!shader_program){
             Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter ") + file.string + " Error value is not a ShaderProgram");
             return false;
         }
         
-        GroupProto.unsafeUnwrap(obj)->SetShader(*shader_program);
+        group_proto.unsafeUnwrap(obj)->SetShader(*shader_program);
         return true;
     }
     else if(strcmp(file.string, "shapes")==0){
@@ -144,11 +144,36 @@ bool GroupSetter(JSContext *ctx, JS::HandleObject obj, JS::HandleId id, bool str
             return false;
         }
         JS::RootedObject shapes_array(ctx, vp.toObjectOrNull());
-        GroupSetNativeShapes(ctx, GroupProto.unsafeUnwrap(obj), shapes_array);
+        GroupSetNativeShapes(ctx, group_proto.unsafeUnwrap(obj), shapes_array);
         return true;
     }
     
     return true;
+}
+
+void ColorFinalizer(JSFreeOp *fop, JSObject *obj){
+    delete color_proto.unsafeUnwrap(obj);
+}
+
+void SurfaceFinalizer(JSFreeOp *fop, JSObject *obj){
+    SDL_Surface *surface = surface_proto.unsafeUnwrap(obj);
+    SDL_FreeSurface(surface);
+}
+
+void ImageFinalizer(JSFreeOp *fop, JSObject *obj){
+    delete image_proto.unsafeUnwrap(obj);
+}
+
+void ShapeFinalizer(JSFreeOp *fop, JSObject *obj){
+    delete shape_proto.unsafeUnwrap(obj);
+}
+
+void GroupFinalizer(JSFreeOp *fop, JSObject *obj){
+    delete group_proto.unsafeUnwrap(obj);
+}
+
+void ShaderProgramFinalizer(JSFreeOp *fop, JSObject *obj){
+    delete shader_program_proto.unsafeUnwrap(obj);
 }
 
 
@@ -199,13 +224,12 @@ const float *FixedUVCoord[FIXEDUVCOORD_SIZE] = { // Known to be disproportionate
   FixedUV8
 };
 
-Turbo::JSPrototype<TS_Color>         ColorProto("Color", ColorCtor, 3);
-Turbo::JSPrototype<SDL_Surface>      SurfaceProto("Surface", SurfaceCtor, 1);
-Turbo::JSPrototype<ScriptImage_t>    ImageProto("Image", ImageCtor, 1);
-//Turbo::JSPrototype<Galileo::Vertex>  VertexProto("VertexNative", VertexCtor, 2);
-Turbo::JSPrototype<Galileo::Shape>   ShapeProto("Shape", ShapeCtor, 2);
-Turbo::JSPrototype<Galileo::Group>   GroupProto("Group", GroupCtor, 2, nullptr, GroupSetter);
-Turbo::JSPrototype<std::shared_ptr<Galileo::Shader> > ShaderProgramProto("ShaderProgram", ShaderProgramCtor, 1);
+Turbo::JSPrototype<TS_Color>         color_proto("Color", ColorCtor, 3, ColorFinalizer);
+Turbo::JSPrototype<SDL_Surface>      surface_proto("Surface", SurfaceCtor, 1, SurfaceFinalizer);
+Turbo::JSPrototype<ScriptImage_t>    image_proto("Image", ImageCtor, 1, ImageFinalizer);
+Turbo::JSPrototype<Galileo::Shape>   shape_proto("Shape", ShapeCtor, 2, ShapeFinalizer);
+Turbo::JSPrototype<Galileo::Group>   group_proto("Group", GroupCtor, 2, GroupFinalizer, GroupSetter);
+Turbo::JSPrototype<std::shared_ptr<Galileo::Shader> > shader_program_proto("ShaderProgram", ShaderProgramCtor, 1, ShaderProgramFinalizer);
 
 /*
 namespace Finalizer {
@@ -318,12 +342,12 @@ static JSPropertySpec color_properties[] = {
 
 void InitScript(JSContext *ctx){
     
-    GroupProto.initForContext(ctx, group_properties, group_methods);
-    ShapeProto.initForContext(ctx, shape_properties);
-    ImageProto.initForContext(ctx, image_properties, image_methods);
-    SurfaceProto.initForContext(ctx, surface_properties, surface_methods);
-    ColorProto.initForContext(ctx, color_properties);
-    ShaderProgramProto.initForContext(ctx);
+    group_proto.initForContext(ctx, group_properties, group_methods);
+    shape_proto.initForContext(ctx, shape_properties);
+    image_proto.initForContext(ctx, image_properties, image_methods);
+    surface_proto.initForContext(ctx, surface_properties, surface_methods);
+    color_proto.initForContext(ctx, color_properties);
+    shader_program_proto.initForContext(ctx);
     
 }
 
@@ -375,7 +399,7 @@ bool ColorCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
                                            NumberToColorChannel(args[2].toNumber()),
                                            alpha);
     
-    args.rval().set(OBJECT_TO_JSVAL(ColorProto.wrap(ctx, rColor)));
+    args.rval().set(OBJECT_TO_JSVAL(color_proto.wrap(ctx, rColor)));
     return true;
 }
 
@@ -388,13 +412,13 @@ bool ImageCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     
     JS::CallArgs args = CallArgsFromVp(argc, vp);
     
-    if(Turbo::CheckSignature<1>(ctx, args, sig_surface, __func__, false) && SurfaceProto.instanceOf(ctx, args[0], &args)){
-        const SDL_Surface *surface = SurfaceProto.unsafeUnwrap(args[0]); // We checked above if we have an instance of a Surface
+    if(Turbo::CheckSignature<1>(ctx, args, sig_surface, __func__, false) && surface_proto.instanceOf(ctx, args[0], &args)){
+        const SDL_Surface *surface = surface_proto.unsafeUnwrap(args[0]); // We checked above if we have an instance of a Surface
         assert(surface);
         
         Image *image = new Image(surface);
         
-        args.rval().set(OBJECT_TO_JSVAL(ImageProto.wrap(ctx, new ScriptImage_t(image))));
+        args.rval().set(OBJECT_TO_JSVAL(image_proto.wrap(ctx, new ScriptImage_t(image))));
         
         return true;
     }
@@ -417,7 +441,7 @@ bool ImageCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
         Image *image = new Image(surface);
         SDL_FreeSurface((SDL_Surface *)surface);
         
-        args.rval().set(OBJECT_TO_JSVAL(ImageProto.wrap(ctx, new ScriptImage_t(image))));
+        args.rval().set(OBJECT_TO_JSVAL(image_proto.wrap(ctx, new ScriptImage_t(image))));
         
         return true;
         
@@ -426,7 +450,7 @@ bool ImageCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     if(!Turbo::CheckSignature<3>(ctx, args, sig_parametric, __func__))
         return false;
 
-    TS_Color *color = ColorProto.unwrap(ctx, args[2], &args);
+    TS_Color *color = color_proto.unwrap(ctx, args[2], &args);
     if(!color)
         return false;
     else{
@@ -440,7 +464,7 @@ bool ImageCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
         
         delete[] pixels;
 
-        args.rval().set(OBJECT_TO_JSVAL(ImageProto.wrap(ctx, new ScriptImage_t(image))));
+        args.rval().set(OBJECT_TO_JSVAL(image_proto.wrap(ctx, new ScriptImage_t(image))));
         return true;
     }
 
@@ -454,9 +478,9 @@ bool SurfaceCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
 
     JS::CallArgs args = CallArgsFromVp(argc, vp);
     
-    if(Turbo::CheckSignature<1>(ctx, args, sig_surface, __func__, false) && ImageProto.instanceOf(ctx, args[0], &args)){
+    if(Turbo::CheckSignature<1>(ctx, args, sig_surface, __func__, false) && image_proto.instanceOf(ctx, args[0], &args)){
         
-        ScriptImage_t *image_holder = ImageProto.unsafeUnwrap(args[0]); // We checked above if we have an instance of a Image
+        ScriptImage_t *image_holder = image_proto.unsafeUnwrap(args[0]); // We checked above if we have an instance of a Image
         assert(image_holder);
         Sapphire::Image *image = image_holder->get();
         assert(image);
@@ -468,7 +492,7 @@ bool SurfaceCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
 
         SDL_UnlockSurface(surface);
 
-        args.rval().set(OBJECT_TO_JSVAL(SurfaceProto.wrap(ctx, surface)));
+        args.rval().set(OBJECT_TO_JSVAL(surface_proto.wrap(ctx, surface)));
         
         return true;
     }
@@ -488,7 +512,7 @@ bool SurfaceCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
             return false;
         }
         
-        args.rval().set(OBJECT_TO_JSVAL(SurfaceProto.wrap(ctx, surface)));
+        args.rval().set(OBJECT_TO_JSVAL(surface_proto.wrap(ctx, surface)));
         
         return true;
         
@@ -497,7 +521,7 @@ bool SurfaceCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     if(!Turbo::CheckSignature<3>(ctx, args, sig_parametric, __func__))
         return false;
 
-    TS_Color *color = ColorProto.unwrap(ctx, args[2], &args);
+    TS_Color *color = color_proto.unwrap(ctx, args[2], &args);
     if(!color){
         Turbo::SetError(ctx, BRACKNAME " SurfaceCtor Error argument 2 is not a color.");
         return false;
@@ -513,7 +537,7 @@ bool SurfaceCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
         std::fill(pixels, &(pixels[pixel_count-1]), color->toInt());
         SDL_UnlockSurface(surface);
 
-        args.rval().set(OBJECT_TO_JSVAL(SurfaceProto.wrap(ctx, surface)));
+        args.rval().set(OBJECT_TO_JSVAL(surface_proto.wrap(ctx, surface)));
         return true;
     }
 }
@@ -566,8 +590,8 @@ static inline bool ValidateVertex(JSContext *ctx, JS::HandleObject that, Sapphir
     ENSURE_PROP(y, true, vertex.y = out_value.toNumber();)
     ENSURE_PROP(u, out_value.isNumber(), vertex.u = out_value.toNumber();)
     ENSURE_PROP(v, out_value.isNumber(), vertex.v = out_value.toNumber();)
-    ENSURE_PROP(color, out_value.isObject() && ColorProto.instanceOf(ctx, out_value, nullptr),
-        {TS_Color *color = ColorProto.unsafeUnwrap(out_value.toObjectOrNull());
+    ENSURE_PROP(color, out_value.isObject() && color_proto.instanceOf(ctx, out_value, nullptr),
+        {TS_Color *color = color_proto.unsafeUnwrap(out_value.toObjectOrNull());
         vertex.color = TS_Color(color->red, color->green, color->blue, color->alpha);}
     )
     
@@ -589,7 +613,7 @@ bool ShapeCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     if(!Turbo::CheckSignature<2>(ctx, args, signature, __func__))
         return false;
     
-    ScriptImage_t *image_holder = ImageProto.unwrap(ctx, args[1], &args);
+    ScriptImage_t *image_holder = image_proto.unwrap(ctx, args[1], &args);
     if(!image_holder){
         Turbo::SetError(ctx, BRACKNAME " ShapeCtor Error argument 1 is not an Image");
         return false;
@@ -647,11 +671,11 @@ bool ShapeCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     }
     
     // Build and initialize the shape
-    Sapphire::Galileo::Shape *shape = new Galileo::Shape(vertices, *ImageProto.unsafeUnwrap(args[1]));
+    Sapphire::Galileo::Shape *shape = new Galileo::Shape(vertices, *image_proto.unsafeUnwrap(args[1]));
     shape->FillGL();
 
     // Wrap it.
-    args.rval().set(OBJECT_TO_JSVAL(ShapeProto.wrap(ctx, shape)));    
+    args.rval().set(OBJECT_TO_JSVAL(shape_proto.wrap(ctx, shape)));    
     return true;
 }
 
@@ -659,7 +683,7 @@ bool ShapeCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
 inline Galileo::Shape *GetArrayShape(JSContext *ctx, unsigned i, JS::HandleObject shape_array){
     JS::RootedValue element(ctx);
     JS_GetElement(ctx, shape_array, i, &element);
-    Galileo::Shape *shape = ShapeProto.unwrap(ctx, element.toObjectOrNull(), nullptr);
+    Galileo::Shape *shape = shape_proto.unwrap(ctx, element.toObjectOrNull(), nullptr);
     
     if(!shape)
         Turbo::SetError(ctx, std::string(BRACKNAME " GetArrayShape Error element ") + std::to_string(i) + " is not a Shape");
@@ -719,7 +743,7 @@ bool GroupCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     
     Galileo::Group *group_native = new Galileo::Group();
     
-    JSObject *group_object = GroupProto.wrap(ctx, group_native);
+    JSObject *group_object = group_proto.wrap(ctx, group_native);
     JS::RootedObject group_handle(ctx, group_object);
     
     if(!(JS_SetProperty(ctx, group_handle, "shader_program", args[1]) &&
@@ -735,7 +759,7 @@ bool GroupCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
 bool DrawGroup(JSContext *ctx, unsigned argc, JS::Value *vp){
     JS::CallArgs args = CallArgsFromVp(argc, vp);
     
-    Galileo::Group *mGroup = GroupProto.getSelf(ctx, vp, &args);
+    Galileo::Group *mGroup = group_proto.getSelf(ctx, vp, &args);
     if(!mGroup)
         return false;
         
@@ -760,7 +784,7 @@ bool SaveSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
     if(!Turbo::CheckSignature<1>(ctx, args, signature, __func__))
         return false;
     
-    SDL_Surface *mSurface = SurfaceProto.getSelf(ctx, vp, &args);
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
     if(!mSurface)
         return false;
     
@@ -781,13 +805,13 @@ bool SetPixelSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
     if(!Turbo::CheckSignature<3>(ctx, args, signature, __func__))
         return false;
     
-    TS_Color *color = ColorProto.unwrap(ctx, args[2], &args);
+    TS_Color *color = color_proto.unwrap(ctx, args[2], &args);
     if(!color){
         Turbo::SetError(ctx, std::string(BRACKNAME " SetPixelSurface Error argument 2 is not a Color"));
         return false;
     }
     
-    SDL_Surface *mSurface = SurfaceProto.getSelf(ctx, vp, &args);
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
     if(!mSurface)
         return false;
     const unsigned x = args[0].toNumber(), y = args[1].toNumber();
@@ -830,7 +854,7 @@ bool ArrayBufferToImage(JSContext *ctx, unsigned argc, JS::Value *vp){
     
     Image *image = new Image(data, w, h);
     
-    args.rval().set(OBJECT_TO_JSVAL(ImageProto.wrap(ctx, new ScriptImage_t(image))));
+    args.rval().set(OBJECT_TO_JSVAL(image_proto.wrap(ctx, new ScriptImage_t(image))));
     return true;
 }
 
@@ -870,7 +894,7 @@ bool ArrayBufferToSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
     memcpy(surface->pixels, data, len);
     SDL_UnlockSurface(surface);
 
-    args.rval().set(OBJECT_TO_JSVAL(SurfaceProto.wrap(ctx, surface)));
+    args.rval().set(OBJECT_TO_JSVAL(surface_proto.wrap(ctx, surface)));
 
     return true;
 
@@ -882,7 +906,7 @@ bool ImageCreateSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
 
     JS::CallArgs args = CallArgsFromVp(argc, vp);
     
-    ScriptImage_t *mImage = ImageProto.getSelf(ctx, vp, &args);
+    ScriptImage_t *mImage = image_proto.getSelf(ctx, vp, &args);
     assert(mImage);
     
     Image *image = mImage->get();
@@ -894,7 +918,7 @@ bool ImageCreateSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
     image->CopyData(surface->pixels);
     SDL_UnlockSurface(surface);
 
-    args.rval().set(OBJECT_TO_JSVAL(SurfaceProto.wrap(ctx, surface)));
+    args.rval().set(OBJECT_TO_JSVAL(surface_proto.wrap(ctx, surface)));
     return true;
 }
 
@@ -903,13 +927,13 @@ bool SurfaceBlitSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
     
     JS::CallArgs args = CallArgsFromVp(argc, vp);
     
-    SDL_Surface *mSurface = SurfaceProto.getSelf(ctx, vp, &args);
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
     assert(mSurface);
 
     if(!Turbo::CheckSignature<3>(ctx, args, signature, __func__))
         return false;
 
-    SDL_Surface *surface = SurfaceProto.unwrap(ctx, args[0], &args);
+    SDL_Surface *surface = surface_proto.unwrap(ctx, args[0], &args);
     if(!surface){
         Turbo::SetError(ctx, std::string(BRACKNAME " ") + __func__ + " Error argument 0 is not a Surface");
         return false;
@@ -943,7 +967,7 @@ bool GetDefaultShaderProgram(JSContext *ctx, unsigned argc, JS::Value *vp){
     Sapphire::Galileo::Shader *lShader = Sapphire::Galileo::Shader::GetDefaultShader(ctx);
     assert(lShader);
 
-    args.rval().set(OBJECT_TO_JSVAL(ShaderProgramProto.wrap(ctx, new std::shared_ptr<Galileo::Shader> (lShader))));
+    args.rval().set(OBJECT_TO_JSVAL(shader_program_proto.wrap(ctx, new std::shared_ptr<Galileo::Shader> (lShader))));
     return true;
 
 }

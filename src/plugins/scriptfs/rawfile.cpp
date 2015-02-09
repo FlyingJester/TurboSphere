@@ -4,7 +4,11 @@
 
 namespace scriptfs{
 
-Turbo::JSPrototype<RawFileHolder> RawFileProto("RawFile",  scriptfs::OpenRawFile, 1);
+void RawfileFinalizer(JSFreeOp *fop, JSObject *obj){
+    delete raw_file_proto.unsafeUnwrap(obj);
+}
+    
+Turbo::JSPrototype<RawFileHolder> raw_file_proto("RawFile", OpenRawFile, 1, RawfileFinalizer);
 
 JSFunctionSpec rawfile_methods[] = {
     JS_FN("read", RawFileRead, 1, 0),
@@ -40,7 +44,7 @@ void RawFileHolder::operator = (const a _a){
 }
 
 void InitRawFile(JSContext *ctx, int ID){
-    scriptfs::RawFileProto.initForContext(ctx, scriptfs::rawfile_properties, scriptfs::rawfile_methods);
+    scriptfs::raw_file_proto.initForContext(ctx, scriptfs::rawfile_properties, scriptfs::rawfile_methods);
 }
 
 const char * const ExplainRawFileError(enum RawFileError aError){
