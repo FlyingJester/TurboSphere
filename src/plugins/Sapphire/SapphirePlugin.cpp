@@ -25,7 +25,7 @@ const char *Init(JSContext *ctx, unsigned aID){
 
     Sapphire::Script::InitScript(ctx);
 
-    Sapphire::Init(aID);
+    Sapphire::Init(ctx, aID);
 
     return PLUGINNAME;
 }

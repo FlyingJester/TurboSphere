@@ -364,7 +364,6 @@ bool ColorCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     
     if(args.length()>3){
         if(!Turbo::CheckArg(ctx, args[3], Turbo::Number)){
-            
             Turbo::SetError(ctx, Turbo::BadArgTypeErrorMessage(3, Turbo::Number, __func__));
             return false;
         }
@@ -389,7 +388,7 @@ bool ImageCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     
     JS::CallArgs args = CallArgsFromVp(argc, vp);
     
-    if(Turbo::CheckSignature<1>(ctx, args, sig_surface, __func__) && SurfaceProto.instanceOf(ctx, args[0], &args)){
+    if(Turbo::CheckSignature<1>(ctx, args, sig_surface, __func__, false) && SurfaceProto.instanceOf(ctx, args[0], &args)){
         const SDL_Surface *surface = SurfaceProto.unsafeUnwrap(args[0]); // We checked above if we have an instance of a Surface
         assert(surface);
         
@@ -400,7 +399,7 @@ bool ImageCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
         return true;
     }
     
-    if(Turbo::CheckSignature<1>(ctx, args, sig_path, __func__)){
+    if(Turbo::CheckSignature<1>(ctx, args, sig_path, __func__, false)){
         struct Turbo::JSStringHolder<> file(ctx, JS_EncodeString(ctx, args[0].toString()));
         
         if(!file.string){
@@ -427,8 +426,8 @@ bool ImageCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     if(!Turbo::CheckSignature<3>(ctx, args, sig_parametric, __func__))
         return false;
 
-    TS_Color *color = ColorProto.unwrap(ctx, args[0], &args);
-    if(color)
+    TS_Color *color = ColorProto.unwrap(ctx, args[2], &args);
+    if(!color)
         return false;
     else{
         const unsigned w = std::max<int>(0, args[0].toNumber()), h = std::max<int>(0, args[1].toNumber()), pixel_count = w*h;
@@ -609,8 +608,8 @@ bool ShapeCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     // would correspond to a circular approximation.
     if((num_vertices>0) && (num_vertices<FIXEDUVCOORD_SIZE)){
         for(int i = 0; i<num_vertices; i++){
-            vertices[i].u = FixedUVCoord[num_vertices][(i*2)  ];
-            vertices[i].v = FixedUVCoord[num_vertices][(i*2)+1];
+            vertices[i].u = FixedUVCoord[num_vertices-1][(i*2)  ];
+            vertices[i].v = FixedUVCoord[num_vertices-1][(i*2)+1];
             vertices[i].color = TS_Color(0xFF, 0xFF, 0xFF, 0xFF);
         }
     }
@@ -941,7 +940,7 @@ bool ShaderProgramCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
 bool GetDefaultShaderProgram(JSContext *ctx, unsigned argc, JS::Value *vp){
 
     JS::CallArgs args = CallArgsFromVp(argc, vp);
-    Sapphire::Galileo::Shader *lShader = Sapphire::Galileo::Shader::GetDefaultShader();
+    Sapphire::Galileo::Shader *lShader = Sapphire::Galileo::Shader::GetDefaultShader(ctx);
     assert(lShader);
 
     args.rval().set(OBJECT_TO_JSVAL(ShaderProgramProto.wrap(ctx, new std::shared_ptr<Galileo::Shader> (lShader))));
@@ -952,7 +951,7 @@ bool GetDefaultShaderProgram(JSContext *ctx, unsigned argc, JS::Value *vp){
 bool GetScreenWidth(JSContext *ctx, unsigned argc, JS::Value *vp){
     
     JS::CallArgs args = CallArgsFromVp(argc, vp);
-    args.rval().set(JS_NumberValue(::GetScreenWidth()));
+    args.rval().set(JS_NumberValue(TS_GetContextEnvironment(ctx)->config->screenwidth));
     return true;
     
 }
@@ -960,7 +959,7 @@ bool GetScreenWidth(JSContext *ctx, unsigned argc, JS::Value *vp){
 bool GetScreenHeight(JSContext *ctx, unsigned argc, JS::Value *vp){
     
     JS::CallArgs args = CallArgsFromVp(argc, vp);
-    args.rval().set(JS_NumberValue(::GetScreenHeight()));
+    args.rval().set(JS_NumberValue(TS_GetContextEnvironment(ctx)->config->screenheight));
     return true;
     
 }

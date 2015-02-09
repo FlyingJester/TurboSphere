@@ -2,6 +2,6 @@ author=TurboSphere
 description=
 name=TS Test
 screen_height=640
-screen_width=1280
+screen_width=900
 script=ported_canvas_demo.js
 version=2

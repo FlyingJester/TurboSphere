@@ -201,8 +201,6 @@ bool RunGame(const char *path, const char *root_path){
     // Free the JSContext
     JS_DestroyContext(ctx);
     
-    JS_DestroyRuntime(runtime);
-    
     return true;
     
 }

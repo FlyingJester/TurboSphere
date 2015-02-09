@@ -4,6 +4,7 @@
 #include <vector>
 #include <map>
 #include <color.h>
+#include <opengame.h>
 #include "Shape.hpp"
 
 #ifdef OS_X
@@ -58,9 +59,9 @@ protected:
     std::vector<int> mAttributeNumbers;
 public:
 
-    static Shader *GetDefaultShader(void);
+    static Shader *GetDefaultShader(void *ctx);
 
-    Shader(int aProgram);
+    Shader(TS_GameConfig *config, int aProgram);
     ~Shader();
 
     // Map of Vertex Attribute names and their locations.

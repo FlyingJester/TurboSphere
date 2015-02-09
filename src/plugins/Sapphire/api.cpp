@@ -20,7 +20,7 @@ SDL_Surface *LoadSurface(const char *aPath, struct TS_GameDirectories *dirs, boo
         lPath = lsPath;
     }
 
-    SDL_Surface *lAnyFormatSurface = IMG_Load(aPath);
+    SDL_Surface *lAnyFormatSurface = IMG_Load(lPath);
 
     if(lAnyFormatSurface==nullptr){
         fprintf(stderr, P_ERROR "Could not load Image %s. %s\n", aPath, SDL_GetError());

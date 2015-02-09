@@ -7,7 +7,7 @@
 
 #include "SaveImage.hpp"
 
-#include <screen.h>
+#include <opengame.h>
 
 namespace Sapphire{
 
@@ -44,7 +44,7 @@ if(event->type==SDL_QUIT){
 //
 //
 
-void Init(uint64_t ID){
+void Init(JSContext *ctx, uint64_t ID){
     auto lInited = SDL_WasInit(SDL_INIT_EVERYTHING);
     if(lInited==0)
         SDL_Init(SDL_INIT_VIDEO);
@@ -61,7 +61,7 @@ void Init(uint64_t ID){
     //TODO: Make this more lenient, ask for 4.4 and then lower versions if that fails
     GL::Version lVersion = {3, 3};
 
-    GL::Window *lWindow = GL::MainThread::CreateWindow(GetScreenWidth(), GetScreenHeight(), lVersion);
+    GL::Window *lWindow = GL::MainThread::CreateWindow(TS_GetContextEnvironment(ctx)->config->screenwidth, TS_GetContextEnvironment(ctx)->config->screenheight, lVersion);
 
     SDL_ShowCursor(0);
 

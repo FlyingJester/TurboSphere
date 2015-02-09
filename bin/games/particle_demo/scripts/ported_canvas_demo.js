@@ -196,7 +196,7 @@ function ParticleDemo(){
     this.speedY = 0.05 * Math.PI / SCREEN_HEIGHT;
 
     this.shader = GetDefaultShaderProgram();
-    this.image = new Image(new Surface(1, 1, White));
+    this.image = new Image(1, 1, new Color(0xFF, 0xFF, 0xFF));
 
     this.initParticles = function() {
 
@@ -215,7 +215,7 @@ function ParticleDemo(){
 			var lColor = new Color(kColor.r, kColor.g, kColor.b, kColor.a);
             var particle = new KL.Particle(x, y, z, kColor, this.gV);
             var shape = new Shape([{x:SCREEN_OX, y:SCREEN_OY, color:lColor}, {x:SCREEN_OX+2, y:SCREEN_OY, color:lColor}, {x:SCREEN_OX+2, y:SCREEN_OY+2, color:lColor}, {x:SCREEN_OX, y:SCREEN_OY+2, color:lColor}], this.image);
-			particle.Group = new Group(shape, this.shader);
+			particle.Group = new Group([shape], this.shader);
 			particle.OldSide = 0;
 			this.particles.push(particle);
 		}
@@ -262,11 +262,9 @@ function ParticleDemo(){
 
 			var size = 1;
 
-            // PORT THIS TO GALILEO!
-
             particle.Group.setX(px);
             particle.Group.setY(py);
-            particle.Group.Draw();
+            particle.Group.draw();
 		}
 
 		FlipScreen();

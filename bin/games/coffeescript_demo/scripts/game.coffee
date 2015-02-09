@@ -3,7 +3,7 @@ class Character
   constructor: (@name, @x, @y) ->
     @image = new Image(new Surface("#{@name}.png"))
     @shape = new Shape([{x:0, y:0}, {x:32, y:0}, {x:32, y:32}, {x:0, y:32}], @image)
-    @group = new Group(@shape, GetDefaultShaderProgram())
+    @group = new Group([@shape], GetDefaultShaderProgram())
 
 trevor = new Character("trevor", 16, 16)
 dylan  = new Character("dylan", 64, 64)
