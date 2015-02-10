@@ -21,6 +21,7 @@ JSFunctionSpec rawfile_methods[] = {
 
 JSPropertySpec rawfile_properties[] = {
     JS_PSG("size", RawFileGetSize, 0),
+    JS_PSGS("position", RawFileGetPosition, RawFileSetPosition, 0),
     JS_PS_END
 };
 
