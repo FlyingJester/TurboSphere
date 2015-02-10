@@ -1,4 +1,4 @@
-Import('currentenv librarydir IsDarwin IsWindows corelibtargets binarydir LibraryInstall jslib')
+Import('currentenv librarydir IsDarwin IsLinux IsWindows IsSolaris corelibtargets binarydir LibraryInstall jslib')
 
 import os
 import sys
@@ -8,7 +8,7 @@ files = [
     "script.cpp"
 ]
 
-platform = SConscript(dirs=["platform"], exports = "currentenv IsDarwin IsWindows")
+platform = SConscript(dirs=["platform"], exports = "currentenv IsDarwin IsWindows IsLinux IsSolaris")
 
 chrono     = currentenv.SharedLibrary('chrono', files, LIBS = [jslib, platform])
 Depends(chrono, corelibtargets)

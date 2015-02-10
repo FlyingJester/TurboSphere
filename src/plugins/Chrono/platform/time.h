@@ -19,7 +19,7 @@ extern "C" {
 
     void TS_Chrono_SmallSleep(unsigned long time, enum TS_Chrono_TimeUnit unit CHRONO_PLATFORM_DEFARGS(TS_Chrono_Millisecond));
     void TS_Chrono_Sleep(void *ctx, unsigned long time, enum TS_Chrono_TimeUnit unit CHRONO_PLATFORM_DEFARGS(TS_Chrono_Millisecond));
-    unsigned long TS_Chrono_GetTime(enum TS_Chrono_TimeUnit unit CHRONO_PLATFORM_DEFARGS(TS_Chrono_Millisecond));
+    unsigned long long TS_Chrono_GetTime(enum TS_Chrono_TimeUnit unit CHRONO_PLATFORM_DEFARGS(TS_Chrono_Millisecond));
 
 #ifdef __cplusplus
 }

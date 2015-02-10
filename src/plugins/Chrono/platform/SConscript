@@ -1,4 +1,4 @@
-Import('currentenv IsDarwin IsWindows')
+Import('currentenv IsDarwin IsWindows IsLinux IsSolaris')
 
 import os
 import sys
@@ -8,10 +8,16 @@ platform_libs = []
 platform_frameworks = []
 
 if IsDarwin():
-    platform_files += ["osx_time.m"]
+    platform_files += ["osx_gettime.m"]
     platform_frameworks = ["CoreServices"]
-if IsWindows():
-    platform_files += ["win_time.c"]
+elif IsWindows():
+    platform_files += ["win32_time.c"]
+elif IsSolaris(): #Also works with AIX
+    platform_files += ["solaris_gettime.c"]
+
+if os.name == "posix":
+    platform_files += ["unix_sleep.c"]
+
 
 chrono_platform = currentenv.StaticLibrary('chrono_platform', platform_files, LIBS = platform_libs, FRAMEWORKS = platform_frameworks)
 Return('chrono_platform')

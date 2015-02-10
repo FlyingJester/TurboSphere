@@ -1,8 +1,8 @@
 import os
 import sys
 
-full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir corelibtargets jslib"
-local_export_list ="currentenv IsLinux IsWindows IsDarwin LibraryInstall compiler librarydir binarydir corelibtargets jslib"
+full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin IsSolaris LibraryInstall compiler librarydir binarydir corelibtargets jslib"
+local_export_list ="currentenv IsLinux IsWindows IsDarwin IsSolaris LibraryInstall compiler librarydir binarydir corelibtargets jslib"
 
 Import(full_import_list)
 
