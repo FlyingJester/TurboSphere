@@ -43,19 +43,31 @@ void SurfaceOperator::Line(SDL_Surface *s, const struct vertex vertices[2]){
     struct TS_Point *points = CalcLine(line, &n_points);
     
     SDL_LockSurface(s);
-    
-    for(int i = 0; i<n_points; i++){
-        unsigned pixel = points[i].x + (points[i].y*s->w);
-        
-        #define C_COMP(T)\
-            ((vertices[0].color.T*i) + (vertices[1].color.T*(n_points-i)))
-                
-        static_cast<uint32_t *>(s->pixels)[pixel] = concatRGBA(C_COMP(red), C_COMP(green), C_COMP(blue), C_COMP(alpha));
-        
-        #undef C_COMP
-        
+            
+    if((vertices[0].color.red==vertices[1].color.red) &&
+       (vertices[0].color.green==vertices[1].color.green) &&
+       (vertices[0].color.blue==vertices[1].color.blue) &&
+       (vertices[0].color.alpha==vertices[1].color.alpha)){
+           
+        const uint32_t color_uint = vertices[0].color.toInt();
+        for(int i = 0; i<n_points; i++){
+            unsigned pixel = points[i].x + (points[i].y*s->w);
+            static_cast<uint32_t *>(s->pixels)[pixel] = color_uint;
+        }
     }
-    
+    else{
+        for(int i = 0; i<n_points; i++){
+            unsigned pixel = points[i].x + (points[i].y*s->w);
+
+            #define C_COMP(T)\
+                ((vertices[0].color.T*i) + (vertices[1].color.T*(n_points-i)))
+                    
+            static_cast<uint32_t *>(s->pixels)[pixel] = concatRGBA(C_COMP(red), C_COMP(green), C_COMP(blue), C_COMP(alpha));
+            
+            #undef C_COMP
+            
+        }
+    }
     free(points);
     
     SDL_UnlockSurface(s);

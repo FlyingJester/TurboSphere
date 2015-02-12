@@ -53,6 +53,22 @@ bool ArrayBufferToImage(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool SaveSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool SetPixelSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool SurfaceBlitSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+
+bool LineSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool GradientLineSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool TriangleSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool GradientTriangleSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool OutlinedTriangleSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool RectangleSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool GradientRectangleSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool OutlinedRectangleSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool QuadSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool GradientQuadSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool OutlinedQuadSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool CircleSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool GradientCircleSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool OutlinedCircleSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+
 bool SaveImage(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool ImageCreateSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
 /////

@@ -11,6 +11,7 @@
 #include <SDL2/SDL_image.h>
 #include "GLStart.hpp"
 #include "SaveImage.hpp" // RenderQueue()
+#include "Surface/Primitives.hpp"
 
 #include <algorithm>
 #include <queue>
@@ -231,41 +232,6 @@ Turbo::JSPrototype<Galileo::Shape>   shape_proto("Shape", ShapeCtor, 2, ShapeFin
 Turbo::JSPrototype<Galileo::Group>   group_proto("Group", GroupCtor, 2, GroupFinalizer, GroupSetter);
 Turbo::JSPrototype<std::shared_ptr<Galileo::Shader> > shader_program_proto("ShaderProgram", ShaderProgramCtor, 1, ShaderProgramFinalizer);
 
-/*
-namespace Finalizer {
-
-template <class T>
-void CGeneric(const v8::WeakCallbackData<v8::Object, T> &args) {
-    free(args.GetValue()->GetAlignedPointerFromInternalField(0));
-    args.GetValue().Clear();
-}
-
-template <class T = void>
-void NoFree(const v8::WeakCallbackData<v8::Object, T> &args){
-    args.GetValue().Clear();
-}
-
-void Surface(const v8::WeakCallbackData<v8::Object, SDL_Surface> &args) {
-    SDL_FreeSurface((SDL_Surface *)(args.GetValue()->GetAlignedPointerFromInternalField(0)));
-    args.GetValue().Clear();
-}
-
-void Vertex (const v8::WeakCallbackData<v8::Object, Galileo::Vertex>&args){
-
-}
-
-void Shape  (const v8::WeakCallbackData<v8::Object, Galileo::Shape> &args){
-
-}
-
-void Group  (const v8::WeakCallbackData<v8::Object, Galileo::Group> &args){
-
-}
-
-
-}
-*/
-
 std::array<JSNative, NumFuncs> FunctionList = {{
     FlipScreen,
     ArrayBufferToSurface,
@@ -310,6 +276,7 @@ static JSPropertySpec shape_properties[] = {
 
 static JSFunctionSpec image_methods[] = {
     JS_FN("createSurface", ImageCreateSurface, 0, 0),
+    JS_FN("update", ImageUpdate, 1, 0),
     JS_FS_END
 };
     
@@ -323,6 +290,21 @@ static JSFunctionSpec surface_methods[] = {
     JS_FN("save", SaveSurface, 0, 0),
     JS_FN("setPixel", SetPixelSurface, 3, 0),
     JS_FN("blitSurface", SurfaceBlitSurface, 3, 0),
+    JS_FN("line", LineSurface, 3, 0),
+    JS_FN("gradientLine", GradientLineSurface, 5, 0),
+    JS_FN("triangle", TriangleSurface, 7, 0),
+    JS_FN("gradientTriangle", GradientTriangleSurface, 9, 0),
+    JS_FN("outlinedTriangle", OutlinedTriangleSurface, 7, 0),
+    JS_FN("rectangle", RectangleSurface, 3, 0),
+    JS_FN("gradientRectangle", GradientRectangleSurface, 8, 0),
+    JS_FN("outlinedRectangle", OutlinedRectangleSurface, 3, 0),
+    JS_FN("quad", QuadSurface, 9, 0),
+    JS_FN("gradientQuad", GradientQuadSurface, 12, 0),
+    JS_FN("outlinedQuad", OutlinedQuadSurface, 9, 0),
+    JS_FN("circle", CircleSurface, 4, 0),
+    JS_FN("filledCircle", CircleSurface, 4, 0),
+    JS_FN("gradientCircle", GradientCircleSurface, 4, 0),
+    JS_FN("outlinedCircle", OutlinedCircleSurface, 4, 0),
     JS_FS_END
 };
 
@@ -823,6 +805,451 @@ bool SetPixelSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
     return true;
 }
 
+bool LineSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Object};
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<5>(ctx, args, signature, __func__))
+        return false;
+    
+    TS_Color *color = color_proto.unwrap(ctx, args[4], &args);
+    if(!color){
+        Turbo::SetError(ctx, std::string(BRACKNAME " LineSurface Error argument 4 is not a Color"));
+        return false;
+    }
+    
+    const struct Surface::vertex vertices[2] = {
+        {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber())}, *color},
+        {{static_cast<int>(args[2].toNumber()), static_cast<int>(args[3].toNumber())}, *color}
+    };
+    
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+    
+    Surface::SurfaceOperator::Line(mSurface, vertices);
+    
+    return true;
+}
+
+bool GradientLineSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Object, Turbo::Object};
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<6>(ctx, args, signature, __func__))
+        return false;
+    
+    TS_Color *color1 = color_proto.unwrap(ctx, args[4], &args), *color2 = color_proto.unwrap(ctx, args[5], &args);
+    if(!color1){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientLineSurface Error argument 4 is not a Color"));
+        return false;
+    }
+    if(!color2){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientLineSurface Error argument 5 is not a Color"));
+        return false;
+    }
+    
+    const struct Surface::vertex vertices[2] = {
+        {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber())}, *color1},
+        {{static_cast<int>(args[2].toNumber()), static_cast<int>(args[3].toNumber())}, *color2}
+    };
+    
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+    
+    Surface::SurfaceOperator::Line(mSurface, vertices);
+    
+    return true;
+}
+
+bool TriangleSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Object};
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<7>(ctx, args, signature, __func__))
+        return false;
+    
+    TS_Color *color = color_proto.unwrap(ctx, args[6], &args);
+    if(!color){
+        Turbo::SetError(ctx, std::string(BRACKNAME " TriangleSurface Error argument 6 is not a Color"));
+        return false;
+    }
+    
+    const struct Surface::vertex vertices[3] = {
+        {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber())}, *color},
+        {{static_cast<int>(args[2].toNumber()), static_cast<int>(args[3].toNumber())}, *color},
+        {{static_cast<int>(args[4].toNumber()), static_cast<int>(args[5].toNumber())}, *color}
+    };
+    
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+    
+    Surface::SurfaceOperator::Triangle(mSurface, vertices);
+    
+    return true;
+}
+
+bool GradientTriangleSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, 
+                                       Turbo::Number, Turbo::Number,
+                                       Turbo::Number, Turbo::Number, 
+                                       Turbo::Object, Turbo::Object, Turbo::Object};
+                                       
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<9>(ctx, args, signature, __func__))
+        return false;
+    
+    TS_Color *colors[3] = {color_proto.unwrap(ctx, args[6], &args), 
+                          color_proto.unwrap(ctx, args[7], &args), 
+                          color_proto.unwrap(ctx, args[8], &args)};
+    if(!colors[0]){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientTriangleSurface Error argument 6 is not a Color"));
+        return false;
+    }   
+    if(!colors[1]){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientTriangleSurface Error argument 7 is not a Color"));
+        return false;
+    }
+    if(!colors[2]){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientTriangleSurface Error argument 8 is not a Color"));
+        return false;
+    }
+    
+    const struct Surface::vertex vertices[3] = {
+        {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber())}, *(colors[0])},
+        {{static_cast<int>(args[2].toNumber()), static_cast<int>(args[3].toNumber())}, *(colors[1])},
+        {{static_cast<int>(args[4].toNumber()), static_cast<int>(args[5].toNumber())}, *(colors[2])}
+    };
+    
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+    
+    Surface::SurfaceOperator::Triangle(mSurface, vertices);
+    
+    return true;
+}
+
+bool OutlinedTriangleSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Object};
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<7>(ctx, args, signature, __func__))
+        return false;
+    
+    TS_Color *color = color_proto.unwrap(ctx, args[6], &args);
+    if(!color){
+        Turbo::SetError(ctx, std::string(BRACKNAME " OutlinedTriangleSurface Error argument 6 is not a Color"));
+        return false;
+    }
+    
+    const struct Surface::vertex vertices[4] = {
+        {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber())}, *color}, 
+        {{static_cast<int>(args[2].toNumber()), static_cast<int>(args[3].toNumber())}, *color},
+        {{static_cast<int>(args[4].toNumber()), static_cast<int>(args[5].toNumber())}, *color}, 
+        {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber())}, *color},
+    };
+    
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+    
+    Surface::SurfaceOperator::Line(mSurface, &vertices[0]);
+    Surface::SurfaceOperator::Line(mSurface, &vertices[1]);
+    Surface::SurfaceOperator::Line(mSurface, &vertices[2]);
+    
+    return true;
+}
+
+bool RectangleSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Object};
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<5>(ctx, args, signature, __func__))
+        return false;
+    
+    TS_Color *color = color_proto.unwrap(ctx, args[4], &args);
+    if(!color){
+        Turbo::SetError(ctx, std::string(BRACKNAME " RectangleSurface Error argument 4 is not a Color"));
+        return false;
+    }
+    
+    const struct Surface::vertex vertices[4] = {
+        {{static_cast<int>(args[0].toNumber()),                    static_cast<int>(args[1].toNumber())}, *color}, 
+        {{static_cast<int>(args[0].toNumber()+args[2].toNumber()), static_cast<int>(args[1].toNumber())}, *color},
+        {{static_cast<int>(args[0].toNumber()+args[2].toNumber()), static_cast<int>(args[1].toNumber()+args[3].toNumber())}, *color},
+        {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber()+args[3].toNumber())}, *color}
+    };
+    
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+    
+    Surface::SurfaceOperator::Quad(mSurface, vertices);
+    
+    return true;
+}
+bool GradientRectangleSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+        const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Object, Turbo::Object, Turbo::Object, Turbo::Object};
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<8>(ctx, args, signature, __func__))
+        return false;
+    
+    TS_Color *color1 = color_proto.unwrap(ctx, args[4], &args);
+    TS_Color *color2 = color_proto.unwrap(ctx, args[5], &args);
+    TS_Color *color3 = color_proto.unwrap(ctx, args[6], &args);
+    TS_Color *color4 = color_proto.unwrap(ctx, args[7], &args);
+    if(!color1){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientRectangleSurface Error argument 4 is not a Color"));
+        return false;
+    }
+    if(!color2){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientRectangleSurface Error argument 5 is not a Color"));
+        return false;
+    }
+    if(!color3){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientRectangleSurface Error argument 6 is not a Color"));
+        return false;
+    }
+    if(!color4){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientRectangleSurface Error argument 7 is not a Color"));
+        return false;
+    }
+    
+    const struct Surface::vertex vertices[4] = {
+        {{static_cast<int>(args[0].toNumber()),                    static_cast<int>(args[1].toNumber())}, *color1}, 
+        {{static_cast<int>(args[0].toNumber()+args[2].toNumber()), static_cast<int>(args[1].toNumber())}, *color2},
+        {{static_cast<int>(args[0].toNumber()+args[2].toNumber()), static_cast<int>(args[1].toNumber()+args[3].toNumber())}, *color3},
+        {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber()+args[3].toNumber())}, *color4}
+    };
+    
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+    
+    Surface::SurfaceOperator::Quad(mSurface, vertices);
+    
+    return true;
+}
+
+bool OutlinedRectangleSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Object};
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<5>(ctx, args, signature, __func__))
+        return false;
+    
+    TS_Color *color = color_proto.unwrap(ctx, args[4], &args);
+    if(!color){
+        Turbo::SetError(ctx, std::string(BRACKNAME " OutlinedRectangleSurface Error argument 4 is not a Color"));
+        return false;
+    }
+    
+    const struct Surface::vertex vertices[5] = {
+        {{static_cast<int>(args[0].toNumber()),                    static_cast<int>(args[1].toNumber())}, *color}, 
+        {{static_cast<int>(args[0].toNumber()+args[2].toNumber()), static_cast<int>(args[1].toNumber())}, *color},
+        {{static_cast<int>(args[0].toNumber()+args[2].toNumber()), static_cast<int>(args[1].toNumber()+args[3].toNumber())}, *color},
+        {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber()+args[3].toNumber())}, *color},
+        {{static_cast<int>(args[0].toNumber()),                    static_cast<int>(args[1].toNumber())}, *color}, 
+    };
+    
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+    
+    Surface::SurfaceOperator::Line(mSurface, &vertices[0]);
+    Surface::SurfaceOperator::Line(mSurface, &vertices[1]);
+    Surface::SurfaceOperator::Line(mSurface, &vertices[2]);
+    Surface::SurfaceOperator::Line(mSurface, &vertices[3]);
+    
+    return true;
+}
+
+bool QuadSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, 
+        Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Object};
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<9>(ctx, args, signature, __func__))
+        return false;
+    
+    TS_Color *color = color_proto.unwrap(ctx, args[8], &args);
+    if(!color){
+        Turbo::SetError(ctx, std::string(BRACKNAME " QuadSurface Error argument 8 is not a Color"));
+        return false;
+    }
+    
+    const struct Surface::vertex vertices[4] = {
+        {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber())}, *color}, 
+        {{static_cast<int>(args[2].toNumber()), static_cast<int>(args[3].toNumber())}, *color}, 
+        {{static_cast<int>(args[4].toNumber()), static_cast<int>(args[5].toNumber())}, *color}, 
+        {{static_cast<int>(args[6].toNumber()), static_cast<int>(args[7].toNumber())}, *color}, 
+    };
+    
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+    
+    Surface::SurfaceOperator::Quad(mSurface, vertices);
+    
+    return true;
+}
+
+bool GradientQuadSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, 
+        Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, 
+        Turbo::Object, Turbo::Object, Turbo::Object, Turbo::Object};
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<12>(ctx, args, signature, __func__))
+        return false;
+    
+    TS_Color *color1 = color_proto.unwrap(ctx, args[8], &args);
+    TS_Color *color2 = color_proto.unwrap(ctx, args[9], &args);
+    TS_Color *color3 = color_proto.unwrap(ctx, args[10], &args);
+    TS_Color *color4 = color_proto.unwrap(ctx, args[11], &args);
+    if(!color1){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientQuadSurface Error argument 8 is not a Color"));
+        return false;
+    }
+    if(!color2){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientQuadSurface Error argument 9 is not a Color"));
+        return false;
+    }
+    if(!color3){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientQuadSurface Error argument 10 is not a Color"));
+        return false;
+    }
+    if(!color4){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientQuadSurface Error argument 11 is not a Color"));
+        return false;
+    }
+    
+    const struct Surface::vertex vertices[4] = {
+        {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber())}, *color1}, 
+        {{static_cast<int>(args[2].toNumber()), static_cast<int>(args[3].toNumber())}, *color2}, 
+        {{static_cast<int>(args[4].toNumber()), static_cast<int>(args[5].toNumber())}, *color3}, 
+        {{static_cast<int>(args[6].toNumber()), static_cast<int>(args[7].toNumber())}, *color4}
+    };
+    
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+    
+    Surface::SurfaceOperator::Quad(mSurface, vertices);
+    
+    return true;
+}
+
+bool OutlinedQuadSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, 
+        Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Object};
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<9>(ctx, args, signature, __func__))
+        return false;
+    
+    TS_Color *color = color_proto.unwrap(ctx, args[8], &args);
+    if(!color){
+        Turbo::SetError(ctx, std::string(BRACKNAME " OutlinedRectangleSurface Error argument 8 is not a Color"));
+        return false;
+    }
+    
+    const struct Surface::vertex vertices[5] = {
+        {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber())}, *color}, 
+        {{static_cast<int>(args[2].toNumber()), static_cast<int>(args[3].toNumber())}, *color}, 
+        {{static_cast<int>(args[4].toNumber()), static_cast<int>(args[5].toNumber())}, *color}, 
+        {{static_cast<int>(args[6].toNumber()), static_cast<int>(args[7].toNumber())}, *color},
+        {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber())}, *color}, 
+    };
+    
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+    
+    Surface::SurfaceOperator::Line(mSurface, &vertices[0]);
+    Surface::SurfaceOperator::Line(mSurface, &vertices[1]);
+    Surface::SurfaceOperator::Line(mSurface, &vertices[2]);
+    Surface::SurfaceOperator::Line(mSurface, &vertices[3]);
+    
+    return true;
+}
+            
+bool CircleSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Object};
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<4>(ctx, args, signature, __func__))
+        return false;
+    
+    TS_Color *color = color_proto.unwrap(ctx, args[3], &args);
+    if(!color){
+        Turbo::SetError(ctx, std::string(BRACKNAME " CircleSurface Error argument 3 is not a Color"));
+        return false;
+    }
+    const struct Surface::circle circle = {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber())}, static_cast<unsigned>(args[2].toNumber()), {*color, *color}};
+        
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+        
+    Surface::SurfaceOperator::Circle(mSurface, &circle);
+    return true;
+}
+      
+bool GradientCircleSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Object};
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<5>(ctx, args, signature, __func__))
+        return false;
+    
+    TS_Color *color1 = color_proto.unwrap(ctx, args[3], &args);
+    TS_Color *color2 = color_proto.unwrap(ctx, args[4], &args);
+    if(!color1){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientCircleSurface Error argument 3 is not a Color"));
+        return false;
+    }
+    if(!color2){
+        Turbo::SetError(ctx, std::string(BRACKNAME " GradientCircleSurface Error argument 4 is not a Color"));
+        return false;
+    }
+    const struct Surface::circle circle = {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber())}, static_cast<unsigned>(args[2].toNumber()), {*color1, *color2}};
+          
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+        
+    Surface::SurfaceOperator::Circle(mSurface, &circle);
+    return true;
+}
+          
+bool OutlinedCircleSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Object};
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<4>(ctx, args, signature, __func__))
+        return false;
+    
+    TS_Color *color = color_proto.unwrap(ctx, args[3], &args);
+    if(!color){
+        Turbo::SetError(ctx, std::string(BRACKNAME " CircleSurface Error argument 3 is not a Color"));
+        return false;
+    }
+    const struct Surface::circle circle = {{static_cast<int>(args[0].toNumber()), static_cast<int>(args[1].toNumber())}, static_cast<unsigned>(args[2].toNumber()), {*color, *color}};
+          
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+        
+    Surface::SurfaceOperator::OutlinedCircle(mSurface, &circle);
+    return true;
+}
+
 bool ArrayBufferToImage(JSContext *ctx, unsigned argc, JS::Value *vp){
     const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::ArrayBuffer};
     JS::CallArgs args = CallArgsFromVp(argc, vp);
@@ -917,6 +1344,43 @@ bool ImageCreateSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
     SDL_LockSurface(surface);
     image->CopyData(surface->pixels);
     SDL_UnlockSurface(surface);
+
+    args.rval().set(OBJECT_TO_JSVAL(surface_proto.wrap(ctx, surface)));
+    return true;
+}
+
+bool ImageUpdate(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Object};
+    
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<1>(ctx, args, signature, __func__))
+        return false;
+
+    SDL_Surface * const surface = surface_proto.unwrap(ctx, args[0], &args);
+    if(!surface){
+        Turbo::SetError(ctx, std::string(BRACKNAME " ") + __func__ + " Error argument 0 is not a Surface");
+        return false;
+    }
+    
+    ScriptImage_t * const mImage = image_proto.getSelf(ctx, vp, &args);
+    assert(mImage);
+    
+    const unsigned w = surface->w, h = surface->h;
+    
+    Image * const image = mImage->get();
+    image->Reserve(w, h);
+    
+    SDL_LockSurface(surface);
+    {
+        Image::PixelData * &data = image->Lock();
+        uint32_t *const pixels = static_cast<uint32_t *>(surface->pixels);
+        const Image::PixelDataOutput copier;
+        std::transform<uint32_t *, Image::PixelData *, const Image::PixelDataOutput &>(pixels, &pixels[w*h], data, copier);
+    }
+    SDL_UnlockSurface(surface);
+
+    image->Unlock(w, h);
 
     args.rval().set(OBJECT_TO_JSVAL(surface_proto.wrap(ctx, surface)));
     return true;

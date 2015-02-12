@@ -10,7 +10,7 @@ namespace Sapphire{
         struct vertex{struct point p; TS_Color color;};
         struct circle{struct point p; unsigned radius; TS_Color colors[2];};
         
-        // Currently is a simple, in-order, threaded surface operator.
+        // Currently is a simple, in-order, threaded surface operator
         class SurfaceOperator{
         
             void Operate();
@@ -18,15 +18,16 @@ namespace Sapphire{
             struct SurfaceOperatorImpl;
             std::unique_ptr<SurfaceOperatorImpl> impl;
             
-            // Internal immediate calls.
+        public:
+                        
+            // Internal immediate calls
+            // All calls lock the surface
             static void Point(SDL_Surface *s, const struct vertex p[1]);
             static void Line(SDL_Surface *s, const struct vertex vertices[2]);
             static void Triangle(SDL_Surface *s, const struct vertex vertices[3]);
             static void Quad(SDL_Surface *s, const struct vertex vertices[4]);
             static void Circle(SDL_Surface *s, const struct circle[1]);
-            static void OutlinedCircle(SDL_Surface *s, const struct circle[1]); // Only the first color is used.
-            
-        public:
+            static void OutlinedCircle(SDL_Surface *s, const struct circle[1]); // Only the first color is used.     
             
             SurfaceOperator();
             ~SurfaceOperator();

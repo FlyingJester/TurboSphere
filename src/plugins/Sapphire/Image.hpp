@@ -12,6 +12,20 @@ public:
       unsigned char channel[4];
   };
 
+  struct PixelDataInput {
+      PixelDataInput(){}
+      uint32_t operator() (const PixelData &that) const {
+          return that.pixel;
+      }
+  };
+
+  struct PixelDataOutput {
+      PixelDataOutput(){}
+      union PixelData operator() (uint32_t in) const {
+          return {.pixel = in};
+      }
+  };
+  
 protected:
     
     static void SetTexParameters();
@@ -34,8 +48,13 @@ public:
     unsigned Width() const {return w;}
     unsigned Height() const {return h;}
 
-    PixelData *Lock();
+    PixelData * &Lock();
     void Unlock();
+    void Unlock(unsigned w_, unsigned h_);
+    inline void Reserve(unsigned w_, unsigned h_){
+        if((w*h)<(w_*h_))
+            RGBA = static_cast<PixelData *>(realloc(RGBA, w*h*sizeof(PixelData)));
+    }
     
     void Bind() const;
 

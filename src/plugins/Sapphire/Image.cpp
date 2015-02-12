@@ -29,45 +29,6 @@ namespace Sapphire {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
-    
-    
-/*
-
-
-    Texture::Texture(){
-        glGenTextures(1, &mTexture);
-    }
-    Texture::~Texture(){
-        glDeleteTextures(1, &mTexture);
-    }
-
-
-    Texture::Texture(const SDL_Surface *aFrom){
-        glGenTextures(1, &mTexture);
-        Bind();
-        SetTexParameters();
-
-        UploadTexture(aFrom, aFrom->pixels);
-
-    }
-
-    Texture::Texture(unsigned aTexture, unsigned w, unsigned h){
-        glGenTextures(1, &mTexture);
-        Bind();
-        SetTexParameters();
-
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-
-    }
-
-    void Texture::GetBuffer(void *aTo) const{
-        Bind();
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, aTo);
-
-    }
-
-}
-*/
 
 Image::Image(){
     
@@ -92,7 +53,7 @@ Image::Image(const uint32_t *pixels, unsigned w_, unsigned h_)
   : Image(){
     w = w_;
     h = h_;
-    RGBA = new PixelData[w*h];
+    RGBA = static_cast<PixelData *>(malloc(sizeof(PixelData) * w * h));
     memcpy(RGBA, pixels, w*h*4);
     GL::UploadTexture(w, h, RGBA);
 }
@@ -106,7 +67,7 @@ Image::Image(Image *aFrom)
   : Image(){
     
     w = aFrom->w; h = aFrom->h;
-    RGBA = new PixelData[w*h];
+    RGBA = static_cast<PixelData *>(malloc(sizeof(PixelData) * w * h));
 
     aFrom->CopyData(RGBA);
 
@@ -116,7 +77,7 @@ Image::Image(Image *aFrom)
 }
 
 Image::~Image(){
-    delete[] RGBA;
+    free(RGBA);
     glDeleteTextures(1, &mTexture);
 }
 
@@ -124,14 +85,20 @@ void Image::Bind() const{
     glBindTexture(GL_TEXTURE_2D, mTexture);
 }
 
-Image::PixelData *Image::Lock(){
+Image::PixelData * &Image::Lock(){
 
     if(RGBA==nullptr){
-        RGBA = new PixelData[w*h];
+        RGBA = static_cast<PixelData *>(malloc(sizeof(PixelData) * w * h));
         CopyData(RGBA);
     }
 
     return RGBA;
+}
+
+void Image::Unlock(unsigned w_, unsigned h_){
+    w = w_;
+    h = h_;
+    Unlock();
 }
 
 void Image::Unlock(){
