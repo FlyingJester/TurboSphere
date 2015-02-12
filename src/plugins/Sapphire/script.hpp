@@ -54,6 +54,7 @@ bool SaveSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool CloneSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool SetPixelSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool SurfaceBlitSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool SurfaceSetClippingRectangle(JSContext *ctx, unsigned argc, JS::Value *vp);
 
 bool LineSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool GradientLineSurface(JSContext *ctx, unsigned argc, JS::Value *vp);

@@ -292,6 +292,7 @@ static JSFunctionSpec surface_methods[] = {
     JS_FN("save", SaveSurface, 0, 0),
     JS_FN("setPixel", SetPixelSurface, 3, 0),
     JS_FN("blitSurface", SurfaceBlitSurface, 3, 0),
+    JS_FN("setClippingRectangle", SurfaceSetClippingRectangle, 4, 0),
     JS_FN("line", LineSurface, 3, 0),
     JS_FN("gradientLine", GradientLineSurface, 5, 0),
     JS_FN("triangle", TriangleSurface, 7, 0),
@@ -1447,6 +1448,30 @@ bool SurfaceBlitSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
 
     SDL_BlitSurface(surface, nullptr, mSurface, &to);
 
+    return true;
+}
+
+bool SurfaceSetClippingRectangle(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Number, Turbo::Number, Turbo::Number, Turbo::Number};
+    
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    assert(mSurface);
+
+    if(!Turbo::CheckSignature<4>(ctx, args, signature, __func__))
+        return false;
+    
+    SDL_Rect rect = {static_cast<int>(args[0].toNumber()), 
+                     static_cast<int>(args[1].toNumber()),
+                     static_cast<int>(args[2].toNumber()),
+                     static_cast<int>(args[3].toNumber())
+                     };
+    
+    SDL_SetClipRect(mSurface, &rect);
+    
+    t5::DataSource::StdOut()->WriteF(BRACKNAME " ", __func__, " Info setting clipping rectangle ", rect.x, ',', rect.y, ',', rect.w, ',', rect.h, '\n');
+    
     return true;
 }
 
