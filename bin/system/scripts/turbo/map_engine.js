@@ -31,6 +31,8 @@ Turbo.NextMap = null;
 Turbo.IsChangingMaps = false;
 // Holds an array of {which:SCRIPT_ON_BLANK, script:function(){/*...*/}}
 Turbo.SpooledDefaultScripts = [];
+Turbo.SpooledRenderScript = null;
+Turbo.SpooledUpdateScript = null;
 Turbo.SpooledEntities = [];
 
 Turbo.IsMapEngineRunning = function(){
@@ -104,6 +106,12 @@ function MapEngine(map, fps){
     Turbo.SpooledDefaultScripts.forEach(function(i){Turbo.CurrentMap.default_scripts[i.which] = i.script;});
     
     Turbo.SpooledEntities.forEach(function(i){Turbo.CurrentMap.addEntity(i);});
+
+    if(Turbo.SpooledRenderScript)
+        SetRenderScript(Turbo.SpooledRenderScript);
+        
+    if(Turbo.SpooledUpdateScript)
+        SetRenderScript(Turbo.SpooledUpdateScript);
 
     var fps_interval = ((1/Turbo.CurrentMap.fps)*1000); // In seconds.
     
@@ -191,7 +199,7 @@ function CallMapScript(which){
 function SetDefaultMapScript(which, script){
 
     if(typeof script != "function")
-        script = function(){eval(script);}
+        script = new Function(script);
 
     if(Turbo.CurrentMap)
       Turbo.CurrentMap.default_scripts[which] = script;
@@ -403,20 +411,30 @@ function ScreenToMapY(layer, y){}
 
 
 function SetUpdateScript(script){
-    if(typeof script == "function"){
-        Turbo.CurrentMap.update_script = script;
+    if(!Turbo.CurrentMap){
+        Turbo.SpooledUpdateScript = script;
     }
     else{
-        Turbo.CurrentMap.update_script = function(){eval(script);}
+        if(typeof script == "function"){
+            Turbo.CurrentMap.update_script = script;
+        }
+        else{
+            Turbo.CurrentMap.update_script = new Function(script);
+        }
     }
 }
 
 function SetRenderScript(script){
-    if(typeof script == "function"){
-        Turbo.CurrentMap.render_script = script;
+    if(!Turbo.CurrentMap){
+        Turbo.SpooledRenderScript = script;
     }
     else{
-        Turbo.CurrentMap.render_script = function(){eval(script);}
+        if(typeof script == "function"){
+            Turbo.CurrentMap.render_script = script;
+        }
+        else{
+            Turbo.CurrentMap.render_script = new Function(script);
+        }        
     }
 }
 

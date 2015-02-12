@@ -516,11 +516,16 @@ bool SurfaceCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
         SDL_Surface *surface = GenerateSurface(w, h);
         assert(surface);
         
-        SDL_LockSurface(surface);
-        uint32_t *pixels = static_cast<uint32_t *>(surface->pixels);
-        std::fill(pixels, &(pixels[pixel_count-1]), color->toInt());
-        SDL_UnlockSurface(surface);
-
+        if(w && h){
+            SDL_LockSurface(surface);
+            uint32_t *pixels = static_cast<uint32_t *>(surface->pixels);
+            
+            assert(pixels);
+            assert(color);
+            
+            std::fill(pixels, &(pixels[pixel_count-1]), color->toInt());
+            SDL_UnlockSurface(surface);
+        }
         args.rval().set(OBJECT_TO_JSVAL(surface_proto.wrap(ctx, surface)));
         return true;
     }

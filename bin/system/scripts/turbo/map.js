@@ -71,7 +71,7 @@ Turbo.Map = function(stream, compat){
         if(i<3)
             continue;
 
-        this.functions.push(function(){eval(this.strings[Turbo.MapScheme.strings[i].name]);});
+        this.functions.push(new Function(this.strings[Turbo.MapScheme.strings[i].name]));
     }
 
     this.layers = new Array(this.num_layers);
@@ -128,7 +128,7 @@ Turbo.Map = function(stream, compat){
         Object.assign(this.zones[i], position);
 
         // Set up the script for the zone.
-        this.zones[i].onActivate = function(){eval(zones[i].scripts);};
+        this.zones[i].onActivate = new Function(zones[i].scripts);
         this.zones[i].cursor = 0;
 
         // This callback performs a ste
@@ -220,7 +220,6 @@ Turbo.Map = function(stream, compat){
         for(var i =0; i<this.layers.length; i++){
             this.drawLayer(i);
         }
-
     }
 
     this.calculateMap();

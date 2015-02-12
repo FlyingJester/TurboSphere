@@ -196,7 +196,9 @@ namespace Turbo{
     
     inline bool CheckForSingleArg(JSContext *ctx, JS::CallArgs &args, enum JSType type, const char *func, bool set_error = true){
         if(args.length()==0){
-            SetError(ctx, std::string("[" PLUGINNAME "] ") + func + " Error called with no arguments");
+            if(set_error){
+                SetError(ctx, std::string("[" PLUGINNAME "] ") + func + " Error called with no arguments");
+            }
             return false;
         }
         if(!CheckArg(ctx, args[0], type)){

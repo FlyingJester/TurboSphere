@@ -26,7 +26,7 @@ Turbo.GetSystemFont = function(){
         throw "Could not open system font: " + e;
     }
     
-    return new Turbo.Map(reader);
+    return new Turbo.Font(reader);
 }
 
 Turbo.FontStringCache = function(string, surface, width){
@@ -55,19 +55,19 @@ Turbo.Font = function(stream, string_cache_size){
     // Read the characters
     for(var i = 0; i<this.num_characters; i++){
         var character = Turbo.ReadBinaryObject(stream, Turbo.FontScheme.character);
-        var surface_bytearray = stream.read(this.w*this.h*4);
+        var surface_bytearray = stream.read(character.w*character.h*4);
         
         // If ByteArray objects have a `buffer' and we can create Surfaces directly from buffers, do it.
-        if((typeof surface_buffer.buffer!== "undefined") && (typeof SurfaceFromArrayBuffer == "function")){
-            character.surface = SurfaceFromArrayBuffer(surface_bytearray.buffer);
+        if((typeof surface_bytearray.buffer!== "undefined") && (typeof SurfaceFromArrayBuffer == "function")){
+            character.surface = SurfaceFromArrayBuffer(character.w, character.h, surface_bytearray.buffer);
         }
         else{ // Otherwise iterate the long way.
-            character.surface = new Surface(this.w, this.h, new Color(0, 0, 0));
+            character.surface = new Surface(character.w, character.h, new Color(0, 0, 0));
             
             var byte_offset = 0;
             
-            for(var y = 0; y<this.h; y++){
-                for(var x = 0; x<this.w; x++){
+            for(var y = 0; y<character.h; y++){
+                for(var x = 0; x<character.w; x++){
                     var color = new Color(surface_bytearray[byte_offset++], 
                                           surface_bytearray[byte_offset++], 
                                           surface_bytearray[byte_offset++], 
@@ -108,7 +108,7 @@ Turbo.Font = function(stream, string_cache_size){
         width>>=0;    
         
         for(var i in this.string_cache){
-            if((this.string_cache[i].string===string){
+            if(this.string_cache[i].string===string){
                 if((this.string_cache[i].width===width) ||
                     ((this.string_cache[i].width>=width) && (this.string_cache[i].surface.width<=width))){
                     return this.string_cache[i].surface.clone();
@@ -143,6 +143,10 @@ Turbo.Font = function(stream, string_cache_size){
             
         }
         actual_width>>=0;
+        
+        if(width==~0)
+            width = actual_width;
+        
         var actual_height = max_height * Math.ceil(actual_width/width);
         
         var string_surface = new Surface(width, actual_height, new Color(0, 0, 0, 0));
@@ -194,7 +198,7 @@ Surface.prototype.drawText = function(font, x, y, string){
 }
 
 // TODO: Clipping
-Surface.prototype.drawTextBox(font, x, y, w, h, offset_h, string){
+Surface.prototype.drawTextBox = function(font, x, y, w, h, offset_h, string){
     
     var surface = font.createTextSurface(string, w);
 
