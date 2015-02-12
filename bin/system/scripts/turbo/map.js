@@ -20,7 +20,7 @@ Turbo.EntityScheme= Turbo.LoadSystemScheme("entity.json");
 
 Turbo.LoadMapFile = function(path){
     try{
-        var reader = new Turbo.FileReader(new RawFile("~/maps/"+path))
+        var reader = new Turbo.FileReader(new RawFile("~/maps/"+path));
     }
     catch(e){
         throw e + " path: "+path;

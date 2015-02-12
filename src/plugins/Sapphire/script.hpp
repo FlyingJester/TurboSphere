@@ -51,6 +51,7 @@ bool ArrayBufferToSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool ArrayBufferToImage(JSContext *ctx, unsigned argc, JS::Value *vp);
 
 bool SaveSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool CloneSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool SetPixelSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool SurfaceBlitSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
 
@@ -71,6 +72,8 @@ bool OutlinedCircleSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
 
 bool SaveImage(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool ImageCreateSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool CloneImage(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool ImageUpdate(JSContext *ctx, unsigned argc, JS::Value *vp);
 /////
 // New School!
 bool VertexCtor(JSContext *ctx, unsigned argc, JS::Value *vp);

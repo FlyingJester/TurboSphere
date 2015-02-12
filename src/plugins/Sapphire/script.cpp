@@ -275,6 +275,7 @@ static JSPropertySpec shape_properties[] = {
 };
 
 static JSFunctionSpec image_methods[] = {
+    JS_FN("clone", CloneImage, 0, 0),
     JS_FN("createSurface", ImageCreateSurface, 0, 0),
     JS_FN("update", ImageUpdate, 1, 0),
     JS_FS_END
@@ -287,6 +288,7 @@ static JSPropertySpec image_properties[] = {
 };
 
 static JSFunctionSpec surface_methods[] = {
+    JS_FN("clone", CloneSurface, 0, 0),
     JS_FN("save", SaveSurface, 0, 0),
     JS_FN("setPixel", SetPixelSurface, 3, 0),
     JS_FN("blitSurface", SurfaceBlitSurface, 3, 0),
@@ -757,6 +759,30 @@ bool DrawGroup(JSContext *ctx, unsigned argc, JS::Value *vp){
     
     return true;
     
+}
+
+bool CloneSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    SDL_Surface *mSurface = surface_proto.getSelf(ctx, vp, &args);
+    if(!mSurface)
+        return false;
+    
+    const unsigned w = mSurface->w, h = mSurface->h;
+    
+    SDL_Surface *surface = GenerateSurface(w, h);
+
+    SDL_LockSurface(surface);
+    SDL_LockSurface(mSurface);
+    
+    memcpy(surface->pixels, mSurface->pixels, w*h*4);
+    
+    SDL_LockSurface(mSurface);
+    SDL_LockSurface(surface);
+    
+    args.rval().set(OBJECT_TO_JSVAL(surface_proto.wrap(ctx, surface)));
+    
+    return true;
 }
 
 bool SaveSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
@@ -1346,6 +1372,12 @@ bool ImageCreateSurface(JSContext *ctx, unsigned argc, JS::Value *vp){
     SDL_UnlockSurface(surface);
 
     args.rval().set(OBJECT_TO_JSVAL(surface_proto.wrap(ctx, surface)));
+    return true;
+}
+
+bool CloneImage(JSContext *ctx, unsigned argc, JS::Value *vp){
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    args.rval().set(OBJECT_TO_JSVAL(image_proto.wrap(ctx, new ScriptImage_t(new Image(image_proto.getSelf(ctx, vp, &args)->get())))));
     return true;
 }
 
