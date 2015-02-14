@@ -1,0 +1,23 @@
+Import('currentenv librarydir corelibtargets binarydir LibraryInstall IsDarwin IsLinux IsWindows jslib')
+
+import os
+import sys
+
+localenv = currentenv.Clone()
+
+if IsDarwin():
+    localenv.Append(FRAMEWORKS=["OpenAL"])
+else:
+    localenv.Append(LIBS=["openal"])
+
+cinnamon_files = [
+    "openal.cpp",
+    "sound.cpp",
+    "script.cpp",
+    "formats/opus.c"
+]
+
+cinnamon = localenv.SharedLibrary('cinnamon', cinnamon_files, LIBS = ['t5', 'configmanager', jslib, 'opus'])
+
+Depends(cinnamon, corelibtargets)
+LibraryInstall(os.path.join(binarydir, 'plugin'), cinnamon, currentenv)
