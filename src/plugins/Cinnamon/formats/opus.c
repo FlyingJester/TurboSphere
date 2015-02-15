@@ -55,7 +55,7 @@ void Cinnamon_DestroyOpusDecoder(struct Cinnamon_OpusDecoder *d){
 }
 
 /* Based on the opus_demo.c in XIPH's libopus, and opusfile */
-int Cinnamon_OpusRead(struct Cinnamon_OpusDecoder *decoder, void *to,
+int Cinnamon_OpusRead(struct Cinnamon_OpusDecoder *decoder, void **to,
                 unsigned long *out_len, const void *from, unsigned long in_len){
     const uint32_t * const data_uint = from;
     int output_samples = 0, was_zero = *out_len==0;
@@ -70,10 +70,11 @@ int Cinnamon_OpusRead(struct Cinnamon_OpusDecoder *decoder, void *to,
     if(*out_len){
         const unsigned needed = CINNAMON_OPUS_MAX_PAYLOAD*decoder->channels;
         assert(to);
+        assert(*to);
         
         if(*out_len < needed){
             *out_len = needed;
-            to = realloc(to, *out_len);
+            *to = realloc(*to, *out_len);
         }
     }
 
@@ -85,7 +86,7 @@ int Cinnamon_OpusRead(struct Cinnamon_OpusDecoder *decoder, void *to,
     
     output_samples = opus_decode(decoder->decoder,
         (data_uint[0]==0)?(NULL):(decoder->buffer), data_uint[0],
-        to, output_samples, 0);
+        *to, output_samples, 0);
 
     *out_len = output_samples;
 
@@ -95,12 +96,10 @@ int Cinnamon_OpusRead(struct Cinnamon_OpusDecoder *decoder, void *to,
 
         /* Sanity check */
         if((final!=0) && (data_uint[0]!=0) && (data_uint[1]!=0) && (!decoder->was_lost) && (final!=data_uint[1])){
-            
-            if(was_zero){
-                free(to);
+            if(was_zero){ /* The caller may not handle the output buffer. */
+                free(*to);
                 *out_len = 0;
             }
-            
             return 0;
         }
     }

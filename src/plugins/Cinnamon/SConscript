@@ -14,7 +14,8 @@ cinnamon_files = [
     "openal.cpp",
     "sound.cpp",
     "script.cpp",
-    "formats/opus.c"
+    "formats/opus.c",
+    "formats/utility.cpp"
 ]
 
 cinnamon = localenv.SharedLibrary('cinnamon', cinnamon_files, LIBS = ['t5', 'configmanager', jslib, 'opus'])
