@@ -6,6 +6,11 @@
 
 namespace Cinnamon {
 
+    template<typename T>
+    inline T BytesToSamples(T in){return in/static_cast<T>(2);}
+    template<typename T>
+    inline T SamplesToBytes(T in){return in*static_cast<T>(2);}
+    
 static Player player;
 
     Turbo::JSPrototype<Sound> sound_proto("Sound", SoundCtor, 3, SoundFinalizer);
@@ -28,6 +33,8 @@ static Player player;
         delete sound_proto.unsafeUnwrap(obj);
     }
     
+    
+    // TODO: Add streaming support.
     bool SoundCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
         
         JS::CallArgs args = CallArgsFromVp(argc, vp);
@@ -52,17 +59,19 @@ static Player player;
         }
         
         std::vector<short> buffer;
-        buffer.resize(0xFFFF);
-        unsigned long last_size = 0;
-        unsigned long read_in = 0;
+        buffer.resize(8192*info.channels);
+        unsigned long read_in = 0; // In samples
         
-        while(unsigned long this_read = sf_readf_short(sound_file, buffer.data()+last_size, (buffer.size()-last_size)>>1)){
+        printf(BRACKNAME " SoundCtor Info %i channels\n", info.channels);
+        
+        while(unsigned long this_read = sf_readf_short(sound_file, buffer.data()+SamplesToBytes(read_in), BytesToSamples(buffer.size()-SamplesToBytes(read_in))/info.channels)){
             read_in+=this_read;
-            last_size = buffer.size();
             buffer.resize(buffer.size()<<1);
         }
         
-        Sound *sound = new Sound(player.load(buffer.data(), read_in, info.samplerate));
+        sf_close(sound_file);
+        
+        Sound *sound = new Sound(player.load(buffer.data(), info.channels, SamplesToBytes(read_in), info.samplerate));
         
         args.rval().set(OBJECT_TO_JSVAL(sound_proto.wrap(ctx, sound)));
         

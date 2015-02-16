@@ -43,7 +43,7 @@ bool Player::init(){
     
 }
 
-Sound Player::load(const int16_t *from, size_t num, int samples_per_second){
+Sound Player::load(const int16_t *from, int num_channels, size_t num, int samples_per_second){
 
     makeCurrent();
 
@@ -62,7 +62,17 @@ Sound Player::load(const int16_t *from, size_t num, int samples_per_second){
 
     assert(!buffers.empty());
 
-    alBufferData(buffers.back(), format, from, num, samples_per_second);
+    unsigned channel_format = format;
+    switch(num_channels){
+        case 1:
+            channel_format = AL_FORMAT_MONO16;
+            break;
+        case 2:
+            channel_format = AL_FORMAT_STEREO16;
+            break;
+    }
+
+    alBufferData(buffers.back(), channel_format, from, num, samples_per_second);
     alSourceQueueBuffers(sound.handle, 1, &(buffers.back()));
 
     buffers.pop_back();

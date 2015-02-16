@@ -27,7 +27,7 @@ namespace Cinnamon {
         Player();
         bool init();
         
-        Sound load(const int16_t *from, size_t num, int samples_per_second); // Returns a handle
+        Sound load(const int16_t *from, int num_channels, size_t num, int samples_per_second); // Returns a handle
         void play(Sound *sound);
         
         static bool supportsFloat32();
