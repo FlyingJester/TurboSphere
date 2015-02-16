@@ -14,11 +14,10 @@ cinnamon_files = [
     "openal.cpp",
     "sound.cpp",
     "script.cpp",
-    "formats/opus.c",
-    "formats/utility.cpp"
+    "cinnamon.cpp"
 ]
 
-cinnamon = localenv.SharedLibrary('cinnamon', cinnamon_files, LIBS = ['t5', 'configmanager', jslib, 'opus'])
+cinnamon = localenv.SharedLibrary('cinnamon', cinnamon_files, LIBS = ['t5', 'configmanager', jslib, 'sndfile'])
 
 Depends(cinnamon, corelibtargets)
 LibraryInstall(os.path.join(binarydir, 'plugin'), cinnamon, currentenv)

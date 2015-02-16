@@ -1,4 +1,13 @@
 #pragma once
+#include "cinnamon.hpp"
+#include "sound.hpp"
+#include "player.hpp"
+
+namespace Cinnamon {
+
+extern Turbo::JSPrototype<Sound> sound_proto;
+
+void InitScript(JSContext *ctx);
 
 /* And it goes a little something like this...
 
@@ -30,3 +39,11 @@ Cinnamon_DestroyDecoder(decoder);
 // Return the sound.
 
 */
+
+bool SoundCtor(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool PlaySound(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool PauseSound(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool StopSound(JSContext *ctx, unsigned argc, JS::Value *vp);
+void SoundFinalizer(JSFreeOp *fop, JSObject *obj);
+
+}

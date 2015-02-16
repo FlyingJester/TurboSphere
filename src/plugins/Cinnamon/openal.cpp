@@ -17,6 +17,13 @@ void Player::makeCurrent() const{
     alcMakeContextCurrent(static_cast<ALCcontext *>(context));
 }
 
+Player::Player()
+  : dev(nullptr)
+  , context(nullptr)
+  , format(AL_FORMAT_STEREO16){
+    
+}
+
 bool Player::init(){
     dev = alcOpenDevice(nullptr);
     if(!dev)
@@ -36,7 +43,7 @@ bool Player::init(){
     
 }
 
-Sound Player::load(const uint8_t *from, size_t num, int samples_per_second){
+Sound Player::load(const int16_t *from, size_t num, int samples_per_second){
 
     makeCurrent();
 
@@ -64,6 +71,10 @@ Sound Player::load(const uint8_t *from, size_t num, int samples_per_second){
 
 }
 
+void Player::play(Sound *sound){
+    makeCurrent();
+    alSourcePlay(sound->handle);
+}
 
 bool Player::supportsFloat32(){
     return alIsExtensionPresent("AL_EXT_FLOAT32");

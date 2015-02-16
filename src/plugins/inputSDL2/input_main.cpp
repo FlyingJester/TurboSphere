@@ -90,9 +90,6 @@ JSNative GetFunction(JSContext *ctx, int n){
 }
 
 const char *GetFunctionName(JSContext *ctx, int n){
-    
-    t5::DataSource::StdOut()->WriteF(BRACKNAME, n, '/', InputSDL2::script_function_name_list.size(), '\n');
-    
     assert(ctx);
     assert(n<InputSDL2::script_function_name_list.size());
     return InputSDL2::script_function_name_list[n];

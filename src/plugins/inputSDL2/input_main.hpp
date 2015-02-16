@@ -10,7 +10,7 @@
 #endif
 
 #define PLUGINNAME "InputSDL2"
-#define BRACKNAME "[InputSDL2]"
+#define BRACKNAME "[" PLUGINNAME "]"
 
 #include <jsapi.h>
 #include <pluginsdk/plugin.h>

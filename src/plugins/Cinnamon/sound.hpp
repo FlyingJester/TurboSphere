@@ -11,6 +11,8 @@ namespace Cinnamon {
         void returnBuffers() const;
         Sound(Player &p);
         
+        float length;
+        
     public:
         
         friend class Player;
@@ -19,6 +21,8 @@ namespace Cinnamon {
         Sound(const Sound &s);
         ~Sound();
         void setLooping(bool loop);
+        
+        float getLength(){return length;}
         
     };
     

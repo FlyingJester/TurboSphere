@@ -6,7 +6,7 @@ if(typeof Turbo == "undefined")
 
 Turbo.WindowstyleScheme = Turbo.LoadSystemScheme("windowstyle.json");
 
-Turbo.LoadWindowstyleFile = function(path){
+Turbo.LoadWindowStyleFile = function(path){
     try{
         var reader = new Turbo.FileReader(new RawFile("~/windowstyles/"+path));
     }
@@ -14,11 +14,11 @@ Turbo.LoadWindowstyleFile = function(path){
         throw e + " path: "+path;
     }
 
-    return new Turbo.Windowstyle(reader);
+    return new Turbo.WindowStyle(reader);
 
 }
 
-Turbo.GetSystemWindowstyle = function(){
+Turbo.GetSystemWindowStyle = function(){
     try{
         var reader = new Turbo.FileReader(new RawFile("#~/system.rws"));
     }
@@ -26,14 +26,14 @@ Turbo.GetSystemWindowstyle = function(){
         throw "Could not open system windowstyle: " + e;
     }
     
-    return new Turbo.Windowstyle(reader);
+    return new Turbo.WindowStyle(reader);
 }
 
 Turbo.ColorFromInteger = function(integer){
     return new Color((integer>>24) & 0xFF, (integer>>16) & 0xFF, (integer>>8) & 0xFF, integer & 0xFF);
 }
 
-Turbo.Windowstyle = function(stream){
+Turbo.WindowStyle = function(stream){
     
     this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.WindowstyleScheme.header);
     
@@ -143,4 +143,4 @@ Turbo.Windowstyle = function(stream){
 
 // Sphere 1.5 compatibility layer
 
-var GetSystemWindowstyle = Turbo.GetSystemWindowstyle;
+var GetSystemWindowStyle = Turbo.GetSystemWindowStyle;
