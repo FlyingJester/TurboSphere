@@ -443,11 +443,25 @@ bool ImageCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
 
         uint32_t *pixels = new uint32_t[pixel_count];
 
-        std::fill(pixels, &(pixels[pixel_count-1]), color->toInt());
+        std::fill(pixels, &(pixels[pixel_count]), color->toInt());
+
+#ifndef NDEBUG
+        
+        for(unsigned i = 0; i<pixel_count; i++){
+            assert(pixels[i]==color->toInt());
+        }
+        
+#endif
 
         Image *image = new Image(pixels, w, h);
         
+
+        
         delete[] pixels;
+        
+        t5::DataSource::StdOut()->WriteF(BRACKNAME, ' ', __func__, " Info created an image filled with color", 
+            'r', color->red, 'g', color->green, 'b', color->blue, 'a', color->alpha,
+            " size w", w, 'h', h, '\n');
 
         args.rval().set(OBJECT_TO_JSVAL(image_proto.wrap(ctx, new ScriptImage_t(image))));
         return true;
@@ -540,7 +554,7 @@ struct VertexProperties{
 };
 
 // assert if in debug, still execute otherwise.
-#ifdef NDEBUG
+#ifndef NDEBUG
 #define ASSERT_ALWAYS_EXECUTE(A) assert(A)
 #else
 #define ASSERT_ALWAYS_EXECUTE(A) A
@@ -661,9 +675,9 @@ bool ShapeCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     }
     
     // Build and initialize the shape
-    Sapphire::Galileo::Shape *shape = new Galileo::Shape(vertices, *image_proto.unsafeUnwrap(args[1]));
+    Sapphire::Galileo::Shape *shape = new Galileo::Shape(vertices, *image_holder);
     shape->FillGL();
-
+    shape->ReplaceImage(*image_holder);
     // Wrap it.
     args.rval().set(OBJECT_TO_JSVAL(shape_proto.wrap(ctx, shape)));    
     return true;
