@@ -169,7 +169,6 @@ function MapEngine(map, fps){
         // render_script
         Turbo.CurrentMap.render_script();
 
-        // Throttle FPS
         FlipScreen();
 
         // We only change maps at the end of a frame.

@@ -9,6 +9,7 @@
 #include <AL/alext.h>
 #include <AL/alc.h>
 #endif
+#include <cmath>
 #include <cassert>
 
 namespace Cinnamon {
@@ -30,17 +31,30 @@ namespace Cinnamon {
 
     Sound::Sound(Sound &&s)
       : player(s.player) 
-      , handle(s.handle){
+      , handle(s.handle) 
+      , length(s.length) 
+      , num_channels(s.num_channels) 
+      , samples_per_second(s.samples_per_second) 
+      , format(s.format){
         s.handle = 0u;
+        setVolume(s.getVolume());
+        setLooping(s.getVolume());
     }
 
     Sound::Sound(const Sound &s)
       : player(s.player) 
-      , handle(s.handle){
+      , handle(s.handle)
+      , length(s.length) 
+      , num_channels(s.num_channels) 
+      , samples_per_second(s.samples_per_second) 
+      , format(s.format){
+        setVolume(s.getVolume());
+        setLooping(s.getVolume());
     }
 
     void Sound::setLooping(bool loop){
         alSourcei(handle, AL_LOOPING, loop?AL_TRUE:AL_FALSE);
+        looping = loop;
     }
         
         
@@ -62,6 +76,29 @@ namespace Cinnamon {
         
         player.makeCurrent();
         alDeleteSources(1, &handle);
+    }
+    
+    void Sound::play() const{
+        alSourcePlay(handle);
+    }
+    void Sound::pause() const{
+        alSourcePause(handle);
+    }
+    void Sound::stop() const{
+        alSourceStop(handle);
+    }
+    void Sound::rewind() const{
+        alSourceRewind(handle);
+    }
+
+    void Sound::setVolume(float to){
+        gain = fmin(1.0f, fmax(0.0f, to));
+        gain*=gain;
+        alSourcef(handle, AL_GAIN, gain);
+    }
+    
+    float Sound::getVolume() const {
+        return sqrtf(gain);
     }
 
 }

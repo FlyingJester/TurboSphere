@@ -1,0 +1,47 @@
+Import('currentenv librarydir corelibtargets binarydir LibraryInstall IsDarwin IsLinux IsWindows jslib')
+
+import os
+import sys
+
+localenv = currentenv.Clone()
+
+network_files = [
+    "script.cpp",
+    "network.cpp"
+]
+
+poll_api = "none"
+
+environment = localenv.Clone()
+
+conf = Configure(localenv)
+if ((conf.CheckFunc('kqueue') and conf.CheckFunc('kevent') ) or conf.CheckCHeader('sys/kqueue.h') ) and ARGUMENTS.get('poll', 'kqueue') == 'kqueue':
+  poll_api = "kqueue"
+  environment.Append(CPPDEFINES = ["NEEDS_FJNET_POLL_TIMEOUT=0"])
+  if conf.CheckCHeader("strings.h"):
+    environment.Append(CPPDEFINES = ["HAS_STRINGS"])
+elif IsLinux():
+  poll_api = "poll"
+else:
+  poll_api = "select"
+
+if sys.platform == 'cygwin':
+  network_files += ["win32_gethostaddress.c"]
+  environment.Append(CPPDEFINES = ["USE_CYGDSOCK"])
+elif IsWindows():
+  network_files += ["win32_gethostaddress.c"]
+  environment.Append(CPPDEFINES = ["USE_WINSOCK"])
+else:
+  network_files += ["unix_gethostaddress.c"]
+  environment.Append(CPPDEFINES = ["USE_BSDSOCK"])
+
+
+conf.Finish()
+
+libyyymonitor = SConscript(dirs = ["libyyymonitor"], exports = ["environment"])
+libfjnet      = SConscript(dirs = ["libfjnet"], exports = ["environment", "poll_api"])
+
+networkplugin = localenv.SharedLibrary('netplug', network_files, LIBS = [jslib, libyyymonitor, libfjnet])
+
+Depends(networkplugin, corelibtargets)
+LibraryInstall(os.path.join(binarydir, 'plugin'), networkplugin, currentenv)

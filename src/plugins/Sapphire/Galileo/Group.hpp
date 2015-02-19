@@ -196,6 +196,7 @@ public:
 
     template<typename i=iterator>
     i insert(i at, GL::Operation *aOp){
+        aOp->SetShader(mShader);
         return mShapes.insert(at, aOp);
     }
     

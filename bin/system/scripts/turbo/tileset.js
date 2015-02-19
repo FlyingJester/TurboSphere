@@ -33,6 +33,7 @@ Turbo.Tile = function(stream, tex_coords, size){
         }
     break;
     case 1: // Bytemapped obstructions
+        throw "Don't do that.";
         this.segments = [];
         this.loadObstructions = function(stream){
 

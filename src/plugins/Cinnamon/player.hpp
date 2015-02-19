@@ -27,8 +27,11 @@ namespace Cinnamon {
         Player();
         bool init();
         
-        Sound load(const int16_t *from, int num_channels, size_t num, int samples_per_second); // Returns a handle
-        void play(Sound *sound);
+        // full_length is the total number of samples that exist in the sound. If this is zero, we assume that 'num' is
+        // all the Sound will ever have. This value will only affect querying the length of the sound.
+        Sound load(const int16_t *from, size_t num, int num_channels, int samples_per_second, size_t full_length = 0);
+        void addToSound(Sound *sound, const int16_t *from, size_t num);
+        void addToSound(Sound &sound, const int16_t *from, size_t num){addToSound(&sound, from, num);}
         
         static bool supportsFloat32();
         

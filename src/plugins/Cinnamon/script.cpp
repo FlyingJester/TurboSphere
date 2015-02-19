@@ -20,6 +20,10 @@ static Player player;
         JS_FN("play", PlaySound, 0, 0),
         JS_FN("pause", PauseSound, 0, 0),
         JS_FN("stop", StopSound, 0, 0),
+        JS_FN("reset", RewindSound, 0, 0),
+        JS_FN("rewind", RewindSound, 0, 0),
+        JS_FN("setRepeat", SoundRepeatSetter, 0, 0),
+        JS_FN("getRepeat", SoundRepeatGetter, 0, 0),
         JS_FS_END
     };
 
@@ -52,29 +56,52 @@ static Player player;
         
         SF_INFO info;
         SNDFILE *sound_file = sf_open(full_path.c_str(), SFM_READ, &info);
+        //sf_command(sound_file, SFC_SET_SCALE_FLOAT_INT_READ, nullptr, SF_TRUE);
         
         if(!sound_file){
             Turbo::SetError(ctx, std::string(BRACKNAME " SoundCtor Error could not open file ") + file.string);
             return false;
         }
         
-        std::vector<short> buffer;
-        buffer.resize(8192*info.channels);
-        unsigned long read_in = 0; // In samples
+        short buffer[0x10000];
+        Sound *sound = new Sound(player.load(nullptr, 0, info.channels, info.samplerate, info.frames));
         
-        printf(BRACKNAME " SoundCtor Info %i channels\n", info.channels);
+        int iters = 0;
         
-        while(unsigned long this_read = sf_readf_short(sound_file, buffer.data()+SamplesToBytes(read_in), BytesToSamples(buffer.size()-SamplesToBytes(read_in))/info.channels)){
-            read_in+=this_read;
-            buffer.resize(buffer.size()<<1);
+        while(unsigned long this_read = sf_read_short(sound_file, buffer, 0x10000)){
+            player.addToSound(sound, buffer, SamplesToBytes(this_read));
+            iters ++;
         }
+        
+        printf(BRACKNAME " SoundCtor Info loaded file %s in %i iterations\n", file.string, iters);
         
         sf_close(sound_file);
         
-        Sound *sound = new Sound(player.load(buffer.data(), info.channels, SamplesToBytes(read_in), info.samplerate));
-        
         args.rval().set(OBJECT_TO_JSVAL(sound_proto.wrap(ctx, sound)));
         
+        return true;
+    }
+
+    bool SoundRepeatGetter(JSContext *ctx, unsigned argc, JS::Value *vp){
+        
+        JS::CallArgs args = CallArgsFromVp(argc, vp);
+        
+        Sound *sound = sound_proto.getSelf(ctx, vp, &args);
+    
+        args.rval().set(BOOLEAN_TO_JSVAL(sound->getLooping()));
+        return true;
+    }
+    
+    bool SoundRepeatSetter(JSContext *ctx, unsigned argc, JS::Value *vp){
+        
+        JS::CallArgs args = CallArgsFromVp(argc, vp);
+        
+        Sound *sound = sound_proto.getSelf(ctx, vp, &args);
+        
+        if(!Turbo::CheckForSingleArg(ctx, args, Turbo::Bool, __func__))
+            return false;
+            
+        sound->setLooping(args[0].toBoolean());
         return true;
     }
 
@@ -91,14 +118,32 @@ static Player player;
             sound->setLooping(false);
         }
         
-        player.play(sound);
+        sound->play();
         return true;    
     }
     
     bool PauseSound(JSContext *ctx, unsigned argc, JS::Value *vp){
-        return true;    
+        JS::CallArgs args = CallArgsFromVp(argc, vp);
+        
+        Sound *sound = sound_proto.getSelf(ctx, vp, &args);
+        
+        sound->pause();
+        return true;
     }
     bool StopSound(JSContext *ctx, unsigned argc, JS::Value *vp){
+        JS::CallArgs args = CallArgsFromVp(argc, vp);
+        
+        Sound *sound = sound_proto.getSelf(ctx, vp, &args);
+        
+        sound->stop();
+        return true;
+    }
+    bool RewindSound(JSContext *ctx, unsigned argc, JS::Value *vp){
+        JS::CallArgs args = CallArgsFromVp(argc, vp);
+        
+        Sound *sound = sound_proto.getSelf(ctx, vp, &args);
+        
+        sound->rewind();
         return true;
     }
 

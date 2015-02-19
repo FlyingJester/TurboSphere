@@ -442,27 +442,12 @@ bool ImageCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
         const unsigned w = std::max<int>(0, args[0].toNumber()), h = std::max<int>(0, args[1].toNumber()), pixel_count = w*h;
 
         uint32_t *pixels = new uint32_t[pixel_count];
-
         std::fill(pixels, &(pixels[pixel_count]), color->toInt());
-
-#ifndef NDEBUG
-        
-        for(unsigned i = 0; i<pixel_count; i++){
-            assert(pixels[i]==color->toInt());
-        }
-        
-#endif
 
         Image *image = new Image(pixels, w, h);
         
-
-        
         delete[] pixels;
         
-        t5::DataSource::StdOut()->WriteF(BRACKNAME, ' ', __func__, " Info created an image filled with color", 
-            'r', color->red, 'g', color->green, 'b', color->blue, 'a', color->alpha,
-            " size w", w, 'h', h, '\n');
-
         args.rval().set(OBJECT_TO_JSVAL(image_proto.wrap(ctx, new ScriptImage_t(image))));
         return true;
     }
@@ -538,7 +523,7 @@ bool SurfaceCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
             assert(pixels);
             assert(color);
             
-            std::fill(pixels, &(pixels[pixel_count-1]), color->toInt());
+            std::fill(pixels, &(pixels[pixel_count]), color->toInt());
             SDL_UnlockSurface(surface);
         }
         args.rval().set(OBJECT_TO_JSVAL(surface_proto.wrap(ctx, surface)));
@@ -677,7 +662,7 @@ bool ShapeCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     // Build and initialize the shape
     Sapphire::Galileo::Shape *shape = new Galileo::Shape(vertices, *image_holder);
     shape->FillGL();
-    shape->ReplaceImage(*image_holder);
+    
     // Wrap it.
     args.rval().set(OBJECT_TO_JSVAL(shape_proto.wrap(ctx, shape)));    
     return true;
@@ -711,7 +696,7 @@ bool GroupSetNativeShapes(JSContext *ctx, Galileo::Group *group, JS::HandleObjec
             return false;
         
         if(shape!=*iter){
-            group->erase(iter);
+            iter = group->erase(iter);
             group->insert(iter, shape);
         }
         
@@ -726,10 +711,8 @@ bool GroupSetNativeShapes(JSContext *ctx, Galileo::Group *group, JS::HandleObjec
         
         group->push(shape);
         i++;
+        iter++;
     }
-    
-    while(iter!=group->end())
-        group->erase(iter++);
     
     return true;
     

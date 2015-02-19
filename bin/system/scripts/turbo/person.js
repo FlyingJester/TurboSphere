@@ -10,8 +10,6 @@ Turbo.Classic = Turbo.Classic || {};
 
 Turbo.EntityScheme = Turbo.LoadSystemScheme("entity.json");
 
-Turbo.StepMagic = 3; // TODO: Hork this from Sphere.
-
 Turbo.Entity = function(x, y, layer, name, destroy){
     this.x = x; this.y = y;
     this.draw_offset = {x:0, y:0};
@@ -70,6 +68,18 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
     this.setSpriteset = function(s){
         this.spriteset = s;
         this.base = {x1:s.base_x1, y1:s.base_y1, x2:s.base_x2, y2:s.base_y2};
+        
+        if(this.base.x2<this.base.x1){
+            var tmp_x = this.base.x2;
+            this.base.x2 = this.base.x1;
+            this.base.x1 = tmp_x;
+        }
+        if(this.base.y2<this.base.y1){
+            var tmp_y = this.base.y2;
+            this.base.y2 = this.base.y1;
+            this.base.y1 = tmp_y;
+        }
+        
     }
     
     this.setSpriteset(spriteset);
@@ -115,6 +125,7 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
         
     }
     
+    // Purely a bookkeeping function, does not actually perform movement
     this.step = function(){
         
         this.frame_counter++;
@@ -127,6 +138,62 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
             
             this.setImageFromCurrentFrame();
         }
+    }
+    
+    // Intended for taking a one-pixel step.
+    this.canWalkTo = function(x, y, layer, tileset){
+        
+        var box = {x:x+this.base.x1, y:y+this.base.y1, w:this.base.x2-this.base.x1, h:this.base.y2-this.base.y1};
+        
+        var s_x = Math.floor(box.x/tileset.width);
+        var e_x = Math.ceil((box.x+box.w)/tileset.width);
+        var s_y = Math.floor(box.y/tileset.height);
+        var e_y = Math.ceil((box.y+box.h)/tileset.width);
+
+        for(var tile_y = s_y; tile_y<e_y; tile_y++){
+            for(var tile_x = s_x; tile_x<e_x; tile_x++){
+                var tile_num = layer.field[tile_x + (tile_y*layer.width)];
+                var tile_segments = tileset.tiles[tile_num].segments.concat(layer.segments);
+                var tile_pix_x = tile_x*tileset.width;
+                var tile_pix_y = tile_y*tileset.height;
+                for(var i = 0; i<tile_segments.length; i++){
+                    var segment = {x1:tile_segments[i].x1+tile_pix_x, y1:tile_segments[i].y1+tile_pix_y, x2:tile_segments[i].x2+tile_pix_x, y2:tile_segments[i].y2+tile_pix_y};
+                    if(Turbo.SegmentIntersectsBox(segment, box))
+                        return false;
+                }
+            }
+        }
+        
+        return true;
+    }
+    
+    this.tryWalkTo = function(x, y, map){
+
+        var m_layer = map.layers[this.layer];
+        
+        while(this.x<x){
+            if(!this.canWalkTo(this.x+1, this.y, m_layer, map.tileset))
+                break;
+            this.x++;
+        }
+        while(this.x>x){
+            if(!this.canWalkTo(this.x-1, this.y, m_layer, map.tileset))
+                break;
+            this.x--;
+        }
+        while(this.y<y){
+            if(!this.canWalkTo(this.x, this.y+1, m_layer, map.tileset))
+                break;
+            this.y++;
+        }
+        while(this.y>y){
+            if(!this.canWalkTo(this.x, this.y-1, m_layer, map.tileset))
+                break;
+            this.y--;
+        }
+        
+        return (this.x==x) && (this.y==y);
+        
     }
     
     this.__proto__ = new Turbo.Entity(x, y, layer, name, destroy);
@@ -178,7 +245,6 @@ Turbo.LoadEntity = function(stream){
         
     }
     else throw "Unknown entity type "+ base.type;
-
 }
 
 /*///////////////////////////////////////////////////////////////////////////*/
@@ -234,16 +300,16 @@ Turbo.DefaultCommands = {
         SetPersonDirection(that.name, "northwest");
     },
     COMMAND_MOVE_NORTH:function(that){
-        that.y-=that.speed.y;
+        that.tryWalkTo(that.x, that.y-that.speed.y, Turbo.CurrentMap);
     },
     COMMAND_MOVE_EAST:function(that){
-        that.x+=that.speed.x;
+        that.tryWalkTo(that.x+that.speed.x, that.y, Turbo.CurrentMap);
     },
     COMMAND_MOVE_SOUTH:function(that){
-        that.y+=that.speed.y;
+        that.tryWalkTo(that.x, that.y+that.speed.y, Turbo.CurrentMap);
     },
     COMMAND_MOVE_WEST:function(that){
-        that.x-=that.speed.x;
+        that.tryWalkTo(that.x-that.speed.x, that.y, Turbo.CurrentMap);
     }
 }
 

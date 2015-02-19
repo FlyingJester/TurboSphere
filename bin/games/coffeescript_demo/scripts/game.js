@@ -56,6 +56,6 @@ coffee_game.Bound = function(item){
 }
 
 function game(){
-    eval(CoffeeScript.compile(CreateStringFromByteArray(coffee_bytearray)));
+    (new Function(CoffeeScript.compile(CreateStringFromByteArray(coffee_bytearray))))();
     coffee_game.main();
 }

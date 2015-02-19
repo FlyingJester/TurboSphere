@@ -159,6 +159,17 @@ Turbo.Map = function(stream, compat){
         this.tileset = new Turbo.Tileset(stream);
     }
 
+    this.tile_width = this.tileset.width;
+    this.tile_height = this.tileset.height;
+    
+    this.pixelToTileX = function(x){
+        return (x/this.tile_width)>>0;
+    }
+    
+    this.pixelToTileY = function(y){
+        return (y/this.tile_height)>>0;
+    }
+
     this.calculateLayer = function(i){
         var vertices = new Array((this.layers[i].height-1)*this.layers[i].width);
         var a = 0;

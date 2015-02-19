@@ -11,7 +11,10 @@ namespace Cinnamon {
         void returnBuffers() const;
         Sound(Player &p);
         
-        float length;
+        float length, gain;
+        unsigned char num_channels;
+        unsigned samples_per_second, format;
+        bool looping;
         
     public:
         
@@ -21,9 +24,16 @@ namespace Cinnamon {
         Sound(const Sound &s);
         ~Sound();
         void setLooping(bool loop);
+        bool getLooping() const {return looping;}
         
-        float getLength(){return length;}
+        float getLength() const {return length;}
         
+        void play() const;
+        void pause() const;
+        void stop() const;
+        void rewind() const;
+        void setVolume(float to);
+        float getVolume() const;
     };
     
 }

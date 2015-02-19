@@ -44,6 +44,9 @@ bool SoundCtor(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool PlaySound(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool PauseSound(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool StopSound(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool RewindSound(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool SoundRepeatSetter(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool SoundRepeatGetter(JSContext *ctx, unsigned argc, JS::Value *vp);
 void SoundFinalizer(JSFreeOp *fop, JSObject *obj);
 
 }

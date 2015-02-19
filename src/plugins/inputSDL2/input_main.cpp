@@ -130,6 +130,7 @@ const char *GetVariableName(JSContext *ctx, int n){
             return "MOUSE_WHEEL_RIGHT";
             default: // N out of range.
             assert(false);
+            return nullptr;
         }            
     }
     else{
