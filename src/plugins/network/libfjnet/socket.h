@@ -22,6 +22,11 @@ enum WSockErr Connect_Socket(struct WSocket *aSocket, const char *aTo,
                              unsigned long aPortNum, long timeout);
 enum WSockErr Disconnect_Socket(struct WSocket *aSocket);
 
+/*
+ * Checks for an incoming connection on this port and connects aSocket.
+*/
+enum WSockErr Listen_Socket(struct WSocket *aSocket, unsigned long aPortNum);
+
 /* char streams are NUL terminated. */
 /* Passing in NULL to aTo will result in a new buffer being allocated.
  You can keep passing in this buffer and it will be resized to fit any

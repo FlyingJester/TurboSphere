@@ -270,6 +270,30 @@ enum WSockErr Connect_Socket(struct WSocket *aSocket, const char *aTo, unsigned 
     return eSuccess;
 }
 
+enum WSockErr Listen_Socket(struct WSocket *aSocket, unsigned long aPortNum){
+    
+    int agree = 1;
+    
+    aSocket->sockaddr->sin_family = AF_INET;
+    aSocket->sockaddr->sin_port = htons(aPortNum);
+
+    aSocket->sockaddr->sin_addr.s_addr = htonl(INADDR_ANY);
+
+    aSocket->sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    
+    MakeNonBlocking(aSocket->sock);
+    
+    setsockopt(aSocket->sock, SOL_SOCKET, SO_REUSEADDR, &agree, sizeof(int));
+    
+    if(!bind(aSocket->sock, (const void *)aSocket->sockaddr, sizeof(struct sockaddr_in)))
+        return eFailure;
+    if(!listen(aSocket->sock, 0xFF))
+        return eFailure;
+    
+    return eSuccess;
+    
+}
+
 enum WSockErr Disconnect_Socket(struct WSocket *aSocket){
 
     assert(aSocket!=NULL);

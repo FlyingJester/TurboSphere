@@ -8,60 +8,21 @@
  #include <sys/types.h>
  #include <sys/socket.h>
  #include <ifaddrs.h>
-
-int
-getifaddrs(struct ifaddrs **ifap);
-
-void
-freeifaddrs(struct ifaddrs *ifp);
-
 #endif
 
 namespace NetPlug{
+
+void SocketFinalizer(JSFreeOp *fop, JSObject *obj){
     
-    void SocketFinalizer(JSFreeOp *fop, JSObject *obj){
-        
-        struct WSocket *sock = socket_proto.unsafeUnwrap(obj);
-        
-        if(State_Socket(sock)==0)
-            Disconnect_Socket(sock);
- 
-       Destroy_Socket(sock);
-    }
+    struct WSocket *sock = socket_proto.unsafeUnwrap(obj);
     
-    Turbo::JSPrototype<struct WSocket> socket_proto("Socket", nullptr, 0, SocketFinalizer);
+    if(State_Socket(sock)==0)
+        Disconnect_Socket(sock);
 
-    /*
-      *** networking ***
-  GetLocalName()
-    - returns a string with the local name of your computer
-  
-  GetLocalAddress()
-    - returns a string with the IP address of your computer
-  
-  OpenAddress(address, port)
-    - attempts to open a connection to the computer specified with 'address' on 'port'
-      returns a socket object
- 
-  ListenOnPort(port)
-    - listens for connections on port, returns a socket object if successful
-  
-  socket.isConnected()
-    - returns true if the socket is connected
- 
-  socket.getPendingReadSize()
-    - returns the size of the next array to be read in the socket
-  
-  socket.write(byte_array)
-    - writes a ByteArray object into the socket
-  
-  socket.read(int size) 
-    - reads from the socket, returns a ByteArray object
+   Destroy_Socket(sock);
+}
 
-  socket.close()
-    - closes the socket object, after this, the socket cannot be used.
-    */
-
+Turbo::JSPrototype<struct WSocket> socket_proto("Socket", nullptr, 0, SocketFinalizer);
 
 bool GetLocalName(JSContext *ctx, unsigned argc, JS::Value *vp){
     char name[2048];
@@ -74,9 +35,9 @@ bool GetLocalName(JSContext *ctx, unsigned argc, JS::Value *vp){
 }
 
 bool GetLocalAddress(JSContext *ctx, unsigned argc, JS::Value *vp){
-    const char *addr = TS_GetHostAddressIP6();
+    const char *addr = TS_GetHostAddressIP4();
     if(!addr)
-        addr = TS_GetHostAddressIP4();
+        addr = TS_GetHostAddressIP6();
     if(!addr)
         addr = "";
     
@@ -96,7 +57,7 @@ bool OpenAddress(JSContext *ctx, unsigned argc, JS::Value *vp){
     struct WSocket *socket = Create_Socket();
     struct Turbo::JSStringHolder<> address(ctx, JS_EncodeString(ctx, args[0].toString()));
     
-    enum WSockErr err = Connect_Socket(socket, address.string, args[1].toNumber(), 10);
+    enum WSockErr err = Connect_Socket(socket, address.string, args[1].toNumber(), -1);
     if(err!=0){
         Turbo::SetError(ctx, std::string(BRACKNAME " OpenAddress Error ") + ExplainError_Socket(err));
         return false;
@@ -108,6 +69,19 @@ bool OpenAddress(JSContext *ctx, unsigned argc, JS::Value *vp){
 }
 
 bool ListenOnPort(JSContext *ctx, unsigned argc, JS::Value *vp){
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    if(!Turbo::CheckForSingleArg(ctx, args, Turbo::Number, __func__))
+        return false;
+    
+    struct WSocket *socket = Create_Socket();
+    enum WSockErr err = Listen_Socket(socket, args[0].toNumber());
+    
+    if(err!=0){
+        Turbo::SetError(ctx, std::string(BRACKNAME " ListenOnPort Error ") + ExplainError_Socket(err));
+        return false;
+    }
+    
+    args.rval().set(OBJECT_TO_JSVAL(socket_proto.wrap(ctx, socket)));
     
     return true;
 }
@@ -138,7 +112,7 @@ bool SocketWrite(JSContext *ctx, unsigned argc, JS::Value *vp){
     
     enum WSockErr err = Write_Socket_Len(socket_proto.getSelf(ctx, vp, &args), (const char *)data, len);
     if(err!=0){
-        Turbo::SetError(ctx, std::string(BRACKNAME " OpenAddress Error ") + ExplainError_Socket(err));
+        Turbo::SetError(ctx, std::string(BRACKNAME " SocketWrite Error ") + ExplainError_Socket(err));
         return false;
     }
     
@@ -152,7 +126,7 @@ bool SocketRead(JSContext *ctx, unsigned argc, JS::Value *vp){
     char *data = NULL;
     enum WSockErr err = Read_Socket(mSocket, &data);
         if(err!=0){
-        Turbo::SetError(ctx, std::string(BRACKNAME " OpenAddress Error ") + ExplainError_Socket(err));
+        Turbo::SetError(ctx, std::string(BRACKNAME " SocketRead Error ") + ExplainError_Socket(err));
         return false;
     }
     
