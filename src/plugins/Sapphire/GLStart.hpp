@@ -26,18 +26,26 @@ class DummyOperation : public Sapphire::Galileo::GL::Operation {
 
 template<typename T>
 void AdvanceRenderQueue(T kit){
+    assert(kit.render_from!=kit.draw_to);
     kit.render_from++;
     kit.render_from%=NUM_BUFFERS;
+    if(kit.draw_to==kit.render_from){
+        kit.render_from++;
+        kit.render_from%=NUM_BUFFERS;
+    }
+    assert(kit.render_from!=kit.draw_to);
 }
 
 template<typename T>
 void AdvanceDrawQueue(T kit){
+    assert(kit.render_from!=kit.draw_to);
     kit.draw_to++;
     kit.draw_to%=NUM_BUFFERS;
     if(kit.draw_to==kit.render_from){
         kit.draw_to++;
         kit.draw_to%=NUM_BUFFERS;
     }
+    assert(kit.render_from!=kit.draw_to);
 }
 
 struct Window {

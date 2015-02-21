@@ -404,7 +404,6 @@ bool ImageCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
         Image *image = new Image(surface);
         
         args.rval().set(OBJECT_TO_JSVAL(image_proto.wrap(ctx, new ScriptImage_t(image))));
-        
         return true;
     }
     
@@ -427,7 +426,6 @@ bool ImageCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
         SDL_FreeSurface((SDL_Surface *)surface);
         
         args.rval().set(OBJECT_TO_JSVAL(image_proto.wrap(ctx, new ScriptImage_t(image))));
-        
         return true;
         
     }

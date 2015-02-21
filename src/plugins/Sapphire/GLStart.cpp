@@ -122,7 +122,7 @@ namespace RenderThread{
         while(AtomicGet(lKit->ShouldDie)==0){
 
             lKit->monitor.Lock();
-
+            
             std::queue<Sapphire::Galileo::GL::Operation *> &queue = lKit->Queues[lKit->render_from];
 
             if(queue.empty()){
