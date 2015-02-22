@@ -413,7 +413,7 @@ struct WSocket *Accept_Socket(struct WSocket *aSocket){
     socklen_t l = sizeof(struct sockaddr_in);
     temp_socket.sock = accept(aSocket->sock, (void *)temp_socket.sockaddr, &l);
     
-    if(!temp_socket.sock){
+    if(temp_socket.sock<0){
         return NULL;
     }
     

@@ -10,42 +10,29 @@
  #include <ifaddrs.h>
 #endif
 
-#include <list>
-
 namespace NetPlug{
 
-struct ListeningSocket{
-    WSocket * const socket;
-    long port;
-};
-
-struct FindListeningSocketSocket{
-    const WSocket * const socket;
-    bool operator() (const struct ListeningSocket &aSocket) const{
-        return aSocket.socket==socket;
-    }
-};
-
-struct FindListeningSocketPort{
-    const long port;
-    bool operator() (const struct ListeningSocket &aSocket) const{
-        return aSocket.port==port;
-    }
-};
-
-static std::list<struct ListeningSocket> listening_sockets;
+std::vector<struct ListeningPort> listen_list;
 
 void SocketFinalizer(JSFreeOp *fop, JSObject *obj){
     
-    struct WSocket *sock = socket_proto.unsafeUnwrap(obj);
+    struct Socket *mSocket = socket_proto.unsafeUnwrap(obj);
+    if(!mSocket){
+        puts(BRACKNAME " SocketFinalizer Warning private value was NULL");
+        return;
+    }
     
-    if(State_Socket(sock)==0)
-        Disconnect_Socket(sock);
-
-   Destroy_Socket(sock);
+    if(Internal::SocketIsConnected(mSocket))
+        Disconnect_Socket(mSocket->socket);
+    
+    if(mSocket->socket)
+        Destroy_Socket(mSocket->socket);
+   
+    free(mSocket);
+   
 }
 
-Turbo::JSPrototype<struct WSocket> socket_proto("Socket", nullptr, 0, SocketFinalizer);
+Turbo::JSPrototype<struct Socket> socket_proto("Socket", nullptr, 0, SocketFinalizer);
 
 bool GetLocalName(JSContext *ctx, unsigned argc, JS::Value *vp){
     char name[2048];
@@ -77,17 +64,19 @@ bool OpenAddress(JSContext *ctx, unsigned argc, JS::Value *vp){
     if(!Turbo::CheckSignature<2>(ctx, args, signature, __func__))
         return false;
     
-    struct WSocket *socket = Create_Socket();
+    struct Socket *mSocket = static_cast<struct Socket *>(malloc(sizeof(struct Socket)));
+    mSocket->socket = Create_Socket();
+    mSocket->listening = false;
+    
     struct Turbo::JSStringHolder<> address(ctx, JS_EncodeString(ctx, args[0].toString()));
     
-    enum WSockErr err = Connect_Socket(socket, address.string, args[1].toNumber(), -1);
+    enum WSockErr err = Connect_Socket(mSocket->socket, address.string, args[1].toNumber(), -1);
     if(err!=0){
         Turbo::SetError(ctx, std::string(BRACKNAME " OpenAddress Error ") + ExplainError_Socket(err));
         return false;
     }
     
-    args.rval().set(OBJECT_TO_JSVAL(socket_proto.wrap(ctx, socket)));
-    
+    args.rval().set(OBJECT_TO_JSVAL(socket_proto.wrap(ctx, mSocket)));
     return true;
 }
 
@@ -96,56 +85,82 @@ bool ListenOnPort(JSContext *ctx, unsigned argc, JS::Value *vp){
     if(!Turbo::CheckForSingleArg(ctx, args, Turbo::Number, __func__))
         return false;
     
-    const long port = static_cast<long>(args[0].toNumber());
+    const long port = args[0].toNumber();
     
-    FindListeningSocketPort finder = {port};
-    std::list<struct ListeningSocket>::const_iterator that =
-        std::find_if(listening_sockets.cbegin(), listening_sockets.cend(), finder);
-        
-    if(that!=listening_sockets.cend()){
-        args.rval().set(OBJECT_TO_JSVAL(socket_proto.wrap(ctx, that->socket)));
-        return true;
-    }
-    else{
-        struct WSocket *that_socket = Create_Socket();
-        enum WSockErr err = Listen_Socket(that_socket, port);
-        
-        if(err!=0){
-            Turbo::SetError(ctx, std::string(BRACKNAME " ListenOnPort Error ") + ExplainError_Socket(err));
-            return false;
+    struct ListeningPort *accept = nullptr;
+    
+    for(std::vector<struct ListeningPort>::iterator iter = listen_list.begin(); iter!=listen_list.end(); iter++){
+        if(iter->port==port){
+            accept = &(*iter);
+            break;
         }
-        
-        const struct ListeningSocket socket_holder = {that_socket, port};
-        
-        listening_sockets.push_back(socket_holder);
-        args.rval().set(OBJECT_TO_JSVAL(socket_proto.wrap(ctx, that_socket)));
-        return true;
     }
+    
+    if(accept==nullptr){
+        struct WSocket *listening_socket = Create_Socket();
+        Listen_Socket(listening_socket, port);
+        
+        listen_list.push_back({0ul, port, listening_socket});
+        accept = &listen_list.back();
+    }
+    
+    
+    struct Socket *mSocket = static_cast<struct Socket *>(malloc(sizeof(struct Socket)));
+    mSocket->listening = true;
+    mSocket->connected = false;
+    mSocket->port = port;
+    mSocket->accept = accept;
+    mSocket->socket = nullptr;
+    
+    accept->references++;
+    
+    args.rval().set(OBJECT_TO_JSVAL(socket_proto.wrap(ctx, mSocket)));
+        
+    return true;
 }
 
+bool Internal::SocketIsConnected(struct Socket *aSocket){
+    if(aSocket->listening){
+        if(aSocket->connected){
+            return State_Socket(aSocket->socket)!=0;
+        }
+        else if(aSocket->accept){
+            aSocket->socket = Accept_Socket(aSocket->accept->socket);
+            if(!aSocket->socket){
+                return false;
+            }
+            else{
+                aSocket->accept = nullptr;
+                aSocket->connected = true;
+                return true;
+            }
+        }
+        else{
+            return false;
+        }
+    }
+    else{
+        return State_Socket(aSocket->socket)!=0;
+    }
+}
+    
 bool SocketIsConnected(JSContext *ctx, unsigned argc, JS::Value *vp){
     JS::CallArgs args = CallArgsFromVp(argc, vp);
     
-    struct WSocket *socket = socket_proto.getSelf(ctx, vp, &args);
+    args.rval().set(BOOLEAN_TO_JSVAL(Internal::SocketIsConnected(socket_proto.getSelf(ctx, vp, &args))));
     
-    if(!listening_sockets.empty()){
-        FindListeningSocketSocket finder = {socket};
-        std::list<struct ListeningSocket>::const_iterator that =
-            std::find_if(listening_sockets.cbegin(), listening_sockets.cend(), finder);
-
-        if(that!=listening_sockets.cend()){
-            if(struct WSocket *accepting_socket = Accept_Socket(socket)){
-                Copy_Socket(socket, accepting_socket);
-            }
-        }
-    }
-    args.rval().set(BOOLEAN_TO_JSVAL((State_Socket(socket)==0)));
     return true;
 }
 
 bool SocketGetPendingReadSize(JSContext *ctx, unsigned argc, JS::Value *vp){
     JS::CallArgs args = CallArgsFromVp(argc, vp);
-    args.rval().set(JS_NumberValue((Length_Socket(socket_proto.getSelf(ctx, vp, &args))==0)));
+    
+    struct Socket *mSocket = socket_proto.getSelf(ctx, vp, &args);
+    
+    if(!Internal::SocketIsConnected(mSocket))
+        args.rval().set(JS_NumberValue(0));
+    else
+        args.rval().set(JS_NumberValue((Length_Socket(mSocket->socket)==0)));
     return true;
 }
 
@@ -153,7 +168,14 @@ bool SocketWrite(JSContext *ctx, unsigned argc, JS::Value *vp){
     JS::CallArgs args = CallArgsFromVp(argc, vp);
     if(!Turbo::CheckForSingleArg(ctx, args, Turbo::ArrayBuffer, __func__))
         return false;
-        
+    
+    struct Socket *mSocket = socket_proto.getSelf(ctx, vp, &args);
+    
+    if(!Internal::SocketIsConnected(mSocket)){
+        Turbo::SetError(ctx, std::string(BRACKNAME " SocketWrite Error socket not connected"));
+        return false;
+    }
+    
     JS::RootedObject buffer_root(ctx, args[0].toObjectOrNull());
     
     void *data;
@@ -161,7 +183,7 @@ bool SocketWrite(JSContext *ctx, unsigned argc, JS::Value *vp){
     
     js::GetArrayBufferLengthAndData(buffer_root, &len, (unsigned char **)(&data));
     
-    enum WSockErr err = Write_Socket_Len(socket_proto.getSelf(ctx, vp, &args), (const char *)data, len);
+    enum WSockErr err = Write_Socket_Len(mSocket->socket, (const char *)data, len);
     if(err!=0){
         Turbo::SetError(ctx, std::string(BRACKNAME " SocketWrite Error ") + ExplainError_Socket(err));
         return false;
@@ -171,11 +193,17 @@ bool SocketWrite(JSContext *ctx, unsigned argc, JS::Value *vp){
 }
 
 bool SocketRead(JSContext *ctx, unsigned argc, JS::Value *vp){
-    JS::CallArgs args = CallArgsFromVp(argc, vp);
-    struct WSocket *mSocket = socket_proto.getSelf(ctx, vp, &args);
+    JS::CallArgs args = CallArgsFromVp(argc, vp);    
+    
+    struct Socket *mSocket = socket_proto.getSelf(ctx, vp, &args);
+    
+    if(!Internal::SocketIsConnected(mSocket)){
+        Turbo::SetError(ctx, std::string(BRACKNAME " SocketRead Error socket not connected"));
+        return false;
+    }
     
     char *data = NULL;
-    enum WSockErr err = Read_Socket(mSocket, &data);
+    enum WSockErr err = Read_Socket(mSocket->socket, &data);
         if(err!=0){
         Turbo::SetError(ctx, std::string(BRACKNAME " SocketRead Error ") + ExplainError_Socket(err));
         return false;
@@ -189,9 +217,9 @@ bool SocketRead(JSContext *ctx, unsigned argc, JS::Value *vp){
 
 bool SocketClose(JSContext *ctx, unsigned argc, JS::Value *vp){
     JS::CallArgs args = CallArgsFromVp(argc, vp);
-    struct WSocket *mSocket = socket_proto.getSelf(ctx, vp, &args);
-    if(State_Socket(mSocket)==0)
-        Disconnect_Socket(mSocket);
+    struct Socket *mSocket = socket_proto.getSelf(ctx, vp, &args);
+    if(Internal::SocketIsConnected(mSocket))
+        Disconnect_Socket(mSocket->socket);
         
     return true;
 }
