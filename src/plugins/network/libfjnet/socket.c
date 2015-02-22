@@ -1,6 +1,8 @@
 #include "socket.h"
 #include <assert.h>
 #include <errno.h>
+#include <string.h>
+#include <stdio.h>
 #define LIBFJNET_INTERNAL
 #include "socket_definition.h"
 
@@ -21,10 +23,35 @@ const char *ExplainError_Socket(enum WSockErr err){
             return "Connection Timed Out.";
         case eAlreadyConnected:
             return "Already Connected.";
+        case ePermission:
+            return "Bad Permission";
+        case eBadAddress:
+            return "Bad Address";
         default:
         ;
     }
     return "Bad Error Value";
+}
+
+static enum WSockErr SockErr_From_Errno(){
+    
+    int err = errno;
+    
+    switch(err){
+        case EACCES:
+            return ePermission;
+        case EAFNOSUPPORT:
+        case EISDIR:
+        case EDESTADDRREQ:
+            return eBadAddress;
+        case EADDRINUSE:
+        case EADDRNOTAVAIL:
+            return eAlreadyConnected;
+    }
+    
+    printf("[libfjnet] Error unknown errno given %i | %s\n", err, strerror(err));
+    
+    return eFailure;
 }
 
 #if !(defined USE_BSDSOCK) && !(defined USE_WINSOCK) && !(defined USE_CYGSOCK)
@@ -174,6 +201,17 @@ void Destroy_Socket(struct WSocket *aSocket){
     free(aSocket);
 }
 
+void Copy_Socket(struct WSocket *aTo, const struct WSocket *aFrom){
+    memcpy(aTo, aFrom, sizeof(struct WSocket));
+}
+
+void Swap_Socket(struct WSocket *aFirst, struct WSocket *aSecond){
+    struct WSocket sock;
+    memcpy(&sock, aFirst, sizeof(struct WSocket));
+    memcpy(aFirst, aSecond, sizeof(struct WSocket));
+    memcpy(aSecond, &sock, sizeof(struct WSocket));
+}
+
 enum WSockErr Connect_Socket(struct WSocket *aSocket, const char *aTo, unsigned long aPortNum, long timeout){
 
     int err = 0;
@@ -209,8 +247,7 @@ enum WSockErr Connect_Socket(struct WSocket *aSocket, const char *aTo, unsigned 
 #elif defined USE_BSDSOCK || defined USE_CYGSOCK
 	(aSocket->sock<0)
 #endif
-	){
-
+    ){
         PRINT_LAST_ERROR("Error Creating Socket");
         return eFailure;
     }
@@ -264,32 +301,40 @@ enum WSockErr Connect_Socket(struct WSocket *aSocket, const char *aTo, unsigned 
 
         return eFailure;
     }
-
-    printf("Connected to %s on port number %lu. Using socket %i.\n", aTo, aPortNum, aSocket->sock);
-
+    
     return eSuccess;
 }
 
 enum WSockErr Listen_Socket(struct WSocket *aSocket, unsigned long aPortNum){
     
-    int agree = 1;
+    const int one = 1;
     
     aSocket->sockaddr->sin_family = AF_INET;
     aSocket->sockaddr->sin_port = htons(aPortNum);
-
     aSocket->sockaddr->sin_addr.s_addr = htonl(INADDR_ANY);
-
     aSocket->sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     
+    if(
+#if defined USE_WINSOCK
+	(aSocket->sock==INVALID_SOCKET)
+#elif defined USE_BSDSOCK || defined USE_CYGSOCK
+	(aSocket->sock<0)
+#endif
+	){
+        PRINT_LAST_ERROR("Error Creating Socket");
+        return eFailure;
+    }
+        
     MakeNonBlocking(aSocket->sock);
     
-    setsockopt(aSocket->sock, SOL_SOCKET, SO_REUSEADDR, &agree, sizeof(int));
+    setsockopt(aSocket->sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(int));
     
-    if(!bind(aSocket->sock, (const void *)aSocket->sockaddr, sizeof(struct sockaddr_in)))
-        return eFailure;
-    if(!listen(aSocket->sock, 0xFF))
-        return eFailure;
-    
+    if(bind(aSocket->sock, (const void *)aSocket->sockaddr, sizeof(struct sockaddr_in))<0)
+        return SockErr_From_Errno();
+
+    if(listen(aSocket->sock, 16)<0)
+        return SockErr_From_Errno();
+
     return eSuccess;
     
 }
@@ -302,6 +347,7 @@ enum WSockErr Disconnect_Socket(struct WSocket *aSocket){
         CLOSE_SOCKET(aSocket->sock);
         aSocket->sock = 0;
     }
+    
     return eSuccess;
 }
 
@@ -359,6 +405,23 @@ enum WSockErr Write_Socket_Len(struct WSocket *aSocket, const char *aToWrite, un
 
 enum WSockErr State_Socket(struct WSocket *aSocket){
     return CheckError(aSocket->sock);
+}
+
+struct WSocket *Accept_Socket(struct WSocket *aSocket){
+    
+    struct WSocket temp_socket, *new_socket = NULL;
+    socklen_t l = sizeof(struct sockaddr_in);
+    temp_socket.sock = accept(aSocket->sock, (void *)temp_socket.sockaddr, &l);
+    
+    if(!temp_socket.sock){
+        return NULL;
+    }
+    
+    new_socket = Create_Socket();
+    memcpy(new_socket, &temp_socket, sizeof(struct WSocket));
+        
+    return new_socket;
+    
 }
 
 /* Gets the number of pending bytes. This can increase at any time, so

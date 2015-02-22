@@ -10,7 +10,30 @@
  #include <ifaddrs.h>
 #endif
 
+#include <list>
+
 namespace NetPlug{
+
+struct ListeningSocket{
+    WSocket * const socket;
+    long port;
+};
+
+struct FindListeningSocketSocket{
+    const WSocket * const socket;
+    bool operator() (const struct ListeningSocket &aSocket) const{
+        return aSocket.socket==socket;
+    }
+};
+
+struct FindListeningSocketPort{
+    const long port;
+    bool operator() (const struct ListeningSocket &aSocket) const{
+        return aSocket.port==port;
+    }
+};
+
+static std::list<struct ListeningSocket> listening_sockets;
 
 void SocketFinalizer(JSFreeOp *fop, JSObject *obj){
     
@@ -73,22 +96,50 @@ bool ListenOnPort(JSContext *ctx, unsigned argc, JS::Value *vp){
     if(!Turbo::CheckForSingleArg(ctx, args, Turbo::Number, __func__))
         return false;
     
-    struct WSocket *socket = Create_Socket();
-    enum WSockErr err = Listen_Socket(socket, args[0].toNumber());
+    const long port = static_cast<long>(args[0].toNumber());
     
-    if(err!=0){
-        Turbo::SetError(ctx, std::string(BRACKNAME " ListenOnPort Error ") + ExplainError_Socket(err));
-        return false;
+    FindListeningSocketPort finder = {port};
+    std::list<struct ListeningSocket>::const_iterator that =
+        std::find_if(listening_sockets.cbegin(), listening_sockets.cend(), finder);
+        
+    if(that!=listening_sockets.cend()){
+        args.rval().set(OBJECT_TO_JSVAL(socket_proto.wrap(ctx, that->socket)));
+        return true;
     }
-    
-    args.rval().set(OBJECT_TO_JSVAL(socket_proto.wrap(ctx, socket)));
-    
-    return true;
+    else{
+        struct WSocket *that_socket = Create_Socket();
+        enum WSockErr err = Listen_Socket(that_socket, port);
+        
+        if(err!=0){
+            Turbo::SetError(ctx, std::string(BRACKNAME " ListenOnPort Error ") + ExplainError_Socket(err));
+            return false;
+        }
+        
+        const struct ListeningSocket socket_holder = {that_socket, port};
+        
+        listening_sockets.push_back(socket_holder);
+        args.rval().set(OBJECT_TO_JSVAL(socket_proto.wrap(ctx, that_socket)));
+        return true;
+    }
 }
 
 bool SocketIsConnected(JSContext *ctx, unsigned argc, JS::Value *vp){
     JS::CallArgs args = CallArgsFromVp(argc, vp);
-    args.rval().set(BOOLEAN_TO_JSVAL((State_Socket(socket_proto.getSelf(ctx, vp, &args))==0)));
+    
+    struct WSocket *socket = socket_proto.getSelf(ctx, vp, &args);
+    
+    if(!listening_sockets.empty()){
+        FindListeningSocketSocket finder = {socket};
+        std::list<struct ListeningSocket>::const_iterator that =
+            std::find_if(listening_sockets.cbegin(), listening_sockets.cend(), finder);
+
+        if(that!=listening_sockets.cend()){
+            if(struct WSocket *accepting_socket = Accept_Socket(socket)){
+                Copy_Socket(socket, accepting_socket);
+            }
+        }
+    }
+    args.rval().set(BOOLEAN_TO_JSVAL((State_Socket(socket)==0)));
     return true;
 }
 

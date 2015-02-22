@@ -15,6 +15,10 @@ const char *ExplainError_Socket(enum WSockErr);
 struct WSocket *Create_Socket(void);
 void Destroy_Socket(struct WSocket *aSocket);
 
+/* Copy is shallow and does NOT duplicate the underlying socket itself. */
+void Copy_Socket(struct WSocket *aTo, const struct WSocket *aFrom);
+void Swap_Socket(struct WSocket *aFirst, struct WSocket *aSecond);
+
 /* timeout is in milliseconds. A negative timeout means to wait as long as the
  stack wants to.
 */
@@ -26,6 +30,7 @@ enum WSockErr Disconnect_Socket(struct WSocket *aSocket);
  * Checks for an incoming connection on this port and connects aSocket.
 */
 enum WSockErr Listen_Socket(struct WSocket *aSocket, unsigned long aPortNum);
+struct WSocket *Accept_Socket(struct WSocket *aSocket);
 
 /* char streams are NUL terminated. */
 /* Passing in NULL to aTo will result in a new buffer being allocated.
