@@ -601,10 +601,8 @@ bool ShapeCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
         return false;
     
     ScriptImage_t *image_holder = image_proto.unwrap(ctx, args[1], &args);
-    if(!image_holder){
-        Turbo::SetError(ctx, BRACKNAME " ShapeCtor Error argument 1 is not an Image");
+    if(!image_holder)
         return false;
-    }
     
     // We checked if it was an array, toObjectOrNull() will always return non-NULL.
     JS::RootedObject vertex_array(ctx, args[0].toObjectOrNull());
