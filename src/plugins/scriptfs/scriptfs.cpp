@@ -32,6 +32,7 @@ const char *  Init(JSContext *ctx, unsigned ID){
 }
 
 void  Close(JSContext *ctx){
+    CloseRawFile(ctx);
     assert(ctx);
 }
 

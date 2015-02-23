@@ -17,7 +17,8 @@
 namespace Sapphire {
 namespace Script {
 
-void InitScript(JSContext *ctx);
+void initScript(JSContext *ctx);
+void closeScript(JSContext *ctx);
 
 static const size_t NumFuncs = 6;
 

@@ -8,7 +8,7 @@
 #include "Galileo/Shape.hpp"
 #include <queue>
 
-#define NUM_BUFFERS 8
+#define NUM_BUFFERS 9
 
 #define SDL2_VIDEO_FLAGS SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS|SDL_WINDOW_ALLOW_HIGHDPI
 
@@ -27,24 +27,20 @@ class DummyOperation : public Sapphire::Galileo::GL::Operation {
 template<typename T>
 void AdvanceRenderQueue(T kit){
     assert(kit.render_from!=kit.draw_to);
-    kit.render_from++;
-    kit.render_from%=NUM_BUFFERS;
-    if(kit.draw_to==kit.render_from){
+    do{
         kit.render_from++;
         kit.render_from%=NUM_BUFFERS;
-    }
+    }while(kit.draw_to==kit.render_from);
     assert(kit.render_from!=kit.draw_to);
 }
 
 template<typename T>
 void AdvanceDrawQueue(T kit){
     assert(kit.render_from!=kit.draw_to);
-    kit.draw_to++;
-    kit.draw_to%=NUM_BUFFERS;
-    if(kit.draw_to==kit.render_from){
+    do{
         kit.draw_to++;
         kit.draw_to%=NUM_BUFFERS;
-    }
+    }while(kit.draw_to==kit.render_from);
     assert(kit.render_from!=kit.draw_to);
 }
 

@@ -8,7 +8,7 @@ explicit_cc = ARGUMENTS.get('CC', '')
 if explicit_cc:
   defaultenv.Replace(CC=explicit_cc)
 
-jslib = "mozjs"
+jslib = "mozjs-"
 
 msvc_ccflags = "/O2 /EHsc /Zi"
 msvc_cflags = ""

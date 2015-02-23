@@ -7,7 +7,8 @@ namespace Cinnamon {
 
 extern Turbo::JSPrototype<Sound> sound_proto;
 
-void InitScript(JSContext *ctx);
+void initScript(JSContext *ctx);
+void closeScript(JSContext *ctx);
 
 /* And it goes a little something like this...
 

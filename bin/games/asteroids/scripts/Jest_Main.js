@@ -1,17 +1,14 @@
 RequireSystemScript("colors.js");
-RequireSystemScript("turbo/map_engine.js");
-RequireSystemScript("turbo/bytearray.js");
-RequireSystemScript("turbo/image.js");
+
+function Vertex(x, y){
+    this.x = x;
+    this.y = y;
+}
 
 var s = new Surface(64, 64, Black);
 var BlankIm = new Image(new Surface(1, 1, White));
 var BlankIm2 = new Image(BlankIm.createSurface());
 var DefaultShader = GetDefaultShaderProgram();
-
-var f = CreateByteArray(10);
-
-var g = CreateByteArrayFromString("I thought what I'd do is I'd pretened I was one of those deaf mutes.");
-var h = CreateByteArrayFromString(" But should I?");
 
 // 32 = 8
 // 128 = 32
@@ -28,7 +25,7 @@ function sDraw(){
     this.Group.setY(this.y);
     this.Group.angle = this.angle-(3*Math.PI/2);
         this.angle-=(Math.floor(this.angle/(Math.PI*2.0))*Math.PI*2.0);
-    this.Group.Draw();
+    this.Group.draw();
 }
 
 
@@ -252,12 +249,6 @@ Asteroid.prototype.Draw = sDraw;
 
 function game(){
 
-    var Astral = Turbo.LoadMapFile("test.rmp");
-
-    Astral.calculateMap();
-
-    var Testim = new BlackMamba.Image(new Surface("noob.bmp"));
-
     var Live = true;
     var LilZ = new SpaceShip(GetScreenWidth()/2, GetScreenHeight()/2);
 
@@ -284,8 +275,6 @@ function game(){
               Live = false;
         }
 
-
-        Astral.drawMap();
         LilZ.Draw();
 
         for(let i in Asteroids){

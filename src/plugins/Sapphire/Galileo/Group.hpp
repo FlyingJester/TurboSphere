@@ -1,5 +1,5 @@
 #pragma once
-#include <list>
+#include <vector>
 #include <queue>
 #include <memory>
 #include <color.h>
@@ -12,15 +12,16 @@ namespace Galileo {
 
 class Group : public GL::Operation {
 public:
-    typedef std::list<GL::Operation *>::iterator iterator;
-    typedef std::list<GL::Operation *>::const_iterator const_iterator;
-    typedef std::list<GL::Operation *>::reverse_iterator reverse_iterator;
-    typedef std::list<GL::Operation *>::const_reverse_iterator const_reverse_iterator;
+    typedef std::vector<GL::Operation *> container;
+    typedef container::iterator iterator;
+    typedef container::const_iterator const_iterator;
+    typedef container::reverse_iterator reverse_iterator;
+    typedef container::const_reverse_iterator const_reverse_iterator;
 
 protected:
     enum eOffset {x, y, d};
 
-    std::list<GL::Operation *> mShapes;
+    container mShapes;
 
     std::shared_ptr<Shader> mShader;
     float mOffset[2];

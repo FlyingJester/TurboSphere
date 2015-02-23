@@ -325,7 +325,7 @@ static JSPropertySpec color_properties[] = {
     JS_PS_END
 };
 
-void InitScript(JSContext *ctx){
+void initScript(JSContext *ctx){
     
     group_proto.initForContext(ctx, group_properties, group_methods);
     shape_proto.initForContext(ctx, shape_properties);
@@ -333,6 +333,17 @@ void InitScript(JSContext *ctx){
     surface_proto.initForContext(ctx, surface_properties, surface_methods);
     color_proto.initForContext(ctx, color_properties);
     shader_program_proto.initForContext(ctx);
+    
+}
+
+void closeScript(JSContext *ctx){
+    
+    group_proto.closeForContext(ctx);
+    shape_proto.closeForContext(ctx);
+    image_proto.closeForContext(ctx);
+    surface_proto.closeForContext(ctx);
+    color_proto.closeForContext(ctx);
+    shader_program_proto.closeForContext(ctx);
     
 }
 

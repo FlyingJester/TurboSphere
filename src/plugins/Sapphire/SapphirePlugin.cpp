@@ -23,7 +23,7 @@ int T5_StdErr_Write(const char *aToWrite){
 
 const char *Init(JSContext *ctx, unsigned aID){
 
-    Sapphire::Script::InitScript(ctx);
+    Sapphire::Script::initScript(ctx);
 
     Sapphire::Init(ctx, aID);
 
@@ -32,6 +32,7 @@ const char *Init(JSContext *ctx, unsigned aID){
 
 void Close(JSContext *ctx){
     assert(ctx);
+    Sapphire::Script::closeScript(ctx);
 }
 
 int NumFunctions(JSContext *ctx){

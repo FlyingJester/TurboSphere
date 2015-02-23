@@ -33,8 +33,8 @@ RawFileHolder::RawFileHolder(a _a){
 }
 
 RawFileHolder::~RawFileHolder(){
-    FreeRawFile(A);
     CloseRawFile(A);
+    FreeRawFile(A);
 }
 
 void RawFileHolder::forget(){A = nullptr;}
@@ -46,6 +46,10 @@ void RawFileHolder::operator = (const a _a){
 
 void InitRawFile(JSContext *ctx, int ID){
     scriptfs::raw_file_proto.initForContext(ctx, scriptfs::rawfile_properties, scriptfs::rawfile_methods);
+}
+
+void CloseRawFile(JSContext *ctx){
+    scriptfs::raw_file_proto.closeForContext(ctx);
 }
 
 const char * const ExplainRawFileError(enum RawFileError aError){

@@ -5,11 +5,12 @@
 
 const char * Init(JSContext *ctx, unsigned ID){
     assert(ctx);
-    Cinnamon::InitScript(ctx);
+    Cinnamon::initScript(ctx);
     return PLUGINNAME;
 }
 void Close(JSContext *ctx){
     assert(ctx);
+    Cinnamon::closeScript(ctx);
 }
     
 int NumFunctions(JSContext *ctx){

@@ -151,55 +151,59 @@ bool RunGame(const char *path, const char *root_path){
         return false;
     }
     
-    JS_SetErrorReporter(runtime, TS_ReportError);
-    JSAutoRequest request(ctx);
-    JS::RootedObject global(ctx, JS_NewGlobalObject(ctx, &ts_global_class, nullptr, JS::FireOnNewGlobalHook));
-    
-    if(!global){
-        t5::DataSource::StdOut()->WriteF("[Engine] Error could not initialize JS global object\n");
-        return false;
-    }
-    
-    JSAutoCompartment compartment(ctx, global);
-    if(!JS_InitStandardClasses(ctx, global)){
-        t5::DataSource::StdOut()->WriteF("[Engine] Error could not initialize JS standard classes\n");
-        return false;
-    }
-    
-    // Associate the context and the environment for plugin use
-    TS_AssociateContextEnvironment(ctx, game_env);
-    
-    // Initialize the engine intrinsics
-    Turbo::initializeIntrinsicFunctions(ctx, global);
-    
-    // Initialize plugins
-    Turbo::loadAllPlugins(ctx, game_env->system->plugin);
-    
-    // Execute main script
-    
-    std::string main_script = std::string(game_env->directories->script) + game_env->config->mainscript;
-    if(!TS_LoadScript(ctx, main_script.c_str())){
-        t5::DataSource::StdOut()->WriteF("[Engine] Error could not run main script ", game_env->config->mainscript, '\n');
-        return false;
-    }
+    { // Scope for autorequest
+        JS_SetErrorReporter(runtime, TS_ReportError);
+        JSAutoRequest request(ctx);
+        JS::RootedObject global(ctx, JS_NewGlobalObject(ctx, &ts_global_class, nullptr, JS::FireOnNewGlobalHook));
+        
+        if(!global){
+            t5::DataSource::StdOut()->WriteF("[Engine] Error could not initialize JS global object\n");
+            return false;
+        }
+        
+        JSAutoCompartment compartment(ctx, global);
+        if(!JS_InitStandardClasses(ctx, global)){
+            t5::DataSource::StdOut()->WriteF("[Engine] Error could not initialize JS standard classes\n");
+            return false;
+        }
+        
+        // Associate the context and the environment for plugin use
+        TS_AssociateContextEnvironment(ctx, game_env);
+        
+        // Initialize the engine intrinsics
+        Turbo::initializeIntrinsicFunctions(ctx, global);
+        
+        // Initialize plugins
+        std::vector<struct Turbo::Plugin> plugins;
+        Turbo::loadAllPlugins(ctx, plugins, game_env->system->plugin);
+        
+        // Execute main script
+        
+        std::string main_script = std::string(game_env->directories->script) + game_env->config->mainscript;
+        if(!TS_LoadScript(ctx, main_script.c_str())){
+            t5::DataSource::StdOut()->WriteF("[Engine] Error could not run main script ", game_env->config->mainscript, '\n');
+            Turbo::closeAllPlugins(ctx, plugins);
+            return false;
+        }
 
-    // Call game function
-    JS::Rooted<JS::Value> rval(ctx);
-    if(!JS::Call(ctx, global, game_env->config->gamefunc, JS::HandleValueArray::empty(), &rval)){
-        t5::DataSource::StdOut()->WriteF("[Engine] Error could not call gamefunc ", game_env->config->gamefunc, '\n');
-        return false;
-    }
-    
-    // Dissociate the JSContext and environment for plugin use
-    TS_RemoveContextEnvironment(nullptr, game_env);
-    
-    // Free the environment
-    TS_FreeEnvironment(game_env);
-    
-    // Clean up the JSContext
-    
-    // Free the JSContext
-    JS_DestroyContext(ctx);
+        // Call game function
+        JS::Rooted<JS::Value> rval(ctx);
+        if(!JS::Call(ctx, global, game_env->config->gamefunc, JS::HandleValueArray::empty(), &rval)){
+            t5::DataSource::StdOut()->WriteF("[Engine] Error could not call gamefunc ", game_env->config->gamefunc, '\n');
+            Turbo::closeAllPlugins(ctx, plugins);
+            return false;
+        }
+        
+        Turbo::closeAllPlugins(ctx, plugins);
+            
+        // Dissociate the JSContext and environment for plugin use
+        TS_RemoveContextEnvironment(nullptr, game_env);
+        
+        // Free the environment
+        TS_FreeEnvironment(game_env);
+        
+        // Clean up the JSContext
+    } // End of request
     
     return true;
     

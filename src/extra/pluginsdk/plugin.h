@@ -256,10 +256,19 @@ namespace Turbo{
             JS_GetPrototype(ctx, global, &global_proto);
             
             prototypes.push_back(proto_object({ctx}));
-            prototypes.back().proto.set(JS_InitClass(ctx, global, global_proto, &clazz, clazz.construct, num_constructor_args, ps, fs, static_ps, static_fs));
+            prototypes.back().proto = JS_InitClass(ctx, global, global_proto, &clazz, clazz.construct, num_constructor_args, ps, fs, static_ps, static_fs);
             
             prototypes_mutex.unlock();
         
+        }
+        
+        void closeForContext(JSContext *ctx){
+            for(typename std::vector<struct proto_object>::iterator iter = prototypes.begin(); iter!=prototypes.end(); iter++){
+                if(iter->ctx==ctx){
+                    prototypes.erase(iter);
+                    return;
+                }
+            }
         }
         
         bool getPrototypeForContext(JSContext *ctx, JS::MutableHandleObject obj){

@@ -27,9 +27,12 @@ static Player player;
         JS_FS_END
     };
 
-    void InitScript(JSContext *ctx){
+    void initScript(JSContext *ctx){
         player.init();
         sound_proto.initForContext(ctx, nullptr, sound_methods);
+    }
+    void closeScript(JSContext *ctx){
+        sound_proto.closeForContext(ctx);
     }
 
     

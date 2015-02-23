@@ -37,6 +37,7 @@ const char * Init(JSContext *ctx, unsigned ID){
 
 void Close(JSContext *ctx){
     assert(ctx);
+    NetPlug::socket_proto.closeForContext(ctx);
 }
     
 int NumFunctions(JSContext *ctx){

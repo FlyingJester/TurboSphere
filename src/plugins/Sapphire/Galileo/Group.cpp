@@ -25,7 +25,6 @@ Group::~Group(){
 
 int Group::Draw(void){
 
-    std::for_each(begin(), end(), std::mem_fn(&GL::Operation::Draw));
 
     return 0;
 
@@ -56,9 +55,13 @@ int Group::DrawAll(std::queue<GL::Operation *> *aSendTo){
                   1, mRotOffset, (ShaderParamChange::callback_t)glUniform2fv, 8));
     aSendTo->push(new ShaderParamChange(lAngle,
                   1, &mAngle, (ShaderParamChange::callback_t)glUniform1fv, 4));
-
-    aSendTo->push(this);
-
+    
+    
+    for(container::iterator iter = mShapes.begin(); iter!=mShapes.end(); iter++){
+        aSendTo->push(*iter);
+    }
+//    aSendTo->push(this);
+        
     return 0;
 
 }

@@ -5,7 +5,7 @@
 
 namespace Turbo {
 
-bool loadAllPlugins(JSContext *ctx, const std::string &dir){
+bool loadAllPlugins(JSContext *ctx, std::vector<struct Plugin> &plugin_list, const std::string &dir){ 
     t5::DataSource::StdOut()->WriteF("[Engine] Info loading plugins from ", dir, '\n');
     std::vector<const std::string> those;
     if(!listAllPlugins(those, dir)){
@@ -15,7 +15,9 @@ bool loadAllPlugins(JSContext *ctx, const std::string &dir){
     
     for(std::vector<const std::string>::const_iterator iter = those.cbegin(); iter!=those.cend(); iter++){
         t5::DataSource::StdOut()->WriteF("[Engine] Info loading plugin '", *iter, '\'', '\n');
-        loadPlugin(ctx, *iter);
+        plugin_list.push_back({});
+        if(!loadPlugin(ctx, plugin_list.back(), *iter))
+            plugin_list.pop_back();
     }
     
     return true;
@@ -63,30 +65,7 @@ inline bool GetFunction(T &out, const S &pluginname, fhandle plugin, const char 
     return true;
 }
 
-struct Plugin{
-    
-    const char *name;
-    unsigned num_functions;
-    unsigned num_variables;
-    
-    fhandle handle;
-    
-    struct {
-        InitFunction Init;
-        CloseFunction Close;
-        NumFunction NumFunctions;
-        GetFuncFunction GetFunction;
-        GetNameFunction GetFunctionName;
-        
-        NumFunction NumVariables;
-        GetVarFunction GetVariable;
-        GetNameFunction GetVariableName;
-        
-    } API;
-
-};
-
-bool loadPlugin(JSContext *ctx, const std::string &path){
+bool loadPlugin(JSContext *ctx, struct Plugin &plugin, const std::string &path){
     
     JS::RootedObject global(ctx, JS::CurrentGlobalOrNull(ctx));
     
@@ -97,8 +76,7 @@ bool loadPlugin(JSContext *ctx, const std::string &path){
     }
     
     static unsigned ID = 0;
-    
-    struct Plugin plugin;
+
     plugin.handle = DLOPENFILE(path.c_str(), DL_NOW|DL_LOCAL);
     
     if(!GetFunction(plugin.API.Init, path, plugin.handle, "Init"))
@@ -134,6 +112,14 @@ bool loadPlugin(JSContext *ctx, const std::string &path){
         }
     }
 
+    return true;
+}
+
+bool closeAllPlugins(JSContext *ctx, std::vector<struct Plugin> &those){
+    for(std::vector<struct Plugin>::iterator iter = those.begin(); iter!=those.end(); iter++){
+        iter->API.Close(ctx);
+    }
+    those.clear();
     return true;
 }
 
