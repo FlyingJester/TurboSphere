@@ -298,7 +298,8 @@ namespace Turbo{
                     JS::RootedObject global(ctx, JS::CurrentGlobalOrNull(ctx)), proto(ctx, iter->proto.get());
                     prototypes_mutex.unlock();
                     
-                    JS::RootedObject obj(ctx, JS_NewObjectWithGivenProto(ctx, &clazz, proto, global));
+                    JS::RootedObject obj(ctx, JS_NewObject(ctx, &clazz)), rooted_proto(ctx, iter->proto.get());
+                    JS_SetPrototype(ctx, obj, rooted_proto);
                     JS_SetPrivate(obj.get(), that);
                     return obj;
                 }
