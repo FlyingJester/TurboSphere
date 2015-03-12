@@ -8,16 +8,18 @@
 #include "Galileo/Shape.hpp"
 #include <queue>
 
-#define NUM_BUFFERS 9
+// This is a weird constant.
+//
+// A higher number of buffers will always result in either higher latency or lower framerates, depending on if the render or engine threads is running faster.
+// A lower number increases the CPU usage. Even numbers cause the render and engine threads to keep leapfroggin each other. If you can reason why, let me know.
+// 3 is the lowest sensible number to have. It's certainly nice to use more, but if you are on a platform without JS JIT or usign a debug JS library, there 
+//   will be blood from 5 or more.
+#define NUM_BUFFERS 3
 
 #define SDL2_VIDEO_FLAGS SDL_WINDOW_OPENGL|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS|SDL_WINDOW_ALLOW_HIGHDPI
 
 namespace Sapphire{
 namespace GL{
-
-//concurrent_queue<Sapphire::Galileo::GL::Operation *> *RenderQueue();
-
-//void SwapQueues();
 
 template<int T>
 class DummyOperation : public Sapphire::Galileo::GL::Operation {

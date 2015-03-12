@@ -16,12 +16,19 @@ Turbo.TileScheme = Turbo.LoadSystemScheme("tile.json");
 Turbo.TilesetScheme = Turbo.LoadSystemScheme("tileset.json");
 Turbo.ObstructionDebugColor = new Color(255, 0, 255);
 
-Turbo.Tile = function(stream, tex_coords, size, debug_obstructions, surface){
+Turbo.Tile = function(stream, tex_coords, size, surface, debug_obstructions){
 
     if(typeof debug_obstructions == "undefined")
         debug_obstructions = false;
-    
-    this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.TileScheme.header);
+
+    {
+        var header = Turbo.ReadBinaryObject(stream, Turbo.TileScheme.header);
+        for(var i in header){
+            this[i] = header[i];
+        }
+    }
+
+    this.surface = surface;
 
     this.tex_coords = tex_coords;
 
@@ -76,7 +83,13 @@ Turbo.Tile = function(stream, tex_coords, size, debug_obstructions, surface){
 Turbo.Tileset = function(stream){
 
     // Load tileset header as base.
-    this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.TilesetScheme.header);
+    //this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.TilesetScheme.header);
+    {
+        var header = Turbo.ReadBinaryObject(stream, Turbo.TilesetScheme.header);
+        for(var i in header){
+            this[i] = header[i];
+        }
+    }
 
     if(this.signature!=Turbo.TilesetScheme.signature)
       throw "Signature must be "+Turbo.TilesetScheme.signature+" instead of " + this.signature;
@@ -171,7 +184,7 @@ Turbo.Tileset = function(stream){
 
         this.tiles[i] = new Turbo.Tile(stream,
             [{u:x1/this.surface_atlas.width, v:0.0}, {u:x2/this.surface_atlas.width, v:0.0},
-             {u:x2/this.surface_atlas.width, v:1.0}, {u:x1/this.surface_atlas.width, v:1.0}], this, false);
+             {u:x2/this.surface_atlas.width, v:1.0}, {u:x1/this.surface_atlas.width, v:1.0}], this, tile_surfaces[i], false);
     
         this.tiles[i].loadObstructions(stream);
         
@@ -179,12 +192,16 @@ Turbo.Tileset = function(stream){
     
     }
 
-    this.image_atlas = new Image(this.surface_atlas);
-
-    // Load tile obstructions
-    
-    for(var i = 0; i<this.tiles.length; i++){
-        this.tiles[i].image = this.image_atlas;
+    this.calculateTileAtlas = function(){
+        
+        this.tiles.forEach(function(i){
+            this.blitSurface(i.surface, i.tex_coords.x1*this.width, 0);
+        }, this.surface_atlas)
+        
+        this.image_atlas = new Image(this.surface_atlas);
+        
     }
+    
+    this.calculateTileAtlas();
 
 }

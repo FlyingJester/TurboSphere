@@ -178,8 +178,8 @@ function MapEngine(map, fps){
             Turbo.IsChangingMaps = false;
         }
 
-        var frame_surplus = (fps_interval-(GetSeconds()-time)); // In milliseconds.
-        Delay(Math.max(frame_surplus, 0)); // In milliseconds.
+        var frame_surplus = (fps_interval-((GetSeconds()-time)*1000)); // In milliseconds.
+        Delay(Math.max(frame_surplus, 1)); // In milliseconds.
 
     }
 
@@ -261,10 +261,10 @@ function GetTileHeight(){return Turbo.CurrentMap.tileset.height;}
 
 
 function GetTileImage(i){return Turbo.CurrentMap.tileset.tiles[i].image;}
-function SetTileImage(i, image){Turbo.CurrentMap.tileset.tiles[i].image = image; Turbo.CurrentMap.tileset.tiles[i].surface = new Surface(image); Turbo.CurrentMap.calculateMap();}
+function SetTileImage(i, image){Turbo.CurrentMap.tileset.tiles[i].surface = new Surface(image); Turbo.CurrentMap.tileset.tiles[i].surface = new Surface(image); Turbo.CurrentMap.calculateMap();}
 
 function GetTileSurface(i){return Turbo.CurrentMap.tileset.tiles[i].surface;}
-function SetTileSurface(i, surface){Turbo.CurrentMap.SetTileImage(i, new Image(surface));}
+function SetTileSurface(i, surface){Turbo.CurrentMap.SetTileImage(i, surface.clone());}
 
 function GetTileDelay(i){return Turbo.CurrentMap.tileset.tiles[i].delay;}
 function SetTileDelay(i, delay){Turbo.CurrentMap.tileset.tiles[i].delay = delay;}

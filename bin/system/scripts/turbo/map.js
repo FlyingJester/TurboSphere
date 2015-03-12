@@ -56,8 +56,13 @@ Turbo.Map = function(stream, compat){
     this.unsetInput();
 
     // Load map header as base.
-    this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.MapScheme.header);
-
+    {
+        var header = Turbo.ReadBinaryObject(stream, Turbo.MapScheme.header);
+        for(var i in header){
+            this[i] = header[i];
+        }
+    }
+    
     // The stream should at least _say_ that it's a Sphere map.
     if(this.signature != Turbo.MapScheme.signature)
         throw "Bad signature. Should be " + Turbo.MapScheme.signature + " instead of " + this.signature;

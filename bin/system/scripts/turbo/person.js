@@ -207,7 +207,13 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
         
     }
     
-    this.__proto__ = new Turbo.Entity(x, y, layer, name, destroy);
+    {
+        var new_proto = new Turbo.Entity(x, y, layer, name, destroy);
+        for(var i in new_proto){
+            this[i] = new_proto[i];
+        }
+    }
+    
     
     this.shape = new Shape([{x:0, y:0}, {x:this.spriteset.width, y:0}, {x:this.spriteset.width, y:this.spriteset.height}, {x:0, y:this.spriteset.height}], this.spriteset.images[0]);
     this.group = new Group([this.shape], Turbo.default_shader);

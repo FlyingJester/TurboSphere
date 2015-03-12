@@ -14,7 +14,12 @@ Turbo.LoadSpritesetFile = function(path){
 Turbo.Spriteset = function(stream){
 
     // Load spriteset header as base.
-    this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.SpritesetScheme.header);
+    {
+        var header = Turbo.ReadBinaryObject(stream, Turbo.SpritesetScheme.header);
+        for(var i in header){
+            this[i] = header[i];
+        }
+    }
 
     if(this.signature != Turbo.SpritesetScheme.signature)
         throw "Bad signature. Should be " + Turbo.SpritesetScheme.signature + " instead of " + this.signature;
