@@ -145,25 +145,36 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
         
         var box = {x:x+this.base.x1, y:y+this.base.y1, w:this.base.x2-this.base.x1, h:this.base.y2-this.base.y1};
         
-        var s_x = Math.floor(box.x/tileset.width);
-        var e_x = Math.ceil((box.x+box.w)/tileset.width);
-        var s_y = Math.floor(box.y/tileset.height);
-        var e_y = Math.ceil((box.y+box.h)/tileset.width);
-
+        var s_x = Math.max(0, Math.floor(box.x/tileset.width));
+        var e_x = Math.min(Math.ceil((box.x+box.w)/tileset.width), layer.width);
+        var s_y = Math.max(0, Math.floor(box.y/tileset.height));
+        var e_y = Math.min(Math.ceil((box.y+box.h)/tileset.height), layer.height);
+        
+    //  for(var tile_y = s_y; tile_y<e_y; tile_y++){
+    //      for(var tile_x = s_x; tile_x<e_x; tile_x++){
+        
         for(var tile_y = s_y; tile_y<e_y; tile_y++){
             for(var tile_x = s_x; tile_x<e_x; tile_x++){
                 var tile_num = layer.field[tile_x + (tile_y*layer.width)];
-                var tile_segments = tileset.tiles[tile_num].segments.concat(layer.segments);
+                if(tileset.tiles[tile_num].unobstructed)
+                    continue;
+                
+                var tile_segments = tileset.tiles[tile_num].segments;
                 var tile_pix_x = tile_x*tileset.width;
                 var tile_pix_y = tile_y*tileset.height;
                 for(var i = 0; i<tile_segments.length; i++){
-                    var segment = {x1:tile_segments[i].x1+tile_pix_x, y1:tile_segments[i].y1+tile_pix_y, x2:tile_segments[i].x2+tile_pix_x, y2:tile_segments[i].y2+tile_pix_y};
+                    var segment = {
+                        x1:tile_segments[i].x1+tile_pix_x,
+                        y1:tile_segments[i].y1+tile_pix_y,
+                        x2:tile_segments[i].x2+tile_pix_x,
+                        y2:tile_segments[i].y2+tile_pix_y
+                    };
                     if(Turbo.SegmentIntersectsBox(segment, box))
                         return false;
                 }
             }
         }
-        
+
         return true;
     }
     

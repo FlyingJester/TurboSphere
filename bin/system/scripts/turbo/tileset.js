@@ -14,12 +14,18 @@ Turbo.LoadTilesetFile = function(path){
 
 Turbo.TileScheme = Turbo.LoadSystemScheme("tile.json");
 Turbo.TilesetScheme = Turbo.LoadSystemScheme("tileset.json");
+Turbo.ObstructionDebugColor = new Color(255, 0, 255);
 
-Turbo.Tile = function(stream, tex_coords, size){
+Turbo.Tile = function(stream, tex_coords, size, debug_obstructions, surface){
 
+    if(typeof debug_obstructions == "undefined")
+        debug_obstructions = false;
+    
     this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.TileScheme.header);
 
     this.tex_coords = tex_coords;
+
+    this.unobstructed = this.num_segments==0;
 
     // this.segments is initialized depending on the Obstruction type, since we already know its
     // length with obs type 2, but we need to fully iterate the bytemap for type 1.
@@ -29,6 +35,8 @@ Turbo.Tile = function(stream, tex_coords, size){
         this.loadObstructions = function(stream){
             for(var i = 0; i< this.segments.length; i++){
                 this.segments[i] = Turbo.ReadBinaryObject(stream, Turbo.SegmentScheme.data);
+                if(debug_obstructions)
+                    surface.line(this.segments[i].x1, this.segments[i].y1, this.segments[i].x2, this.segments[i].y2, Turbo.ObstructionDebugColor);
             }
         }
     break;
@@ -161,20 +169,22 @@ Turbo.Tileset = function(stream){
         var x1 = i*this.width;
         var x2 = (i+1)*this.width;
 
-        this.surface_atlas.blitSurface(tile_surfaces[i], x1, 0);
-
         this.tiles[i] = new Turbo.Tile(stream,
             [{u:x1/this.surface_atlas.width, v:0.0}, {u:x2/this.surface_atlas.width, v:0.0},
-             {u:x2/this.surface_atlas.width, v:1.0}, {u:x1/this.surface_atlas.width, v:1.0}], this);
+             {u:x2/this.surface_atlas.width, v:1.0}, {u:x1/this.surface_atlas.width, v:1.0}], this, false);
+    
+        this.tiles[i].loadObstructions(stream);
+        
+        this.surface_atlas.blitSurface(tile_surfaces[i], x1, 0);
+    
     }
 
     this.image_atlas = new Image(this.surface_atlas);
 
     // Load tile obstructions
+    
     for(var i = 0; i<this.tiles.length; i++){
-        this.tiles[i].loadObstructions(stream);
         this.tiles[i].image = this.image_atlas;
     }
-
 
 }
