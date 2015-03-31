@@ -105,7 +105,13 @@ function MapEngine(map, fps){
 
     Turbo.SpooledDefaultScripts.forEach(function(i){Turbo.CurrentMap.default_scripts[i.which] = i.script;});
     
-    Turbo.SpooledEntities.forEach(function(i){Turbo.CurrentMap.addEntity(i);});
+    Turbo.SpooledEntities.forEach(function(i){
+        if(i.is_camera_person)
+            Turbo.CurrentMap.camera_person = i;
+        if(i.is_input_person)
+            Turbo.CurrentMap.input_person = i;
+        Turbo.CurrentMap.addEntity(i);
+    });
 
     if(Turbo.SpooledRenderScript)
         SetRenderScript(Turbo.SpooledRenderScript);
@@ -121,40 +127,39 @@ function MapEngine(map, fps){
         var time = GetSeconds(); // In seconds.
 
         // Perform map logic
-        AreKeysLeft()
+        AreKeysLeft();
         
+        // Queue movement if we have an input person and movement keys are pressed
+        if(Turbo.CurrentMap.input_person){
+            if(IsKeyPressed(KEY_UP)){
+                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_NORTH);
+                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_NORTH);
+                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_ANIMATE);
+            }
+                    
+            if(IsKeyPressed(KEY_DOWN)){
+                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_SOUTH);
+                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_SOUTH);
+                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_ANIMATE);
+                        
+            }
+            if(IsKeyPressed(KEY_LEFT)){
+                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_WEST);
+                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_WEST);
+                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_ANIMATE);
+                        
+            }
+            if(IsKeyPressed(KEY_RIGHT)){
+                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_EAST);
+                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_EAST);
+                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_ANIMATE);
+                        
+            }
+        }
+                
         // Perform queue commands
         Turbo.CurrentMap.entities.forEach(
             function(i){
-                
-                if(i.is_input_person){
-                    
-                    if(IsKeyPressed(KEY_UP)){
-                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_NORTH);
-                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_NORTH);
-                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_ANIMATE);
-                    }
-                    
-                    if(IsKeyPressed(KEY_DOWN)){
-                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_SOUTH);
-                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_SOUTH);
-                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_ANIMATE);
-                        
-                    }
-                    if(IsKeyPressed(KEY_LEFT)){
-                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_WEST);
-                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_WEST);
-                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_ANIMATE);
-                        
-                    }
-                    if(IsKeyPressed(KEY_RIGHT)){
-                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_EAST);
-                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_EAST);
-                        i.queued_commands.push(Turbo.DefaultCommands.COMMAND_ANIMATE);
-                        
-                    }
-                    
-                }
                 i.queued_commands.forEach(function(e){e(i)});
                 i.queued_commands = [];
             }
@@ -353,21 +358,59 @@ function RenderMap(){Turbo.CurrentMap.drawMap};
 
 function AttachInput(person){
     
-    var entity_list = Turbo.CurrentMap?Turbo.CurrentMap.entities:Turbo.SpooledEntities;
-    
-    entity_list.forEach(function(i){i.is_input_person = (i.name==person);});
+    if(Turbo.CurrentMap)
+        for(var i in Turbo.CurrentMap.entities){
+            if(Turbo.CurrentMap.entities[i].name==person){
+                Turbo.CurrentMap.input_person = Turbo.CurrentMap.entities[i];
+                return;
+            }
+        }
+    else
+        Turbo.SpooledEntities.forEach(function(i){i.is_input_person = (i.name==person);});
     
 }
 
 function DetachInput(){
     
-    var entity_list = Turbo.CurrentMap?Turbo.CurrentMap.entities:Turbo.SpooledEntities;
-    
-    entity_list.forEach(function(i){i.is_input_person = false;})
+    if(Turbo.CurrentMap)
+        Turbo.CurrentMap.input_person = null;
+    else
+        Turbo.SpooledEntities.forEach(function(i){i.is_input_person = false;});
     
 }
 
-function IsInputAttached(){return Turbo.CurrentMap.input_person;}
+function DetachCamera(){
+    
+    if(Turbo.CurrentMap)
+        Turbo.CurrentMap.unsetCamera();
+    else
+        Turbo.SpooledEntities.forEach(function(i){i.is_input_person = false;});
+    
+}
+
+function AttachCamera(person){
+
+    if(Turbo.CurrentMap)
+        for(var i in Turbo.CurrentMap.entities){
+            if(Turbo.CurrentMap.entities[i].name==person){
+                Turbo.CurrentMap.camera_person = Turbo.CurrentMap.entities[i];
+                return;
+            }
+        }
+    else
+        Turbo.SpooledEntities.forEach(function(i){i.is_camera_person = (i.name==person);});
+    
+}
+
+function IsInputAttached(){
+
+    if(Turbo.CurrentMap)
+        return Turbo.CurrentMap.input_person;
+    else
+        for(var i in entity_list)
+            if(i.is_camera_person)
+                return true;
+}
 
 function GetInputPerson(){
     if(IsInputAttached()){
@@ -375,10 +418,6 @@ function GetInputPerson(){
     }
     return "";
 }
-
-function AttachCamera(person){Turbo.CurrentMap.camera_person = person;}
-
-function DetachCamera(person){Turbo.CurrentMap.unsetCamera();}
 
 function GetCameraPerson(){
     if(IsInputAttached()){
