@@ -6,4 +6,7 @@ namespace Sapphire{
 
 void Init(JSContext *ctx, uint64_t ID);
 
+enum TextureMemoryMappingMode {eNone};
+TextureMemoryMappingMode GetTextureMemoryMappingMode();
+
 }

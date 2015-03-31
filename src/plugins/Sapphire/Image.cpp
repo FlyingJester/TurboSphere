@@ -12,23 +12,20 @@
 #include "Sapphire.hpp"
 
 namespace Sapphire {
-    namespace GL{
 
-        inline void UploadTexture(unsigned w, unsigned h, void *pix){
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pix);
-            #ifdef OS_X
-            glFinish(); //Janky OS X OpenGL 4.
-            #endif
-        }
-        template <typename T>
-        inline void UploadTexture(T a, void *pix){UploadTexture(a->w, a->h, pix);}
-        
+namespace GL {
+    void UploadTexture(unsigned w, unsigned h, const void *pix){
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pix);
+        #ifdef OS_X
+        glFinish(); //Janky OS X OpenGL 4.
+        #endif
     }
-    
-    void Image::SetTexParameters(){
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    }
+}
+
+void Image::SetTexParameters(){
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+}
 
 Image::Image(){
     
