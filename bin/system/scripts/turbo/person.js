@@ -10,6 +10,43 @@ Turbo.Classic = Turbo.Classic || {};
 
 Turbo.EntityScheme = Turbo.LoadSystemScheme("entity.json");
 
+Turbo.SimpleWalkHandler = function(person, x, y, layer, tileset){
+
+    var box = {x:x+person.base.x1, y:y+person.base.y1, w:person.base.x2-person.base.x1, h:person.base.y2-person.base.y1};
+
+    var s_x = Math.max(0, Math.floor(box.x/tileset.width));
+    var e_x = Math.min(Math.ceil((box.x+box.w)/tileset.width), layer.width);
+    var s_y = Math.max(0, Math.floor(box.y/tileset.height));
+    var e_y = Math.min(Math.ceil((box.y+box.h)/tileset.height), layer.height);
+        
+    for(var tile_y = s_y; tile_y<e_y; tile_y++){
+        for(var tile_x = s_x; tile_x<e_x; tile_x++){
+            var tile_num = layer.field[tile_x + (tile_y*layer.width)];
+            if(tileset.tiles[tile_num].unobstructed)
+            continue;
+
+            var tile_segments = tileset.tiles[tile_num].segments;
+            var tile_pix_x = tile_x*tileset.width;
+            var tile_pix_y = tile_y*tileset.height;
+            for(var i = 0; i<tile_segments.length; i++){
+                var segment = {
+                    x1:tile_segments[i].x1+tile_pix_x,
+                    y1:tile_segments[i].y1+tile_pix_y,
+                    x2:tile_segments[i].x2+tile_pix_x,
+                    y2:tile_segments[i].y2+tile_pix_y
+                };
+                if(Turbo.SegmentIntersectsBox(segment, box))
+                    return null;
+            }
+        }
+    }
+
+    return {x:x, y:y};
+
+}
+
+Turbo.walk_handler = Turbo.SimpleWalkHandler;
+
 Turbo.Entity = function(x, y, layer, name, destroy){
     this.x = x; this.y = y;
     this.draw_offset = {x:0, y:0};
@@ -141,47 +178,21 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
     }
     
     // Intended for taking a one-pixel step.
-    this.canWalkTo = function(x, y, layer, tileset){
-        
-        var box = {x:x+this.base.x1, y:y+this.base.y1, w:this.base.x2-this.base.x1, h:this.base.y2-this.base.y1};
-        
-        var s_x = Math.max(0, Math.floor(box.x/tileset.width));
-        var e_x = Math.min(Math.ceil((box.x+box.w)/tileset.width), layer.width);
-        var s_y = Math.max(0, Math.floor(box.y/tileset.height));
-        var e_y = Math.min(Math.ceil((box.y+box.h)/tileset.height), layer.height);
-        
-    //  for(var tile_y = s_y; tile_y<e_y; tile_y++){
-    //      for(var tile_x = s_x; tile_x<e_x; tile_x++){
-        
-        for(var tile_y = s_y; tile_y<e_y; tile_y++){
-            for(var tile_x = s_x; tile_x<e_x; tile_x++){
-                var tile_num = layer.field[tile_x + (tile_y*layer.width)];
-                if(tileset.tiles[tile_num].unobstructed)
-                    continue;
-                
-                var tile_segments = tileset.tiles[tile_num].segments;
-                var tile_pix_x = tile_x*tileset.width;
-                var tile_pix_y = tile_y*tileset.height;
-                for(var i = 0; i<tile_segments.length; i++){
-                    var segment = {
-                        x1:tile_segments[i].x1+tile_pix_x,
-                        y1:tile_segments[i].y1+tile_pix_y,
-                        x2:tile_segments[i].x2+tile_pix_x,
-                        y2:tile_segments[i].y2+tile_pix_y
-                    };
-                    if(Turbo.SegmentIntersectsBox(segment, box))
-                        return false;
-                }
-            }
-        }
-
-        return true;
-    }
+    this.canWalkTo = function(x, y, layer, tileset){ Turbo.walk_handler(this, x, y, layer, tileset)?true:false; }
     
     this.tryWalkTo = function(x, y, map){
 
         var m_layer = map.layers[this.layer];
         
+        var to = Turbo.walk_handler(this, x, y, map.layers[this.layer], map.tileset);
+        if(to){
+            this.x = to.x;
+            this.y = to.y;
+            return true;
+        }
+        
+        return false;
+/*
         while(this.x<x){
             if(!this.canWalkTo(this.x+1, this.y, m_layer, map.tileset))
                 break;
@@ -204,7 +215,7 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
         }
         
         return (this.x==x) && (this.y==y);
-        
+*/
     }
     
     {
@@ -222,8 +233,8 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
     
     this.draw = function(camera_p){
         
-        this.group.x = this.x+camera_p.x;
-        this.group.y = this.y+camera_p.y;
+        this.group.x = this.x-camera_p.x;
+        this.group.y = this.y-camera_p.y;
         
         this.group.draw();
         
@@ -290,43 +301,60 @@ const COMMAND_MOVE_SOUTH        = "COMMAND_MOVE_SOUTH";
 const COMMAND_MOVE_WEST         = "COMMAND_MOVE_WEST";
 
 Turbo.DefaultCommands = {
-    COMMAND_WAIT:function(){},
-    COMMAND_ANIMATE:function(that){that.step();},
+    COMMAND_WAIT:function(){
+        return false;
+    },
+    COMMAND_ANIMATE:function(that){
+        that.step();
+        return true;
+    },
     COMMAND_FACE_NORTH:function(that){
         SetPersonDirection(that.name, "north");
+        return true;
     },
     COMMAND_FACE_NORTHEAST:function(that){
         SetPersonDirection(that.name, "northeast");
+        return true;
     },
     COMMAND_FACE_EAST:function(that){
         SetPersonDirection(that.name, "east");
+        return true;
     },
     COMMAND_FACE_SOUTHEAST:function(that){
         SetPersonDirection(that.name, "southeast");
+        return true;
     },
     COMMAND_FACE_SOUTH:function(that){
         SetPersonDirection(that.name, "south");
+        return true;
     },
     COMMAND_FACE_SOUTHWEST:function(that){
         SetPersonDirection(that.name, "southwest");
+        return true;
     },
     COMMAND_FACE_WEST:function(that){
         SetPersonDirection(that.name, "west");
+        return true;
     },
     COMMAND_FACE_NORTHWEST:function(that){
         SetPersonDirection(that.name, "northwest");
+        return true;
     },
     COMMAND_MOVE_NORTH:function(that){
         that.tryWalkTo(that.x, that.y-that.speed.y, Turbo.CurrentMap);
+        return true;
     },
     COMMAND_MOVE_EAST:function(that){
         that.tryWalkTo(that.x+that.speed.x, that.y, Turbo.CurrentMap);
+        return true;
     },
     COMMAND_MOVE_SOUTH:function(that){
         that.tryWalkTo(that.x, that.y+that.speed.y, Turbo.CurrentMap);
+        return true;
     },
     COMMAND_MOVE_WEST:function(that){
         that.tryWalkTo(that.x-that.speed.x, that.y, Turbo.CurrentMap);
+        return true;
     }
 }
 

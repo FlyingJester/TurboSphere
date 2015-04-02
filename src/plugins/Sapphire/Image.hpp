@@ -61,7 +61,11 @@ public:
 
     PixelData * &Lock();
     void Unlock();
+    // Specifies a new W and H. Useful with Reserve.
     void Unlock(unsigned w_, unsigned h_);
+    // Indicates only the region inside the bounds has changed.
+    void Unlock(int x_, int y_, unsigned w_, unsigned h_);
+    
     inline void Reserve(unsigned w_, unsigned h_){
         if((w*h)<(w_*h_))
             RGBA = static_cast<PixelData *>(realloc(RGBA, w*h*sizeof(PixelData)));
@@ -87,6 +91,7 @@ public:
         Bind();
         GL::UploadTexture(w, h, a);
     }
+    void UpdateAt(int x_, int y_, unsigned w_, unsigned h_, const void *a);
 
     inline void Update(SDL_Surface *a) const{SDL_LockSurface(a); Update(a->pixels); SDL_UnlockSurface(a);}
 

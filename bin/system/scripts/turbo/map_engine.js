@@ -160,7 +160,11 @@ function MapEngine(map, fps){
         // Perform queue commands
         Turbo.CurrentMap.entities.forEach(
             function(i){
-                i.queued_commands.forEach(function(e){e(i)});
+                var len = i.queued_commands.length;
+                for(var e = 0; e<len; e++){
+                    i.queued_commands[e](i);
+                }
+
                 i.queued_commands = [];
             }
         );
@@ -184,7 +188,8 @@ function MapEngine(map, fps){
         }
 
         var frame_surplus = (fps_interval-((GetSeconds()-time)*1000)); // In milliseconds.
-        Delay(Math.max(frame_surplus, 1)); // In milliseconds.
+        if(frame_surplus>0)
+            Delay(Math.max(frame_surplus, 1)); // In milliseconds.
 
     }
 

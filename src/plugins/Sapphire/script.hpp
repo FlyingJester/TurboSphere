@@ -76,6 +76,7 @@ bool SaveImage(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool ImageCreateSurface(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool CloneImage(JSContext *ctx, unsigned argc, JS::Value *vp);
 bool ImageUpdate(JSContext *ctx, unsigned argc, JS::Value *vp);
+bool ImageUpdateAt(JSContext *ctx, unsigned argc, JS::Value *vp);
 /////
 // New School!
 bool VertexCtor(JSContext *ctx, unsigned argc, JS::Value *vp);

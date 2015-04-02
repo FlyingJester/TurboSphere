@@ -278,6 +278,7 @@ static JSFunctionSpec image_methods[] = {
     JS_FN("clone", CloneImage, 0, 0),
     JS_FN("createSurface", ImageCreateSurface, 0, 0),
     JS_FN("update", ImageUpdate, 1, 0),
+    JS_FN("updateAt", ImageUpdateAt, 3, 0),
     JS_FS_END
 };
     
@@ -1423,6 +1424,38 @@ bool ImageUpdate(JSContext *ctx, unsigned argc, JS::Value *vp){
     SDL_UnlockSurface(surface);
 
     image->Unlock(w, h);
+
+    args.rval().set(OBJECT_TO_JSVAL(surface_proto.wrap(ctx, surface)));
+    return true;
+}
+
+bool ImageUpdateAt(JSContext *ctx, unsigned argc, JS::Value *vp){
+    const Turbo::JSType signature[] = {Turbo::Object, Turbo::Number, Turbo::Number};
+    
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    if(!Turbo::CheckSignature<3>(ctx, args, signature, __func__))
+        return false;
+
+    SDL_Surface * const surface = surface_proto.unwrap(ctx, args[0], &args);
+    if(!surface){
+        Turbo::SetError(ctx, std::string(BRACKNAME " ") + __func__ + " Error argument 0 is not a Surface");
+        return false;
+    }
+    
+    ScriptImage_t * const mImage = image_proto.getSelf(ctx, vp, &args);
+    assert(mImage);
+    
+    const unsigned w = surface->w, h = surface->h, 
+        x = static_cast<unsigned>(args[0].toNumber()), y = static_cast<unsigned>(args[1].toNumber());
+    
+    Image * const image = mImage->get();
+    
+    SDL_LockSurface(surface);
+    {
+        image->UpdateAt(x, y, w, h, surface->pixels);
+    }
+    SDL_UnlockSurface(surface);
 
     args.rval().set(OBJECT_TO_JSVAL(surface_proto.wrap(ctx, surface)));
     return true;

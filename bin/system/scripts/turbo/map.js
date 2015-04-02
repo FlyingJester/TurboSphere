@@ -216,18 +216,18 @@ Turbo.Map = function(stream, compat){
     }
 
     this.calculateCamera = function(){
-        this.camera.x = Math.min(-this.camera_person.x+(GetScreenWidth()>>1), 0);
-        this.camera.y = Math.min(-this.camera_person.y+(GetScreenHeight()>>1), 0);
+        this.camera.x = Math.max(this.camera_person.x-(GetScreenWidth()>>1), 0);
+        this.camera.y = Math.max(this.camera_person.y-(GetScreenHeight()>>1), 0);
         if(this.layers.length){
-            this.camera.x = Math.max(this.camera.x, -(this.layers[i].width*this.tileset.width)+GetScreenWidth());
-            this.camera.y = Math.max(this.camera.y, -(this.layers[i].height*this.tileset.height)+GetScreenHeight());
+            this.camera.x = Math.min(this.camera.x, (this.layers[i].width*this.tileset.width)-GetScreenWidth());
+            this.camera.y = Math.min(this.camera.y, (this.layers[i].height*this.tileset.height)-GetScreenHeight());
         }
     }
 
     this.drawLayer = function(i){
         this.calculateCamera();
-        this.layers[i].group.x = this.camera.x;
-        this.layers[i].group.y = this.camera.y;
+        this.layers[i].group.x = -this.camera.x;
+        this.layers[i].group.y = -this.camera.y;
         this.layers[i].group.draw();
         
         var captured_camera = this.camera;
