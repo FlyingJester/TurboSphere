@@ -1,0 +1,8 @@
+Type=Application
+Version=1.0
+Name=TurboSphere
+GenericName=Game
+Comment=TurboSphere Game Engine
+Icon=turbo.png
+Exec=turbosphere %f
+
