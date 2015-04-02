@@ -134,7 +134,9 @@ namespace Turbo{
             {
                 JS::RootedValue value(ctx, val);
                 JS::RootedObject obj(ctx);
-                return (JS_ValueToObject(ctx, value, &obj) && JS_IsArrayBufferObject(obj));
+                if(!JS_ValueToObject(ctx, value, &obj))
+                    return false;
+                return JS_IsArrayBufferObject(obj);
             }
             case JSType::TypedArray:
             {

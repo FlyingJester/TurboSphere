@@ -9,52 +9,48 @@
 //
 
 // Wrapper function to allow any TypedArray to 'become' a ByteArray.
-function ByteArrayFromTypedArray(buffer){
-    var byteview;
-    if(buffer instanceof ArrayBuffer)
-      byteview = new Uint8Array(buffer);
-    else if(buffer instanceof Uint8Array)
-      byteview = buffer;
-    else
+function ByteArrayFromTypedArray(byteview){
+    if(!(byteview instanceof Uint8Array))
       throw "Argument 0 is not a Harmony Typed Array.";
 
-    // Tack on the members needed for ByteArray.
-    Object.defineProperty(byteview, "length", {value:byteview.byteLength});
-    Object.defineProperty(byteview, "concat", {
-        value:function(a){
-            if(!(a instanceof Uint8Array))
+    byteview.length = byteview.byteLength;
+    byteview.concat = function(a){
+        if(!(a instanceof Uint8Array))
             throw "Argument 0 is not a ByteArray or a Harmony Typed Array.";
-            var thisArray = Array.apply([], this);
-            var otherArray = Array.apply([], a);
-            var cArray = thisArray.concat(otherArray);
-            var r = CreateByteArray(cArray.length);
-            for(var i = 0;i<cArray.length; i++)
-              r[i] = cArray[i];
-            return r;
-        }
-    });
-
-    Object.defineProperty(byteview, "slice", {
-        value:function(a, e){
-            return ByteArrayFromTypedArray(new Uint8Array(this.buffer.slice(a, e)));
-        }
-    });
-
+        var thisArray = Array.apply([], this);
+        var otherArray = Array.apply([], a);
+        var cArray = thisArray.concat(otherArray);
+        var r = CreateByteArray(cArray.length);
+        for(var i = 0;i<cArray.length; i++)
+            r[i] = cArray[i];
+        return r;
+    }
+    
+    byteview.slice = function(a, e){
+        return ByteArrayFromTypedArray(new Uint8Array(this.buffer.slice(a, e)));
+    }
+    
     return byteview;
+}
+
+function ByteArrayFromArrayBuffer(buffer){
+    if(buffer instanceof ArrayBuffer)
+        return ByteArrayFromTypedArray(new Uint8Array(buffer));
+    else throw "Argument 0 is not a Harmony Array Buffer"
 }
 
 // Replacement for ByteArray 'constructor'
 function CreateByteArray(length){
     var buffer = new ArrayBuffer(length);
-    var byteview = new Uint8Array(buffer);
-    return ByteArrayFromTypedArray(byteview);
+    return ByteArrayFromArrayBuffer(buffer);
 }
 
 // Replacement for ByteArray 'constructor' from string
 function CreateByteArrayFromString(a){
     var r = CreateByteArray(a.length);
-    for(var i = 0;i<a.length; i++)
+    for(var i = 0;i<a.length; i++){
       r[i] = a.charCodeAt(i);
+    }
     return r;
 }
 

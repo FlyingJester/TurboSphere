@@ -129,21 +129,19 @@ namespace scriptfs {
             Turbo::SetError(ctx, "[" PLUGINNAME "] RawFileRead Error tried to read past end of RawFile");
             return false;
         }
-
-        std::unique_ptr<void, void(*)(void *)> raw_buffer(malloc(len), free);
         
-        err = rawfile_read(that->A, raw_buffer.get(), len);
+        void * const buffer = malloc(len);
+        err = rawfile_read(that->A, buffer, len);
         
         if(err!=RF_NoError){
+            free(buffer);
             Turbo::SetError(ctx, ExplainRawFileError(err));
             return false;
         }
-
-        JSObject *buffer = JS_NewArrayBufferWithContents(ctx, len, raw_buffer.release());
         
-        args.rval().set(OBJECT_TO_JSVAL(buffer));
+        JS::RootedObject arraybuffer(ctx, JS_NewArrayBufferWithContents(ctx, len, buffer));
         
-        assert(raw_buffer.get()==nullptr);
+        args.rval().set(OBJECT_TO_JSVAL(arraybuffer));
         
         return true;
     }

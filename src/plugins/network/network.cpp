@@ -4,10 +4,10 @@
 #include <cassert>
 
 static std::array<JSNative, 4> function_list = {{
-    NetPlug::GetLocalName, 
-    NetPlug::GetLocalAddress, 
-    NetPlug::OpenAddress,
-    NetPlug::ListenOnPort
+    Network::GetLocalName, 
+    Network::GetLocalAddress, 
+    Network::OpenAddress,
+    Network::ListenOnPort
 }};
 
 static std::array<const char * const, 4> function_name_list = {{
@@ -17,27 +17,34 @@ static std::array<const char * const, 4> function_name_list = {{
     "ListenOnPort"
 }};
 
-static JSFunctionSpec socket_methods[] = {
-    JS_FN("isConnected", NetPlug::SocketIsConnected, 0, 0),
-    JS_FN("getPendingReadSize", NetPlug::SocketGetPendingReadSize, 0, 0),
-    JS_FN("write", NetPlug::SocketWrite, 1, 0),
-    JS_FN("read", NetPlug::SocketRead, 1, 0),
-    JS_FN("close", NetPlug::SocketClose, 0, 0),
+static JSFunctionSpec listening_socket_methods[] = {
+    JS_FN("accept", Network::Accept, 0, 0),
     JS_FS_END
 };
 
-const char * Init(JSContext *ctx, unsigned ID){
+
+static JSFunctionSpec socket_methods[] = {
+    JS_FN("isConnected", Network::SocketIsConnected, 0, 0),
+    JS_FN("getPendingReadSize", Network::SocketGetPendingReadSize, 0, 0),
+    JS_FN("write", Network::SocketWrite, 1, 0),
+    JS_FN("read", Network::SocketRead, 1, 0),
+    JS_FN("close", Network::SocketClose, 0, 0),
+    JS_FS_END
+};
+
+const char *Init(JSContext *ctx, unsigned ID){
     assert(ctx);
     assert(function_name_list.size() == function_list.size());
     
-    NetPlug::socket_proto.initForContext(ctx, nullptr, socket_methods);
+    Network::socket_proto.initForContext(ctx, nullptr, socket_methods);
+    Network::listening_socket_proto.initForContext(ctx, nullptr, listening_socket_methods);
     
     return PLUGINNAME;
 }
 
 void Close(JSContext *ctx){
     assert(ctx);
-    NetPlug::socket_proto.closeForContext(ctx);
+    Network::socket_proto.closeForContext(ctx);
 }
     
 int NumFunctions(JSContext *ctx){

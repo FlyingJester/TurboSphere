@@ -102,10 +102,16 @@ Turbo.SegmentIntersectsBox = function(segment, box){
     var left_segment   = {x1:box.x,       y1:box.y+box.h,       x2:box.x,       y2:box.y};
     var right_segment  = {x1:box.x+box.w, y1:box.y+box.h,       x2:box.x+box.w, y2:box.y};
     
+    var s_test1 = {x:segment.x1, y:segment.y1};
+    var s_test2 = {x:segment.x2, y:segment.y2};
+    
+    if(Turbo.PointInBox(s_test1, box))
+        return s_test1;
+    if(Turbo.PointInBox(s_test2, box))
+        return s_test2;
+    
     // Include a short-circuit for the most likely/easiest to calculate collision, where an endpoint is inside the box.
-    return  Turbo.PointInBox({x:segment.x1, y:segment.y1}, box) ||
-            Turbo.PointInBox({x:segment.x2, y:segment.y2}, box) ||
-            Turbo.SegmentsIntersect(segment, top_segment) ||
+    return  Turbo.SegmentsIntersect(segment, top_segment) ||
             Turbo.SegmentsIntersect(segment, bottom_segment) ||
             Turbo.SegmentsIntersect(segment, right_segment) ||
             Turbo.SegmentsIntersect(segment, left_segment);
