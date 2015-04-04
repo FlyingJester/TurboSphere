@@ -201,17 +201,6 @@ void Destroy_Socket(struct WSocket *aSocket){
     free(aSocket);
 }
 
-void Copy_Socket(struct WSocket *aTo, const struct WSocket *aFrom){
-    memcpy(aTo, aFrom, sizeof(struct WSocket));
-}
-
-void Swap_Socket(struct WSocket *aFirst, struct WSocket *aSecond){
-    struct WSocket sock;
-    memcpy(&sock, aFirst, sizeof(struct WSocket));
-    memcpy(aFirst, aSecond, sizeof(struct WSocket));
-    memcpy(aSecond, &sock, sizeof(struct WSocket));
-}
-
 enum WSockErr Connect_Socket(struct WSocket *aSocket, const char *aTo, unsigned long aPortNum, long timeout){
 
     int err = 0;
@@ -343,7 +332,7 @@ enum WSockErr Disconnect_Socket(struct WSocket *aSocket){
 
     assert(aSocket!=NULL);
     if(aSocket->sock){
-		InitSock();
+	InitSock();
         CLOSE_SOCKET(aSocket->sock);
         aSocket->sock = 0;
     }

@@ -69,13 +69,13 @@ Turbo.Entity = function(x, y, layer, name, destroy){
 
 Turbo.GetPerson = function(name){
 
-    if(Turbo.CurrentMap){
-        return Turbo.CurrentMap.getPerson(name);
+    if(Turbo.current_map){
+        return Turbo.current_map.getPerson(name);
     }
     else{     
-        for(var i in Turbo.SpooledEntities){
-            if(Turbo.SpooledEntities[i].name==name)
-                return Turbo.SpooledEntities[i];
+        for(var i in Turbo.spooled_entities){
+            if(Turbo.spooled_entities[i].name==name)
+                return Turbo.spooled_entities[i];
         }
         
         return null;
@@ -192,30 +192,6 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
         }
         
         return false;
-/*
-        while(this.x<x){
-            if(!this.canWalkTo(this.x+1, this.y, m_layer, map.tileset))
-                break;
-            this.x++;
-        }
-        while(this.x>x){
-            if(!this.canWalkTo(this.x-1, this.y, m_layer, map.tileset))
-                break;
-            this.x--;
-        }
-        while(this.y<y){
-            if(!this.canWalkTo(this.x, this.y+1, m_layer, map.tileset))
-                break;
-            this.y++;
-        }
-        while(this.y>y){
-            if(!this.canWalkTo(this.x, this.y-1, m_layer, map.tileset))
-                break;
-            this.y--;
-        }
-        
-        return (this.x==x) && (this.y==y);
-*/
     }
     
     {
@@ -300,7 +276,7 @@ const COMMAND_MOVE_EAST         = "COMMAND_MOVE_EAST";
 const COMMAND_MOVE_SOUTH        = "COMMAND_MOVE_SOUTH";
 const COMMAND_MOVE_WEST         = "COMMAND_MOVE_WEST";
 
-Turbo.DefaultCommands = {
+Turbo.default_commands = {
     COMMAND_WAIT:function(){
         return false;
     },
@@ -341,19 +317,19 @@ Turbo.DefaultCommands = {
         return true;
     },
     COMMAND_MOVE_NORTH:function(that){
-        that.tryWalkTo(that.x, that.y-that.speed.y, Turbo.CurrentMap);
+        that.tryWalkTo(that.x, that.y-that.speed.y, Turbo.current_map);
         return true;
     },
     COMMAND_MOVE_EAST:function(that){
-        that.tryWalkTo(that.x+that.speed.x, that.y, Turbo.CurrentMap);
+        that.tryWalkTo(that.x+that.speed.x, that.y, Turbo.current_map);
         return true;
     },
     COMMAND_MOVE_SOUTH:function(that){
-        that.tryWalkTo(that.x, that.y+that.speed.y, Turbo.CurrentMap);
+        that.tryWalkTo(that.x, that.y+that.speed.y, Turbo.current_map);
         return true;
     },
     COMMAND_MOVE_WEST:function(that){
-        that.tryWalkTo(that.x-that.speed.x, that.y, Turbo.CurrentMap);
+        that.tryWalkTo(that.x-that.speed.x, that.y, Turbo.current_map);
         return true;
     }
 }
@@ -660,7 +636,7 @@ function CallPersonScript(name, which){
 function QueuePersonCommand(name, command, immediate){
     
     var person = Turbo.GetPersonThrow(name);
-    var cmd = Turbo.DefaultCommands[command];
+    var cmd = Turbo.default_commands[command];
     
     if(immediate){
         cmd(person);

@@ -45,6 +45,7 @@ const char *Init(JSContext *ctx, unsigned ID){
 void Close(JSContext *ctx){
     assert(ctx);
     Network::socket_proto.closeForContext(ctx);
+    Network::listening_socket_proto.closeForContext(ctx);
 }
     
 int NumFunctions(JSContext *ctx){

@@ -180,7 +180,7 @@ namespace Turbo{
     bool CheckSignature(JSContext *ctx, JS::CallArgs &args, const enum JSType type[N], const char *func, bool set_error = true){
         
         if(args.length()<N){
-            SetError(ctx, std::string("[" PLUGINNAME "] ") + func + " Error called with fewer than " + std::to_string(N) + "arguments");
+            SetError(ctx, std::string("[" PLUGINNAME "] ") + func + " Error called with fewer than " + std::to_string(N) + " arguments");
             return false;
         }
         for(int i = 0; i<N; i++){
@@ -196,14 +196,14 @@ namespace Turbo{
         return true;
     }
     
-    inline bool CheckForSingleArg(JSContext *ctx, JS::CallArgs &args, enum JSType type, const char *func, bool set_error = true){
-        if(args.length()==0){
+    inline bool CheckForSingleArg(JSContext *ctx, JS::CallArgs &args, enum JSType type, const char *func, int N=0, bool set_error = true){
+        if(args.length()<N+1){
             if(set_error){
-                SetError(ctx, std::string("[" PLUGINNAME "] ") + func + " Error called with no arguments");
+                SetError(ctx, std::string("[" PLUGINNAME "] ") + func + " Error called with fewer than " + std::to_string(N) + " arguments");
             }
             return false;
         }
-        if(!CheckArg(ctx, args[0], type)){
+        if(!CheckArg(ctx, args[N], type)){
             if(set_error){
                 SetError(ctx, BadArgTypeErrorMessage(0, type, func));
             }

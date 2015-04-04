@@ -10,25 +10,35 @@
 
 // Wrapper function to allow any TypedArray to 'become' a ByteArray.
 function ByteArrayFromTypedArray(byteview){
+
+    if(byteview instanceof ArrayBuffer)
+        byteview = new Uint8Array(byteview);
+
     if(!(byteview instanceof Uint8Array))
       throw "Argument 0 is not a Harmony Typed Array.";
 
-    byteview.length = byteview.byteLength;
-    byteview.concat = function(a){
-        if(!(a instanceof Uint8Array))
-            throw "Argument 0 is not a ByteArray or a Harmony Typed Array.";
-        var thisArray = Array.apply([], this);
-        var otherArray = Array.apply([], a);
-        var cArray = thisArray.concat(otherArray);
-        var r = CreateByteArray(cArray.length);
-        for(var i = 0;i<cArray.length; i++)
-            r[i] = cArray[i];
-        return r;
-    }
-    
-    byteview.slice = function(a, e){
-        return ByteArrayFromTypedArray(new Uint8Array(this.buffer.slice(a, e)));
-    }
+//    Object.defineProperty(byteview, "length", {value:byteview.byteLength});
+    Object.defineProperty(byteview, "concat",
+        {value:function(a){
+            if(!(a instanceof Uint8Array))
+              throw "Argument 0 is not a ByteArray or a Harmony Typed Array.";
+            var thisArray = Array.apply([], this);
+            var otherArray = Array.apply([], a);
+            var cArray = thisArray.concat(otherArray);
+            var r = CreateByteArray(cArray.length);
+            for(var i = 0;i<cArray.length; i++)
+              r[i] = cArray[i];
+            return r;
+    }});
+    Object.defineProperty(byteview, "slice",
+        {value:function(a, e){
+            var thisArray = Array.apply([], this);
+            var sArray = thisArray.slice(a, e);
+            var r = CreateByteArray(sArray.length);
+            for(var i = 0;i<sArray.length; i++)
+              r[i] = sArray[i];
+            return r;
+    }});
     
     return byteview;
 }
@@ -48,9 +58,8 @@ function CreateByteArray(length){
 // Replacement for ByteArray 'constructor' from string
 function CreateByteArrayFromString(a){
     var r = CreateByteArray(a.length);
-    for(var i = 0;i<a.length; i++){
+    for(var i = 0;i<a.length; i++)
       r[i] = a.charCodeAt(i);
-    }
     return r;
 }
 

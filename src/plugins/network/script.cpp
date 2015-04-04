@@ -23,7 +23,7 @@ void SocketFinalizer(JSFreeOp *fop, JSObject *obj){
     if(State_Socket(mSocket))
         Disconnect_Socket(mSocket);
 
-    Destroy_Socket(mSocket);
+    //Destroy_Socket(mSocket);
    
 }
 void ListeningSocketFinalizer(JSFreeOp *fop, JSObject *obj){
@@ -34,7 +34,7 @@ void ListeningSocketFinalizer(JSFreeOp *fop, JSObject *obj){
         return;
     }
 
-    Destroy_Socket(mSocket);
+    //Destroy_Socket(mSocket);
 
 }
 Turbo::JSPrototype<struct WSocket> socket_proto("Socket", OpenAddress, 2, SocketFinalizer);
@@ -143,7 +143,7 @@ bool SocketGetPendingReadSize(JSContext *ctx, unsigned argc, JS::Value *vp){
     if(State_Socket(mSocket)!=0)
         args.rval().set(JS_NumberValue(0));
     else
-        args.rval().set(JS_NumberValue((Length_Socket(mSocket)==0)));
+        args.rval().set(JS_NumberValue((Length_Socket(mSocket))));
     return true;
 }
 
@@ -192,7 +192,9 @@ bool SocketRead(JSContext *ctx, unsigned argc, JS::Value *vp){
         return false;
     }
     
-    JSObject *buffer = JS_NewArrayBufferWithContents(ctx, strlen(data), data);
+    JS::RootedObject buffer(ctx, JS_NewArrayBufferWithContents(ctx, strlen(data), data));
+    
+    printf("Array Buffer read in is %i long.\n", (int)strlen(data));
     
     args.rval().set(OBJECT_TO_JSVAL(buffer));
     return true;

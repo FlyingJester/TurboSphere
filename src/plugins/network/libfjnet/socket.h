@@ -15,10 +15,6 @@ const char *ExplainError_Socket(enum WSockErr);
 struct WSocket *Create_Socket(void);
 void Destroy_Socket(struct WSocket *aSocket);
 
-/* Copy is shallow and does NOT duplicate the underlying socket itself. */
-void Copy_Socket(struct WSocket *aTo, const struct WSocket *aFrom);
-void Swap_Socket(struct WSocket *aFirst, struct WSocket *aSecond);
-
 /* timeout is in milliseconds. A negative timeout means to wait as long as the
  stack wants to.
 */

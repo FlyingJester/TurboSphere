@@ -25,18 +25,20 @@ const SCRIPT_ON_LEAVE_MAP_WEST  = 50;
 //   Everything else is represented inside a map and transferred when the map
 //   is changed. The Spooled arrays acumulate values until the MapEngine is
 //   called.
-Turbo.CurrentMap = null;
-Turbo.CurrentPerson = null; // Backward compatibility only.
-Turbo.NextMap = null;
-Turbo.IsChangingMaps = false;
+Turbo.current_map = null;
+Turbo.current_person = null; // Backward compatibility only.
+Turbo.next_map = null;
+Turbo.changing_maps = false;
 // Holds an array of {which:SCRIPT_ON_BLANK, script:function(){/*...*/}}
-Turbo.SpooledDefaultScripts = [];
-Turbo.SpooledRenderScript = null;
-Turbo.SpooledUpdateScript = null;
-Turbo.SpooledEntities = [];
+Turbo.spooled_default_scripts = [];
+Turbo.spooled_render_script = null;
+Turbo.spooled_update_script = null;
+Turbo.spooled_entities = [];
+
+Turbo.delay_scripts = [];
 
 Turbo.IsMapEngineRunning = function(){
-    return (Turbo.CurrentMap || Turbo.NextMap || Turbo.IsChangingMaps);
+    return (Turbo.current_map || Turbo.next_map || Turbo.changing_maps);
 }
 var IsMapEngineRunning = Turbo.IsMapEngineRunning;
 
@@ -51,26 +53,26 @@ function MapMaybeString(map){
 }
 
 /* Changing Maps and Exiting the Map Engine:
-    Setting IsChangingMaps will make the MapEngine set CurrentMap to NextMap at
-    the end of the next frame (and unset IsChangingMaps). If when a new frame
-    starts !CurrentMap is true then the MapEngine will exit.
+    Setting changing_maps will make the MapEngine set current_map to next_map at
+    the end of the next frame (and unset changing_maps). If when a new frame
+    starts !current_map is true then the MapEngine will exit.
 */
 function ChangeMap(map){
-    Turbo.NextMap = MapMaybeString(map);
+    Turbo.next_map = MapMaybeString(map);
     Turbo.IsChangingMaps = true;
 }
 
 function GetCurrentMap(){
-    if(!Turbo.CurrentMap)
+    if(!Turbo.current_map)
         return "";
 
-    return Turbo.CurrentMap.name;
+    return Turbo.current_map.name;
 }
 
 function ExitMapEngine(){
-    Turbo.CurrentMap = null;
-    Turbo.NextMap = null;
-    Turbo.IsChangingMaps = true;
+    Turbo.current_map = null;
+    Turbo.next_map = null;
+    Turbo.changing_maps = true;
 }
 
 function UpdateMapEngine(){}
@@ -82,13 +84,13 @@ function SetMapEngineFrameRate(fps){
     if(fps==NaN)
         throw "FPS is NaN";
 
-    if(Turbo.CurrentMap!=null)
-        Turbo.CurrentMap.fps= fps;
+    if(Turbo.current_map!=null)
+        Turbo.current_map.fps= fps;
 }
 
 function GetMapEngineFrameRate(){
-    if(Turbo.CurrentMap)
-        return Turbo.CurrentMap.fps;
+    if(Turbo.current_map)
+        return Turbo.current_map.fps;
     return 60;
 }
 
@@ -98,31 +100,31 @@ function MapEngine(map, fps){
     if(typeof fps == "undefined")
         fps = 60;
 
-    if(Turbo.CurrentMap!=null)
-        Turbo.CurrentMap.fps =fps;
+    if(Turbo.current_map!=null)
+        Turbo.current_map.fps =fps;
 
-    Turbo.CurrentMap = MapMaybeString(map);
+    Turbo.current_map = MapMaybeString(map);
 
-    Turbo.SpooledDefaultScripts.forEach(function(i){Turbo.CurrentMap.default_scripts[i.which] = i.script;});
+    Turbo.spooled_default_scripts.forEach(function(i){Turbo.current_map.default_scripts[i.which] = i.script;});
     
-    Turbo.SpooledEntities.forEach(function(i){
+    Turbo.spooled_entities.forEach(function(i){
         if(i.is_camera_person)
-            Turbo.CurrentMap.camera_person = i;
+            Turbo.current_map.camera_person = i;
         if(i.is_input_person)
-            Turbo.CurrentMap.input_person = i;
-        Turbo.CurrentMap.addEntity(i);
+            Turbo.current_map.input_person = i;
+        Turbo.current_map.addEntity(i);
     });
 
-    if(Turbo.SpooledRenderScript)
-        SetRenderScript(Turbo.SpooledRenderScript);
+    if(Turbo.spooled_render_script)
+        SetRenderScript(Turbo.spooled_render_script);
         
-    if(Turbo.SpooledUpdateScript)
-        SetRenderScript(Turbo.SpooledUpdateScript);
+    if(Turbo.spooled_update_script)
+        SetRenderScript(Turbo.spooled_update_script);
 
-    var fps_interval = ((1/Turbo.CurrentMap.fps)*1000); // In seconds.
+    var fps_interval = ((1/Turbo.current_map.fps)*1000); // In seconds.
     
     // Event loop.
-    while(Turbo.CurrentMap){
+    while(Turbo.current_map){
 
         var time = GetSeconds(); // In seconds.
 
@@ -130,35 +132,35 @@ function MapEngine(map, fps){
         AreKeysLeft();
         
         // Queue movement if we have an input person and movement keys are pressed
-        if(Turbo.CurrentMap.input_person){
+        if(Turbo.current_map.input_person){
             if(IsKeyPressed(KEY_UP)){
-                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_NORTH);
-                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_NORTH);
-                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_ANIMATE);
+                Turbo.current_map.input_person.queued_commands.push(Turbo.default_commands.COMMAND_MOVE_NORTH);
+                Turbo.current_map.input_person.queued_commands.push(Turbo.default_commands.COMMAND_FACE_NORTH);
+                Turbo.current_map.input_person.queued_commands.push(Turbo.default_commands.COMMAND_ANIMATE);
             }
                     
             if(IsKeyPressed(KEY_DOWN)){
-                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_SOUTH);
-                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_SOUTH);
-                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_ANIMATE);
+                Turbo.current_map.input_person.queued_commands.push(Turbo.default_commands.COMMAND_MOVE_SOUTH);
+                Turbo.current_map.input_person.queued_commands.push(Turbo.default_commands.COMMAND_FACE_SOUTH);
+                Turbo.current_map.input_person.queued_commands.push(Turbo.default_commands.COMMAND_ANIMATE);
                         
             }
             if(IsKeyPressed(KEY_LEFT)){
-                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_WEST);
-                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_WEST);
-                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_ANIMATE);
+                Turbo.current_map.input_person.queued_commands.push(Turbo.default_commands.COMMAND_MOVE_WEST);
+                Turbo.current_map.input_person.queued_commands.push(Turbo.default_commands.COMMAND_FACE_WEST);
+                Turbo.current_map.input_person.queued_commands.push(Turbo.default_commands.COMMAND_ANIMATE);
                         
             }
             if(IsKeyPressed(KEY_RIGHT)){
-                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_MOVE_EAST);
-                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_FACE_EAST);
-                Turbo.CurrentMap.input_person.queued_commands.push(Turbo.DefaultCommands.COMMAND_ANIMATE);
+                Turbo.current_map.input_person.queued_commands.push(Turbo.default_commands.COMMAND_MOVE_EAST);
+                Turbo.current_map.input_person.queued_commands.push(Turbo.default_commands.COMMAND_FACE_EAST);
+                Turbo.current_map.input_person.queued_commands.push(Turbo.default_commands.COMMAND_ANIMATE);
                         
             }
         }
                 
         // Perform queue commands
-        Turbo.CurrentMap.entities.forEach(
+        Turbo.current_map.entities.forEach(
             function(i){
                 var len = i.queued_commands.length;
                 for(var e = 0; e<len; e++){
@@ -170,21 +172,21 @@ function MapEngine(map, fps){
         );
 
         // Perform update_script
-        Turbo.CurrentMap.update_script();
+        Turbo.current_map.update_script();
 
         // Draw Map
-        Turbo.CurrentMap.drawMap();
+        Turbo.current_map.drawMap();
 
         // render_script
-        Turbo.CurrentMap.render_script();
+        Turbo.current_map.render_script();
 
         FlipScreen();
 
         // We only change maps at the end of a frame.
-        if(Turbo.IsChangingMaps){
-            Turbo.CurrentMap = Turbo.NextMap;
-            Turbo.NextMap = null;
-            Turbo.IsChangingMaps = false;
+        if(Turbo.changine_maps){
+            Turbo.current_map = Turbo.next_map;
+            Turbo.next_map = null;
+            Turbo.changing_maps = false;
         }
 
         var frame_surplus = (fps_interval-((GetSeconds()-time)*1000)); // In milliseconds.
@@ -193,16 +195,16 @@ function MapEngine(map, fps){
 
     }
 
-    Turbo.CurrentMap = null;
-    Turbo.NextMap = null;
-    Turbo.IsChangingMaps = false;
+    Turbo.current_map = null;
+    Turbo.next_map = null;
+    Turbo.changing_maps = false;
 
-    Turbo.CurrentMap.default_scripts.forEach(function(i, e){Turbo.SpooledDefaultScripts.push({which:e, script:i})})
+    Turbo.current_map.default_scripts.forEach(function(i, e){Turbo.spooled_default_scripts.push({which:e, script:i})})
 
 }
 
 function CallMapScript(which){
-    Turbo.CurrentMap.functions[which]();
+    Turbo.current_map.functions[which]();
 }
 
 function SetDefaultMapScript(which, script){
@@ -210,79 +212,86 @@ function SetDefaultMapScript(which, script){
     if(typeof script != "function")
         script = new Function(script);
 
-    if(Turbo.CurrentMap)
-      Turbo.CurrentMap.default_scripts[which] = script;
+    if(Turbo.current_map)
+      Turbo.current_map.default_scripts[which] = script;
     else{
-        for(var i in Turbo.SpooledDefaultScripts){
-            if(Turbo.SpooledDefaultScripts[i].which == which){
-                Turbo.SpooledDefaultScripts[i].script = script;
+        for(var i in Turbo.spooled_default_scripts){
+            if(Turbo.spooled_default_scripts[i].which == which){
+                Turbo.spooled_default_scripts[i].script = script;
                 return;
             }
         }
-        Turbo.SpooledDefaultScripts.push({which:which, script:script});
+        Turbo.spooled_default_scripts.push({which:which, script:script});
     }
 
 }
 
 function CallDefaultMapScript(which){
-    if(Turbo.CurrentMap)
-      Turbo.CurrentMap.default_scripts[which]();
+    if(Turbo.current_map)
+      Turbo.current_map.default_scripts[which]();
     else{
-        for(var i in Turbo.SpooledDefaultScripts){
-            if(Turbo.SpooledDefaultScripts[i].which == which){
-                Turbo.SpooledDefaultScripts[i].script();
+        for(var i in Turbo.spooled_default_scripts){
+            if(Turbo.spooled_default_scripts[i].which == which){
+                Turbo.spooled_default_scripts[i].script();
                 return;
             }
         }
     }
 }
 
-function GetNumLayers(){return Turbo.CurrentMap.layers.length;}
-function GetLayerName(i){return Turbo.CurrentMap.layers[i].name;}
+function GetNumLayers(){return Turbo.current_map.layers.length;}
+function GetLayerName(i){return Turbo.current_map.layers[i].name;}
 
-function GetLayerWidth(i){return Turbo.CurrentMap.layers[i].width;}
-function GetLayerHeight(i){return Turbo.CurrentMap.layers[i].height;}
+function GetLayerWidth(i){return Turbo.current_map.layers[i].width;}
+function GetLayerHeight(i){return Turbo.current_map.layers[i].height;}
 
-function IsLayerVisible(i){return Turbo.CurrentMap.layers[i].visible;}
-function SetLayerVisible(i, val){Turbo.CurrentMap.layers[i].visible = val;}
-function IsLayerReflective(i){return Turbo.CurrentMap.layers[i].reflective;}
-function SetLayerReflective(i, val){Turbo.CurrentMap.layers[i].reflective = val;}
+function IsLayerVisible(i){return Turbo.current_map.layers[i].visible;}
+function SetLayerVisible(i, val){Turbo.current_map.layers[i].visible = val;}
+function IsLayerReflective(i){return Turbo.current_map.layers[i].reflective;}
+function SetLayerReflective(i, val){Turbo.current_map.layers[i].reflective = val;}
 
-function GetLayerMask(i){return Turbo.CurrentMap.layers[i].mask;}
-function SetLayerMask(i, val){Turbo.CurrentMap.layers[i].mask = val;}
+function GetLayerMask(i){return Turbo.current_map.layers[i].mask;}
+function SetLayerMask(i, val){Turbo.current_map.layers[i].mask = val;}
 
 function SetLayerScaleFactorX(i, _x){}
 function SetLayerScaleFactorY(i, _y){}
 
-function GetLayerAngle(i){return Turbo.CurrentMap.layers[i].group.angle;}
-function SetLayerAngle(i, a){Turbo.CurrentMap.layers[i].group.angle = a;}
+function GetLayerAngle(i){return Turbo.current_map.layers[i].group.angle;}
+function SetLayerAngle(i, a){Turbo.current_map.layers[i].group.angle = a;}
 
-function GetNumTiles(){return Turbo.CurrentMap.tileset.tiles.length;}
+function GetNumTiles(){return Turbo.current_map.tileset.tiles.length;}
 
-function SetTile(x, y, layer, tile){Turbo.CurrentMap.layers[layer].field[x+(y*Turbo.CurrentMap.width)] = tile; Turbo.CurrentMap.calculateLayer(layer);}
-function GetTile(x, y, layer){return Turbo.CurrentMap.layers[layer].field[x+(y*Turbo.CurrentMap.width)];}
+function SetTile(x, y, layer, tile){
+    Turbo.current_map.layers[layer].field[x+(y*Turbo.current_map.width)] = tile; 
+    Turbo.current_map.calculateLayer(layer);
+}
+function GetTile(x, y, layer){return Turbo.current_map.layers[layer].field[x+(y*Turbo.current_map.width)];}
 
-function GetTileName(i){return Turbo.CurrentMap.tileset.tiles[i].name;}
+function GetTileName(i){return Turbo.current_map.tileset.tiles[i].name;}
     // Added for orthogonality
-function SetTileName(i){return Turbo.CurrentMap.tileset.tiles[i].name;}
+function SetTileName(i){return Turbo.current_map.tileset.tiles[i].name;}
 
-function GetTileWidth(){return Turbo.CurrentMap.tileset.width;}
-function GetTileHeight(){return Turbo.CurrentMap.tileset.height;}
+function GetTileWidth(){return Turbo.current_map.tileset.width;}
+function GetTileHeight(){return Turbo.current_map.tileset.height;}
 
 
-function GetTileImage(i){return Turbo.CurrentMap.tileset.tiles[i].image;}
-function SetTileImage(i, image){Turbo.CurrentMap.tileset.tiles[i].surface = new Surface(image); Turbo.CurrentMap.tileset.tiles[i].surface = new Surface(image); Turbo.CurrentMap.calculateMap();}
+function GetTileImage(i){return Turbo.current_map.tileset.tiles[i].image;}
+function SetTileImage(i, image){
+    Turbo.current_map.tileset.tiles[i].surface = new Surface(image); 
+    Turbo.current_map.tileset.tiles[i].surface = new Surface(image); 
+    Turbo.current_map.calculateMap();
+}
 
-function GetTileSurface(i){return Turbo.CurrentMap.tileset.tiles[i].surface;}
-function SetTileSurface(i, surface){Turbo.CurrentMap.SetTileImage(i, surface.clone());}
+function GetTileSurface(i){return Turbo.current_map.tileset.tiles[i].surface;}
+function SetTileSurface(i, surface){Turbo.current_map.SetTileImage(i, surface.clone());}
 
-function GetTileDelay(i){return Turbo.CurrentMap.tileset.tiles[i].delay;}
-function SetTileDelay(i, delay){Turbo.CurrentMap.tileset.tiles[i].delay = delay;}
+function GetTileDelay(i){return Turbo.current_map.tileset.tiles[i].delay;}
+function SetTileDelay(i, delay){Turbo.current_map.tileset.tiles[i].delay = delay;}
 
-function GetNextAnimatedTile(i){return (Turbo.CurrentMap.tileset.tiles[i].animated)?Turbo.CurrentMap.tileset.tiles[i].animated_next:i}
+function GetNextAnimatedTile(i){return (Turbo.current_map.tileset.tiles[i].animated)?Turbo.current_map.tileset.tiles[i].animated_next:i}
 function SetNextAnimatedTile(i, next){
-    Turbo.CurrentMap.tileset.tiles[i].animated = (i!=next);
-    Turbo.CurrentMap.tileset.tiles[i].animated_next = next;
+    Turbo.current_map.tileset.tiles[i].animated = (i!=next);
+    Turbo.current_map.tileset.tiles[i].animated_next = next;
 }
 
 function ReplaceTilesOnLayer(num, oldtile, newtile){
@@ -291,25 +300,25 @@ function ReplaceTilesOnLayer(num, oldtile, newtile){
 
     var replaced = false;
 
-    for(var i = 0; i< Turbo.CurrentMap.layers[num].field.length; i++){
-        if(Turbo.CurrentMap.layers[num].field[i]==oldtile){
-            Turbo.CurrentMap.layers[num].field[i] = newtile;
+    for(var i = 0; i< Turbo.current_map.layers[num].field.length; i++){
+        if(Turbo.current_map.layers[num].field[i]==oldtile){
+            Turbo.current_map.layers[num].field[i] = newtile;
             replaced = true;
         }
     }
 
     if(replaced){
-        Turbo.CurrentMap.calculateLayer(num);
+        Turbo.current_map.calculateLayer(num);
     }
 }
 
 // Non-spec Helper function
 function GetTriggerAt(_x, _y, num, from){
-    for(var i in Turbo.CurrentMap.entities){
+    for(var i in Turbo.current_map.entities){
         if((from[i].layer==num) &&
             (from[i].isTrigger) &&
-            (from[i].x==_x/Turbo.CurrentMap.tileset.width) &&
-            (from[i].y==_y/Turbo.CurrentMap.tileset.height)){
+            (from[i].x==_x/Turbo.current_map.tileset.width) &&
+            (from[i].y==_y/Turbo.current_map.tileset.height)){
             return from[i];
         }
     }
@@ -323,7 +332,7 @@ function GetZonesAt(_x, _y, num, from, stop_at_one){
         stop_at_one = false;
 
     var zones = [];
-    for(var i in Turbo.CurrentMap.zones){
+    for(var i in Turbo.current_map.zones){
         if(!((from.zones[i].layer==num) &&
             (from.zones[i].isTrigger)))
             continue;
@@ -337,19 +346,19 @@ function GetZonesAt(_x, _y, num, from, stop_at_one){
     return zones;
 }
 
-function IsTriggerAt(_x, _y, num){return (GetTriggerAt(_x, _y, num, Turbo.CurrentMap));}
+function IsTriggerAt(_x, _y, num){return (GetTriggerAt(_x, _y, num, Turbo.current_map));}
 
 function ExecuteTrigger(map_x, map_y, layer){
-    var trigger = GetTriggerAt(_x, _y, num, Turbo.CurrentMap);
+    var trigger = GetTriggerAt(_x, _y, num, Turbo.current_map);
     if(trigger)
         trigger.trigger_script();
 }
 
-function AreZonesAt(_x, _y, num){return GetZonesAt(_x, _y, num, Turbo.CurrentMap, true).length!=0;}
-function ExecuteZones(_x, _y, num){GetZonesAt(_x, _y, num, Turbo.CurrentMap).forEach(function(z){z.on_touch();});}
+function AreZonesAt(_x, _y, num){return GetZonesAt(_x, _y, num, Turbo.current_map, true).length!=0;}
+function ExecuteZones(_x, _y, num){GetZonesAt(_x, _y, num, Turbo.current_map).forEach(function(z){z.on_touch();});}
 
-function GetNumZones(){return Turbo.CurrentMap.zones.length;}
-function GetCurrentZone(){return Turbo.CurrentMap.current_zone;}
+function GetNumZones(){return Turbo.current_map.zones.length;}
+function GetCurrentZone(){return Turbo.current_map.current_zone;}
 
 function GetZoneX(z){return z.location[0].x;}
 function GetZoneY(z){return z.location[0].y;}
@@ -359,58 +368,58 @@ function GetZoneLayer(z){return z.layer;}
 function SetZoneLayer(z, n){return z.layer = n;}
 
 function ExecuteZoneScript(z){z.on_touch();}
-function RenderMap(){Turbo.CurrentMap.drawMap};
+function RenderMap(){Turbo.current_map.drawMap};
 
 function AttachInput(person){
     
-    if(Turbo.CurrentMap)
-        for(var i in Turbo.CurrentMap.entities){
-            if(Turbo.CurrentMap.entities[i].name==person){
-                Turbo.CurrentMap.input_person = Turbo.CurrentMap.entities[i];
+    if(Turbo.current_map)
+        for(var i in Turbo.current_map.entities){
+            if(Turbo.current_map.entities[i].name==person){
+                Turbo.current_map.input_person = Turbo.current_map.entities[i];
                 return;
             }
         }
     else
-        Turbo.SpooledEntities.forEach(function(i){i.is_input_person = (i.name==person);});
+        Turbo.spooled_entities.forEach(function(i){i.is_input_person = (i.name==person);});
     
 }
 
 function DetachInput(){
     
-    if(Turbo.CurrentMap)
-        Turbo.CurrentMap.input_person = null;
+    if(Turbo.current_map)
+        Turbo.current_map.input_person = null;
     else
-        Turbo.SpooledEntities.forEach(function(i){i.is_input_person = false;});
+        Turbo.spooled_entities.forEach(function(i){i.is_input_person = false;});
     
 }
 
 function DetachCamera(){
     
-    if(Turbo.CurrentMap)
-        Turbo.CurrentMap.unsetCamera();
+    if(Turbo.current_map)
+        Turbo.current_map.unsetCamera();
     else
-        Turbo.SpooledEntities.forEach(function(i){i.is_input_person = false;});
+        Turbo.spooled_entities.forEach(function(i){i.is_input_person = false;});
     
 }
 
 function AttachCamera(person){
 
-    if(Turbo.CurrentMap)
-        for(var i in Turbo.CurrentMap.entities){
-            if(Turbo.CurrentMap.entities[i].name==person){
-                Turbo.CurrentMap.camera_person = Turbo.CurrentMap.entities[i];
+    if(Turbo.current_map)
+        for(var i in Turbo.current_map.entities){
+            if(Turbo.current_map.entities[i].name==person){
+                Turbo.current_map.camera_person = Turbo.current_map.entities[i];
                 return;
             }
         }
     else
-        Turbo.SpooledEntities.forEach(function(i){i.is_camera_person = (i.name==person);});
+        Turbo.spooled_entities.forEach(function(i){i.is_camera_person = (i.name==person);});
     
 }
 
 function IsInputAttached(){
 
-    if(Turbo.CurrentMap)
-        return Turbo.CurrentMap.input_person;
+    if(Turbo.current_map)
+        return Turbo.current_map.input_person;
     else
         for(var i in entity_list)
             if(i.is_camera_person)
@@ -419,64 +428,76 @@ function IsInputAttached(){
 
 function GetInputPerson(){
     if(IsInputAttached()){
-        return Turbo.CurrentMap.input_person.name;
+        return Turbo.current_map.input_person.name;
     }
     return "";
 }
 
 function GetCameraPerson(){
     if(IsInputAttached()){
-        return Turbo.CurrentMap.camera_person.name;
+        return Turbo.current_map.camera_person.name;
     }
     return "";
 }
 
 function SetCameraX(x){
-    Turbo.CurrentMap.camera.x = x+(GetScreenWidth()/2);
+    Turbo.current_map.camera.x = x+(GetScreenWidth()/2);
 }
 
 function SetCameraY(y){
-    Turbo.CurrentMap.camera.y = y+(GetScreenHeight()/2);
+    Turbo.current_map.camera.y = y+(GetScreenHeight()/2);
 }
 
 function GetCameraX(){
-    return Turbo.CurrentMap.camera.x;
+    return Turbo.current_map.camera.x;
 }
 
 function GetCameraY(){
-    return Turbo.CurrentMap.camera.y;
+    return Turbo.current_map.camera.y;
 }
 
-function MapToScreenX(layer, x){}
-function MapToScreenY(layer, y){}
-function ScreenToMapX(layer, x){}
-function ScreenToMapY(layer, y){}
-
+// TODO: Make these conversions respect scrolling and parallax
+Turbo.MapToScreen = function(layer, x, y){
+    return {
+        x:x-Turbo.current_map.camera.x,
+        y:y-Turbo.current_map.camera.y
+    };
+}
+Turbo.ScreenToMap = function(layer, x, y){
+    return {
+        x:x+Turbo.current_map.camera.x,
+        y:y+Turbo.current_map.camera.y
+    };
+}
+function MapToScreenX(layer, x){return Turbo.MapToScreen(layer, x, 0).x;}
+function MapToScreenY(layer, y){return Turbo.MapToScreen(layer, 0, y).y;}
+function ScreenToMapX(layer, x){return Turbo.ScreenToMap(layer, x, 0).x;}
+function ScreenToMapY(layer, y){return Turbo.ScreenToMap(layer, 0, y).y;}
 
 function SetUpdateScript(script){
-    if(!Turbo.CurrentMap){
-        Turbo.SpooledUpdateScript = script;
+    if(!Turbo.current_map){
+        Turbo.spooled_update_script = script;
     }
     else{
         if(typeof script == "function"){
-            Turbo.CurrentMap.update_script = script;
+            Turbo.current_map.update_script = script;
         }
         else{
-            Turbo.CurrentMap.update_script = new Function(script);
+            Turbo.current_map.update_script = new Function(script);
         }
     }
 }
 
 function SetRenderScript(script){
-    if(!Turbo.CurrentMap){
-        Turbo.SpooledRenderScript = script;
+    if(!Turbo.current_map){
+        Turbo.spooled_render_script = script;
     }
     else{
         if(typeof script == "function"){
-            Turbo.CurrentMap.render_script = script;
+            Turbo.current_map.render_script = script;
         }
         else{
-            Turbo.CurrentMap.render_script = new Function(script);
+            Turbo.current_map.render_script = new Function(script);
         }        
     }
 }
@@ -498,15 +519,15 @@ function CreatePerson(name, spriteset, destroy_on_map_change){
     }
     
     if(Turbo.IsMapEngineRunning()){
-        Turbo.CurrentMap.addPerson(new Turbo.Person(Turbo.CurrentMap.start_x, Turbo.CurrentMap.start_y,
-                                                    Turbo.CurrentMap.start_layer, name, destroy_on_map_change, loaded_spriteset));
+        Turbo.current_map.addPerson(new Turbo.Person(Turbo.current_map.start_x, Turbo.current_map.start_y,
+                                                    Turbo.current_map.start_layer, name, destroy_on_map_change, loaded_spriteset));
     }
     else{
-        Turbo.SpooledEntities.push(new Turbo.Person(0, 0, 0, name, destroy_on_map_change, loaded_spriteset));
+        Turbo.spooled_entities.push(new Turbo.Person(0, 0, 0, name, destroy_on_map_change, loaded_spriteset));
     }
 
 }
 
 function GetCurrentPerson(){
-    return Turbo.CurrentPerson;
+    return Turbo.current_person;
 }
