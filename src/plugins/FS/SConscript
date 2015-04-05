@@ -1,0 +1,15 @@
+Import('currentenv librarydir IsDarwin IsLinux IsWindows IsSolaris corelibtargets binarydir LibraryInstall jslib')
+
+import os
+import sys
+
+files = [
+    "script.cpp",
+    "FS.cpp",
+    "canonicalize.c"
+]
+
+FS = currentenv.SharedLibrary('FS', files, LIBS = [jslib, 't5', 'configmanager'])
+Depends(FS, corelibtargets)
+
+LibraryInstall(os.path.join(binarydir, 'plugin'), FS, currentenv)

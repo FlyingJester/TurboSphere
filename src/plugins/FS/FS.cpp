@@ -1,18 +1,17 @@
-#include "cinnamon.hpp"
+#include "FS.hpp"
 #include "script.hpp"
-
-#include <cassert>
 
 const char * Init(JSContext *ctx, unsigned ID){
     assert(ctx);
-    Cinnamon::initScript(ctx);
+    RawFile::initScript(ctx);
     return PLUGINNAME;
 }
+
 void Close(JSContext *ctx){
     assert(ctx);
-    Cinnamon::closeScript(ctx);
+    RawFile::closeScript(ctx);
 }
-    
+
 int NumFunctions(JSContext *ctx){
     assert(ctx);
     return 0;
