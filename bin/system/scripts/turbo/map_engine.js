@@ -170,7 +170,16 @@ function MapEngine(map, fps){
                 i.queued_commands = [];
             }
         );
-
+        
+        // Perform Delay scripts
+        for(var i = 0; i<Turbo.delay_scripts.length;){
+            if(--Turbo.delay_scripts[i].frame==0){
+                Turbo.delay_scripts[i].func();
+                Turbo.delay_scripts.splice(i, 1);
+            }
+            else i++;
+        }
+        
         // Perform update_script
         Turbo.current_map.update_script();
 
@@ -530,4 +539,12 @@ function CreatePerson(name, spriteset, destroy_on_map_change){
 
 function GetCurrentPerson(){
     return Turbo.current_person;
+}
+
+function SetDelayScript(frames, script){
+    var func = script;
+    if(typeof func == "string")
+        func = new Function(script);
+
+    Turbo.delay_scripts.push({frames:frames, func:func});
 }

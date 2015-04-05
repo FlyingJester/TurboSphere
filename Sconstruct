@@ -40,6 +40,9 @@ def IsDarwin():
 def IsSolaris():
   return sys.platform.startswith('solaris') or sys.platform.startswith('sunos') or sys.platform.startswith('SunOS') or sys.platform.startswith('illumos')
 
+def UsesGCC():
+  return ((not IsWindows()) and (not IsDarwin())) or ('GCC' in ARGUMENTS)
+
 compiler = ""
 
 # Perform extra futzing for shared libraries on Unix platforms.
@@ -61,6 +64,9 @@ elif IsDarwin():
   compiler = 'clang'
 else:
   compiler = 'cc' # who knows.
+
+if UsesGCC():
+  compiler = 'gcc'
 
 #Create a unified environment.
 globalenv = defaultenv.Clone()
@@ -125,6 +131,6 @@ globalenv = libconfig.Clone()
 localenv  = libconfig.Clone()
 
 # Begin the build proper.
-build = SConscript(dirs = ["extra"], exports = "globalenv localenv IsLinux IsWindows IsDarwin IsSolaris LibraryInstall compiler librarydir binarydir jslib")
-build = SConscript("src/Sconscript", exports = "globalenv localenv IsLinux IsWindows IsDarwin IsSolaris LibraryInstall compiler librarydir binarydir jslib")
-instl = SConscript(dirs = ["bin"], exports = "globalenv localenv IsLinux IsWindows IsDarwin IsSolaris LibraryInstall compiler librarydir binarydir jslib")
+build = SConscript(dirs = ["extra"], exports = "globalenv localenv IsLinux IsWindows IsDarwin IsSolaris UsesGCC LibraryInstall compiler librarydir binarydir jslib")
+build = SConscript("src/Sconscript", exports = "globalenv localenv IsLinux IsWindows IsDarwin IsSolaris UsesGCC LibraryInstall compiler librarydir binarydir jslib")
+instl = SConscript(dirs = ["bin"], exports = "globalenv localenv IsLinux IsWindows IsDarwin IsSolaris UsesGCC LibraryInstall compiler librarydir binarydir jslib")
