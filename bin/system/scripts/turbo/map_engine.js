@@ -275,6 +275,12 @@ function SetTile(x, y, layer, tile){
     Turbo.current_map.calculateLayer(layer);
 }
 function GetTile(x, y, layer){return Turbo.current_map.layers[layer].field[x+(y*Turbo.current_map.width)];}
+function GetTileAt(x, y, layer){
+    var layer = Turbo.current_map.layers[layer];
+    var tx = (x/Turbo.current_map.tileset.width)<<0;
+    var ty = (y/Turbo.current_map.tileset.height)<<0;
+    return layer.field[tx + (ty*layer.width)];
+}
 
 function GetTileName(i){return Turbo.current_map.tileset.tiles[i].name;}
     // Added for orthogonality
@@ -355,7 +361,7 @@ function GetZonesAt(_x, _y, num, from, stop_at_one){
     return zones;
 }
 
-function IsTriggerAt(_x, _y, num){return (GetTriggerAt(_x, _y, num, Turbo.current_map));}
+function IsTriggerAt(_x, _y, num){return (GetTriggerAt(_x, _y, num, Turbo.current_map))?true:false;}
 
 function ExecuteTrigger(map_x, map_y, layer){
     var trigger = GetTriggerAt(_x, _y, num, Turbo.current_map);
@@ -511,8 +517,7 @@ function SetRenderScript(script){
     }
 }
 
-// Person Control!
-
+// Person Control
 function CreatePerson(name, spriteset, destroy_on_map_change){
 
     if(typeof destroy_on_map_change == "undefined")

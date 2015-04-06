@@ -3,6 +3,7 @@ RequireSystemScript('turbo/format.js');
 RequireSystemScript('turbo/map.js');
 RequireSystemScript('turbo/tileset.js');
 RequireSystemScript('turbo/spriteset.js');
+RequireSystemScript('turbo/segment.js');
 
 if(typeof Turbo == "undefined")
     var Turbo = {};
@@ -11,35 +12,37 @@ Turbo.Classic = Turbo.Classic || {};
 Turbo.EntityScheme = Turbo.LoadSystemScheme("entity.json");
 
 Turbo.SimpleWalkHandler = function(person, x, y, layer, tileset){
+    
+    if(!person.ignore_tile_obstructions){
+        var box = {x:x+person.base.x1, y:y+person.base.y1, w:person.base.x2-person.base.x1, h:person.base.y2-person.base.y1};
 
-    var box = {x:x+person.base.x1, y:y+person.base.y1, w:person.base.x2-person.base.x1, h:person.base.y2-person.base.y1};
+        var s_x = Math.max(0, Math.floor(box.x/tileset.width));
+        var e_x = Math.min(Math.ceil((box.x+box.w)/tileset.width), layer.width);
+        var s_y = Math.max(0, Math.floor(box.y/tileset.height));
+        var e_y = Math.min(Math.ceil((box.y+box.h)/tileset.height), layer.height);
+            
+        for(var tile_y = s_y; tile_y<e_y; tile_y++){
+            for(var tile_x = s_x; tile_x<e_x; tile_x++){
+                var tile_num = layer.field[tile_x + (tile_y*layer.width)];
+                if(tileset.tiles[tile_num].unobstructed)
+                continue;
 
-    var s_x = Math.max(0, Math.floor(box.x/tileset.width));
-    var e_x = Math.min(Math.ceil((box.x+box.w)/tileset.width), layer.width);
-    var s_y = Math.max(0, Math.floor(box.y/tileset.height));
-    var e_y = Math.min(Math.ceil((box.y+box.h)/tileset.height), layer.height);
-        
-    for(var tile_y = s_y; tile_y<e_y; tile_y++){
-        for(var tile_x = s_x; tile_x<e_x; tile_x++){
-            var tile_num = layer.field[tile_x + (tile_y*layer.width)];
-            if(tileset.tiles[tile_num].unobstructed)
-            continue;
-
-            var tile_segments = tileset.tiles[tile_num].segments;
-            var tile_pix_x = tile_x*tileset.width;
-            var tile_pix_y = tile_y*tileset.height;
-            for(var i = 0; i<tile_segments.length; i++){
-                var segment = {
-                    x1:tile_segments[i].x1+tile_pix_x,
-                    y1:tile_segments[i].y1+tile_pix_y,
-                    x2:tile_segments[i].x2+tile_pix_x,
-                    y2:tile_segments[i].y2+tile_pix_y
-                };
-                if(Turbo.SegmentIntersectsBox(segment, box))
-                    return null;
+                var tile_segments = tileset.tiles[tile_num].segments;
+                var tile_pix_x = tile_x*tileset.width;
+                var tile_pix_y = tile_y*tileset.height;
+                for(var i = 0; i<tile_segments.length; i++){
+                    var segment = {
+                        x1:tile_segments[i].x1+tile_pix_x,
+                        y1:tile_segments[i].y1+tile_pix_y,
+                        x2:tile_segments[i].x2+tile_pix_x,
+                        y2:tile_segments[i].y2+tile_pix_y
+                    };
+                    if(Turbo.SegmentIntersectsBox(segment, box))
+                        return null;
+                }
             }
-        }
-    }
+        } // for tiles...
+    } // ignore_tile_obstructions
 
     return {x:x, y:y};
 
@@ -119,6 +122,10 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
         
     }
     
+    this.ignore_list = [];
+    this.ignore_tile_obstructions = false;
+    this.ignore_person_obstructions = false;
+    
     this.setSpriteset(spriteset);
 
     this.direction_i = 0;
@@ -179,7 +186,7 @@ Turbo.Person = function(x, y, layer, name, destroy, spriteset){
     
     // Intended for taking a one-pixel step.
     this.canWalkTo = function(x, y, layer, tileset){ Turbo.walk_handler(this, x, y, layer, tileset)?true:false; }
-    
+    this.canWalkAt = function(x, y){return this.canWalkTo(x, y, Turbo.current_map.layers[this.layer], Turbo.current_map.tileset)};
     this.tryWalkTo = function(x, y, map){
 
         var m_layer = map.layers[this.layer];
@@ -443,10 +450,6 @@ function GetPersonSpeedY(name){
       GetPersonFrameRevert(name)
         - gets the delay between when the person last moved and returning to
           first frame.  The delay is in frames. 0 disables this behaviour.
-*/
-
-
-/*
 
       SetPersonScaleFactor(name, scale_w, scale_h)
         - rescales the sprite to a certain scale specified by scale_w and scale_h.
@@ -472,15 +475,6 @@ function GetPersonBase(name){
 
 /*
 
-      GetPersonAngle(name)
-        - returns the person's angle that is used
-
-      SetPersonAngle(name, angle)
-        - sets the angle which the person should be drawn at
-        Note:
-          Zero is no rotation, and angles are in radians.
-          It does not rotate the spritesets obstruction base.
-
       SetPersonMask(name, color)
         - sets a color multiplier to use when drawing sprites.  if the color is
           RGBA:(255, 0, 0, 255), only the red elements of the sprite are drawn.
@@ -490,9 +484,15 @@ function GetPersonBase(name){
       GetPersonMask(name)
         - returns the person's current mask
 
-      IsPersonVisible(name)
-        - returns the person's visible status 
 */
+
+function SetPersonAngle(name, angle){
+    Turbo.GetPersonThrow(name).group.angle = angle;
+}
+
+function GetPersonAngle(name){
+    return Turbo.GetPersonThrow(name).group.angle;
+}
 
 function GetPersonVisible(name){
     return Turbo.GetPersonThrow(name).visible;
@@ -667,38 +667,78 @@ function IsCommandQueueEmpty(name){
     return Turbo.GetPersonThrow(name).queued_commands.length==0;
 }
 
+function IsPersonObstructed(name, _x, _y){
+    return Turbo.GetPersonThrow(name).canWalkAt(x, y);
+}
+
+function GetObstructingTile(name, _x, _y){
+    var p = Turbo.GetPersonThrow(name);
+    
+    var was_ignoring = p.ignore_person_obstructions;
+    p.ignore_person_obstructions = false
+    
+    var w = p.canWalkAt(x, y);
+    p.ignore_person_obstructions = was_ignoring;
+    
+    if(w) return null;
+    
+    return GetTileAt(x, y, p.layer);
+}
+
+function GetObstructingPerson(name, _x, _y){
+    var p = Turbo.GetPersonThrow(name);
+    
+    var was_ignoring = p.ignore_tile_obstructions;
+    p.ignore_tile_obstructions = false
+    
+    var w = p.canWalkAt(x, y);
+    p.ignore_tile_obstructions = was_ignoring;
+    
+    if(w) return null;
+    
+    return GetPersonAt(x, y, p.layer);
+}
+
+function IgnorePersonObstructions(name, ignore){
+    Turbo.GetPersonThrow(name).ignore_person_obstructions = (ignore)?true:false;
+}
+
+function IsIgnoringPersonObstructions(name){
+    return Turbo.GetPersonThrow(name).ignore_person_obstructions;
+}
+
+function IgnoreTileObstructions(name, ignore){
+    Turbo.GetPersonThrow(name).ignore_tile_obstructions = (ignore)?true:false;
+}
+
+function IsIgnoringTileObstructions(name){
+    return Turbo.GetPersonThrow(name).ignore_tile_obstructions;
+}
+
+function GetPersonAt(x, y, layer){
+    var people = GetPersonList();
+    for(var i = 0; i<GetPersonList(); i++){
+        if(people[i].layer!=layer)
+            continue;
+        var box = {x:x+people[i].base.x1, y:y+people[i].base.y1, w:people[i].base.x2-people[i].base.x1, h:people[i].base.y2-people[i].base.y1};
+        if(Turbo.PointInBox({x:x, y:y}, box))
+            return people[i].name;
+    }
+}
+
+function GetPersonIgnoreList(name){
+    var names = [];
+    Turbo.GetPersonThrow(name).ignore_list.forEach(function(i){names.push(i.name);});
+    return names;
+}
+
+function SetPersonIgnoreList(name, ignore_list){
+    list = [];
+    ignore_list.forEach(list.push(Turbo.GetPersonThrow(i)));
+    Turbo.GetPersonThrow(name).ignore_list = list;
+}
+
 /*
-      
-      IsPersonObstructed(name, x, y)
-      // returns true if person 'name' would be obstructed at (x, y)
-
-      GetObstructingTile(name, x, y)
-      // returns -1 if name isn't obstructed by a tile at x, y,
-       - returns the tile index of the tile if name is obstructed at x, y
-
-      GetObstructingPerson(name, x, y)
-      // returns "" if name isn't obstructed by person at x, y,
-       - returns the name of the person if name is obstructed at x, y
-
-      IgnorePersonObstructions(person, ignore)
-       - Sets whether 'person' should ignore other spriteset bases
-
-      IsIgnoringPersonObstructions(person)
-       - Returns true if 'person' is ignoring person obstructions, else false
-       
-      IgnoreTileObstructions(person, ignore)
-       - Sets whether 'person' should ignore tile obstructions
-
-      IsIgnoringTileObstructions(person)
-       - Returns true if 'person' is ignoring tile obstructions, else false
-
-      GetPersonIgnoreList(person)
-       - Returns a list of people that 'name' is ignoring
-
-      SetPersonIgnoreList(person, ignore_list)
-       - Tells 'person' to ignore everyone in ignore_list
-       e.g. SetPersonIgnoreList("White-Bomberman", ["bomb", "powerup"]);
-       Tells White-Bomberman to not be obstructed by bombs or powerups
 
       SetTalkActivationKey(key)
       GetTalkActivationKey()
