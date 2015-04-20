@@ -108,7 +108,13 @@ namespace Turbo{
     inline void SetError(JSContext *ctx, const std::string err){
         // The short-circuit of the boolean-and will make the puts not happen with there is no pending exception.
         // This gives us just a little more info on crash (lldb, for instance, can't handle printing `err').
-        assert((!JS_IsExceptionPending(ctx)) || (!puts(err.c_str())));
+        if(JS_IsExceptionPending(ctx)){
+            puts("[Turbo] SetError Error an exception was already pending while trying to set the following exception:");
+            puts(err.c_str());
+            puts("[Turbo] SetError Error reporting previous exception...");
+            JS_ReportPendingException(ctx);
+            assert(false); // Break out.
+        }
         JS::RootedValue error(ctx, STRING_TO_JSVAL(JS_NewStringCopyN(ctx, err.c_str(), err.length())));
         JS_SetPendingException(ctx, error);
     }
