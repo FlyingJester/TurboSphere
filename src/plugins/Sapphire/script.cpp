@@ -682,8 +682,10 @@ inline Galileo::Shape *GetArrayShape(JSContext *ctx, unsigned i, JS::HandleObjec
     JS_GetElement(ctx, shape_array, i, &element);
     Galileo::Shape *shape = shape_proto.unwrap(ctx, element.toObjectOrNull(), nullptr);
     
-    if(!shape)
+    if(!shape){
         Turbo::SetError(ctx, std::string(BRACKNAME " GetArrayShape Error element ") + std::to_string(i) + " is not a Shape");
+        return nullptr;   
+    }
     
     return shape;
 }
