@@ -4,9 +4,12 @@ import sys
 defaultenv = Environment(ENV = os.environ)
 
 explicit_cc = ARGUMENTS.get('CC', '')
+explicit_cxx = ARGUMENTS.get('CXX', '')
 
 if explicit_cc:
   defaultenv.Replace(CC=explicit_cc)
+if explicit_cxx:
+  defaultenv.Replace(CXX=explicit_cxx)
 
 jslib = "mozjs-"
 

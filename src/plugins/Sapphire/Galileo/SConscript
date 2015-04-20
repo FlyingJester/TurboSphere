@@ -1,0 +1,23 @@
+Import("environment IsDarwin IsLinux IsWindows IsSolaris ")
+import os
+
+galileo_all_files = ["Galileo.cpp", "Vertex.cpp"]
+
+galileo_gl4_files = [
+    "opengl_4/State.cpp",
+    "opengl_4/Shape.cpp",
+    "opengl_4/Shader.cpp",
+    "opengl_4/Group.cpp"
+]
+
+galileo_files = galileo_all_files
+if IsDarwin():
+    galileo_files += galileo_gl4_files
+else:
+    galileo_files += galileo_gl4_files
+
+environment.Append(CPPPATH = os.getcwd())
+
+libgalileo = environment.StaticLibrary("galileo", galileo_files)
+
+Return("libgalileo")

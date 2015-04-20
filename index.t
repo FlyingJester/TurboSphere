@@ -2,6 +2,7 @@
 Directory:~
 Purpose:Root Directory
 
+
 +Listing
 +-bin = Output for TurboSphere binaries. After a build, this should be the only directory
 |   in this tree that is necessary for TurboSphere to execute.

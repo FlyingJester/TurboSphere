@@ -1,12 +1,19 @@
-Import('currentenv librarydir corelibtargets binarydir LibraryInstall IsDarwin IsLinux IsWindows jslib')
+Import('currentenv librarydir corelibtargets binarydir LibraryInstall IsDarwin IsLinux IsWindows IsSolaris jslib')
 
 import os
 import sys
 
-Sapphire_files = ["api.cpp", "GLStart.cpp", "Image.cpp", 
-    "SapphireInit.cpp", "SapphirePlugin.cpp", "SaveImage.cpp", "script.cpp",
-    "Galileo/State.cpp", "Galileo/Vertex.cpp", "Galileo/Shape.cpp", "Galileo/Group.cpp",
-    "Galileo/Shader.cpp", "Galileo/Galileo.cpp", "Surface/Primitives.cpp"]
+gfx_backend = "GL"
+gfx_version = 4
+
+Sapphire_files = ["api.cpp", "GLStart.cpp",
+    "SapphireInit.cpp", "SapphirePlugin.cpp", "SaveImage.cpp", 
+    "script.cpp", "Surface/Primitives.cpp"]
+
+if gfx_backend=="GL":
+    Sapphire_files+=["Image/OpenGLImage.cpp"]
+else:
+    Sapphire_files+=["Image/SoftwareImage.cpp"] 
 
 UseCpp11ThreadsAndAtomics = ARGUMENTS.get('cpp11_thread', 0)
 UseSDL2ThreadsAndAtomics = ARGUMENTS.get('sdl2_thread', 0)
@@ -26,7 +33,8 @@ if int(Uselibjpg) or int(Uselibtiff):
   currentenv.Append(CPPDEFINES = ["USE_TIFF"])
 if int(Uselibjpg) or int(Uselibjpeg):
   currentenv.Append(CPPDEFINES = ["USE_JPEG"])
-  currentenv.Append(LIBPATH = ["/usr/local/opt/jpeg-turbo/lib"])
+  if IsDarwin():
+    currentenv.Append(LIBPATH = ["/usr/local/opt/jpeg-turbo/lib"])
 
 elibs = []
 
@@ -52,11 +60,12 @@ if int(Uselibjpg) or int(Uselibjpeg):
     elibs+=['jpeg']
 
 environment = currentenv.Clone()
-
 libyyymonitor = SConscript(dirs = ["libyyymonitor"], exports = ["environment"])
+environment = currentenv.Clone()
+libgalileo    = SConscript(dirs = ["Galileo"], exports = ["environment", "IsDarwin", "IsLinux", "IsWindows", "IsSolaris", "gfx_backend", "gfx_version"])
 
 Sapphire     = currentenv.SharedLibrary("Sapphire", Sapphire_files,
-  LIBS = [libyyymonitor, 't5', 'graphiccommon', 'graphicalg', 'configmanager', 'SDL2', 'SDL2_image', jslib] + elibs,
+  LIBS = [libyyymonitor, libgalileo, 't5', 'graphiccommon', 'graphicalg', 'configmanager', 'SDL2', 'SDL2_image', jslib] + elibs,
   FRAMEWORKS = ['OpenGL'] + eframeworks)
 
 Depends(Sapphire, corelibtargets)

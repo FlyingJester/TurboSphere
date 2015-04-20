@@ -65,12 +65,18 @@ function CreateByteArrayFromString(a){
 
 // Create a string from a TypedArray
 function CreateStringFromByteArray(a){
-    if((!(a instanceof Uint8Array)) && (!Array.isArray(a)))
+
+    if(a instanceof ArrayBuffer)
+        var buffer = new Uint8Array(a);
+    else
+        var buffer = a;
+
+    if((!(buffer instanceof Uint8Array)) && (!Array.isArray(buffer)))
         throw "Argument 0 is not a ByteArray, JS Array, or a Harmony Typed Array. Object is " + typeof a;
 
     var r = "";
-    for(var i = 0;i<a.length; i++)
-      r += String.fromCharCode(a[i]);
+    for(var i = 0;i<buffer.length; i++)
+      r += String.fromCharCode(buffer[i]);
 
     return r;
 }

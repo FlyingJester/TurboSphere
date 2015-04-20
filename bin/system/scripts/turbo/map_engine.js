@@ -119,7 +119,7 @@ function MapEngine(map, fps){
         SetRenderScript(Turbo.spooled_render_script);
         
     if(Turbo.spooled_update_script)
-        SetRenderScript(Turbo.spooled_update_script);
+        SetUpdateScript(Turbo.spooled_update_script);
 
     var fps_interval = ((1/Turbo.current_map.fps)*1000); // In seconds.
     
@@ -284,7 +284,7 @@ function GetTileAt(x, y, layer){
 
 function GetTileName(i){return Turbo.current_map.tileset.tiles[i].name;}
     // Added for orthogonality
-function SetTileName(i){return Turbo.current_map.tileset.tiles[i].name;}
+function SetTileName(i, name){Turbo.current_map.tileset.tiles[i].name = name}
 
 function GetTileWidth(){return Turbo.current_map.tileset.width;}
 function GetTileHeight(){return Turbo.current_map.tileset.height;}

@@ -1,4 +1,4 @@
-#include "Image.hpp"
+#include "../Image.hpp"
 #include <cassert>
 
 #ifdef OS_X
@@ -9,7 +9,7 @@
 
 #include <color.h>
 #include <SDL2/SDL.h>
-#include "Sapphire.hpp"
+#include "../Sapphire.hpp"
 
 #ifdef OS_X
 //Janky OS X OpenGL 4. 

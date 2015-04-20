@@ -5,6 +5,7 @@
 
 namespace Sapphire {
 
+// Not necessarily OpenGL...
 namespace GL {
     
     void UploadTexture(unsigned w, unsigned h, const void *pix);
