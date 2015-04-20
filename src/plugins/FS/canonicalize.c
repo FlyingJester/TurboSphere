@@ -3,6 +3,7 @@
 
 char *TS_CanonicalizePathName(const char * const in){
     
+    // Slightly overengineered, we double our string size (cap) when we need more room 
     unsigned current_stack_cap = 16, current_stack_len = 1;
     unsigned *len_stack = malloc(current_stack_cap*sizeof(unsigned));
     const char **str_stack = malloc(current_stack_cap*sizeof(const char *)),
@@ -21,8 +22,10 @@ char *TS_CanonicalizePathName(const char * const in){
 #endif
             case '/':
             /* Allow rooting */
-            if(at==in)
+            if(at==in){
+                len_stack[0]=1;
                 break;
+            }
             /* If the current length is 0, as in we just entered this path component,
                 and we immediately hit a path seperator, then we just ignore it.
                 Increment the current string pointer by one to step over the current character.
@@ -95,6 +98,9 @@ char *TS_CanonicalizePathName(const char * const in){
         
         if(!ends_in_slash)
             new_string[total_size-1] = '\0';
+        
+        free(str_stack);
+        free(len_stack);
         
         return new_string;
     }

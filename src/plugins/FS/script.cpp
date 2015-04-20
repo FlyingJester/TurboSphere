@@ -16,6 +16,7 @@ static JSFunctionSpec rawfile_methods[] = {
     JS_FN("getPosition", RawFileTell, 0, 0),
     JS_FN("setPosition", RawFileSeek, 1, 0),
     JS_FN("getSize", RawFileSize, 0, 0),
+    JS_FN("readString", RawFileString, 1, 0),
     JS_FS_END
 };
 
@@ -54,6 +55,32 @@ void closeScript(JSContext *ctx){
     raw_file_proto.closeForContext(ctx);
 }
 
+// This is used by RawFileSeek, RawFileRead, and RawFileString
+// Always will return false, or return true AND len >=0
+bool RawFileGetReadLength(JSContext *ctx, int64_t &len, JS::CallArgs &args, t5::DataSource * const src){
+    if(args.length()==0){
+        len = src->Length();
+    }
+    else if(!CheckForSingleArg(ctx, args, Turbo::Number, __func__)){
+        return false;
+    }
+    else{
+        len = args[0].toNumber();
+    }
+
+    if(len<0){
+        Turbo::SetError(ctx, BRACKNAME " RawFileGetReadLength Error amount to read is negative.");
+        return false;
+    }
+    
+    if(src->Length()-src->Tell()<len){
+        Turbo::SetError(ctx, BRACKNAME " RawFileGetReadLength Error tried to read past the end of the file.");
+        printf("From %i to %i (%f) max %i\n", (int)src->Tell(), (int)len+(int)src->Tell(), args[0].toNumber(), (int)src->Length());
+        return false;
+    }
+
+    return true;
+}
 
 bool OpenRawFile(JSContext *ctx, unsigned argc, JS::Value *vp){
     
@@ -105,13 +132,24 @@ bool OpenRawFile(JSContext *ctx, unsigned argc, JS::Value *vp){
 bool RawFileSeek(JSContext *ctx, unsigned argc, JS::Value *vp){
 
     JS::CallArgs args = CallArgsFromVp(argc, vp);
-   
+     
     if(!CheckForSingleArg(ctx, args, Turbo::Number, __func__))
         return false;
 
-    t5::DataSource *source = raw_file_proto.getSelf(ctx, vp, &args);
+    t5::DataSource *src = raw_file_proto.getSelf(ctx, vp, &args);    
+    int64_t len = args[0].toNumber();
+
+    if(len<0){
+        Turbo::SetError(ctx, BRACKNAME " RawFileSeek Error position to seek to is negative.");
+        return false;
+    }
     
-    source->Seek(args[0].toNumber(), t5::DataSource::eStart);
+    if(src->Length()<len){
+        Turbo::SetError(ctx, BRACKNAME " RawFileSeek Error tried to seek past the end of the file.");
+        return false;
+    }
+    
+    src->Seek(len, t5::DataSource::eStart);
     
     return true;
 }
@@ -141,34 +179,48 @@ bool RawFileSize(JSContext *ctx, unsigned argc, JS::Value *vp){
 bool RawFileRead(JSContext *ctx, unsigned argc, JS::Value *vp){
 
     JS::CallArgs args = CallArgsFromVp(argc, vp);
-
-    if(!CheckForSingleArg(ctx, args, Turbo::Number, __func__))
-        return false;
-
-    t5::DataSource *src = raw_file_proto.getSelf(ctx, vp, &args);
     
-    const int l = args[0].toNumber();
-    
-    if(l<0){
-        Turbo::SetError(ctx, BRACKNAME " RawFileRead Error amount to read is negative.");
+    t5::DataSource * const src = raw_file_proto.getSelf(ctx, vp, &args);
+    int64_t len = 0;
+    if(!RawFileGetReadLength(ctx, len, args, src))
         return false;
+        
+    if(len==0){
+        args.rval().set(OBJECT_TO_JSVAL(JS_NewArrayBuffer(ctx, 0)));
+        return true;
     }
-    
-    if(src->Length()-src->Tell()<l){
-        Turbo::SetError(ctx, BRACKNAME " RawFileRead Error tried to read past the end of the file.");
-        return false;
+    /* else */
+    {
+        void * const buffer = malloc(len);
+        src->Read(buffer, len);
+        args.rval().set(OBJECT_TO_JSVAL(
+            JS::RootedObject(ctx, JS_NewArrayBufferWithContents(ctx, len, buffer))
+        ));
+
+        return true;
     }
-    
-    void * const buffer = malloc(l);
-    
-    src->Read(buffer, l);
-    
-    args.rval().set(OBJECT_TO_JSVAL(
-        JS::RootedObject(ctx, JS_NewArrayBufferWithContents(ctx, l, buffer))
-    ));
+}
 
-    return true;
+bool RawFileString(JSContext *ctx, unsigned argc, JS::Value *vp){
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
+    t5::DataSource * const src = raw_file_proto.getSelf(ctx, vp, &args);
+    int64_t len = 0;
+    if(!RawFileGetReadLength(ctx, len, args, src))
+        return false;
 
+    if(len==0){
+        args.rval().set(JS_GetEmptyStringValue(ctx));
+        return true;
+    }
+    /* else */
+    {    
+        void * const buffer = malloc(len);
+        src->Read(buffer, len);
+        args.rval().set(STRING_TO_JSVAL(JS_NewStringCopyN(ctx, reinterpret_cast<char *>(buffer), len)));
+        free(buffer);
+        return true;
+    }
 }
 
 bool RawFileWrite(JSContext *ctx, unsigned argc, JS::Value *vp){
@@ -198,6 +250,8 @@ bool RawFileWrite(JSContext *ctx, unsigned argc, JS::Value *vp){
     }
     return true;
 }
+
+
 
 bool RawFileFlush(JSContext *ctx, unsigned argc, JS::Value *vp){
     return true;

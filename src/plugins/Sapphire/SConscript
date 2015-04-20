@@ -64,9 +64,12 @@ libyyymonitor = SConscript(dirs = ["libyyymonitor"], exports = ["environment"])
 environment = currentenv.Clone()
 libgalileo    = SConscript(dirs = ["Galileo"], exports = ["environment", "IsDarwin", "IsLinux", "IsWindows", "IsSolaris", "gfx_backend", "gfx_version"])
 
+if gfx_backend=="GL":
+    eframeworks += ['OpenGL']
+
 Sapphire     = currentenv.SharedLibrary("Sapphire", Sapphire_files,
   LIBS = [libyyymonitor, libgalileo, 't5', 'graphiccommon', 'graphicalg', 'configmanager', 'SDL2', 'SDL2_image', jslib] + elibs,
-  FRAMEWORKS = ['OpenGL'] + eframeworks)
+  FRAMEWORKS = eframeworks)
 
 Depends(Sapphire, corelibtargets)
 LibraryInstall(os.path.join(binarydir, 'plugin'), Sapphire, currentenv)

@@ -105,7 +105,7 @@ bool TS_LoadScript(JSContext *ctx, const char *filename, bool only_once){
 }
 
 bool TS_ExecuteStringL(JSContext *ctx, const char *filename, const char *source,  size_t len){
-    
+
     JS::OwningCompileOptions options(ctx);
     options.setUTF8(true);
     options.setFileAndLine(ctx, filename, 0);
@@ -123,6 +123,8 @@ bool TS_ExecuteStringL(JSContext *ctx, const char *filename, const char *source,
         t5::DataSource::StdOut()->WriteF("[ConfigManager] ", __func__, " Error could not compile script ", filename, '\n');
         return false;
     }
+    
+    JS_MaybeGC(ctx);
     
     if(!JS_ExecuteScript(ctx, scope, script, &rval)){
         t5::DataSource::StdOut()->WriteF("[ConfigManager] ", __func__, " Error could not execute script ", filename, '\n');

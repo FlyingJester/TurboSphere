@@ -12,7 +12,6 @@ Turbo.LoadSpritesetFile = function(path){
 }
 
 Turbo.Spriteset = function(stream){
-
     // Load spriteset header as base.
     {
         var header = Turbo.ReadBinaryObject(stream, Turbo.SpritesetScheme.header);
@@ -26,7 +25,7 @@ Turbo.Spriteset = function(stream){
 
     if((this.version!=1)&&(this.version!=2)&&(this.version!=3))
         throw "Unsupported or invalid version " + this.version + ". Version must be 1, 2, or 3";
-
+    
     // Setup the images and directions based on version.
     // Note that version 3 has a dynamic number of images.
     switch(this.version){
@@ -77,17 +76,18 @@ Turbo.Spriteset = function(stream){
         // Contrary to the previous versions, a version 3 spriteset consists of a series of images and then a set of direction and frame metadata.
 
         // Read in all the images.
-        for(var i = 0; i<this.images.length; i++){
+        for(var i = 0; i<this.num_images; i++){
             this.images[i] = ImageFromArrayBuffer(this.width, this.height, stream.read(this.width*this.height*4).buffer, "Spriteset Image "+i);
         }
 
         // Load up the directions
         for(var d = 0; d<this.num_directions; d++){
+
             this.directions[d] = Turbo.ReadBinaryObject(stream, Turbo.SpritesetScheme.direction);
-            
+
             while(this.directions[d].name.charCodeAt(this.directions[d].name.length-1)==0) 
                 this.directions[d].name = this.directions[d].name.substr(0, this.directions[d].name.length-1);
-            
+           
             //throw this.directions[d].name.charCodeAt(this.directions[d].name.length-1) + this.directions[d].name[this.directions[d].name.length-1];
             
             this.directions[d].frames = new Array(this.directions[d].num_frames);
@@ -110,5 +110,7 @@ Turbo.Spriteset = function(stream){
 //                       Sphere 1.5 Compatibility Layer                      //
 /*///////////////////////////////////////////////////////////////////////////*/
 
-function LoadSpriteset(path){return Turbo.LoadSpritesetFile(path);}
+function LoadSpriteset(path){
+    return Turbo.LoadSpritesetFile(path);
+}
 

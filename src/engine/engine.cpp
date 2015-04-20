@@ -178,7 +178,6 @@ bool RunGame(const char *path, const char *root_path){
         Turbo::loadAllPlugins(ctx, plugins, game_env->system->plugin);
         
         // Execute main script
-        
         std::string main_script = std::string(game_env->directories->script) + game_env->config->mainscript;
         if(!TS_LoadScript(ctx, main_script.c_str())){
             t5::DataSource::StdOut()->WriteF("[Engine] Error could not run main script ", game_env->config->mainscript, '\n');
@@ -190,6 +189,8 @@ bool RunGame(const char *path, const char *root_path){
         JS::Rooted<JS::Value> rval(ctx);
         if(!JS::Call(ctx, global, game_env->config->gamefunc, JS::HandleValueArray::empty(), &rval)){
             t5::DataSource::StdOut()->WriteF("[Engine] Error could not call gamefunc ", game_env->config->gamefunc, '\n');
+            if(JS_IsExceptionPending(ctx))
+                JS_ReportPendingException(ctx);
             Turbo::closeAllPlugins(ctx, plugins);
             return false;
         }

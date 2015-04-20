@@ -145,7 +145,9 @@ bool GroupSetter(JSContext *ctx, JS::HandleObject obj, JS::HandleId id, bool str
             return false;
         }
         JS::RootedObject shapes_array(ctx, vp.toObjectOrNull());
-        GroupSetNativeShapes(ctx, group_proto.unsafeUnwrap(obj), shapes_array);
+        if(!GroupSetNativeShapes(ctx, group_proto.unsafeUnwrap(obj), shapes_array))
+            return false;
+
         return true;
     }
     
@@ -676,16 +678,14 @@ bool ShapeCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     return true;
 }
 
-// Sets a pending error if Shape doesn't exist.
+// Sets a pending error if Shape doesn't exist and returns nullptr
 inline Galileo::Shape *GetArrayShape(JSContext *ctx, unsigned i, JS::HandleObject shape_array){
     JS::RootedValue element(ctx);
     JS_GetElement(ctx, shape_array, i, &element);
     Galileo::Shape *shape = shape_proto.unwrap(ctx, element.toObjectOrNull(), nullptr);
     
-    if(!shape){
+    if(!shape)
         Turbo::SetError(ctx, std::string(BRACKNAME " GetArrayShape Error element ") + std::to_string(i) + " is not a Shape");
-        return nullptr;   
-    }
     
     return shape;
 }

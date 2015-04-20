@@ -15,6 +15,7 @@ namespace RawFile {
     bool RawFileRead(JSContext *ctx, unsigned argc, JS::Value *vp);
     bool RawFileWrite(JSContext *ctx, unsigned argc, JS::Value *vp);
     bool RawFileFlush(JSContext *ctx, unsigned argc, JS::Value *vp);
+    bool RawFileString(JSContext *ctx, unsigned argc, JS::Value *vp);
     bool RawFileClose(JSContext *ctx, unsigned argc, JS::Value *vp);
 }
 
