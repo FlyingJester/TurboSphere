@@ -147,6 +147,28 @@ namespace RenderThread{
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glDisable(GL_DEPTH_TEST);
 
+#ifdef OPENGL_2
+        int w, h;
+        SDL_GetWindowSize(lKit->mWindow->screen, &w, &h);
+        if(glGetError()!=GL_NO_ERROR)
+            puts(BRACKNAME " Error OpenGL error setting up context");
+        
+        glViewport(0, 0, w, h);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0, w, h, 0, -1, 1);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        
+        if(glGetError()!=GL_NO_ERROR)
+            puts(BRACKNAME " Error OpenGL error setting up rendering");
+        else
+            puts(BRACKNAME " Info setup legacy OpenGL rendering");
+        
+        glEnable(GL_TEXTURE_2D);
+        glDisable(GL_CULL_FACE);
+#endif
+
         {
         #ifdef OS_X
             SDL_SysWMinfo info;
