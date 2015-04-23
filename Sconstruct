@@ -80,9 +80,9 @@ if os.name == 'posix':
 if compiler == 'msvc':
   globalenv.Replace(CCFLAGS = msvc_ccflags, CFLAGS = msvc_cflags, CXXFLAGS = msvc_cxxflags)
 if compiler == 'gcc':
-  globalenv.Replace(CCFLAGS = gcc_ccflags, CFLAGS = gcc_cflags, CXXFLAGS = gcc_cxxflags)
+  globalenv.Replace(CCFLAGS = gcc_ccflags, CFLAGS = gcc_cflags, CXXFLAGS = gcc_cxxflags, LINKFLAGS = " -lm ")
 if compiler == 'clang':
-  globalenv.Replace(CCFLAGS = clang_ccflags, CFLAGS = clang_cflags, CXXFLAGS = clang_cxxflags, LINKFLAGS = " -g ")
+  globalenv.Replace(CCFLAGS = clang_ccflags, CFLAGS = clang_cflags, CXXFLAGS = clang_cxxflags, LINKFLAGS = " -g -lm ")
 
 def CheckForHeader(env, conf, header_name, macro_name):
   if conf.CheckCHeader(header_name) or conf.CheckCXXHeader(header_name):

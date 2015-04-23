@@ -8,7 +8,13 @@
 #include "Shape.hpp"
 
 #ifdef OS_X
+
+#ifdef OPENGL_2
+#include <OpenGL/gl.h>
+#elif defined(OPENGL_4) || defined(OPENGL_3)
 #include <OpenGL/gl3.h>
+#endif
+
 #else
 #include <GL/gl.h>
 #endif

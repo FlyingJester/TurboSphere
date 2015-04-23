@@ -26,6 +26,8 @@ Uselibtiff = 0
 
 
 currentenv.Append(CPPDEFINES = ["USE_TGA", "USE_XPM"])
+if(gfx_backend=="GL"):
+    currentenv.Append(CPPDEFINES = ["OPENGL_"+str(gfx_version)])
 
 if int(Uselibpng):
   currentenv.Append(CPPDEFINES = ["USE_PNG"])

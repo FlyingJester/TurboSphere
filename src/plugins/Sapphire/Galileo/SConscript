@@ -1,4 +1,4 @@
-Import("environment IsDarwin IsLinux IsWindows IsSolaris ")
+Import("environment IsDarwin IsLinux IsWindows IsSolaris gfx_version gfx_backend")
 import os
 
 galileo_all_files = ["Galileo.cpp", "Vertex.cpp"]
@@ -10,11 +10,25 @@ galileo_gl4_files = [
     "opengl_4/Group.cpp"
 ]
 
+galileo_gl2_files = [
+    "opengl_2/State.cpp",
+    "opengl_2/Shape.cpp",
+    "opengl_2/Shader.cpp",
+    "opengl_2/Group.cpp"
+]
+
+gl_files = []
+
+if gfx_version==2:
+    gl_files = galileo_gl2_files
+elif gfx_version==4:
+    gl_files = galileo_gl4_files
+
 galileo_files = galileo_all_files
 if IsDarwin():
-    galileo_files += galileo_gl4_files
+    galileo_files += gl_files
 else:
-    galileo_files += galileo_gl4_files
+    galileo_files += gl_files
 
 environment.Append(CPPPATH = os.getcwd())
 

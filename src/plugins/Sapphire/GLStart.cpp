@@ -1,4 +1,5 @@
 #include "GLStart.hpp"
+#include <array>
 #include <cassert>
 #include "Sapphire.hpp"
 
@@ -8,6 +9,51 @@
 #include <SDL2/SDL_syswm.h>
 
 #endif
+
+// Begin swizzling of context types!
+
+static const unsigned num_context_types = 3;
+static const std::array<unsigned, num_context_types> context_types = {{
+#ifdef OPENGL_4
+    SDL_GL_CONTEXT_PROFILE_CORE,
+    SDL_GL_CONTEXT_PROFILE_COMPATIBILITY,
+    SDL_GL_CONTEXT_PROFILE_ES
+#elif defined(OPENGL_2)
+    SDL_GL_CONTEXT_PROFILE_COMPATIBILITY,
+    SDL_GL_CONTEXT_PROFILE_CORE,
+    SDL_GL_CONTEXT_PROFILE_ES
+#elif defined(OPENGL_ES)
+    SDL_GL_CONTEXT_PROFILE_ES,
+    SDL_GL_CONTEXT_PROFILE_CORE,
+    SDL_GL_CONTEXT_PROFILE_COMPATIBILITY
+#else
+    SDL_GL_CONTEXT_PROFILE_CORE,
+    SDL_GL_CONTEXT_PROFILE_COMPATIBILITY,
+    SDL_GL_CONTEXT_PROFILE_ES
+#endif
+}};
+
+static const std::array<const char *, num_context_types> context_names = {{
+#ifdef OPENGL_4
+    "core",
+    "compatibility",
+    "ES"
+#elif defined(OPENGL_2)
+    "compatibility",
+    "core",
+    "ES"
+#elif defined(OPENGL_ES)
+    "ES",
+    "core",
+    "compatibility"
+#else
+    "core",
+    "compatibility",
+    "ES"
+#endif
+}};
+
+// End of swizzling of context types!
 
 using Sapphire::Galileo::GL::Operation;
 
@@ -34,7 +80,7 @@ inline void SetSDL_GL_Attributes(void){
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 }
 
-SDL_GLContext CreateForWindow(Window *aFor, Version aGLVersion){
+SDL_GLContext CreateForWindow(Window *aFor, const Version &aGLVersion){
 
     SetSDL_GL_Attributes();
 
@@ -43,25 +89,43 @@ SDL_GLContext CreateForWindow(Window *aFor, Version aGLVersion){
 }
 
 namespace MainThread{
+    
+    bool CreateWindowOpt(Window *window, const Version &gl_version, int profile){
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gl_version.major);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, gl_version.minor);
 
-    Window *CreateWindow(unsigned aWidth,unsigned aHeight,Version aGLVersion){
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,  profile);
+
+        window->context = CreateForWindow(window, gl_version);
+        return window->context;
+    } 
+    
+    template<unsigned t>
+    static bool UseContext_(Window *window, const Version &gl_version){
+        if(CreateWindowOpt(window, gl_version, context_types[t])){
+            printf(BRACKNAME " Info using %s OpenGL context\n", context_names[t]);
+            return true;
+        }
+        return UseContext_<t+1>(window, gl_version);
+    }
+    
+    template<>
+    bool UseContext_<num_context_types>(Window *window, const Version &gl_version){ return false; }
+
+    Window *CreateWindow(unsigned width, unsigned height, const Version &gl_version){
         Window *rWindow = new Window();
-
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, aGLVersion.major);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, aGLVersion.minor);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,  SDL_GL_CONTEXT_PROFILE_CORE);
-
         rWindow->screen = SDL_CreateWindow("Sapphire Heart",
             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-            aWidth, aHeight, SDL2_VIDEO_FLAGS);
+            width, height, SDL2_VIDEO_FLAGS);
 
-        rWindow->context = CreateForWindow(rWindow, aGLVersion);
-
-        if(!rWindow->context)
+        UseContext_<0>(rWindow, gl_version);
+                
+        if(!rWindow->context){
             fprintf(stderr, BRACKNAME " Error: %s\n", SDL_GetError());
-
-        printf(BRACKNAME " Info: Using OpenGL: %s\n", glGetString(GL_VERSION));
-
+        }
+        else{
+            printf(BRACKNAME " Info using OpenGL: %s\n", glGetString(GL_VERSION));
+        }
         assert(rWindow->context);
 
         return rWindow;
@@ -161,7 +225,7 @@ namespace RenderThread{
         return nullptr;
     }
 
-    void StartThread(Window *aWindow){
+    void StartThread(Window *aWindow, const Version &aGLVersion){
         ThreadKit *lKit = new ThreadKit();
         lKit->render_from = 0;
         lKit->draw_to = 1;
@@ -176,9 +240,11 @@ namespace RenderThread{
 
         glEnable(GL_SCISSOR_TEST);
 
+        printf(BRACKNAME " Info requesting OpenGL version %i.%i\n", aGLVersion.major, aGLVersion.minor);
+
         lKit->mWindow = new Window();
         lKit->mWindow->screen = aWindow->screen;
-        lKit->mWindow->context= CreateContextFor(aWindow, {3, 3});
+        lKit->mWindow->context= CreateContextFor(aWindow);
         ClaimWindow(aWindow);
 
         lKit->ShouldDie   = CreateAtomic(0);
@@ -203,13 +269,11 @@ namespace RenderThread{
     // Makes the given window available to the current thread. This is necessary
     // in order to create a context that is shared with the on associated with the
     // window.
-    void ClaimWindow(Window *aClaim){
+    inline void ClaimWindow(Window *aClaim){
         SDL_GL_MakeCurrent(aClaim->screen, aClaim->context);
-        printf(BRACKNAME " Info: Made\t%p\twindow, \t%p\tcontext\n", aClaim->screen, aClaim->context);
-
     }
 
-    SDL_GLContext CreateContextFor(Window *aFor, Version aGLVersion){
+    SDL_GLContext CreateContextFor(Window *aFor){
 
         SDL_GLContext lNewContext;
         SDL_GLContext lOldContext = SDL_GL_GetCurrentContext();
@@ -218,6 +282,20 @@ namespace RenderThread{
         ClaimWindow(aFor);
 
         SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 1);
+        int profile, major, minor;
+        if(!((SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &profile)==0) &&
+             (SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &major)==0) &&
+             (SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minor)==0))){
+            printf(BRACKNAME " Error %s\n", SDL_GetError());
+            assert(false); // Could not get info of original context. 
+        }
+        
+        if(!((SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profile)==0) &&
+            (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, major)==0) &&
+            (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, minor)==0))){
+            printf(BRACKNAME " Error %s\n", SDL_GetError());
+            assert(false); // Could not set info of the new context. 
+        }
 
         lNewContext = SDL_GL_CreateContext(aFor->screen);
 

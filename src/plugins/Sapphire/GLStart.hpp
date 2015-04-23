@@ -70,30 +70,29 @@ struct ThreadKit *GetSystemThreadkit(void);
 
 // OpenGL version.
 struct Version{
-    char major;
-    char minor;
+    unsigned char major, minor;
 };
 
-SDL_GLContext CreateForWindow(Window *aFor, Version aGLVersion);
+SDL_GLContext CreateForWindow(Window *aFor, const Version &aGLVersion);
 
 namespace MainThread{
 
     // Creates an OpenGL window of aWidth x aHeight, with OpenGL version aGLVersion.
-    Window *CreateWindow(unsigned aWidth, unsigned aHeight, Version aGLVersion);
-
+    Window *CreateWindow(unsigned aWidth, unsigned aHeight, const Version &aGLVersion);
 }
 
 namespace RenderThread{
 
     // Starts the render thread on said window.
-    void StartThread(Window *aWindow);
+    void StartThread(Window *aWindow, const Version &aGLVersion);
     void StopThread();
 
     // Makes the given window available to the current thread. This is necessary
     // in order to create a context that is shared with the on associated with the
     // window.
     void ClaimWindow(Window *aClaim);
-    SDL_GLContext CreateContextFor(Window *aFor, Version aGLVersion);
+    // Uses the same version and profile as the original context attached to aFor.
+    SDL_GLContext CreateContextFor(Window *aFor);
 
 }
 

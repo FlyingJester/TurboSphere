@@ -59,7 +59,14 @@ void Init(JSContext *ctx, uint64_t ID){
     Save::InitSurfaceSave();
 
     //TODO: Make this more lenient, ask for 4.4 and then lower versions if that fails
-    GL::Version lVersion = {3, 3};
+    GL::Version lVersion = 
+#ifdef OPENGL_4
+    {4, 1};
+#elif defined(OPENGL_2)
+    {2, 1};
+#else
+    {3, 3};
+#endif
 
     GL::Window *lWindow = GL::MainThread::CreateWindow(TS_GetContextEnvironment(ctx)->config->screenwidth, TS_GetContextEnvironment(ctx)->config->screenheight, lVersion);
 
@@ -72,7 +79,7 @@ void Init(JSContext *ctx, uint64_t ID){
     glEnable(GL_SCISSOR_TEST);
     glPointSize(2.0f);
 
-    GL::RenderThread::StartThread(lWindow);
+    GL::RenderThread::StartThread(lWindow, lVersion);
 
 }
 

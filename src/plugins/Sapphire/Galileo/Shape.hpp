@@ -18,7 +18,9 @@ class Shader;
 // ContainerClass is intended to be a std::array, std::list, or std::vector.
 //
 namespace GL {
-
+    
+  class Drawable;
+    
   union VertexU {
     float f[8];
     struct {
@@ -36,22 +38,25 @@ namespace GL {
       std::shared_ptr<Shader> mShader;
       bool mDirty;
   public:
-
+      
       virtual ~Operation();
       Operation();
-
+    
+      // This will leave any buffers, images, or arrays for this object bound.
+      // This is important mostly for the OpenGL 2/1.3 renderer.
       virtual int Draw() = 0;
       virtual bool IsPersistent(void){
           return true;
       }
-
 
       virtual void SetShader(std::shared_ptr<Shader> aShader){}
 
       inline void MarkDirty(){mDirty = true;}
       inline bool IsDirty(){return mDirty;}
       virtual bool EndsScene(){return false;}
-
+      
+      virtual Drawable *AsDrawable() { return nullptr; }
+      
   };
 
   class Drawable : public Operation {
@@ -60,10 +65,11 @@ namespace GL {
     typedef std::vector<Vertex>::const_reverse_iterator const_reverse_iterator;
 
   protected:
+      int gl_mode;
 
       void InitGL(void); //Initializes the OpenGL components.
       void CloseGL(void);//Deletes the OpenGL components.
-
+      
       std::vector<Vertex> mVertices;
       unsigned mVertexArray;
       unsigned mBuffer[3];
@@ -111,7 +117,9 @@ namespace GL {
       virtual ~Drawable(){CloseGL();}
 
       virtual int Draw() = 0;
-
+      
+      int GetGLMode() const { return gl_mode; }
+      
       virtual void SetShader(std::shared_ptr<Shader> aShader) = 0;
       // Checks if the specified shader contains the attribtues and
       // uniforms this drawable expects.
@@ -164,13 +172,14 @@ namespace GL {
       virtual std::shared_ptr<Image> GetImage() const {
           return mImage;
       }
-
+    
+      virtual Drawable *AsDrawable() final { return this; }
+    
   };
 }
 
 class Shape : public GL::Drawable {
 protected:
-    int gl_mode;
     int vertex_size;
 public:
     Shape(std::vector<Vertex> &aVertices, const std::shared_ptr<Image> aImage);
