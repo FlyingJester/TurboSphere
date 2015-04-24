@@ -44,12 +44,8 @@ Turbo.Classic.readString = Turbo.Classic.readString || function(array, at){
 Turbo.LoadSystemScheme = function(name){
 
     var scheme_file = new RawFile("#~/formats/"+name);
-    var scheme_buffer = scheme_file.read(scheme_file.size);
-
-    var scheme_byteview = new Uint8Array(scheme_buffer);
-    var scheme_bytearray = ByteArrayFromTypedArray(scheme_byteview);
-
-    return JSON.parse(CreateStringFromByteArray(scheme_bytearray));
+    var scheme = scheme_file.readString();
+    return JSON.parse(scheme);
 }
 
 Turbo.GetSchemeLength = function(scheme){

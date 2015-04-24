@@ -9,7 +9,8 @@
 //
 
 // Wrapper function to allow any TypedArray to 'become' a ByteArray.
-function ByteArrayFromTypedArray(byteview){
+if(typeof ByteArrayFromTypedArray == "undefined")
+var ByteArrayFromTypedArray = function(byteview){
 
     if(byteview instanceof ArrayBuffer)
         byteview = new Uint8Array(byteview);
@@ -43,20 +44,23 @@ function ByteArrayFromTypedArray(byteview){
     return byteview;
 }
 
-function ByteArrayFromArrayBuffer(buffer){
+if(typeof ByteArrayFromArrayBuffer == "undefined")
+var ByteArrayFromArrayBuffer = function(buffer){
     if(buffer instanceof ArrayBuffer)
         return ByteArrayFromTypedArray(new Uint8Array(buffer));
     else throw "Argument 0 is not a Harmony Array Buffer"
 }
 
 // Replacement for ByteArray 'constructor'
-function CreateByteArray(length){
+if(typeof CreateByteArray == "undefined")
+var CreateByteArray = function(length){
     var buffer = new ArrayBuffer(length);
     return ByteArrayFromArrayBuffer(buffer);
 }
 
 // Replacement for ByteArray 'constructor' from string
-function CreateByteArrayFromString(a){
+if(typeof CreateByteArrayFromString == "undefined")
+var CreateByteArrayFromString = function(a){
     var r = CreateByteArray(a.length);
     for(var i = 0;i<a.length; i++)
       r[i] = a.charCodeAt(i);
@@ -64,7 +68,8 @@ function CreateByteArrayFromString(a){
 }
 
 // Create a string from a TypedArray
-function CreateStringFromByteArray(a){
+if(typeof CreateStringFromByteArray == "undefined")
+var CreateStringFromByteArray = function(a){
 
     if(a instanceof ArrayBuffer)
         var buffer = new Uint8Array(a);
