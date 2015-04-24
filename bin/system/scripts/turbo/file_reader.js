@@ -45,6 +45,8 @@ Turbo.ArrayReader = function(input, offset){
         this.size = function(){return this.guts.length;};
     else if(typeof this.guts.byteLength != "undefined")
         this.size = function(){return this.guts.byteLength;};
+    else if(typeof this.guts.byteLength != "undefined")
+        this.size = function(){return this.guts.byteLength;};
     else
         throw "No known way to determine length of input.";
 
@@ -123,15 +125,35 @@ Turbo.FileReader = function(input, offset){
 
     // Implement this.size();
     this.size = function(){return this.guts.size;}
-
-    // Implement this.read(num); // Can return a ByteArray or an Array
-    this.read = function(n){return ByteArrayFromTypedArray(this.guts.read(n));}
-    // Implement this.getByte();
-    this.getByte = function(){return (new Int8Array(this.guts.read(1)))[0];}
-    // Implement this.getWord();
-    this.getWord = function(){return (new Int16Array(this.guts.read(2)))[0];}
-    // Implement this.getDWord();
-    this.getDWord = function(){return (new Int32Array(this.guts.read(4)))[0];}
+    
+    
+    if(typeof ArrayBuffer == "undefined"){
+        // Implement this.read(num); // Can return a ByteArray or an Array
+        this.read = function(n){return this.guts.read(n);}
+        // Implement this.getByte();
+        this.getByte = function(){return this.guts.read(1)[0];}
+        // Implement this.getWord();
+        this.getWord = function(){
+            var that = this.guts.read(2); 
+            return Turbo.dByteCat(that[0], that[1]);
+        }
+        // Implement this.getDWord();
+        this.getDWord = function(){
+            var that = this.guts.read(4);
+            return Turbo.qByteCat(that[0], that[1], that[2], that[3]);
+        }
+    }
+    else{
+        // Implement this.read(num); // Can return a ByteArray or an Array
+        this.read = function(n){return ByteArrayFromTypedArray(this.guts.read(n));}
+        // Implement this.getByte();
+        this.getByte = function(){return (new Int8Array(this.guts.read(1)))[0];}
+        // Implement this.getWord();
+        this.getWord = function(){return (new Int16Array(this.guts.read(2)))[0];}
+        // Implement this.getDWord();
+        this.getDWord = function(){return (new Int32Array(this.guts.read(4)))[0];}
+    }
+    
     // Implement this.seek(to, whence);
     this.seek = function(to, whence){
 
@@ -347,11 +369,17 @@ Turbo.Stream = function(input, offset){
     if(typeof offset == "undefined")
         offset = 0;
 
-    if((input instanceof Uint8Array) || (Array.isArray(input))){
-        this.__proto__ = new Turbo.ArrayReader(input, offset);
+    if(((typeof Uint8Array == "function") && (input instanceof Uint8Array)) || (Array.isArray(input))){
+        var reader = new Turbo.ArrayReader(input, offset);
     }
     else{
-        this.__proto__ = new Turbo.FileReader( input, offset);
+        var reader = new Turbo.FileReader(input, offset);
+    }
+
+    if(typeof reader != "undefined"){
+        for(var i in header){
+            this[i] = header[i];
+        }
     }
 
     if(!((typeof this.size == "function")

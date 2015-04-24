@@ -91,10 +91,6 @@ Turbo.AddSchemeElementToObject = function(element, object, reader){
     else{
         reader.seek(element.size, Turbo.SEEK_CUR);
     }
-   // if(element.name=="num_layers")
-   //     throw object[element.name] + ": num_layers " + element.type +" "+element.size+ " "+  " " + reader.tell();
-
-
 }
 
 Turbo.ReadBinaryObject = function(from, scheme){
