@@ -1,56 +1,30 @@
 #include "script.hpp"
-#include "chrono.hpp"
-#include <array>
+#include "platform/time.h"
 
-#define NUM_FUNCS 3
-
-std::array<const char * const, NUM_FUNCS> function_name_list = {{
-    "Delay",
-    "GetTime",
-    "GetSeconds"
-}};
-std::array<JSNative, NUM_FUNCS> function_list = {{
-    Chrono::Delay,
-    Chrono::GetTime,
-    Chrono::GetSeconds
-}};
-
-const char * Init(JSContext *ctx, unsigned ID){
-    assert(ctx);
-    return PLUGINNAME;
-}
-
-void Close(JSContext *ctx){}
+namespace Chrono {
     
-int NumFunctions(JSContext *ctx){
-    assert(ctx);
-    assert(function_list.size()==function_name_list.size());
-    return function_list.size();
-}
-
-JSNative GetFunction(JSContext *ctx, int n){
-    assert(ctx);
-    assert(n<NUM_FUNCS);
-    return function_list[n];
-}
-const char * GetFunctionName(JSContext *ctx, int n){
-    assert(ctx);
-    assert(n<NUM_FUNCS);
-    return function_name_list[n];
-}
+    bool Delay(JSContext *ctx, unsigned argc, JS::Value *vp){
+        JS::CallArgs args = CallArgsFromVp(argc, vp);
+        const Turbo::JSType signature[] = {Turbo::Number};
+        if(!Turbo::CheckSignature<1>(ctx, args, signature, __func__))
+            return false;
+        
+        double value = args[0].toNumber();
+        unsigned long nanoseconds = value*1000000.0f;
+        
+        TS_Chrono_Sleep(ctx, nanoseconds, TS_Chrono_Nanosecond);
+        
+        return true;
+    }
     
-int NumVariables(JSContext *ctx){
-    assert(ctx);
-    return 0;
-}
-
-JS::Heap<JS::Value> *GetVariable(JSContext *ctx, int n){
-    assert(ctx);
-    assert(false);
-    return nullptr;
-}
-const char *GetVariableName(JSContext *ctx, int n){
-    assert(ctx);
-    assert(false);
-    return nullptr;
+    bool GetTime(JSContext *ctx, unsigned argc, JS::Value *vp){
+        CallArgsFromVp(argc, vp).rval().set(JS_NumberValue(TS_Chrono_GetTime(TS_Chrono_Millisecond)));
+        return true;
+    }
+    
+    bool GetSeconds(JSContext *ctx, unsigned argc, JS::Value *vp){
+        CallArgsFromVp(argc, vp).rval().set(JS_NumberValue(TS_Chrono_GetTime(TS_Chrono_Nanosecond)/1000000000.0));
+        return true;
+    }
+ 
 }
