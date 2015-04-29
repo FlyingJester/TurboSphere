@@ -585,7 +585,7 @@ static inline bool ValidateVertex(JSContext *ctx, JS::HandleObject that, Sapphir
     if(has_##NAME){\
         JS::RootedValue out_value(ctx);\
         JS_GetProperty(ctx, that, #NAME, &out_value);\
-        if(!VALUATOR){\
+        if(!(VALUATOR)){\
             return false;\
         }\
         WRAPPER\
