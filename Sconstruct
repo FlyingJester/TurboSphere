@@ -13,7 +13,7 @@ if explicit_cxx:
 
 jslib = "mozjs-"
 
-msvc_ccflags = "/O2 /EHsc /Zi"
+msvc_ccflags = "/O2 /EHsc /Zi /D__func__=__FUNCTION__ "
 msvc_cflags = ""
 msvc_cxxflags = ""
 
