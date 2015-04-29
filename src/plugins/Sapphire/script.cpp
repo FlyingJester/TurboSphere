@@ -115,10 +115,10 @@ SAPPHIRE_SCRIPT_GROUP_SETTER_NUMBER(GroupRotYSetter, that->SetRotY(args[0].toNum
 SAPPHIRE_SCRIPT_GROUP_GETTER(GroupAngleGetter,JS_NumberValue(that->GetRotation<double>()))
 SAPPHIRE_SCRIPT_GROUP_SETTER_NUMBER(GroupAngleSetter, that->SetRotation(args[0].toNumber()))
 
-bool GroupSetter(JSContext *ctx, JS::HandleObject obj, JS::HandleId id, bool strict, JS::MutableHandleValue vp){
+bool GroupSetter(JSContext *ctx, JS::HandleObject obj, JS::HandleId id, JS::MutableHandleValue vp, JS::ObjectOpResult &result){
     JS::RootedValue id_value(ctx);
     if(!JS_IdToValue(ctx, id, &id_value)){
-        Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter Error can not decode property ID"));
+        Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter Error can not decode property ID"), result);
         return false;
     }
     
@@ -126,31 +126,35 @@ bool GroupSetter(JSContext *ctx, JS::HandleObject obj, JS::HandleId id, bool str
     
     if(strcmp(file.string, "shader_program")==0){
         if((!vp.isObject()) || vp.isNull() || vp.isUndefined()){
-            Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter ") + file.string + " Error value is not a valid object");
+            Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter ") + file.string + " Error value is not a valid object", result);
             return false;
         }
         
         std::shared_ptr<Galileo::Shader> *shader_program = shader_program_proto.unwrap(ctx, vp.toObjectOrNull(), nullptr);
         if(!shader_program){
-            Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter ") + file.string + " Error value is not a ShaderProgram");
+            Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter ") + file.string + " Error value is not a ShaderProgram", result);
             return false;
         }
         
         group_proto.unsafeUnwrap(obj)->SetShader(*shader_program);
+        result.succeed();
         return true;
     }
     else if(strcmp(file.string, "shapes")==0){
         if(!(JS_IsArrayObject(ctx, vp))){
-            Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter ") + file.string + " Error value is not an Array");
+            Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter ") + file.string + " Error value is not an Array", result);
             return false;
         }
         JS::RootedObject shapes_array(ctx, vp.toObjectOrNull());
-        if(!GroupSetNativeShapes(ctx, group_proto.unsafeUnwrap(obj), shapes_array))
+        if(!GroupSetNativeShapes(ctx, group_proto.unsafeUnwrap(obj), shapes_array)){
+            result.fail(1);
             return false;
-
+        }
+        
+        result.succeed();
         return true;
     }
-    
+    result.succeed();
     return true;
 }
 

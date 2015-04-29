@@ -118,6 +118,14 @@ namespace Turbo{
         JS::RootedValue error(ctx, STRING_TO_JSVAL(JS_NewStringCopyN(ctx, err.c_str(), err.length())));
         JS_SetPendingException(ctx, error);
     }
+   
+    inline void SetError(JSContext *ctx, const std::string err, JS::ObjectOpResult &result){
+        // This is changing in the SM API. We don't really know the correct behaviour yet.
+        // Just give it some failure.
+        result.fail(1);
+        
+        SetError(ctx, err);
+    }
 
     enum JSType{String = 1, Number, Bool, Object, Array, TypedArray, ArrayBuffer};
     
@@ -241,14 +249,14 @@ namespace Turbo{
         };
         unsigned num_constructor_args;
 		
-        JSPrototype(const char *class_name, JSNative construct = nullptr, unsigned nargs = 0, JSFinalizeOp finalizer = nullptr, JSStrictPropertyOp set_prop = nullptr){
+        JSPrototype(const char *class_name, JSNative construct = nullptr, unsigned nargs = 0, JSFinalizeOp finalizer = nullptr, JSSetterOp property = nullptr){
             
             clazz.name = strdup(class_name);
             //prototypes.reserve(1);
             clazz.construct = construct;
             num_constructor_args = nargs;
             clazz.finalize = finalizer;
-            clazz.setProperty = set_prop;
+            clazz.setProperty = property;
             
         };
 
