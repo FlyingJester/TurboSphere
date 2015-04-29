@@ -241,7 +241,7 @@ namespace Turbo{
         };
         unsigned num_constructor_args;
 		
-        JSPrototype(const char *class_name, JSNative construct = nullptr, unsigned nargs = 0, JSFinalizeOp finalizer = nullptr){//, JSStrictPropertyOp set_prop = nullptr){
+        JSPrototype(const char *class_name, JSNative construct = nullptr, unsigned nargs = 0, JSFinalizeOp finalizer = nullptr, JSStrictPropertyOp set_prop = nullptr){
             
             clazz.name = strdup(class_name);
             //prototypes.reserve(1);
