@@ -1,6 +1,8 @@
 TurboSphere
 ===========
 
+[![Build Status](https://semaphoreci.com/api/v1/projects/865f14b2-7958-4f6b-993f-cf99f4ade2c6/412075/badge.svg)](https://semaphoreci.com/flyingjester/turbosphere)
+
 Description
 -----------
 
@@ -46,11 +48,12 @@ Compiling
 ####Prerequisites
 
 * C++ Compiler that at least mostly supports C++11. See list of [Verified Compilers].
-* SpiderMonkey 38 and SDL2. More on how to get these later.
+* SpiderMonkey 40 and SDL2. More on how to get these later.
 * Windows or a Unix-based OS.
 * Windows or X11.
-* OpenGL 3.3 or greater
-* Windows DirectSound, ALSA, or Mac OS X.
+* OpenGL 3.3 or greater (OpenGL 2.1 possible)
+* OpenAL (usually OpenAL-soft), or Mac OS X.
+* libsndfile
 
 ####Verified Compilers
 
@@ -71,10 +74,6 @@ In addition, it is theoretically possible, but completely untested to work on th
 * MingW
 * Android NDK 64-bit
 
-Notes:
-
-Android-specific and OpenGL ES-specific code previously existed in TurboSphere, although actually testing an Android build would require the Android Emulator and more knowledge of Java than I have. I have compiled a majority of the engine and plugin code, but was stopped when I needed to compile against OpenGL ES, and needed an Android build of Bass. Bass, V8, and SDL2 are all known to work on Android ARM and Android x86. There's theoretically nothing stopping this from working.
-
 ####How To Compile TurboSphere
 
 To compile TurboSphere, you will need to get three third-party libraries, along with several addon libraries for them.
@@ -82,12 +81,19 @@ To compile TurboSphere, you will need to get three third-party libraries, along 
 * SpiderMonkey
 * SDL2
 - SDL2_image
+* libsndfile
 
 You can download SDL2 and SDL2_image in binary form for Windows, and Bass in binary form for Linux. Most Linux distros have SDL2 in their package managers (SDL 1.3 is SOMETIMES acceptable).
 
-Get SDL2 from [LibSDL.org](http://libsdl.org/). You can get SDL2_ttf [here](http://www.libsdl.org/projects/SDL_ttf/) and SDL2_image [here](http://www.libsdl.org/projects/SDL_image/).
+Get SDL2 from [LibSDL.org](http://libsdl.org/). You can SDL2_image [here](http://www.libsdl.org/projects/SDL_image/).
 
-To build SpiderMonkey, it is easiest to build Gecko in its entirety. This can be done by cloning [Mozilla's Github repo for Firefox](https://github.com/Mozilla/Gecko-dev) and copying the files from js/src/dist.
+To build SpiderMonkey, it is easiest to build Gecko in its entirety. This can be done by cloning [Mozilla's Github repo for Firefox](https://github.com/Mozilla/Gecko-dev) and copying the files from js/src/dist. Note that you do NOT need to actually build all of Gecko.
+
+From your Gecko checkout:
+`./mach configure`
+`cd js/src`
+`./configure`
+`make`
 
 Place the js/src/dist/include folder in TurboSphere's src/thirdparty/ directory (so that it is src/thirdparty/include), and place libmozjs.so/libmozjs.dylib/mozjs.lib into /src/thirdparty/lib.
 
