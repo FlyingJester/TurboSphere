@@ -137,10 +137,6 @@ void Shape::SetShader(std::shared_ptr<Shader> aShader){
     glBindBuffer(GL_ARRAY_BUFFER, mBuffer[2]);
     glVertexAttribPointer(lShaderColor, 4, GL_FLOAT, GL_FALSE,
                           0, NULL);
-    glEnableVertexAttribArray(lShaderPosition);
-    glEnableVertexAttribArray(lShaderTextureUV);
-    glEnableVertexAttribArray(lShaderColor);
-
 }
 
 int Shape::Draw(){

@@ -109,7 +109,6 @@ public:
 
     int GetName(){ return mProgram; }
 
-    static __thread std::vector<int> *EnabledAttributes;
     static __thread Shader *BoundShader;
 
 };

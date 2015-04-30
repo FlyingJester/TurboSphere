@@ -219,7 +219,6 @@ const std::string Shader::ShaderOffsetUniformName    = "TS_Offset";
 const std::string Shader::ShaderRotOffsetUniformName    = "TS_RotOffset";
 const std::string Shader::ShaderAngleUniformName    = "TS_RotAngle";
 const std::string Shader::ShaderScreenSizeUniformName    = "TS_ScreenSize";
-__thread std::vector<int> *Shader::EnabledAttributes = nullptr;
 __thread Shader *Shader::BoundShader = nullptr;
 
 Shader *Shader::GetDefaultShader(void *ctx){
@@ -276,8 +275,7 @@ bool Shader::AddUniform(const std::string &aName){
     int lLocation = glGetUniformLocation(mProgram, aName.c_str());
     assert(lLocation>=0);
     if(lLocation>=0){
-        const struct value_double val = {aName, lLocation};
-        mUniforms.push_back(val);
+        mUniforms.push_back({aName, lLocation});
         return true;
     }
     else
@@ -288,8 +286,7 @@ bool Shader::AddAttribute(const std::string &aName){
     int lLocation = glGetAttribLocation(mProgram, aName.c_str());
     assert(lLocation>=0);
     if(lLocation>=0){
-        const struct value_double val = {aName, lLocation};
-        mAttributes.push_back(val);
+        mAttributes.push_back({aName, lLocation});
         mAttributeNumbers.push_back(lLocation);
         return true;
     }
