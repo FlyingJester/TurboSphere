@@ -24,6 +24,7 @@ const JSClass ts_global_class = {
     nullptr, 
     nullptr, 
     nullptr,
+    nullptr,
     JS_GlobalObjectTraceHook
 };
 
@@ -162,6 +163,7 @@ bool RunGame(const char *path, const char *root_path){
         }
         
         JSAutoCompartment compartment(ctx, global);
+        
         if(!JS_InitStandardClasses(ctx, global)){
             t5::DataSource::StdOut()->WriteF("[Engine] Error could not initialize JS standard classes\n");
             return false;

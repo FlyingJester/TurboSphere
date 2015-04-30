@@ -111,22 +111,23 @@ bool TS_ExecuteStringL(JSContext *ctx, const char *filename, const char *source,
     options.setFileAndLine(ctx, filename, 0);
     options.setIntroductionScript(nullptr);
     options.setVersion(JSVERSION_LATEST);
+    /*
     JS::RootedObject scope(ctx, JS::CurrentGlobalOrNull(ctx));
     
     if((!scope) || OBJECT_TO_JSVAL(scope).isNull())
         return false;
-    
+    */
     JS::RootedScript script(ctx);
     JS::RootedValue rval(ctx);
 
-    if(!JS::Compile(ctx, scope, options, source, len, &script)){
+    if(!JS::Compile(ctx, options, source, len, &script)){
         t5::DataSource::StdOut()->WriteF("[ConfigManager] ", __func__, " Error could not compile script ", filename, '\n');
         return false;
     }
     
     JS_MaybeGC(ctx);
     
-    if(!JS_ExecuteScript(ctx, scope, script, &rval)){
+    if(!JS_ExecuteScript(ctx, script, &rval)){
         t5::DataSource::StdOut()->WriteF("[ConfigManager] ", __func__, " Error could not execute script ", filename, '\n');
         return false;
     }
