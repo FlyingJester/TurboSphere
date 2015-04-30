@@ -98,13 +98,11 @@ void Shape::FillGL(void){
 }
 
 bool Shape::CanUse(Shader *aShader){
-
     return
-    (aShader->mAttributes.find(Shader::ShaderPositionName)        != aShader->mAttributes.end()) &&
-    (aShader->mAttributes.find(Shader::ShaderTextureUVName)       != aShader->mAttributes.end()) &&
-    (aShader->mAttributes.find(Shader::ShaderColorName)           != aShader->mAttributes.end()) &&
-    (aShader->mUniforms.find(Shader::ShaderOffsetUniformName)     != aShader->mUniforms.end()  ) &&
-    true;
+    (aShader->FindAttribute(Shader::ShaderPositionName)>=0) &&
+    (aShader->FindAttribute(Shader::ShaderTextureUVName)>=0) &&
+    (aShader->FindAttribute(Shader::ShaderColorName)>=0) &&
+    (aShader->FindUniform(Shader::ShaderOffsetUniformName)>=0);
 
 }
 
@@ -116,9 +114,9 @@ void Shape::SetShader(std::shared_ptr<Shader> aShader){
     //Update Vertex Array!
     Bind();
 
-    int lShaderPosition  = aShader->mAttributes.find(Shader::ShaderPositionName  )->second;
-    int lShaderTextureUV = aShader->mAttributes.find(Shader::ShaderTextureUVName )->second;
-    int lShaderColor     = aShader->mAttributes.find(Shader::ShaderColorName     )->second;
+    int lShaderPosition  = aShader->FindAttribute(Shader::ShaderPositionName);
+    int lShaderTextureUV = aShader->FindAttribute(Shader::ShaderTextureUVName);
+    int lShaderColor     = aShader->FindAttribute(Shader::ShaderColorName);
 
     assert(lShaderPosition>=0);
     assert(lShaderTextureUV>=0);

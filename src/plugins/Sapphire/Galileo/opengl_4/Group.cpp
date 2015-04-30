@@ -25,7 +25,6 @@ Group::~Group(){
 
 int Group::Draw(void){
 
-
     return 0;
 
 }
@@ -33,17 +32,9 @@ int Group::Draw(void){
 int Group::DrawAll(std::queue<GL::Operation *> *aSendTo){
     aSendTo->push(mShader.get());
 
-    auto o = mShader->mUniforms.find(Shader::ShaderOffsetUniformName);
-    auto r = mShader->mUniforms.find(Shader::ShaderRotOffsetUniformName);
-    auto a = mShader->mUniforms.find(Shader::ShaderAngleUniformName);
-
-    assert(o!=mShader->mUniforms.end());
-    assert(r!=mShader->mUniforms.end());
-    assert(a!=mShader->mUniforms.end());
-
-    int lPosition = o->second;
-    int lRotPosition = r->second;
-    int lAngle = a->second;
+    int lPosition = mShader->FindUniform(Shader::ShaderOffsetUniformName);
+    int lRotPosition = mShader->FindUniform(Shader::ShaderRotOffsetUniformName);
+    int lAngle = mShader->FindUniform(Shader::ShaderAngleUniformName);
 
     assert(lPosition>=0);
     assert(lRotPosition>=0);
@@ -60,7 +51,6 @@ int Group::DrawAll(std::queue<GL::Operation *> *aSendTo){
     for(container::iterator iter = mShapes.begin(); iter!=mShapes.end(); iter++){
         aSendTo->push(*iter);
     }
-//    aSendTo->push(this);
         
     return 0;
 
@@ -76,13 +66,13 @@ int Group::DrawRange(std::queue<GL::Operation *> *aSendTo, iterator aFrom, itera
 
     aSendTo->push(mShader.get());
 
-    aSendTo->push(new ShaderParamChange(mShader->mUniforms.find(Shader::ShaderOffsetUniformName)->second,
+    aSendTo->push(new ShaderParamChange(mShader->FindUniform(Shader::ShaderOffsetUniformName),
                   1, mOffset, (ShaderParamChange::callback_t)glUniform2fv, 8));
 
-    aSendTo->push(new ShaderParamChange(mShader->mUniforms.find(Shader::ShaderRotOffsetUniformName)->second,
+    aSendTo->push(new ShaderParamChange(mShader->FindUniform(Shader::ShaderRotOffsetUniformName),
                   1, mRotOffset, (ShaderParamChange::callback_t)glUniform2fv, 8));
 
-    aSendTo->push(new ShaderParamChange(mShader->mUniforms.find(Shader::ShaderAngleUniformName)->second,
+    aSendTo->push(new ShaderParamChange(mShader->FindUniform(Shader::ShaderAngleUniformName),
                   1, &mAngle, (ShaderParamChange::callback_t)glUniform1fv, 4));
 
     std::for_each(aFrom, aTo, std::mem_fn(&GL::Operation::Draw));

@@ -2,7 +2,7 @@
 
 #include <string>
 #include <vector>
-#include <map>
+#include <utility>
 #include <color.h>
 #include <opengame.h>
 #include "Shape.hpp"
@@ -59,7 +59,10 @@ public:
   static const std::string ShaderRotOffsetUniformName;
   static const std::string ShaderAngleUniformName;
   static const std::string ShaderScreenSizeUniformName;
-  typedef std::map<std::string, int> GLSLValueMap;
+  
+  struct value_double { const std::string str; int a; };
+  typedef std::vector<struct value_double> GLSLValueMap;
+  //typedef std::map<std::string, int> GLSLValueMap;
 protected:
     int mProgram;
     std::vector<int> mAttributeNumbers;
@@ -80,6 +83,22 @@ public:
     // If it exists, it will be added to the appropriate map.
     bool AddUniform(const std::string &aName);
     bool AddAttribute(const std::string &aName);
+
+    inline int FindUniform(const std::string &a){
+        for(GLSLValueMap::const_iterator i = mUniforms.cbegin(); i!=mUniforms.cend(); i++){
+            if(i->str==a) return i->a;
+        }
+        return -1;
+    }
+    
+    inline int FindAttribute(const std::string &a){
+        for(GLSLValueMap::const_iterator i = mAttributes.cbegin(); i!=mAttributes.cend(); i++){
+            if(i->str==a) return i->a;
+        }
+        return -1;
+    }
+    
+    
 
     void Bind(void);
 

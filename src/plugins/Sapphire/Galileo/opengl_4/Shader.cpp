@@ -257,7 +257,7 @@ Shader::Shader(TS_GameConfig *config, int aProgram)
     AddAttribute(ShaderTextureUVName);
     AddAttribute(ShaderColorName);
 
-    glUniform2f(mUniforms[ShaderScreenSizeUniformName], config->screenwidth, config->screenheight);
+    glUniform2f(FindUniform(ShaderScreenSizeUniformName), config->screenwidth, config->screenheight);
 
 }
 
@@ -275,8 +275,9 @@ GLSLValueMap mUniforms;
 bool Shader::AddUniform(const std::string &aName){
     int lLocation = glGetUniformLocation(mProgram, aName.c_str());
     assert(lLocation>=0);
-    if((lLocation)>=0){
-        mUniforms[aName.c_str()] = lLocation;
+    if(lLocation>=0){
+        const struct value_double val = {aName, lLocation};
+        mUniforms.push_back(val);
         return true;
     }
     else
@@ -286,8 +287,9 @@ bool Shader::AddUniform(const std::string &aName){
 bool Shader::AddAttribute(const std::string &aName){
     int lLocation = glGetAttribLocation(mProgram, aName.c_str());
     assert(lLocation>=0);
-    if((lLocation)>=0){
-        mAttributes[aName.c_str()] = lLocation;
+    if(lLocation>=0){
+        const struct value_double val = {aName, lLocation};
+        mAttributes.push_back(val);
         mAttributeNumbers.push_back(lLocation);
         return true;
     }
@@ -296,67 +298,17 @@ bool Shader::AddAttribute(const std::string &aName){
 }
 
 void Shader::Bind(void){
-
+    
+    if(BoundShader==this) return;
+    BoundShader = this;
+    
     assert(mProgram);
     glUseProgram(mProgram);
 
-    //for(auto lIter = EnabledAttributes->begin(); lIter!=EnabledAttributes->end(); lIter++){
-    //    glDisableVertexAttribArray(*lIter);
-   // }
-
-    //EnabledAttributes->clear();
-
-    for(auto lIter = mAttributes.begin(); lIter!=mAttributes.end(); lIter++){
-        assert(lIter->second>=0);
-        glEnableVertexAttribArray(lIter->second);
-        //EnabledAttributes->push_back(lIter->second);
+    for(GLSLValueMap::const_iterator i = mAttributes.cbegin(); i!=mAttributes.cend(); i++){
+        assert(i->a>=0);
+        glEnableVertexAttribArray(i->a);
     }
-
-    /*
-
-    // We must initialize our thread-local enabled attribute vector if it is still null.
-    // We also can take some decisive action if we know this is the first run.
-    if(EnabledAttributes==nullptr){
-        EnabledAttributes = new std::vector<int> ();
-
-        for(auto lIter = mAttributes.begin(); lIter!=mAttributes.end(); lIter++){
-            glEnableVertexAttribArray(lIter->second);
-        }
-
-        EnabledAttributes = &mAttributeNumbers;
-
-        return;
-    }
-
-    std::vector<int> lNew; //New vertex attributes that need to be added.
-
-    // Activate any vertex attribute locations that weren't activated for the previous shader.
-    for(auto lIter = mAttributes.begin(); lIter!=mAttributes.end(); lIter++){
-        auto lMatch = std::find(EnabledAttributes->begin(), EnabledAttributes->end(), lIter->second);
-        if(lMatch==EnabledAttributes->end()){
-            glEnableVertexAttribArray(lIter->second);
-            lNew.push_back(lIter->second);
-        }
-    }
-
-    // Deactivate and erase any attibs that are no longer used.
-    for(auto lIter = EnabledAttributes->rbegin(); lIter!=EnabledAttributes->rend(); lIter++){
-
-        auto lMatch = std::find_if(mAttributes.begin(), mAttributes.end(),
-          [&] (const std::pair<std::string, int> &aIter) { return aIter.second == (*lIter); } );
-
-        if(lMatch==mAttributes.end()){
-            glDisableVertexAttribArray(*lIter);
-            EnabledAttributes->erase(lIter.base());
-            continue;
-        }
-    }
-
-    // Push all new required attributes into Enabled Attributes.
-    EnabledAttributes->insert(EnabledAttributes->rbegin().base(), lNew.begin(), lNew.end());
-    */
-    BoundShader = this;
-
 }
 
 }
