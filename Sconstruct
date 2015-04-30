@@ -3,6 +3,8 @@ import sys
 
 defaultenv = Environment(ENV = os.environ)
 
+defaultenv.SourceCode(".", None)
+
 explicit_cc = ARGUMENTS.get('CC', '')
 explicit_cxx = ARGUMENTS.get('CXX', '')
 
@@ -11,7 +13,7 @@ if explicit_cc:
 if explicit_cxx:
   defaultenv.Replace(CXX=explicit_cxx)
 
-jslib = "mozjs-"
+jslib = "mozjs-40a1"
 
 msvc_ccflags = "/O2 /EHsc /Zi /D__func__=__FUNCTION__ "
 msvc_cflags = ""
