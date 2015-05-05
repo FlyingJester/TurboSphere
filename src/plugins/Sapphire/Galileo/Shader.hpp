@@ -109,7 +109,11 @@ public:
 
     int GetName(){ return mProgram; }
 
+#ifdef _MSC_VER
+	__declspec( thread ) static Shader *BoundShader;
+#else
     static __thread Shader *BoundShader;
+#endif
 
 };
 

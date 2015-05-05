@@ -87,11 +87,21 @@ SaveStatus Save(SDL_Surface *aToSave, const std::string &to){
     else{
         // Reverse it, then move ahead of the dot.
         const std::string ext_anycase(++(reverse.base()), to.cend());
-
-        // Ensure the extension is in all lowercase.
         ext.resize(ext_anycase.size());
+#ifndef _WIN32
+        // Ensure the extension is in all lowercase.
         std::transform(ext_anycase.cbegin(), ext_anycase.cend(), ext.begin(), std::tolower);
-    }
+#else
+		// MSVC doesn't understand advanced concepts like letter cases.
+		std::string::iterator e_i = ext.begin();
+		for(std::string::const_iterator i = ext_anycase.cbegin(); i!=ext_anycase.cend(); i++, e_i++){
+			unsigned c = *i;
+			if(c>='A' && c<='Z')
+				c+='a'-'A';
+			*e_i = static_cast<char>(c);
+		}
+#endif 
+   }
 
     SaveFunction lSaveFunc = nullptr;
     const std::map<std::string, SaveFunction>::const_iterator iSaveFunc = SaveWithExtension.find(ext);

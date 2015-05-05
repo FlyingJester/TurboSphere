@@ -10,7 +10,19 @@
 #endif
 #include <cassert>
 
+/* Specifics of the OpenAL player:
+	
+	Buffers are managed user-side
+	
+	We only support 16-bit currently. A nice todo would be to add 8-bit and float32 support.
+	Currently the addToSound functions for these formats are intentionally failed.
+	
+*/
+
 namespace Cinnamon{
+
+/////
+// Player object.
 
 void Player::makeCurrent() const{
     assert(context);
@@ -22,6 +34,10 @@ Player::Player()
   , context(nullptr)
   , format(AL_FORMAT_STEREO16){
     
+}
+
+Player::~Player(){
+
 }
 
 bool Player::init(){
@@ -71,6 +87,14 @@ Sound Player::load(const int16_t *from, size_t num, int num_channels, int sample
     return sound;
 }
 
+Sound Player::load(const int8_t *from, size_t num, int num_channels, int samples_per_second, size_t full_length){
+	assert(false);
+}
+
+Sound Player::load(const float *from, size_t num, int num_channels, int samples_per_second, size_t full_length){
+	assert(false);
+}
+
 void Player::addToSound(Sound *sound, const int16_t *from, size_t num){
 
     makeCurrent();
@@ -96,8 +120,104 @@ void Player::addToSound(Sound *sound, const int16_t *from, size_t num){
     buffers.pop_back();
 }
 
+void addToSound(Sound *sound, const int8_t *from, size_t num){
+	assert(false);
+	
+	int16_t *to = new int16_t[num];
+	for(int i = 0; i<num; i++){
+		const int32_t t = (from[i]*0xFFFF)/0xFF;
+		to[i] = t;
+	}
+	addToSound(sound, to, num);
+	delete[] to;
+}
+
+void addToSound(Sound *sound, const float *from, size_t num){
+	assert(false);
+	
+	int16_t *to = new int16_t[num];
+	for(int i = 0; i<num; i++){
+		to[i] = from[i]*(0xFFFFFF);
+	}
+	addToSound(sound, to, num);
+	delete[] to;
+}
+
 bool Player::supportsFloat32(){
-    return alIsExtensionPresent("AL_EXT_FLOAT32");
+    return false && alIsExtensionPresent("AL_EXT_FLOAT32");
+}
+
+bool Player::supportsInt16(){
+	return true;
+}
+
+bool Player::supportsInt8(){
+	return false;
+}
+
+/////
+// Sound object
+Sound::Sound(Player &p)
+  : player(p) {
+	  
+	player.makeCurrent();
+	  
+	alGenSources(1, &handle);
+	alSourcef(handle, AL_PITCH, 1.0f);
+	alSourcef(handle, AL_GAIN, 1.0f);
+	alSource3f(handle, AL_POSITION, 0.0f, 0.0f, 0.0f);
+	alSource3f(handle, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
+	
+	setLooping(false);
+}
+
+
+Sound::~Sound(){
+	returnBuffers();
+	
+	player.makeCurrent();
+	alDeleteSources(1, &handle);
+}
+
+void Sound::play() const{
+	alSourcePlay(handle);
+}
+
+void Sound::pause() const{
+	alSourcePause(handle);
+}
+
+void Sound::stop() const{
+	alSourceStop(handle);
+}
+
+void Sound::rewind() const{
+	alSourceRewind(handle);
+}
+
+void Sound::setVolume(float to){
+	if(setVolume_(to))
+		alSourcef(handle, AL_GAIN, gain);
+}
+
+void Sound::setLooping(bool loop){
+	if(setLooping_(loop))
+		alSourcei(handle, AL_LOOPING, loop?AL_TRUE:AL_FALSE);
+}
+
+void Sound::returnBuffers() const{
+	ALint num_buffers;
+	player.makeCurrent();
+	
+	alGetSourcei(handle, AL_BUFFERS_PROCESSED, &num_buffers);
+	if(num_buffers!=0){
+		player.buffers.resize(player.buffers.size()+num_buffers);
+		alSourceUnqueueBuffers(handle, num_buffers, player.buffers.data()-num_buffers);
+	}
+}
+
+void Sound::setPan(float p){
+	setPan_(p);
 }
 
 }

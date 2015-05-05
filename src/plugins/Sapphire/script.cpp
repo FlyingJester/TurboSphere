@@ -58,7 +58,7 @@ bool ShapeImageSetter(JSContext *ctx, unsigned argc, JS::Value *vp){
 }
 
 template<typename T>
-unsigned NumberToColorChannel(T n){return std::max(std::min((int)n, 0xFF), 0x0);}
+unsigned NumberToColorChannel(T n){return std::max<unsigned>(std::min<int>((int)n, 0xFF), 0x0);}
 
 #define SAPPHIRE_SCRIPT_OBJECT_GETTER(FUNC_NAME, TYPE, PROTO, VALUATOR)\
 bool FUNC_NAME(JSContext *ctx, unsigned argc, JS::Value *vp){\

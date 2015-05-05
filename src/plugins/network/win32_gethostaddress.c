@@ -12,7 +12,7 @@ char *TS_GetHostAddressIP4(){
     if(!hostentity)
         return NULL;
     
-    for(int i = 0; i<h_length; i++){
+    for(int i = 0; i<hostentity->h_length; i++){
         if(strcmp(hostentity->h_addr_list[i], "127.0.0.1")!=0)
             return hostentity->h_addr_list[i];
     }

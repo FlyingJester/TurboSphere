@@ -4,6 +4,11 @@
 #ifdef OS_X
 #include <OpenGL/gl3.h>
 #else
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 #include <GL/gl.h>
 #endif
 

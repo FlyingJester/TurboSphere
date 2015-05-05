@@ -6,7 +6,7 @@ full_import_list ="globalenv localenv IsLinux IsWindows IsDarwin LibraryInstall 
 Import(full_import_list)
 
 files = ["opengame.cpp", "openscript.cpp"]
-configmanager = globalenv.SharedLibrary('configmanager', files, LIBS = ['t5', 'graphiccommon', jslib])
+configmanager = globalenv.SharedLibrary('configmanager', files, LIBS = ['t5', 'graphiccommon', jslib], CPPDEFINES = ["CONFIGMGR_INTERNAL=1"])
 
 installdir = os.path.join(os.path.join(librarydir, component))
 

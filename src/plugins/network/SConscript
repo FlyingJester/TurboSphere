@@ -10,6 +10,11 @@ network_files = [
     "network.cpp"
 ]
 
+net_libs = []
+
+if IsWindows():
+	net_libs = ["wsock32"]
+
 poll_api = "none"
 
 environment = localenv.Clone()
@@ -41,7 +46,7 @@ conf.Finish()
 libyyymonitor = SConscript(dirs = ["libyyymonitor"], exports = ["environment"])
 libfjnet      = SConscript(dirs = ["libfjnet"], exports = ["environment", "poll_api"])
 
-networkplugin = localenv.SharedLibrary('netplug', network_files, LIBS = [jslib, libyyymonitor, libfjnet])
+networkplugin = localenv.SharedLibrary('netplug', network_files, LIBS = [jslib, libyyymonitor, libfjnet] + net_libs)
 
 Depends(networkplugin, corelibtargets)
 LibraryInstall(os.path.join(binarydir, 'plugin'), networkplugin, currentenv)

@@ -15,13 +15,15 @@ if explicit_cxx:
 
 jslib = "mozjs-40a1"
 
-msvc_ccflags = "/O2 /EHsc /Zi /D__func__=__FUNCTION__ "
+msvc_ccflags = "/O2 /EHsc /Zi /Fd${TARGET}.pdb /D__func__=__FUNCTION__ /DRELEASE_NO_PRINTING=1 "
 msvc_cflags = ""
 msvc_cxxflags = ""
+msvc_linkflags = " /DEBUG "
 
 gcc_ccflags = " -Wall -Werror -ffast-math -fno-rtti -fno-exceptions -march=native -Os -flto -Wcast-align -g "
 gcc_cflags = " -std=c11 "
 gcc_cxxflags = " -std=c++11 "
+gcc_linkflags = " -lm "
 
 if os.environ.get('TRAVIS') == 'true':
   gcc_cflags = " -std=c99 "
@@ -30,11 +32,12 @@ if os.environ.get('TRAVIS') == 'true':
 clang_ccflags = gcc_ccflags + " -DHAS_UNISTD -DHAS_STAT_SYS -DUSE_STAT -Wno-return-type-c-linkage -Wno-mismatched-tags -Wno-invalid-offsetof"
 clang_cflags = gcc_cflags
 clang_cxxflags = gcc_cxxflags
+clang_linkflags = " -lm -g "
 
 #Checking platform.
 
 def IsWindows():
-  return sys.platform == 'win32' or sys.platform.startswith('win64')
+  return sys.platform.startswith('win32') or sys.platform.startswith('win64')
 
 def IsLinux():
   return sys.platform.startswith('linux')
@@ -53,12 +56,12 @@ compiler = ""
 # Perform extra futzing for shared libraries on Unix platforms.
 
 def LibraryInstall(name, library, env):
+  LibraryFileName = os.path.join(os.getcwd(), library[0].name)
   if(IsDarwin()):
     print library[0].name
-    LibraryFileName = os.path.join(os.getcwd(), library[0].name)
     return env.Command(os.path.join(name, library[0].name), LibraryFileName, "install_name_tool $SOURCE -id @executable_path/" + library[0].name + " && cp $SOURCE $TARGET ")
   else:
-    return env.Install(name, [library])
+    return env.Install(name, library)
 
 #Todo: Make these overrideable.
 if IsWindows():
@@ -80,11 +83,11 @@ if os.name == 'posix':
   globalenv.Append(tools = ['default', 'textile'])
 
 if compiler == 'msvc':
-  globalenv.Replace(CCFLAGS = msvc_ccflags, CFLAGS = msvc_cflags, CXXFLAGS = msvc_cxxflags)
+  globalenv.Replace(CCFLAGS = msvc_ccflags, CFLAGS = msvc_cflags, CXXFLAGS = msvc_cxxflags, LINKFLAGS = msvc_linkflags)
 if compiler == 'gcc':
-  globalenv.Replace(CCFLAGS = gcc_ccflags, CFLAGS = gcc_cflags, CXXFLAGS = gcc_cxxflags, LINKFLAGS = " -lm ")
+  globalenv.Replace(CCFLAGS = gcc_ccflags, CFLAGS = gcc_cflags, CXXFLAGS = gcc_cxxflags, LINKFLAGS = gcc_linkflags)
 if compiler == 'clang':
-  globalenv.Replace(CCFLAGS = clang_ccflags, CFLAGS = clang_cflags, CXXFLAGS = clang_cxxflags, LINKFLAGS = " -g -lm ")
+  globalenv.Replace(CCFLAGS = clang_ccflags, CFLAGS = clang_cflags, CXXFLAGS = clang_cxxflags, LINKFLAGS = clang_linkflags)
 
 def CheckForHeader(env, conf, header_name, macro_name):
   if conf.CheckCHeader(header_name) or conf.CheckCXXHeader(header_name):

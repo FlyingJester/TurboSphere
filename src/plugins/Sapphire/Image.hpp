@@ -19,24 +19,25 @@ namespace GL {
 
 class Image{
 public:
-  union PixelData {
-      uint32_t pixel;
-      unsigned char channel[4];
-  };
+    union PixelData {
+        uint32_t pixel;
+        unsigned char channel[4];
+    };
 
-  struct PixelDataInput {
-      PixelDataInput(){}
-      uint32_t operator() (const PixelData &that) const {
-          return that.pixel;
-      }
-  };
+    struct PixelDataInput {
+        PixelDataInput(){}
+        uint32_t operator() (const PixelData &that) const {
+            return that.pixel;
+        }
+    };
 
-  struct PixelDataOutput {
-      PixelDataOutput(){}
-      union PixelData operator() (uint32_t in) const {
-          return {.pixel = in};
-      }
-  };
+    struct PixelDataOutput {
+        PixelDataOutput(){}
+        union PixelData operator() (uint32_t in) const {
+	        union PixelData r; r.pixel = in;
+	        return r;
+	    }
+    };
   
 protected:
     

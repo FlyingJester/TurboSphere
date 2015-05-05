@@ -228,26 +228,11 @@ namespace Turbo{
         struct proto_object {JSContext *ctx; JS::Heap<JSObject *> proto;};
         std::vector<struct proto_object> prototypes;
         std::mutex prototypes_mutex;
-        
-        JSClass clazz = {
-            nullptr, 
-            JSCLASS_HAS_PRIVATE,
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr, 
-            nullptr, 
-            nullptr, 
-            nullptr
-        };
+		JSClass clazz;
         unsigned num_constructor_args;
 		
         JSPrototype(const char *class_name, JSNative construct = nullptr, unsigned nargs = 0, JSFinalizeOp finalizer = nullptr, JSSetterOp property = nullptr){
-            
+			clazz.flags = JSCLASS_HAS_PRIVATE;
             clazz.name = strdup(class_name);
             //prototypes.reserve(1);
             clazz.construct = construct;
@@ -268,7 +253,8 @@ namespace Turbo{
             JS::RootedObject global(ctx, JS::CurrentGlobalOrNull(ctx)), global_proto(ctx);
             JS_GetPrototype(ctx, global, &global_proto);
             
-            prototypes.push_back(proto_object({ctx}));
+            prototypes.push_back(proto_object());
+			prototypes.back().ctx = ctx;
             prototypes.back().proto = JS_InitClass(ctx, global, global_proto, &clazz, clazz.construct, num_constructor_args, ps, fs, static_ps, static_fs);
             
             prototypes_mutex.unlock();

@@ -56,7 +56,7 @@ bool listAllPlugins(std::vector<const std::string> &those, const std::string &di
 }
 
 template<typename T, typename S>
-inline bool GetFunction(T &out, const S &pluginname, fhandle plugin, const char *name){
+inline bool GetFunction(T &out, const S &pluginname, DLOPEN_HANDLE plugin, const char *name){
     out = (T)DLOPENFUNCTION(plugin, name);
     if(!out){
         t5::DataSource::StdOut()->WriteF("[Engine] Error no ", name, " function in plugin ", pluginname);

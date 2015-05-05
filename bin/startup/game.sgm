@@ -1,9 +1,7 @@
-{
-    "author" : "Flying Jester",
-    "description" : "Map Engine, map, tileset, and spriteset test",
-    "name": "Map Engine Test",
-    "screen_height" : 320,
-    "screen_width" : 400,
-    "script" : "main.js",
-    "version" : 2
-}
+author=Flying Jester
+description=Demonstrates using Coffeescript
+name=TS Test
+screen_width=640
+screen_height=480
+script=game.js
+version=2
