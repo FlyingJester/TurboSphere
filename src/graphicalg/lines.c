@@ -1,10 +1,11 @@
+#define GRAPHICALG_INTERNAL
 #include "lines.h"
 #include "stdlib.h"
 #include <assert.h>
 #include <stdio.h>
 #include <math.h>
 
-struct TS_Point *CalcLine(const struct TS_Point /*in*/ aLine[2], int * /*out*/oSteps){
+TS_Point *CalcLine(const TS_Point /*in*/ aLine[2], int * /*out*/oSteps){
 
     struct TS_Point *rPoints = NULL;
 

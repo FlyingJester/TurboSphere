@@ -11,6 +11,17 @@
 namespace Sapphire{
 namespace Galileo {
 
+#ifdef _MSC_VER
+Group::Group()
+  : mShader(nullptr){
+	mOffset[0] = 
+	mOffset[1] = 
+	mRotOffset[0] = 
+	mRotOffset[1] = 
+	mAngle =
+	0.0f; 
+}
+#else
 Group::Group()
   : mShader(nullptr)
   , mOffset{0.0f, 0.0f}
@@ -19,6 +30,7 @@ Group::Group()
 {
 
 }
+#endif
 
 Group::~Group(){
 }

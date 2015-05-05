@@ -1,5 +1,4 @@
-#ifndef GRAPHICALG_STRUCURES_HEAD
-#define GRAPHICALG_STRUCURES_HEAD
+#pragma once
 
 #include "graphicalg_stub.h"
 
@@ -40,5 +39,3 @@ GRAPHICALG_EXPORT TS_Point *  GRAPHICALGCALL TS_CreatePoint(int x, int y);
 GRAPHICALG_EXPORT void        GRAPHICALGCALL TS_DeletePoint(TS_Point *aPoint);
 GRAPHICALG_EXPORT TS_Segment *GRAPHICALGCALL TS_CreateSegment(int _x1, int _y1, int _x2, int _y2);
 GRAPHICALG_EXPORT void        GRAPHICALGCALL TS_DeleteSegment(TS_Segment *aSegment);
-
-#endif

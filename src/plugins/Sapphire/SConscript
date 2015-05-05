@@ -4,7 +4,7 @@ import os
 import sys
 
 gfx_backend = "GL"
-gfx_version = 4
+gfx_version = 2
 
 Sapphire_files = ["api.cpp", "GLStart.cpp",
     "SapphireInit.cpp", "SapphirePlugin.cpp", "SaveImage.cpp", 
@@ -18,8 +18,14 @@ else:
 UseCpp11ThreadsAndAtomics = ARGUMENTS.get('cpp11_thread', 0)
 UseSDL2ThreadsAndAtomics = ARGUMENTS.get('sdl2_thread', 0)
 Uselibpng = ARGUMENTS.get('use_png', 1)
-Uselibjpg = ARGUMENTS.get('use_jpg', 1)
-Uselibjpeg = ARGUMENTS.get('use_jpeg', 1)
+Uselibjpeg = 0
+Uselibjpg = 0
+if IsWindows():
+	Uselibjpeg = ARGUMENTS.get('use_jpeg', 0)
+	Uselibjpg = ARGUMENTS.get('use_jpg', 0)
+else:
+	Uselibjpeg = ARGUMENTS.get('use_jpeg', 1)
+	Uselibjpg = ARGUMENTS.get('use_jpg', 1)
 Uselibtiff = ARGUMENTS.get('use_tiff', 0)
 
 Uselibtiff = 0
@@ -55,6 +61,8 @@ elif IsDarwin():
   Sapphire_files += [os.path.join("Thread", "Thread_nsthread.m"), os.path.join("Thread", "Atomic_darwin.c"), "RetinaCheck.m"]
   elibs = ["objc"]
   eframeworks = ["Foundation"]
+else:
+  Sapphire_files += [os.path.join("Thread", "Thread_sdl2.c"), os.path.join("Thread", "Atomic_sdl2.c")]
 if 'USE_INTEL_TBB' in currentenv['CPPDEFINES']:
   elibs+= ['tbb']
 
@@ -67,7 +75,12 @@ environment = currentenv.Clone()
 libgalileo    = SConscript(dirs = ["Galileo"], exports = ["environment", "IsDarwin", "IsLinux", "IsWindows", "IsSolaris", "gfx_backend", "gfx_version"])
 
 if gfx_backend=="GL":
-    eframeworks += ['OpenGL']
+    if IsDarwin():
+        eframeworks += ['OpenGL']
+    elif IsWindows():
+        elibs += ['OpenGL32']
+    else:
+        elibs += ['gl']
 
 Sapphire     = currentenv.SharedLibrary("Sapphire", Sapphire_files,
   LIBS = [libyyymonitor, libgalileo, 't5', 'graphiccommon', 'graphicalg', 'configmanager', 'SDL2', 'SDL2_image', jslib] + elibs,

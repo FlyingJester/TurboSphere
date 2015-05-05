@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <jsapi.h>
+#include <TSPR/dlopenwrap.h>
 
 namespace Turbo{
     
@@ -17,7 +18,7 @@ namespace Turbo{
         unsigned num_functions;
         unsigned num_variables;
         
-        void *handle;
+        DLOPEN_HANDLE handle;
         
         struct {
             InitFunction Init;

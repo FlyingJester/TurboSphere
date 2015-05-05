@@ -181,7 +181,6 @@ struct TS_GameSystem *TS_LoadSystem(const char *system_folder_, const char *syst
         if(i==system_file_defaults.cend()){
             return nullptr;
         }
-        
     }
     else{
         assert(t5::IsFile(system_file_));
@@ -300,7 +299,7 @@ out->WriteF("[ConfigManager] " COMPONENT " " #NAME " - ", that->NAME, '\n');
 
 void TS_PrintDirectories(struct TS_GameDirectories *that, void *c_file_handle){
     t5::DataSourcePusher *out = t5::DataSource::OneWayFromCFile<t5::DataSourcePusher>(c_file_handle);
-    
+    assert(out);
     WRITE_COMPONENT(root);
     WRITE_COMPONENT(image);
     WRITE_COMPONENT(font);
@@ -322,7 +321,7 @@ void TS_PrintDirectories(struct TS_GameDirectories *that, void *c_file_handle){
 #define COMPONENT "System"
 void TS_PrintSystem(struct TS_GameSystem *that, void *c_file_handle){
     t5::DataSourcePusher *out = t5::DataSource::OneWayFromCFile<t5::DataSourcePusher>(c_file_handle);
-    
+    assert(out);
     WRITE_COMPONENT(fullscreen);
     WRITE_COMPONENT(compositing);
     WRITE_COMPONENT(scale);
@@ -345,7 +344,7 @@ void TS_PrintSystem(struct TS_GameSystem *that, void *c_file_handle){
 #define COMPONENT "Config"
 void TS_PrintConfig(struct TS_GameConfig *that, void *c_file_handle){
     t5::DataSourcePusher *out = t5::DataSource::OneWayFromCFile<t5::DataSourcePusher>(c_file_handle);
-    
+    assert(out);
     WRITE_COMPONENT(gamefunc);
     WRITE_COMPONENT(sgmname);
     WRITE_COMPONENT(gamename);

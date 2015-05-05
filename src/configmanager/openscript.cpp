@@ -4,7 +4,6 @@
 #include <mutex>
 #include <jsapi.h>
 #include <t5.h>
-#define CONFIGMGR_INTERNAL
 #include "openscript.h"
 #include "opengame.h"
 

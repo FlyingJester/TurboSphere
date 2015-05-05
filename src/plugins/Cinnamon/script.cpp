@@ -66,16 +66,31 @@ static Player player;
             return false;
         }
         
-        short buffer[0x10000];
-        Sound *sound = new Sound(player.load(nullptr, 0, info.channels, info.samplerate, info.frames));
-        
-        int iters = 0;
-        
-        while(unsigned long this_read = sf_read_short(sound_file, buffer, 0x10000)){
-            player.addToSound(sound, buffer, SamplesToBytes(this_read));
-            iters ++;
+		int iters = 0;
+		Sound *sound = nullptr;
+		
+		if(player.supportsFloat32()){
+			float buffer[0x8000];
+			sound = new Sound(player.load((float *)nullptr, 0, info.channels, info.samplerate, info.frames));
+			
+			while(unsigned long this_read = sf_read_float(sound_file, buffer, 0x10000)){
+				player.addToSound(sound, buffer, SamplesToBytes(this_read));
+				iters++;
+			}
+		}
+		else if(player.supportsInt16()){
+			short buffer[0x10000];
+			sound  = new Sound(player.load((short *)nullptr, 0, info.channels, info.samplerate, info.frames));
+			
+			while(unsigned long this_read = sf_read_short(sound_file, buffer, 0x10000)){
+				player.addToSound(sound, buffer, SamplesToBytes(this_read));
+				iters++;
+			}
         }
-        
+		else{
+			puts(BRACKNAME " Error bad player on this platform");
+		}
+		
         printf(BRACKNAME " SoundCtor Info loaded file %s in %i iterations\n", file.string, iters);
         
         sf_close(sound_file);

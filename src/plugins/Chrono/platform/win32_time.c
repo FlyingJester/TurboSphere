@@ -3,7 +3,7 @@
 
 // This entire file is untested.
 void TS_Chrono_SmallSleep(unsigned long time, enum TS_Chrono_TimeUnit unit){
-    unsigned long milliseconds = (unit==TS_Chrono_Millisecond)?time:(time/1000000)
+    unsigned long milliseconds = (unit==TS_Chrono_Millisecond)?time:(time/1000000);
     Sleep(milliseconds);
 }
 
@@ -16,16 +16,16 @@ void TS_Chrono_Sleep(void *ctx, unsigned long time, enum TS_Chrono_TimeUnit unit
 
 unsigned long long TS_Chrono_GetTime(enum TS_Chrono_TimeUnit unit){
     // Avoid the conditional on ever call using a tautological assignment.
-    static LARGE_INTEGER start = 0, frequency;
-    if(!start){
-        QueryPerformanceFrequency(&frequency)
+    static LARGE_INTEGER start, frequency;
+    if(!start.QuadPart){
+        QueryPerformanceFrequency(&frequency);
         QueryPerformanceCounter(&start);
     }
 
     LARGE_INTEGER end;
     QueryPerformanceCounter(&end);
     
-    const double factor = ((unit==TS_Chrono_Nanosecond)?1000000000.0:1000.0) / (double)frequency;
+    const double factor = ((unit==TS_Chrono_Nanosecond)?1000000000.0:1000.0) / (double)(frequency.QuadPart);
     
-    return ((end-start)*factor;    
+    return (end.QuadPart-start.QuadPart)*factor;
 }

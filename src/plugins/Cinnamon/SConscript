@@ -5,19 +5,27 @@ import sys
 
 localenv = currentenv.Clone()
 
+platform_source = "openal.cpp"
+libs = []
+
 if IsDarwin():
     localenv.Append(FRAMEWORKS=["OpenAL"])
+elif IsWindows():
+	print "Using Windows setup"
+	libs+=["dsound", "User32"]
+	platform_source = "directsound.cpp"
 else:
-    localenv.Append(LIBS=["openal"])
+    libs+=["openal"]
+
 
 cinnamon_files = [
-    "openal.cpp",
+    platform_source,
     "sound.cpp",
     "script.cpp",
     "cinnamon.cpp"
 ]
 
-cinnamon = localenv.SharedLibrary('cinnamon', cinnamon_files, LIBS = ['t5', 'configmanager', jslib, 'sndfile'])
+cinnamon = localenv.SharedLibrary('cinnamon', cinnamon_files, LIBS = ['t5', 'configmanager', jslib, 'sndfile']+libs)
 
 Depends(cinnamon, corelibtargets)
 LibraryInstall(os.path.join(binarydir, 'plugin'), cinnamon, currentenv)

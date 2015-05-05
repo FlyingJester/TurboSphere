@@ -1,7 +1,7 @@
 #include <SDL2/SDL_atomic.h>
 
 SDL_atomic_t *TS_CreateAtomic(int32_t aInitialValue){
-    SDL_atomic_t* rAtom = malloc(sizeof(SDL_atomic_t));
+    SDL_atomic_t* rAtom = (SDL_atomic_t*)malloc(sizeof(SDL_atomic_t));
     SDL_AtomicSet(rAtom, aInitialValue);
 }
 
@@ -27,10 +27,10 @@ int32_t TS_AtomicDec(SDL_atomic_t * aToDec){
     return -1+SDL_AtomicAdd(aToDec, -1);
 }
 int32_t TS_AtomicAdd(SDL_atomic_t * aTo, int32_t aToAdd){
-    return aToAdd+SDL_AtomicAdd(aToInc, aToAdd);
+    return aToAdd+SDL_AtomicAdd(aTo, aToAdd);
 }
 int32_t TS_AtomicSub(SDL_atomic_t * aTo, int32_t aToSub){
-    return -aToAdd+SDL_AtomicAdd(aToInc, -aToAdd);
+    return -aToSub+SDL_AtomicAdd(aTo, -aToSub);
 }
 int TS_AtomicCAS(SDL_atomic_t * aToSwap, int32_t aIfEqualTo, int32_t aTo){
     return SDL_AtomicCAS(aToSwap,aIfEqualTo,aTo);

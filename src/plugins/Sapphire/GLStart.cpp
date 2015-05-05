@@ -182,6 +182,8 @@ namespace RenderThread{
 
                 glLineWidth(fmin(_f, _m));
             }
+		#elif defined _WIN32
+		
         #else
             SDL_SysWMinfo info;
             SDL_GetWindowWMInfo(lKit->mWindow->screen, &info);

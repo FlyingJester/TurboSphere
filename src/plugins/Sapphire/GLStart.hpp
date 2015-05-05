@@ -8,6 +8,10 @@
 #include "Galileo/Shape.hpp"
 #include <queue>
 
+#ifdef CreateWindow
+#undef CreateWindow
+#endif
+
 // This is a weird constant.
 //
 // A higher number of buffers will always result in either higher latency or lower framerates, depending on if the render or engine threads is running faster.

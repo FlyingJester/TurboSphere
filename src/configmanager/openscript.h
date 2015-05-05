@@ -10,18 +10,16 @@
 	#else
 		#define CONFIGMGR_EXPORT __declspec(dllimport)
 	#endif
-#define CONFIGMGRCALL _cdecl
 #else
 	#define CONFIGMGR_EXPORT extern "C"
-	#define CONFIGMGRCALL
 #endif
 
-CONFIGMGR_EXPORT bool TS_ExecuteString(JSContext *ctx, const char *filename, const char *source);
-CONFIGMGR_EXPORT bool TS_ExecuteStringL(JSContext *ctx, const char *filename, const char *source, size_t len);
-CONFIGMGR_EXPORT bool TS_LoadScript(JSContext *ctx, const char *filename, bool only_once = false);
+bool CONFIGMGR_EXPORT TS_ExecuteString(JSContext *ctx, const char *filename, const char *source);
+bool CONFIGMGR_EXPORT TS_ExecuteStringL(JSContext *ctx, const char *filename, const char *source, size_t len);
+bool CONFIGMGR_EXPORT TS_LoadScript(JSContext *ctx, const char *filename, bool only_once = false);
 
 // only_once=true for Require*Script, only_once=false for Evaluate*Script
-CONFIGMGR_EXPORT bool TS_LoadScriptPrefixed_JS(JSContext *ctx, unsigned argc, JS::Value *vp, const char * prefix, bool only_once = true);
+bool CONFIGMGR_EXPORT TS_LoadScriptPrefixed_JS(JSContext *ctx, unsigned argc, JS::Value *vp, const char * prefix, bool only_once = true);
 
 template<bool only_once>
 bool TS_LoadScript_JS(JSContext *ctx, unsigned argc, JS::Value *vp){
