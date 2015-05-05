@@ -36,13 +36,11 @@ bool ShapeImageGetter(JSContext *ctx, unsigned argc, JS::Value *vp){
 
 bool ShapeImageSetter(JSContext *ctx, unsigned argc, JS::Value *vp){
     JS::CallArgs args = CallArgsFromVp(argc, vp);
-    const Turbo::JSType signature[] = {Turbo::Object};
-    if(!Turbo::CheckSignature<1>(ctx, args, signature, __func__))
+    
+    if(!Turbo::CheckForSingleArg(ctx, args, Turbo::Object, __func__))
         return false;
     
-    ScriptImage_t *image = image_proto.unwrap(ctx, args[0], &args);
-    
-    if(image){
+    if(ScriptImage_t *image = image_proto.unwrap(ctx, args[0], &args)){
         shape_proto.getSelf(ctx, vp, &args)->ReplaceImage(*image);
     }
     else{

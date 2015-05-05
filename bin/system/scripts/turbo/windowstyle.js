@@ -82,63 +82,62 @@ Turbo.WindowStyle = function(stream){
             
         }
     }
+}
 
-    this.createWindowSurface = function(w, h){
-        var surface = new Surface(w, h, new Color(0, 0, 0, 0));
-        
-        var left = this.surfaces.left.width;
-        var top = this.surfaces.top.height;
-        var right = this.surfaces.right.width;
-        var bottom = this.surfaces.bottom.height;
-    
-        surface.setClippingRectangle(left, top, w-(left+right), h-(top+bottom));
-    
-        if(Turbo.WindowstyleScheme.background_types[this.background_type]=="tiled" || 
-           Turbo.WindowstyleScheme.background_types[this.background_type]=="tiled_gradient"){
-            for(var x = this.surfaces.left.width; x<w-right; x+=this.surfaces.background.width){
-                for(var y = this.surfaces.top.height; y<h-bottom; y+=this.surfaces.background.height){
-                    surface.blitSurface(this.surfaces.background, x, y);
-                }                    
-            }
+Turbo.WindowStyle.prototype.createWindowSurface = function(w, h){
+    var surface = new Surface(w, h, new Color(0, 0, 0, 0));
+     
+    var left = this.surfaces.left.width;
+    var top = this.surfaces.top.height;
+    var right = this.surfaces.right.width;
+    var bottom = this.surfaces.bottom.height;
+   
+    surface.setClippingRectangle(left, top, w-(left+right), h-(top+bottom));
+   
+    if(Turbo.WindowstyleScheme.background_types[this.background_type]=="tiled" || 
+       Turbo.WindowstyleScheme.background_types[this.background_type]=="tiled_gradient"){
+        for(var x = this.surfaces.left.width; x<w-right; x+=this.surfaces.background.width){
+            for(var y = this.surfaces.top.height; y<h-bottom; y+=this.surfaces.background.height){
+                surface.blitSurface(this.surfaces.background, x, y);
+            }                    
         }
-        
-        if(Turbo.WindowstyleScheme.background_types[this.background_type]=="gradient" || 
-           Turbo.WindowstyleScheme.background_types[this.background_type]=="stretched_gradient"){
-            surface.gradientRectangle(left, top, w-(right+left), h-(top+bottom),
-                this.colors[0], this.colors[1], this.colors[2], this.colors[3]);
-        }
-        
-        surface.setClippingRectangle(left, 0, w-(right+left), surface.height);
-        
-        // Top
-        for(var x = left; x<w-right; x+=this.surfaces.top.width)
-            surface.blitSurface(this.surfaces.top, x, 0);
-            
-        // Bottom
-        for(var x = left; x<w-right; x+=this.surfaces.bottom.width)
-            surface.blitSurface(this.surfaces.bottom, x, h-bottom);
-            
-        surface.setClippingRectangle(0, top, surface.width, h-(top+bottom));
-        // Left
-        for(var y = top; y<h-bottom; y+=this.surfaces.left.height)
-            surface.blitSurface(this.surfaces.left, 0, y);
-            
-        // Right
-        for(var y = top; y<h-bottom; y+=this.surfaces.right.height)
-            surface.blitSurface(this.surfaces.right, w-right, y);
-        
-        surface.setClippingRectangle(0, 0, surface.width, surface.height);
-        
-        // Blit the corners
-        surface.blitSurface(this.surfaces.upperleft, left-this.surfaces.upperleft.width, top-this.surfaces.upperleft.height);
-        surface.blitSurface(this.surfaces.upperright, w-this.surfaces.upperright.width, top-this.surfaces.upperright.height);
-        surface.blitSurface(this.surfaces.lowerright, w-this.surfaces.lowerright.width, h-this.surfaces.lowerright.height); 
-        surface.blitSurface(this.surfaces.lowerleft, left-this.surfaces.lowerleft.width, h-this.surfaces.lowerleft.height);
-        
-        return surface;
-        
     }
-
+    
+    if(Turbo.WindowstyleScheme.background_types[this.background_type]=="gradient" || 
+       Turbo.WindowstyleScheme.background_types[this.background_type]=="stretched_gradient"){
+        surface.gradientRectangle(left, top, w-(right+left), h-(top+bottom),
+            this.colors[0], this.colors[1], this.colors[2], this.colors[3]);
+    }
+    
+    surface.setClippingRectangle(left, 0, w-(right+left), surface.height);
+       
+    // Top
+    for(var x = left; x<w-right; x+=this.surfaces.top.width)
+        surface.blitSurface(this.surfaces.top, x, 0);
+        
+    // Bottom
+    for(var x = left; x<w-right; x+=this.surfaces.bottom.width)
+        surface.blitSurface(this.surfaces.bottom, x, h-bottom);
+            
+    surface.setClippingRectangle(0, top, surface.width, h-(top+bottom));
+    // Left
+    for(var y = top; y<h-bottom; y+=this.surfaces.left.height)
+        surface.blitSurface(this.surfaces.left, 0, y);
+            
+    // Right
+    for(var y = top; y<h-bottom; y+=this.surfaces.right.height)
+        surface.blitSurface(this.surfaces.right, w-right, y);
+    
+    surface.setClippingRectangle(0, 0, surface.width, surface.height);
+        
+    // Blit the corners
+    surface.blitSurface(this.surfaces.upperleft, left-this.surfaces.upperleft.width, top-this.surfaces.upperleft.height);
+    surface.blitSurface(this.surfaces.upperright, w-this.surfaces.upperright.width, top-this.surfaces.upperright.height);
+    surface.blitSurface(this.surfaces.lowerright, w-this.surfaces.lowerright.width, h-this.surfaces.lowerright.height); 
+    surface.blitSurface(this.surfaces.lowerleft, left-this.surfaces.lowerleft.width, h-this.surfaces.lowerleft.height);
+        
+    return surface;
+    
 }
 
 // Sphere 1.5 compatibility layer

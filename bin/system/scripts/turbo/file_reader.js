@@ -392,5 +392,4 @@ Turbo.Stream = function(input, offset){
      &&  (typeof this.slice == "function")))
         throw "Did not create a working Reader object. Types :" + typeof this.size + typeof this.read + typeof this.getByte + typeof this.getWord + typeof this.getDWord + typeof this.seek + typeof this.tell + typeof this.slice;
 
-
 }

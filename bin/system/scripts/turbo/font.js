@@ -44,8 +44,10 @@ Turbo.Font = function(stream, string_cache_size){
     
     if(typeof string_cache_size == "undefined")
         string_cache_size = 16;
-        
-    this.__proto__ = Turbo.ReadBinaryObject(stream, Turbo.FontScheme.header);
+    
+    var header = Turbo.ReadBinaryObject(stream, Turbo.FontScheme.header);
+    for(var i in header)
+        this[i] = header[i];
     
     if(this.signature != Turbo.FontScheme.signature)
         throw "Bad signature. Should be " + Turbo.FontScheme.signature + " instead of " + this.signature;
@@ -82,100 +84,94 @@ Turbo.Font = function(stream, string_cache_size){
     }
     
     this.string_cache = [];
-    
-    this.getTextSurfaces = function(string){
+
+}
+
+Turbo.Font.prototype.getTextSurfaces = function(string){
+    var surfaces = new Array(string.length);
+
+    for(var i = 0; i<string.length; i++){
+        var code_point = string.charCodeAt(i);
+        if(code_point>=this.num_characters)
+            code_point = 0;
+        surfaces[i] = this.characters[code_point].surface;
+    }        
+
+    return surfaces;
+}
+
+
+Turbo.Font.prototype.getTextSurfaceFromCache = function(string, width){
+    if(typeof width == "undefined")
+        width = ~0;
         
-        var surfaces = new Array(string.length);
-        
-        for(var i = 0; i<string.length; i++){
-            
-            var code_point = string.charCodeAt(i);
-            if(code_point>=this.num_characters)
-                code_point = 0;
-            
-            surfaces[i] = this.characters[code_point].surface;
-            
-        }
-        
-        return surfaces;
-        
-    }
-    
-    this.getTextSurfaceFromCache = function(string, width){
-        if(typeof width == "undefined")
-            width = ~0;
-            
-        width>>=0;    
-        
-        for(var i in this.string_cache){
-            if(this.string_cache[i].string===string){
-                if((this.string_cache[i].width===width) ||
-                    ((this.string_cache[i].width>=width) && (this.string_cache[i].surface.width<=width))){
-                    return this.string_cache[i].surface.clone();
-                }
+    width = width|0;    
+
+    for(var i =0; i<this.string_cache.length; i++){
+        if(this.string_cache[i].string===string){
+            if((this.string_cache[i].width===width) ||
+                ((this.string_cache[i].width>=width) && (this.string_cache[i].surface.width<=width))){
+                return this.string_cache[i].surface.clone();
             }
         }
-        
-        return null;
-        
     }
     
-    this.createTextSurface = function(string, width){
-        if(typeof width == "undefined")
-            width = ~0;
-            
-        width>>=0;    
-        
-        var cached_surface = this.getTextSurfaceFromCache(string, width);
-        if(cached_surface)
-            return cached_surface;
-        
-        // We need to know the actual width. We could just set the width to be `width', but we
-        //   still would not know the necessary height. It's easiest to just find this out first.
-        var actual_width = 0;
-        var max_height = 0;
-        var surfaces = this.getTextSurfaces(string);
-        for(var i = 0; i<surfaces.length; i++){
-            
-            actual_width += surfaces[i].width;
-            
-            max_height = Math.max(max_height, surfaces[i].height)
-            
-        }
-        actual_width>>=0;
-        
-        if(width==~0)
-            width = actual_width;
-        
-        var actual_height = max_height * Math.ceil(actual_width/width);
-        
-        var string_surface = new Surface(width, actual_height, new Color(0, 0, 0, 0));
-        
-        var at_x = 0;
-        var at_y = 0;
-        for(var i = 0; i<surfaces.length; i++){
-            if(at_x+surfaces[i].width>width){
-                at_x = 0;
-                at_y+=max_height;
-            }
-            string_surface.blitSurface(surfaces[i], at_x, at_y);
-            at_x+=surfaces[i].width;
-        }
-        
-        if(this.string_cache.length>=string_cache_size)
-            this.string_cache.shift();
-        
-        this.string_cache.push(new Turbo.FontStringCache(string, string_surface, width));
-        
-        return string_surface;
-        
-    }
+    return null;
     
+}    
+    
+Turbo.Font.prototype.createTextSurface = function(string, width){
+    if(typeof width == "undefined")
+        width = ~0;
+            
+    width = width|0;    
+        
+    var cached_surface = this.getTextSurfaceFromCache(string, width);
+    if(cached_surface)
+        return cached_surface;
+        
+    // We need to know the actual width. We could just set the width to be `width', but we
+    //   still would not know the necessary height. It's easiest to just find this out first.
+    var actual_width = 0;
+    var max_height = 0;
+    var surfaces = this.getTextSurfaces(string);
+    surfaces.forEach(function(that){
+        actual_width += that.width;
+        max_height = Math.max(max_height, that.height);
+    });
+
+    actual_width = actual_width|0;
+        
+    if(width==~0)
+        width = actual_width;
+        
+    var actual_height = max_height * Math.ceil(actual_width/width);
+    var string_surface = new Surface(width, actual_height, new Color(0, 0, 0, 0));
+
+    var at_x = 0;
+    var at_y = 0;
+    surfaces.forEach(function(that){
+        if(at_x+that.width>width){
+            at_x = 0;
+            at_y+=max_height;
+        }
+        string_surface.blitSurface(that, at_x, at_y);
+        at_x+=that.width;
+    });        
+    if(this.string_cache.length>=string_cache_size)
+        this.string_cache.shift();
+        
+    this.string_cache.push(new Turbo.FontStringCache(string, string_surface, width));
+        
+    return string_surface;
+        
 }
 
 // Sphere 1.5 Compatibility Layer
+if(typeof GetSystemFont != "function")
 var GetSystemFont = Turbo.GetSystemFont;
 
+if(typeof Surface.prototype.drawText!="function")
 Surface.prototype.drawText = function(font, x, y, string){
     
     var cached_surface = getTextSurfaceFromCache(string);
@@ -198,6 +194,7 @@ Surface.prototype.drawText = function(font, x, y, string){
 }
 
 // TODO: Clipping
+if(typeof Surface.prototype.drawTextBox!="function")
 Surface.prototype.drawTextBox = function(font, x, y, w, h, offset_h, string){
     
     var surface = font.createTextSurface(string, w);

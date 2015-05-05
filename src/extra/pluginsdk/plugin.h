@@ -105,13 +105,10 @@ namespace Turbo{
     typedef void (*GetVarFunction)(JSContext *ctx, int n, JS::MutableHandleValue val);
     typedef const char *(*GetNameFunction)(JSContext *ctx, int n);
     
-    inline void SetError(JSContext *ctx, const std::string err){
-        // The short-circuit of the boolean-and will make the puts not happen with there is no pending exception.
+    inline void SetError(JSContext *ctx, const std::string err){
         // This gives us just a little more info on crash (lldb, for instance, can't handle printing `err').
         if(JS_IsExceptionPending(ctx)){
-            puts("[Turbo] SetError Error an exception was already pending while trying to set the following exception:");
-            puts(err.c_str());
-            puts("[Turbo] SetError Error reporting previous exception...");
+            printf("[Turbo] SetError Error an exception was already pending while trying to set the following exception:\n%s", err.c_str());
             JS_ReportPendingException(ctx);
             assert(false); // Break out.
         }
