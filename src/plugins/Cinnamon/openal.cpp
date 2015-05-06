@@ -115,12 +115,14 @@ void Player::addToSound(Sound *sound, const int16_t *from, size_t num){
     assert(!buffers.empty());
 
     alBufferData(buffers.back(), sound->format, from, num, sound->samples_per_second);
-    alSourceQueueBuffers(sound->handle, 1, &(buffers.back()));
 
+    ALuint b = buffers.back();
     buffers.pop_back();
+
+    alSourceQueueBuffers(sound->handle, 1, &b);
 }
 
-void addToSound(Sound *sound, const int8_t *from, size_t num){
+void  Player::addToSound(Sound *sound, const int8_t *from, size_t num){
 	assert(false);
 	
 	int16_t *to = new int16_t[num];
@@ -132,7 +134,7 @@ void addToSound(Sound *sound, const int8_t *from, size_t num){
 	delete[] to;
 }
 
-void addToSound(Sound *sound, const float *from, size_t num){
+void  Player::addToSound(Sound *sound, const float *from, size_t num){
 	assert(false);
 	
 	int16_t *to = new int16_t[num];
@@ -159,65 +161,71 @@ bool Player::supportsInt8(){
 // Sound object
 Sound::Sound(Player &p)
   : player(p) {
-	  
-	player.makeCurrent();
-	  
-	alGenSources(1, &handle);
-	alSourcef(handle, AL_PITCH, 1.0f);
-	alSourcef(handle, AL_GAIN, 1.0f);
-	alSource3f(handle, AL_POSITION, 0.0f, 0.0f, 0.0f);
-	alSource3f(handle, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
-	
-	setLooping(false);
+    player.makeCurrent();
+    ALuint h;
+    alGenSources(1, &h);
+    handle = h;
+    alSourcef(handle, AL_PITCH, 1.0f);
+    alSourcef(handle, AL_GAIN, 1.0f);
+    alSource3f(handle, AL_POSITION, 0.0f, 0.0f, 0.0f);
+    alSource3f(handle, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
+
+    setLooping(false);
 }
 
 
 Sound::~Sound(){
-	returnBuffers();
-	
-	player.makeCurrent();
-	alDeleteSources(1, &handle);
+    returnBuffers();
+    player.makeCurrent();
+    ALuint h = handle;
+    alDeleteSources(1, &h);
 }
 
 void Sound::play() const{
-	alSourcePlay(handle);
+    alSourcePlay(handle);
 }
 
 void Sound::pause() const{
-	alSourcePause(handle);
+    alSourcePause(handle);
 }
 
 void Sound::stop() const{
-	alSourceStop(handle);
+    alSourceStop(handle);
 }
 
 void Sound::rewind() const{
-	alSourceRewind(handle);
+    alSourceRewind(handle);
 }
 
 void Sound::setVolume(float to){
-	if(setVolume_(to))
-		alSourcef(handle, AL_GAIN, gain);
+    if(setVolume_(to))
+        alSourcef(handle, AL_GAIN, gain);
 }
 
 void Sound::setLooping(bool loop){
-	if(setLooping_(loop))
-		alSourcei(handle, AL_LOOPING, loop?AL_TRUE:AL_FALSE);
+    if(setLooping_(loop))
+        alSourcei(handle, AL_LOOPING, loop?AL_TRUE:AL_FALSE);
 }
 
 void Sound::returnBuffers() const{
-	ALint num_buffers;
-	player.makeCurrent();
+    ALint num_buffers;
+    player.makeCurrent();
 	
-	alGetSourcei(handle, AL_BUFFERS_PROCESSED, &num_buffers);
-	if(num_buffers!=0){
-		player.buffers.resize(player.buffers.size()+num_buffers);
-		alSourceUnqueueBuffers(handle, num_buffers, player.buffers.data()-num_buffers);
-	}
+    alGetSourcei(handle, AL_BUFFERS_PROCESSED, &num_buffers);
+    if(num_buffers!=0){
+        player.buffers.resize(player.buffers.size()+num_buffers);
+       
+        for(int i = 0; i<num_buffers; i++){
+            ALuint b;
+            alSourceUnqueueBuffers(handle, 1, &b);
+            (player.buffers.data()-i)[0] = b;
+        }
+        
+    }
 }
 
 void Sound::setPan(float p){
-	setPan_(p);
+    setPan_(p);
 }
 
 }

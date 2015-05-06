@@ -4,6 +4,7 @@
 #include <memory>
 #include <color.h>
 #include "Shape.hpp"
+#include "State.hpp"
 #include "Shader.hpp"
 #include "../libyyymonitor/monitor.hpp"
 
@@ -23,7 +24,8 @@ protected:
 
     container mShapes;
 
-    std::shared_ptr<Shader> mShader;
+    std::shared_ptr<ShaderProgram> mShader;
+    ClippingRectangle clip_rectangle;
     float mOffset[2];
     float mRotOffset[2];
     float mAngle;
@@ -44,13 +46,49 @@ public:
     // and Pipelined mode, which assumes that DrawAll is called, and will send
     // required operations to the concurrent_queue given.
     //
-
+    
+    template<typename T>
+    void SetClipX(T x_){
+        clip_rectangle.x = (x_)?x_:0;
+    }
+    template<typename T>
+    void SetClipY(T y_){
+        clip_rectangle.y = (y_)?y_:0;
+    }
+    template<typename T>
+    void SetClipW(T w_){
+        clip_rectangle.w = (w_<0xFFFF)?w_:0xFFFF;
+    }
+    template<typename T>
+    void SetClipH(T h_){
+        clip_rectangle.h = (h_<0xFFFF)?h_:0xFFFF;
+    }
+    
+    template<typename T>
+    void SetClippingRectangle(T x_, T y_, T w_, T h_){
+        SetClipX(x_);
+        SetClipY(y_);
+        SetClipW(w_);
+        SetClipH(h_);
+    }
+    
+    unsigned GetClipX() const { return clip_rectangle.x; }
+    unsigned GetClipY() const { return clip_rectangle.y; }
+    unsigned GetClipW() const { return clip_rectangle.w; }
+    unsigned GetClipH() const { return clip_rectangle.h; }
+    
+    inline void UnsetClippingRectangle(){
+        clip_rectangle.x = clip_rectangle.y = 0;
+        clip_rectangle.w = 0xFFFF;
+        clip_rectangle.h = 0xFFFF;
+    }
+    
     template<typename T>
     void SetOffset(T _x, T _y){
         mOffset[eOffset::x] = _x;
         mOffset[eOffset::y] = _y;
     }
-
+    
     template<typename T>
     void SetX(T _x){
         mOffset[eOffset::x] = _x;
@@ -206,7 +244,7 @@ public:
     virtual int DrawAll(std::queue<GL::Operation *> *aSendTo);
     virtual int DrawRange(std::queue<GL::Operation *> *aSendTo, iterator aFrom, iterator aTo);
 
-    void SetShader(std::shared_ptr<Shader> aShader){mShader = aShader;}
+    void SetShader(std::shared_ptr<ShaderProgram> aShader){mShader = aShader;}
 
 };
 

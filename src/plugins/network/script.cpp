@@ -121,6 +121,15 @@ bool Accept(JSContext *ctx, unsigned argc, JS::Value *vp){
 
 }
 
+bool ListeningSocketClose(JSContext *ctx, unsigned argc, JS::Value *vp){
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
+    struct WSocket *mSocket = listening_socket_proto.getSelf(ctx, vp, &args);
+    if(State_Socket(mSocket)==0)
+        Disconnect_Socket(mSocket);
+        
+    return true;
+}
+
 bool SocketIsConnected(JSContext *ctx, unsigned argc, JS::Value *vp){
     JS::CallArgs args = CallArgsFromVp(argc, vp);
     

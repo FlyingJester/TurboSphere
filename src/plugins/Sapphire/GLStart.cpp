@@ -144,6 +144,7 @@ namespace RenderThread{
         glClear(GL_COLOR_BUFFER_BIT);
 
         glEnable(GL_BLEND);
+        glEnable(GL_SCISSOR_TEST);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glDisable(GL_DEPTH_TEST);
 

@@ -1,5 +1,7 @@
 #include "State.hpp"
 #include "../Sapphire.hpp"
+#include <screen.h>
+#include <cstdio>
 
 #ifdef OS_X
 #include <OpenGL/gl3.h>
@@ -107,6 +109,24 @@ int FlipScreen::Draw(){
     SDL_GL_SwapWindow(w);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    return 0;
+}
+
+unsigned ClippingRectangle::sx = 0,
+    ClippingRectangle::sy = 0,
+    ClippingRectangle::sw = 0xFFFF,
+    ClippingRectangle::sh = 0xFFFF;
+
+int ClippingRectangle::Draw(){
+
+    if((sx==x) && (sy==y) && (sw==w) && (sh==h)) return 0;
+    
+    sx = x;
+    sy = y;
+    sw = w;
+    sh = h;
+    
+    glScissor(x, y, w, h);
     return 0;
 }
 

@@ -58,7 +58,6 @@ void Init(JSContext *ctx, uint64_t ID){
 
     Save::InitSurfaceSave();
 
-    //TODO: Make this more lenient, ask for 4.4 and then lower versions if that fails
     GL::Version lVersion = 
 #ifdef OPENGL_4
     {4, 1};

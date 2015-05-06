@@ -13,6 +13,7 @@ namespace Sapphire{
 namespace Galileo {
 
 class Shader;
+class ShaderProgram;
 
 /////
 // ContainerClass is intended to be a std::array, std::list, or std::vector.
@@ -35,7 +36,7 @@ namespace GL {
   class Operation {
 
   protected:
-      std::shared_ptr<Shader> mShader;
+      std::shared_ptr<ShaderProgram> mShader;
       bool mDirty;
   public:
       
@@ -49,7 +50,7 @@ namespace GL {
           return true;
       }
 
-      virtual void SetShader(std::shared_ptr<Shader> aShader){}
+      virtual void SetShader(std::shared_ptr<ShaderProgram> aShader){}
 
       inline void MarkDirty(){mDirty = true;}
       inline bool IsDirty(){return mDirty;}
@@ -120,10 +121,10 @@ namespace GL {
       
       int GetGLMode() const { return gl_mode; }
       
-      virtual void SetShader(std::shared_ptr<Shader> aShader) = 0;
+      virtual void SetShader(std::shared_ptr<ShaderProgram> aShader) = 0;
       // Checks if the specified shader contains the attribtues and
       // uniforms this drawable expects.
-      virtual bool CanUse(Shader *aShader) = 0;
+      virtual bool CanUse(ShaderProgram *aShader) = 0;
 
       virtual void BindBuffer();
       virtual void BindArray();
@@ -185,8 +186,8 @@ public:
     Shape(std::vector<Vertex> &aVertices, const std::shared_ptr<Image> aImage);
 
     virtual ~Shape() {}
-    bool CanUse(Shader *aShader) override;
-    void SetShader(std::shared_ptr<Shader> aShader) override;
+    bool CanUse(ShaderProgram *aShader) override;
+    void SetShader(std::shared_ptr<ShaderProgram> aShader) override;
 
     void FillGL() override;
 

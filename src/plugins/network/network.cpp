@@ -19,6 +19,7 @@ static std::array<const char * const, 4> function_name_list = {{
 
 static JSFunctionSpec listening_socket_methods[] = {
     JS_FN("accept", Network::Accept, 0, 0),
+    JS_FN("close", Network::ListeningSocketClose, 0, 0),
     JS_FS_END
 };
 

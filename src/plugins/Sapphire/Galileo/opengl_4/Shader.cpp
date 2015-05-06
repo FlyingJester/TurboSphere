@@ -185,9 +185,54 @@ GLuint CreateDefaultProgram(void){
 
 }
 
-
 namespace Galileo{
 
+Shader::~Shader(){
+    glDeleteShader(mHandle);
+}
+
+bool Shader::Compile(std::string &err){
+    
+    if(mSource.empty()){
+        err = " emtpy shader source";
+        return false;
+    }
+    mHandle = glCreateShader(mType);
+    if(mHandle==0){
+        err = "shader index was 0";
+        return false;
+    }
+    
+    GLsizei tsize = (GLsizei)mSource.size()+1;
+    
+    const GLchar * text = static_cast<const GLchar *>(mSource.c_str());
+    glShaderSource(mHandle, 1, &text, &tsize);
+
+    glCompileShader(mHandle);
+
+    GLint shader_status;
+
+    glGetShaderiv(mHandle, GL_COMPILE_STATUS, &shader_status);
+
+    if(shader_status==GL_FALSE) {
+        err =  "failed to compile shader: ";
+
+        GLint log_size;
+        GLint written = 0;
+
+        glGetShaderiv(mHandle, GL_INFO_LOG_LENGTH, &log_size);
+        char *log_text = new char[log_size];
+        glGetShaderInfoLog(mHandle, log_size, &written, log_text);
+        if(written==0)
+            err += "[No log was written]";
+        else
+            err += log_text;
+        delete[] log_text;
+        glDeleteShader(mHandle);
+        return false;
+    }
+    return true;
+}
 
 ShaderParamChange::ShaderParamChange()
   : mLocation(-1)
@@ -212,28 +257,26 @@ ShaderParamChange::~ShaderParamChange(){
     free(mData);
 }
 
-const std::string Shader::ShaderPositionName = "TS_Position";
-const std::string Shader::ShaderTextureUVName= "TS_TextureUV";
-const std::string Shader::ShaderColorName    = "TS_Color";
-const std::string Shader::ShaderOffsetUniformName    = "TS_Offset";
-const std::string Shader::ShaderRotOffsetUniformName    = "TS_RotOffset";
-const std::string Shader::ShaderAngleUniformName    = "TS_RotAngle";
-const std::string Shader::ShaderScreenSizeUniformName    = "TS_ScreenSize";
-__thread Shader *Shader::BoundShader = nullptr;
+const std::string ShaderProgram::ShaderPositionName = "TS_Position";
+const std::string ShaderProgram::ShaderTextureUVName= "TS_TextureUV";
+const std::string ShaderProgram::ShaderColorName    = "TS_Color";
+const std::string ShaderProgram::ShaderOffsetUniformName    = "TS_Offset";
+const std::string ShaderProgram::ShaderRotOffsetUniformName    = "TS_RotOffset";
+const std::string ShaderProgram::ShaderAngleUniformName    = "TS_RotAngle";
+const std::string ShaderProgram::ShaderScreenSizeUniformName    = "TS_ScreenSize";
 
-Shader *Shader::GetDefaultShader(void *ctx){
+#ifdef _MSC_VER
+	__declspec( thread ) ShaderProgram *ShaderProgram::BoundShader = nullptr;
+#else
+    __thread ShaderProgram *ShaderProgram::BoundShader = nullptr;
+#endif
+
+ShaderProgram *ShaderProgram::GetDefault(void *ctx){
 
     GLuint lDefaultProg = SDL_GL::CreateDefaultProgram();
     if((lDefaultProg)!=0){
 
-        Shader *lShader = new Shader(TS_GetContextEnvironment(ctx)->config, lDefaultProg);
-
-        lShader->AddAttribute(ShaderPositionName);
-        lShader->AddAttribute(ShaderTextureUVName);
-        lShader->AddAttribute(ShaderColorName);
-        lShader->AddUniform(ShaderOffsetUniformName);
-        lShader->AddUniform(ShaderRotOffsetUniformName);
-        lShader->AddUniform(ShaderAngleUniformName);
+        ShaderProgram *lShader = new ShaderProgram(TS_GetContextEnvironment(ctx)->config, lDefaultProg);
 
         return lShader;
     }
@@ -241,8 +284,8 @@ Shader *Shader::GetDefaultShader(void *ctx){
       return nullptr;
 }
 
-Shader::Shader(TS_GameConfig *config, int aProgram)
-  : mProgram(aProgram) {
+ShaderProgram::ShaderProgram(TS_GameConfig *config, int aProgram)
+  : mProgram(aProgram){
     mAttributes = GLSLValueMap();
     mUniforms   = GLSLValueMap();
 
@@ -260,7 +303,42 @@ Shader::Shader(TS_GameConfig *config, int aProgram)
 
 }
 
-Shader::~Shader() {}
+ShaderProgram::ShaderProgram(TS_GameConfig *config, unsigned shaderc, std::shared_ptr<Shader> shaderv[]){
+    shaders.resize(shaderc);
+    mProgram = glCreateProgram();
+    for(unsigned i = 0; i<shaderc; i++){
+        shaders[i] = shaderv[i];
+        glAttachShader(mProgram, shaderv[i]->GetHandle());
+    }
+}
+
+ShaderProgram::~ShaderProgram() {}
+
+bool ShaderProgram::Link(std::string &err){
+    glLinkProgram(mProgram);
+    
+    GLint program_status;
+    glGetProgramiv(mProgram, GL_LINK_STATUS, &program_status);
+
+    if(!program_status){
+        err = "could not link program";
+        GLint log_size;
+        char *log_text;
+
+        glGetProgramiv(mProgram, GL_INFO_LOG_LENGTH, &log_size);
+        log_text = new char[log_size+1];
+        glGetProgramInfoLog(mProgram, log_size, NULL, log_text);
+        err += log_text;
+        delete[] log_text;
+        glDeleteProgram(mProgram);
+        
+        mProgram = -1;
+        
+        return false;
+
+    }
+    return true;
+}
 
 /*
 // Map of Vertex Attribute names and their locations.
@@ -271,7 +349,7 @@ GLSLValueMap mUniforms;
 // Checks for the specified name in the shader program.
 // Returns whether or not the name exists.
 // If it exists, it will be added to the appropriate map.
-bool Shader::AddUniform(const std::string &aName){
+bool ShaderProgram::AddUniform(const std::string &aName){
     int lLocation = glGetUniformLocation(mProgram, aName.c_str());
     assert(lLocation>=0);
     if(lLocation>=0){
@@ -282,7 +360,7 @@ bool Shader::AddUniform(const std::string &aName){
         return false;
 }
 
-bool Shader::AddAttribute(const std::string &aName){
+bool ShaderProgram::AddAttribute(const std::string &aName){
     int lLocation = glGetAttribLocation(mProgram, aName.c_str());
     assert(lLocation>=0);
     if(lLocation>=0){
@@ -294,7 +372,7 @@ bool Shader::AddAttribute(const std::string &aName){
         return false;
 }
 
-void Shader::Bind(void){
+void ShaderProgram::Bind(void){
     
     if(BoundShader==this) return;
     BoundShader = this;

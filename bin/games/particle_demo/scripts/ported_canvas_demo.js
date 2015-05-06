@@ -3,12 +3,11 @@ RequireSystemScript("colors.js");
 
 var KL = KL || {};
 
-KL.Particle = function(x, y, z, color, gV) {
+KL.Particle = function(x, y, z, gV) {
 
 	this.v = new KL.V3(x, y, z);
 	this.oldV = new KL.V3(x, y, z);
 	this.gV = gV || null;
-	this.color = color || new KL.color();
 	this.velocity = new KL.V3();
 	this.length = 0;
 
@@ -43,29 +42,6 @@ KL.Particle = function(x, y, z, color, gV) {
 
 	this.toString = function () {
 		return 'KL.Particle ( ' + this.v.x + ', ' + this.v.y + ', ' + this.v.z + ' )';
-	};
-}
-
-KL.Color = function( r, g, b, a ) {
-
-	this.getColor = function () {
-		if (this.a>=1) return 'rgb('+this.r+','+this.g+','+this.b+')';
-		else return 'rgba('+this.r+','+this.g+','+this.b+','+this.a+')';
-	};
-
-	this.r = r || 255;
-	this.g = g || 255;
-	this.b = b || 255;
-	this.a = a || 1;
-	this._str = this.getColor();
-
-	this.setAlpha = function (a) {
-		this.a = minmax(a, 0, 1);
-		this._str = this.getColor();
-	};
-
-	this.toString = function () {
-		return this._str;
 	};
 }
 
@@ -202,33 +178,26 @@ function ParticleDemo(){
 
 
 		// random
-		for (var i=0; i<NUM_PARTICLES; i++) {
-			var x = Math.random()*MAX-MAX/2,
-				y = Math.random()*MAX-MAX/2,
-				z = Math.random()*MAX-MAX/2,
-				kColor = new KL.Color(
-					Math.floor(Math.random()*255),
-					Math.floor(Math.random()*255),
-					Math.floor(Math.random()*255),
-					0.5+0.5*Math.random()
-				);
-			var lColor = new Color(kColor.r, kColor.g, kColor.b, kColor.a);
-            var particle = new KL.Particle(x, y, z, kColor, this.gV);
-            var shape = new Shape([{x:SCREEN_OX, y:SCREEN_OY, color:lColor}, {x:SCREEN_OX+2, y:SCREEN_OY, color:lColor}, {x:SCREEN_OX+2, y:SCREEN_OY+2, color:lColor}, {x:SCREEN_OX, y:SCREEN_OY+2, color:lColor}], this.image);
-			particle.Group = new Group([shape], this.shader);
-			particle.OldSide = 0;
-			this.particles.push(particle);
-		}
+        for (var i=0; i<NUM_PARTICLES; i++) {
+            let x = Math.random()*MAX-MAX/2,
+                y = Math.random()*MAX-MAX/2,
+                z = Math.random()*MAX-MAX/2;
+            let lColor = new Color(Math.floor(Math.random()*255), Math.floor(Math.random()*255), Math.floor(Math.random()*255));
+            let particle = new KL.Particle(x, y, z, this.gV);
+            let shape = new Shape([{x:SCREEN_OX, y:SCREEN_OY, color:lColor}, {x:SCREEN_OX+2, y:SCREEN_OY, color:lColor}, {x:SCREEN_OX+2, y:SCREEN_OY+2, color:lColor}, {x:SCREEN_OX, y:SCREEN_OY+2, color:lColor}], this.image);
+            particle.Group = new Group([shape], this.shader);
+            particle.OldSide = 0;
+            this.particles.push(particle);
+        }
 
 		// init px, py for oldV
-		for (var i=0; i<NUM_PARTICLES; i++) {
-			var particle = this.particles[i];
+		this.particles.forEach(function(particle){
 			var zoom = 600/(50+particle.v.z);
 			var px = (particle.v.x*zoom);
 			var py = (particle.v.y*zoom);
 			particle.v.px = px;
 			particle.v.py = py;
-		}
+		});
 
 	}
 
@@ -242,9 +211,7 @@ function ParticleDemo(){
 			this.rotMatrix.rot(this.rotX, this.rotY, this.rotZ)
 			this.cnt+= 0.02;
 		}
-		for (var i=0; i<NUM_PARTICLES; i++) {
-			var particle = this.particles[i];
-
+                this.particles.forEach(function(particle){
 			if (IsMouseButtonPressed(MOUSE_LEFT)) {
 				this.rotMatrix.xParticle(particle);
 			}
@@ -262,12 +229,10 @@ function ParticleDemo(){
 
 			var size = 1;
 
-            particle.Group.setX(px);
-            particle.Group.setY(py);
-            particle.Group.draw();
-		}
-
-		FlipScreen();
+                        particle.Group.setX(px);
+                        particle.Group.setY(py);
+                        particle.Group.draw();
+		}, this);
 
 	}
 
@@ -292,7 +257,7 @@ function game(){
 
         Demo.loop();
         Demo.onMouseMove();
-
+        FlipScreen();
         Delay(Math.max(0, GetTime()-t+12));
 
     }

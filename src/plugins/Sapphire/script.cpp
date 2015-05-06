@@ -73,8 +73,7 @@ bool FUNC_NAME(JSContext *ctx, unsigned argc, JS::Value *vp){\
 #define SAPPHIRE_SCRIPT_OBJECT_SETTER(FUNC_NAME, TYPE, PROTO, TURBO_T, SETTER)\
 bool FUNC_NAME(JSContext *ctx, unsigned argc, JS::Value *vp){\
     JS::CallArgs args = CallArgsFromVp(argc, vp);\
-    const Turbo::JSType signature[] = {TURBO_T};\
-    if(!Turbo::CheckSignature<1>(ctx, args, signature, __func__))\
+    if(!Turbo::CheckForSingleArg(ctx, args, TURBO_T, __func__))\
         return false;\
     TYPE *that = PROTO.getSelf(ctx, vp, &args);\
     SETTER;\
@@ -113,6 +112,18 @@ SAPPHIRE_SCRIPT_GROUP_SETTER_NUMBER(GroupRotYSetter, that->SetRotY(args[0].toNum
 SAPPHIRE_SCRIPT_GROUP_GETTER(GroupAngleGetter,JS_NumberValue(that->GetRotation<double>()))
 SAPPHIRE_SCRIPT_GROUP_SETTER_NUMBER(GroupAngleSetter, that->SetRotation(args[0].toNumber()))
 
+SAPPHIRE_SCRIPT_GROUP_GETTER(GroupClipXGetter, JS_NumberValue(that->GetClipX()))
+SAPPHIRE_SCRIPT_GROUP_SETTER_NUMBER(GroupClipXSetter, that->SetClipX(args[0].toNumber()))
+
+SAPPHIRE_SCRIPT_GROUP_GETTER(GroupClipYGetter, JS_NumberValue(that->GetClipY()))
+SAPPHIRE_SCRIPT_GROUP_SETTER_NUMBER(GroupClipYSetter, that->SetClipY(args[0].toNumber()))
+
+SAPPHIRE_SCRIPT_GROUP_GETTER(GroupClipWGetter, JS_NumberValue(that->GetClipW()))
+SAPPHIRE_SCRIPT_GROUP_SETTER_NUMBER(GroupClipWSetter, that->SetClipW(args[0].toNumber()))
+
+SAPPHIRE_SCRIPT_GROUP_GETTER(GroupClipHGetter, JS_NumberValue(that->GetClipH()))
+SAPPHIRE_SCRIPT_GROUP_SETTER_NUMBER(GroupClipHSetter, that->SetClipH(args[0].toNumber()))
+
 bool GroupSetter(JSContext *ctx, JS::HandleObject obj, JS::HandleId id, JS::MutableHandleValue vp, JS::ObjectOpResult &result){
     JS::RootedValue id_value(ctx);
     if(!JS_IdToValue(ctx, id, &id_value)){
@@ -128,7 +139,7 @@ bool GroupSetter(JSContext *ctx, JS::HandleObject obj, JS::HandleId id, JS::Muta
             return false;
         }
         
-        std::shared_ptr<Galileo::Shader> *shader_program = shader_program_proto.unwrap(ctx, vp.toObjectOrNull(), nullptr);
+        std::shared_ptr<Galileo::ShaderProgram> *shader_program = shader_program_proto.unwrap(ctx, vp.toObjectOrNull(), nullptr);
         if(!shader_program){
             Turbo::SetError(ctx, std::string(BRACKNAME " GroupSetter ") + file.string + " Error value is not a ShaderProgram", result);
             return false;
@@ -234,7 +245,7 @@ Turbo::JSPrototype<SDL_Surface>      surface_proto("Surface", SurfaceCtor, 1, Su
 Turbo::JSPrototype<ScriptImage_t>    image_proto("Image", ImageCtor, 1, ImageFinalizer);
 Turbo::JSPrototype<Galileo::Shape>   shape_proto("Shape", ShapeCtor, 2, ShapeFinalizer);
 Turbo::JSPrototype<Galileo::Group>   group_proto("Group", GroupCtor, 2, GroupFinalizer, GroupSetter);
-Turbo::JSPrototype<std::shared_ptr<Galileo::Shader> > shader_program_proto("ShaderProgram", ShaderProgramCtor, 1, ShaderProgramFinalizer);
+Turbo::JSPrototype<std::shared_ptr<Galileo::ShaderProgram> > shader_program_proto("ShaderProgram", ShaderProgramCtor, 1, ShaderProgramFinalizer);
 
 std::array<JSNative, NumFuncs> FunctionList = {{
     FlipScreen,
@@ -267,9 +278,13 @@ static JSFunctionSpec group_methods[] = {
 static JSPropertySpec group_properties[] = {
     JS_PSGS("x", GroupXGetter, GroupXSetter, 0),
     JS_PSGS("y", GroupYGetter, GroupYSetter, 0),
-    JS_PSGS("angle", GroupAngleGetter,  GroupAngleSetter, 0),
-    JS_PSGS("rotX", GroupRotXGetter,  GroupRotXSetter, 0),
-    JS_PSGS("rotY", GroupRotYGetter,  GroupRotYSetter, 0),
+    JS_PSGS("angle", GroupAngleGetter, GroupAngleSetter, 0),
+    JS_PSGS("rotX", GroupRotXGetter, GroupRotXSetter, 0),
+    JS_PSGS("rotY", GroupRotYGetter, GroupRotYSetter, 0),
+    JS_PSGS("clipX", GroupClipXGetter, GroupClipXSetter, 0),
+    JS_PSGS("clipY", GroupClipYGetter, GroupClipYSetter, 0),
+    JS_PSGS("clipW", GroupClipWGetter, GroupClipWSetter, 0),
+    JS_PSGS("clipH", GroupClipHGetter, GroupClipHSetter, 0),
     JS_PS_END
 };
 
@@ -1531,10 +1546,10 @@ bool ShaderProgramCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
 bool GetDefaultShaderProgram(JSContext *ctx, unsigned argc, JS::Value *vp){
 
     JS::CallArgs args = CallArgsFromVp(argc, vp);
-    Sapphire::Galileo::Shader *lShader = Sapphire::Galileo::Shader::GetDefaultShader(ctx);
+    Sapphire::Galileo::ShaderProgram *lShader = Sapphire::Galileo::ShaderProgram::GetDefault(ctx);
     assert(lShader);
 
-    args.rval().set(OBJECT_TO_JSVAL(shader_program_proto.wrap(ctx, new std::shared_ptr<Galileo::Shader> (lShader))));
+    args.rval().set(OBJECT_TO_JSVAL(shader_program_proto.wrap(ctx, new std::shared_ptr<Galileo::ShaderProgram> (lShader))));
     return true;
 
 }

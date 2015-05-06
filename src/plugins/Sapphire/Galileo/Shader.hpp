@@ -49,29 +49,61 @@ public:
 
 };
 
-class Shader : public Sapphire::Galileo::GL::Operation {
+class Shader {
+public:
+    enum shader_type {fragment = GL_FRAGMENT_SHADER, vertex = GL_VERTEX_SHADER, geometry = GL_GEOMETRY_SHADER};
+private:
+    const std::string mSource;
+    const shader_type mType;
+    int mHandle;
 
 public:
-  static const std::string ShaderPositionName;
-  static const std::string ShaderTextureUVName;
-  static const std::string ShaderColorName;
-  static const std::string ShaderOffsetUniformName;
-  static const std::string ShaderRotOffsetUniformName;
-  static const std::string ShaderAngleUniformName;
-  static const std::string ShaderScreenSizeUniformName;
+    Shader(const std::string &str, shader_type t)
+      : mSource(str)
+      , mType(t)
+      , mHandle(-1){
+      
+    }
+    ~Shader();
+        
+    bool Compile(std::string &err);
+
+    static Shader *GetDefault(void *ctx, shader_type t);
+
+    int GetHandle() const { return mHandle; }
+    shader_type GetType() const { return mType; }
+
+};
+
+class ShaderProgram : public Sapphire::Galileo::GL::Operation {
+    std::vector<std::shared_ptr<Shader> > shaders;
+public:
+    static const std::string ShaderPositionName;
+    static const std::string ShaderTextureUVName;
+    static const std::string ShaderColorName;
+    static const std::string ShaderOffsetUniformName;
+    static const std::string ShaderRotOffsetUniformName;
+    static const std::string ShaderAngleUniformName;
+    static const std::string ShaderScreenSizeUniformName;
   
-  struct value_double { const std::string str; int a; };
-  typedef std::vector<struct value_double> GLSLValueMap;
-  //typedef std::map<std::string, int> GLSLValueMap;
+    struct value_double { const std::string str; int a; };
+    typedef std::vector<struct value_double> GLSLValueMap;
+    //typedef std::map<std::string, int> GLSLValueMap;
 protected:
     int mProgram;
     std::vector<int> mAttributeNumbers;
 public:
 
-    static Shader *GetDefaultShader(void *ctx);
+    static ShaderProgram *GetDefault(void *ctx);
 
-    Shader(TS_GameConfig *config, int aProgram);
-    ~Shader();
+    // Note that because this takes a preset program handle, you do NOT need to call link().
+    ShaderProgram(TS_GameConfig *config, int aProgram);
+    // You MUST call link when using this.
+    // All shaders in shaderv must already be compiled.
+    ShaderProgram(TS_GameConfig *config, unsigned shaderc, std::shared_ptr<Shader> shaderv[]);
+    ~ShaderProgram();
+
+    bool Link(std::string &err);
 
     // Map of Vertex Attribute names and their locations.
     GLSLValueMap mAttributes;
@@ -110,9 +142,9 @@ public:
     int GetName(){ return mProgram; }
 
 #ifdef _MSC_VER
-	__declspec( thread ) static Shader *BoundShader;
+	__declspec( thread ) static ShaderProgram *BoundShader;
 #else
-    static __thread Shader *BoundShader;
+    static __thread ShaderProgram *BoundShader;
 #endif
 
 };

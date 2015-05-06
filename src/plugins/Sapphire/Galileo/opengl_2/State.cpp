@@ -110,5 +110,14 @@ int FlipScreen::Draw(){
     return 0;
 }
 
+bool ClippingRectangle::IsNecessary() const {
+    return (x==0) && (y==0) && (w>=GetScreenWidth()) && (h>=GetScreenHeight());
+}
+
+int ClippingRectangle::Draw(){
+    glScissor(x, y, w, h);
+    return 0;
+}
+
 }
 }

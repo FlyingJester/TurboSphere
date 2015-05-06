@@ -34,7 +34,8 @@ extern Turbo::JSPrototype<SDL_Surface>      surface_proto;
 extern Turbo::JSPrototype<ScriptImage_t>    image_proto;
 extern Turbo::JSPrototype<Galileo::Shape>   shape_proto;
 extern Turbo::JSPrototype<Galileo::Group>   group_proto;
-extern Turbo::JSPrototype<std::shared_ptr<Galileo::Shader> > shader_program_proto;
+extern Turbo::JSPrototype<std::shared_ptr<Galileo::ShaderProgram> > shader_program_proto;
+extern Turbo::JSPrototype<std::shared_ptr<Galileo::Shader> > shader_proto;
 
 void ColorFinalizer(JSFreeOp *fop, JSObject *obj);
 void SurfaceFinalizer(JSFreeOp *fop, JSObject *obj);

@@ -4,7 +4,7 @@ import os
 import sys
 
 gfx_backend = "GL"
-gfx_version = 2
+gfx_version = 4
 
 Sapphire_files = ["api.cpp", "GLStart.cpp",
     "SapphireInit.cpp", "SapphirePlugin.cpp", "SaveImage.cpp", 

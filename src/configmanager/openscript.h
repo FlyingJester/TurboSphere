@@ -14,12 +14,12 @@
 	#define CONFIGMGR_EXPORT extern "C"
 #endif
 
-bool CONFIGMGR_EXPORT TS_ExecuteString(JSContext *ctx, const char *filename, const char *source);
-bool CONFIGMGR_EXPORT TS_ExecuteStringL(JSContext *ctx, const char *filename, const char *source, size_t len);
-bool CONFIGMGR_EXPORT TS_LoadScript(JSContext *ctx, const char *filename, bool only_once = false);
+CONFIGMGR_EXPORT bool TS_ExecuteString(JSContext *ctx, const char *filename, const char *source);
+CONFIGMGR_EXPORT bool TS_ExecuteStringL(JSContext *ctx, const char *filename, const char *source, size_t len);
+CONFIGMGR_EXPORT bool TS_LoadScript(JSContext *ctx, const char *filename, bool only_once = false);
 
 // only_once=true for Require*Script, only_once=false for Evaluate*Script
-bool CONFIGMGR_EXPORT TS_LoadScriptPrefixed_JS(JSContext *ctx, unsigned argc, JS::Value *vp, const char * prefix, bool only_once = true);
+CONFIGMGR_EXPORT bool TS_LoadScriptPrefixed_JS(JSContext *ctx, unsigned argc, JS::Value *vp, const char * prefix, bool only_once = true);
 
 template<bool only_once>
 bool TS_LoadScript_JS(JSContext *ctx, unsigned argc, JS::Value *vp){

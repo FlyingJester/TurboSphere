@@ -13,6 +13,7 @@ namespace Network{
     bool ListenOnPort(JSContext *ctx, unsigned argc, JS::Value *vp);
     
     bool Accept(JSContext *ctx, unsigned argc, JS::Value *vp);
+    bool ListeningSocketClose(JSContext *ctx, unsigned argc, JS::Value *vp);
     
     bool SocketIsConnected(JSContext *ctx, unsigned argc, JS::Value *vp);
     bool SocketGetPendingReadSize(JSContext *ctx, unsigned argc, JS::Value *vp);
