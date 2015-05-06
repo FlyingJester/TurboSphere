@@ -25,15 +25,13 @@ public:
 };
 
 class ClippingRectangle : public GL::Operation {
-    static unsigned sx, sy, sw, sh;
 public:
     const bool persistent;
     unsigned x, y, w, h;
+    
+    static unsigned sx, sy, sw, sh, screen_height, scale;
 
-    ClippingRectangle(bool p, unsigned x_, unsigned y_, unsigned w_, unsigned h_)
-      : persistent(p)
-      , x(x_), y(y_), w(w_), h(h_){
-    }
+    ClippingRectangle(bool p, unsigned x_, unsigned y_, unsigned w_, unsigned h_);
     
     ClippingRectangle(bool p = true) 
       : ClippingRectangle(p, 0, 0, 0xFFFF, 0xFFFF){

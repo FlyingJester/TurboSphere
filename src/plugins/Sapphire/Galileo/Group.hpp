@@ -38,6 +38,7 @@ protected:
 public:
 
     Group();
+    
     virtual ~Group();
 
     // a Group can function in one of two ways:

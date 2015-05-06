@@ -112,11 +112,23 @@ int FlipScreen::Draw(){
     return 0;
 }
 
+ClippingRectangle::ClippingRectangle(bool p, unsigned x_, unsigned y_, unsigned w_, unsigned h_)
+      : persistent(p)
+      , x(x_), y(y_), w(w_), h(h_){
+        if(screen_height==0){
+            GLint data[4];
+            glGetIntegerv(GL_VIEWPORT, data);
+            screen_height = data[3];
+        }
+    }
+
 unsigned ClippingRectangle::sx = 0,
     ClippingRectangle::sy = 0,
     ClippingRectangle::sw = 0xFFFF,
-    ClippingRectangle::sh = 0xFFFF;
-
+    ClippingRectangle::sh = 0xFFFF,
+    ClippingRectangle::screen_height = 0,
+    ClippingRectangle::scale = 1;
+    
 int ClippingRectangle::Draw(){
 
     if((sx==x) && (sy==y) && (sw==w) && (sh==h)) return 0;
@@ -126,7 +138,7 @@ int ClippingRectangle::Draw(){
     sw = w;
     sh = h;
     
-    glScissor(x, y, w, h);
+    glScissor(x*scale, (screen_height-(y+h))*scale, w*scale, h*scale);
     return 0;
 }
 

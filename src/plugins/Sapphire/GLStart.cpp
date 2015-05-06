@@ -1,7 +1,6 @@
 #include "GLStart.hpp"
-#include <array>
-#include <cassert>
 #include "Sapphire.hpp"
+#include "Galileo/State.hpp"
 
 #ifdef OS_X
 
@@ -9,6 +8,9 @@
 #include <SDL2/SDL_syswm.h>
 
 #endif
+
+#include <array>
+#include <cassert>
 
 // Begin swizzling of context types!
 
@@ -81,9 +83,14 @@ inline void SetSDL_GL_Attributes(void){
 }
 
 SDL_GLContext CreateForWindow(Window *aFor, const Version &aGLVersion){
-
+    
+    // Update the clipping coord system.
+    int w, h;
+    SDL_GetWindowSize(aFor->screen, &w, &h);
+    Galileo::ClippingRectangle::screen_height = h;
+    
     SetSDL_GL_Attributes();
-
+    
     return SDL_GL_CreateContext(aFor->screen);
 
 }
@@ -178,7 +185,9 @@ namespace RenderThread{
                 float _f = TS_GetScalingFactor(info.info.cocoa.window);
                 float _m = 1.0f;
                 glGetFloatv(GL_ALIASED_LINE_WIDTH_RANGE, &_m);
-
+                
+                Galileo::ClippingRectangle::scale = _f;
+                
                 printf(BRACKNAME " Info: Running on Cocoa. Scaling factor of main window is %f. Maximum OpenGL raster scaling reported is %f.\n", _f, _m);
 
                 glLineWidth(fmin(_f, _m));
