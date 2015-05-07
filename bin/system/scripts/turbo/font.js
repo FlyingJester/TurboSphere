@@ -158,7 +158,7 @@ Turbo.Font.prototype.createTextSurface = function(string, width){
         string_surface.blitSurface(that, at_x, at_y);
         at_x+=that.width;
     });        
-    if(this.string_cache.length>=string_cache_size)
+    if(this.string_cache.length>=this.string_cache_size)
         this.string_cache.shift();
         
     this.string_cache.push(new Turbo.FontStringCache(string, string_surface, width));
