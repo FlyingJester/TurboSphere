@@ -143,6 +143,8 @@ bool RunGame(const char *path, const char *root_path){
     std::unique_ptr<JSRuntime, void(*)(JSRuntime *)> runtime_ptr(JS_NewRuntime(8L * 1024L * 1024L), JS_DestroyRuntime);
     JSRuntime *runtime = runtime_ptr.get();
     
+    JS::RuntimeOptionsRef(runtime_ptr.get()).setIon(true).setBaseline(true).setAsmJS(true).setUnboxedObjects(true).setExtraWarnings(true);
+    
     // Prepare a JSContext and a compartment, including the global object
     std::unique_ptr<JSContext, void(*)(JSContext *)> context_ptr(JS_NewContext(runtime, 8192), JS_DestroyContext);
     JSContext *ctx = context_ptr.get();
