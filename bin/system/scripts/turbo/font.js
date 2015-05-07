@@ -44,6 +44,7 @@ Turbo.Font = function(stream, string_cache_size){
     
     if(typeof string_cache_size == "undefined")
         string_cache_size = 16;
+    this.string_cache_size = string_cache_size;
     
     var header = Turbo.ReadBinaryObject(stream, Turbo.FontScheme.header);
     for(var i in header)
