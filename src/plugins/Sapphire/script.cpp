@@ -17,6 +17,7 @@
 #include <queue>
 #include <memory>
 #include <string>
+
 #include <screen.h>
 #include <openscript.h>
 #include <opengame.h>
@@ -192,6 +193,10 @@ void ShaderProgramFinalizer(JSFreeOp *fop, JSObject *obj){
     delete shader_program_proto.unsafeUnwrap(obj);
 }
 
+void ShaderFinalizer(JSFreeOp *fop, JSObject *obj){
+    delete shader_proto.unsafeUnwrap(obj);
+}
+
 
 const unsigned FIXEDUVCOORD_SIZE = 8u;
 
@@ -246,6 +251,7 @@ Turbo::JSPrototype<ScriptImage_t>    image_proto("Image", ImageCtor, 1, ImageFin
 Turbo::JSPrototype<Galileo::Shape>   shape_proto("Shape", ShapeCtor, 2, ShapeFinalizer);
 Turbo::JSPrototype<Galileo::Group>   group_proto("Group", GroupCtor, 2, GroupFinalizer, GroupSetter);
 Turbo::JSPrototype<std::shared_ptr<Galileo::ShaderProgram> > shader_program_proto("ShaderProgram", ShaderProgramCtor, 1, ShaderProgramFinalizer);
+Turbo::JSPrototype<std::shared_ptr<Galileo::Shader> > shader_proto("Shader", ShaderCtor, 1, ShaderFinalizer);
 
 std::array<JSNative, NumFuncs> FunctionList = {{
     FlipScreen,
@@ -422,13 +428,13 @@ bool ColorCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
 // Can construct an Image from an SDL_Surface, a path, or dimensions and a color.
 bool ImageCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
     
-    const Turbo::JSType sig_surface[] = {Turbo::Object};
+ //   const Turbo::JSType sig_surface[] = {Turbo::Object};
     const Turbo::JSType sig_parametric[] = {Turbo::Number, Turbo::Number, Turbo::Object};
-    const Turbo::JSType sig_path[] = {Turbo::String};
+ //   const Turbo::JSType sig_path[] = {Turbo::String};
     
     JS::CallArgs args = CallArgsFromVp(argc, vp);
     
-    if(Turbo::CheckSignature<1>(ctx, args, sig_surface, __func__, false) && surface_proto.instanceOf(ctx, args[0], &args)){
+    if(Turbo::CheckForSingleArg(ctx, args, Turbo::Object, __func__, false) && surface_proto.instanceOf(ctx, args[0], &args)){
         const SDL_Surface *surface = surface_proto.unsafeUnwrap(args[0]); // We checked above if we have an instance of a Surface
         assert(surface);
         
@@ -438,7 +444,8 @@ bool ImageCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
         return true;
     }
     
-    if(Turbo::CheckSignature<1>(ctx, args, sig_path, __func__, false)){
+    if(Turbo::CheckForSingleArg(ctx, args, Turbo::String, __func__, false)){
+//    if(Turbo::CheckSignature<1>(ctx, args, sig_path, __func__, false)){
         struct Turbo::JSStringHolder<> file(ctx, JS_EncodeString(ctx, args[0].toString()));
         
         if(!file.string){
@@ -1534,12 +1541,45 @@ bool SurfaceSetClippingRectangle(JSContext *ctx, unsigned argc, JS::Value *vp){
 /////
 // Middle School
 bool ShaderCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
+    
+    JS::CallArgs args = CallArgsFromVp(argc, vp);
 
+    if(!(Turbo::CheckForSingleArg(ctx, args, Turbo::String, __func__) && Turbo::CheckForSingleArg(ctx, args, Turbo::Number, __func__, 1) ))
+        return false;
+    
+    std::shared_ptr<Galileo::Shader> shader;
+    
+    struct Turbo::JSStringHolder<> file(ctx, JS_EncodeString(ctx, args[0].toString()));
+        
+    if(!file.string){
+        Turbo::SetError(ctx, BRACKNAME " ShaderCtor Error could not encode string for argument 0");
+        return false;
+    }
+    
+    char *source = LoadShaderSource(file.string, TS_GetContextEnvironment(ctx)->directories);
+    
+    if(!source){
+        Turbo::SetError(ctx, std::string(BRACKNAME " ShaderCtor Error could not load shader ") + file.string);
+        return false;
+    }
+    
+    shader.reset(new Galileo::Shader(source, static_cast<Galileo::Shader::shader_type>(args[1].toNumber())));
+    
+    std::string err;
+    if(!shader->Compile(err)){
+        Turbo::SetError(ctx, std::string(BRACKNAME " ShaderCtor Error could not compile shader ") + file.string + ": " + err);
+        return false;
+    }
+
+    args.rval().set(OBJECT_TO_JSVAL(shader_proto.wrap(ctx, new std::shared_ptr<Galileo::Shader>(shader))));
+    
     return true;
 }
 
 bool ShaderProgramCtor(JSContext *ctx, unsigned argc, JS::Value *vp){
-
+    
+    //JS::CallArgs args = CallArgsFromVp(argc, vp);
+    
     return true;
 }
 

@@ -24,6 +24,8 @@ SDL_Surface *CreateSurface(unsigned aWidth, unsigned aHeight, const void *aData,
 
 SDL_Surface *FromImage(Image *aFrom);
 
+// Returned value must be free()'ed.
+char *LoadShaderSource(const char *aPath, struct TS_GameDirectories *dirs);
 
 inline SDL_Surface *GenerateSurface(unsigned aWidth, unsigned aHeight){
     return SDL_CreateRGBSurface(0, aWidth, aHeight, IMAGE_DEPTH, CHANNEL_MASKS);

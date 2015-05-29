@@ -27,6 +27,7 @@ typedef std::shared_ptr<Image> ScriptImage_t;
 
 extern std::array<JSNative, NumFuncs> FunctionList;
 extern std::array<const char * const, NumFuncs> FunctionNameList;
+
 extern std::vector<JSFunctionSpec>     CrossPluginSurfaceMembers;
 
 extern Turbo::JSPrototype<TS_Color>         color_proto;
@@ -43,6 +44,7 @@ void ImageFinalizer(JSFreeOp *fop, JSObject *obj);
 void ShapeFinalizer(JSFreeOp *fop, JSObject *obj);
 void GroupFinalizer(JSFreeOp *fop, JSObject *obj);
 void ShaderProgramFinalizer(JSFreeOp *fop, JSObject *obj);
+void ShaderFinalizer(JSFreeOp *fop, JSObject *obj);
 
 /////
 // Old School

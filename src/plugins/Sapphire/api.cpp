@@ -3,6 +3,8 @@
 #include "Image.hpp"
 #include <opengame.h>
 
+#include <t5.h>
+
 namespace Sapphire {
 
 SDL_Surface *LoadSurface(const char *aPath, struct TS_GameDirectories *dirs, bool aAbsolute){
@@ -78,6 +80,23 @@ SDL_Surface *FromImage(Image *aFrom){
 
     return rSurface;
 
+}
+
+char *LoadShaderSource(const char *aPath, struct TS_GameDirectories *dirs){
+    std::string path = std::string(dirs->shader) + aPath;
+    if(!t5::IsFile(path)) return nullptr;
+
+    t5::DataSource *src = t5::DataSource::FromPath(t5::DataSource::eRead, path.c_str());
+    if(!src) return nullptr;
+    
+    const unsigned long long length = src->Length();
+    
+    char *buffer = static_cast<char *>(malloc(src->Length()+1));
+    if(buffer){
+        buffer[length] = 0;    
+        src->Read(buffer, length);
+    }
+    return buffer;
 }
 
 }
