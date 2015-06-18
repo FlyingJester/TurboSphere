@@ -229,11 +229,11 @@ bool RawFileWrite(JSContext *ctx, unsigned argc, JS::Value *vp){
     
     JS::CallArgs args = CallArgsFromVp(argc, vp);
 
-    if(CheckForSingleArg(ctx, args, Turbo::ArrayBuffer, __func__)){
+    if(CheckForSingleArg(ctx, args, Turbo::ArrayBuffer, __func__, false)){
         JS::RootedObject buffer_root(ctx, args[0].toObjectOrNull());
         js::GetArrayBufferLengthAndData(buffer_root, &l, &data);
     }
-    else if(CheckForSingleArg(ctx, args, Turbo::TypedArray, __func__)){
+    else if(CheckForSingleArg(ctx, args, Turbo::TypedArray, __func__, false)){
         JS::RootedObject buffer_root(ctx, args[0].toObjectOrNull());
         js::GetArrayBufferViewLengthAndData(buffer_root, &l, &data);
     }
