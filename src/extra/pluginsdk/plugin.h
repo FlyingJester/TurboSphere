@@ -105,7 +105,8 @@ namespace Turbo{
     typedef void (*GetVarFunction)(JSContext *ctx, int n, JS::MutableHandleValue val);
     typedef const char *(*GetNameFunction)(JSContext *ctx, int n);
     
-    inline void SetError(JSContext *ctx, const std::string err){
+    inline void SetError(JSContext *ctx, const std::string err){
+
         // This gives us just a little more info on crash (lldb, for instance, can't handle printing `err').
         if(JS_IsExceptionPending(ctx)){
             printf("[Turbo] SetError Error an exception was already pending while trying to set the following exception:\n%s", err.c_str());
@@ -115,7 +116,8 @@ namespace Turbo{
         JS::RootedValue error(ctx, STRING_TO_JSVAL(JS_NewStringCopyN(ctx, err.c_str(), err.length())));
         JS_SetPendingException(ctx, error);
     }
-   
+
+   
     inline void SetError(JSContext *ctx, const std::string err, JS::ObjectOpResult &result){
         // This is changing in the SM API. We don't really know the correct behaviour yet.
         // Just give it some failure.
@@ -191,7 +193,9 @@ namespace Turbo{
     bool CheckSignature(JSContext *ctx, JS::CallArgs &args, const enum JSType type[N], const char *func, bool set_error = true){
         
         if(args.length()<N){
-            SetError(ctx, std::string("[" PLUGINNAME "] ") + func + " Error called with fewer than " + std::to_string(N) + " arguments");
+            if(set_error){
+                SetError(ctx, std::string("[" PLUGINNAME "] ") + func + " Error called with fewer than " + std::to_string(N) + " arguments");
+            }
             return false;
         }
         for(int i = 0; i<N; i++){
